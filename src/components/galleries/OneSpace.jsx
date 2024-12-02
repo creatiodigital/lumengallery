@@ -123,6 +123,38 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
     })
   }, [])
 
+  // Precompute artwork data
+  const precomputedArtworks = useMemo(
+    () =>
+      artworks?.map((artwork) => {
+        if (!artwork.url) return null
+
+        const position = new Vector3(
+          artwork.space.position.x,
+          artwork.space.position.y,
+          artwork.space.position.z,
+        )
+
+        const quaternion = new Quaternion(
+          artwork.space.quaternion.x,
+          artwork.space.quaternion.y,
+          artwork.space.quaternion.z,
+          artwork.space.quaternion.w,
+        )
+
+        const texture = (() => {
+          if (!artwork.url) return null
+          const loader = new TextureLoader()
+          const loadedTexture = loader.load(artwork.url)
+          loadedTexture.colorSpace = SRGBColorSpace
+          return loadedTexture
+        })()
+
+        return { ...artwork, position, quaternion, texture }
+      }),
+    [artworks],
+  )
+
   return (
     <group {...props} dispose={null}>
       <mesh
@@ -216,57 +248,28 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
           />
         </Fragment>
       ))}
-      {artworks?.map((artwork) => {
-        if (!artwork.url) return null
-
-        const position = useMemo(
-          () =>
-            new Vector3(
-              artwork.space.position.x,
-              artwork.space.position.y,
-              artwork.space.position.z,
-            ),
-          [artwork.position],
-        )
-        const quaternion = useMemo(
-          () =>
-            new Quaternion(
-              artwork.space.quaternion.x,
-              artwork.space.quaternion.y,
-              artwork.space.quaternion.z,
-              artwork.space.quaternion.w,
-            ),
-          [artwork.quaternion],
-        )
-
-        const texture = useMemo(() => {
-          if (!artwork.url) return null
-          const loader = new TextureLoader()
-          const loadedTexture = loader.load(artwork.url)
-          loadedTexture.colorSpace = SRGBColorSpace
-          return loadedTexture
-        }, [artwork.url])
-
-        return (
-          <mesh
-            key={artwork.id}
-            position={position}
-            quaternion={quaternion}
-            renderOrder={2}
-          >
-            <planeGeometry
-              args={[artwork.space.width || 1, artwork.space.height || 1]}
-            />
-            <meshBasicMaterial
-              side={DoubleSide}
-              toneMapped={false}
-              map={texture || null}
-              roughness={1}
-              metalness={0}
-            />
-          </mesh>
-        )
-      })}
+      {precomputedArtworks?.map(
+        (artwork) =>
+          artwork && (
+            <mesh
+              key={artwork.id}
+              position={artwork.position}
+              quaternion={artwork.quaternion}
+              renderOrder={2}
+            >
+              <planeGeometry
+                args={[artwork.space.width || 1, artwork.space.height || 1]}
+              />
+              <meshBasicMaterial
+                side={DoubleSide}
+                toneMapped={false}
+                map={artwork.texture || null}
+                roughness={1}
+                metalness={0}
+              />
+            </mesh>
+          ),
+      )}
     </group>
   )
 }

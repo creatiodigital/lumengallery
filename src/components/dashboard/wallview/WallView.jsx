@@ -20,7 +20,7 @@ const WallView = () => {
   const [boundingData, setBoundingData] = useState(null)
   const [dragging, setDragging] = useState(false)
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
-  const [offset, setOffset] = useState({ x: 0, y: 0 }) // Offset between mouse and artwork
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
 
   const isArtworkUploaded = useSelector(
     (state) => state.wizard.isArtworkUploaded,
@@ -33,6 +33,9 @@ const WallView = () => {
   const wallRef = useRef(null)
 
   const currentArtwork = artworks.find((art) => art.id === currentArtworkId)
+
+  // Call useGLTF at the top level
+  const { nodes } = useGLTF('/assets/one-space3.glb')
 
   const handleDragStart = (event, artworkId) => {
     const rect = wallRef.current.getBoundingClientRect()
@@ -52,24 +55,22 @@ const WallView = () => {
       return
 
     const rect = wallRef.current.getBoundingClientRect()
-    let x = event.clientX - rect.left - offset.x // Adjust x by the captured offset
-    let y = event.clientY - rect.top - offset.y // Adjust y by the captured offset
+    let x = event.clientX - rect.left - offset.x
+    let y = event.clientY - rect.top - offset.y
 
     const artwork = artworks.find((art) => art.id === draggedArtworkId)
     if (!artwork) return
 
     const { width: artworkWidth, height: artworkHeight } = artwork.canvas
 
-    // Clamp the position to stay within the wall boundaries
-    x = Math.max(0, Math.min(x, boundingData.width * 100 - artworkWidth)) // Prevent x from going out of bounds
-    y = Math.max(0, Math.min(y, boundingData.height * 100 - artworkHeight)) // Prevent y from going out of bounds
+    x = Math.max(0, Math.min(x, boundingData.width * 100 - artworkWidth))
+    y = Math.max(0, Math.min(y, boundingData.height * 100 - artworkHeight))
 
     const updatedArtwork = {
       ...artwork,
       canvas: { ...artwork.canvas, x, y },
     }
 
-    // Dispatch 2D position update for this specific artwork
     dispatch(
       editArtwork({
         currentArtworkId: draggedArtworkId,
@@ -77,7 +78,6 @@ const WallView = () => {
       }),
     )
 
-    // Recalculate 3D coordinates for this specific artwork
     const new3DCoordinate = convert2DTo3D(
       {
         x,
@@ -103,7 +103,6 @@ const WallView = () => {
   }
 
   useEffect(() => {
-    const { nodes } = useGLTF('/assets/one-space3.glb')
     const currentWall = Object.values(nodes).find(
       (obj) => obj.uuid === currentWallId,
     )
@@ -114,7 +113,7 @@ const WallView = () => {
       const dimensions = calculateDimensionsAndBasis(boundingBox, normal)
       setBoundingData({ ...dimensions, boundingBox, normal })
     }
-  }, [currentWallId])
+  }, [nodes, currentWallId])
 
   useEffect(() => {
     if (boundingData && wallRef.current) {
