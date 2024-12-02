@@ -1,0 +1,13 @@
+.default {
+  padding: 0.8rem 1rem;
+  background: var(--c-button-bg);
+  color: var(--c-button-text);
+  border: none;
+  cursor: pointer;
+
+  &:disabled {
+    background: var(--c-button-bg-disabled);
+    color: var(--c-button-text-disabled);
+    cursor: not-allowed;
+  }
+}
