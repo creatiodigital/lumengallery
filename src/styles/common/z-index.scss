@@ -1,0 +1,25 @@
+@use 'sass:list';
+@import "variables";
+
+/*
+Get a z-index value from a layer name
+@access public
+@param {String} $element - Layer's name
+@param {Map} $list - [optional] list of elements
+@return {Number}
+@require $z-indexes
+ */
+@function z-index($element, $list:"") {
+  @if $list == "" {
+    $list: $z-indexes;
+  }
+
+  $z-index: list.index($list, $element);
+
+  @if $z-index {
+    @return $z-index;
+  }
+
+  @warn 'There is no item "#{$element}" in this list; choose one of: #{$list}';
+  @return null;
+}
