@@ -1,5 +1,19 @@
 'use client'
 
+//TODO:
+// Move drag, zoom logic to redux
+// Implement handlers for resizing
+// Update space after saving
+// Decice upon material ui / custom / icon set
+// Show added artworks on left panel
+// Add Metadata (title, info)
+// Show metadata in edit mode and space view
+// Clean up, abstract out calculation function. Add helpers
+// Rename / Reorganize slices
+// Calculate initial zoom factor based on wall dimensions
+// Test on laptop view
+// Redesign layout, left and right panels
+
 import styles from './dashboard.module.scss'
 
 import { useEffect, useState } from 'react'

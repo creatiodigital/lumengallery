@@ -14,6 +14,7 @@ import {
 } from './utils'
 
 export const Wall = ({ scaleFactor }) => {
+  const { nodes } = useGLTF('/assets/one-space3.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
@@ -110,7 +111,6 @@ export const Wall = ({ scaleFactor }) => {
   }
 
   useEffect(() => {
-    const { nodes } = useGLTF('/assets/one-space3.glb')
     const currentWall = Object.values(nodes).find(
       (obj) => obj.uuid === currentWallId,
     )
@@ -121,7 +121,7 @@ export const Wall = ({ scaleFactor }) => {
       const dimensions = calculateDimensionsAndBasis(boundingBox, normal)
       setBoundingData({ ...dimensions, boundingBox, normal })
     }
-  }, [currentWallId])
+  }, [currentWallId, nodes])
 
   useEffect(() => {
     if (boundingData && wallRef.current) {
