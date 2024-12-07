@@ -1,5 +1,5 @@
 .dashboard {
-  padding: 40px;
+  padding: 0;
 }
 
 .header {
@@ -9,14 +9,14 @@
   justify-content: center;
 }
 
-.main {
-  padding: 20px 0;
-}
-
 .edit {
   padding: 20px 0;
 }
 
 .editModeHeader {
   margin-bottom: 30px;
+}
+
+.wallDashboard {
+  display: flex;
 }

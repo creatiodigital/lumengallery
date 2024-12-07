@@ -1,4 +1,4 @@
-import styles from './Sidebar.module.scss'
+import styles from './RightPanel.module.scss'
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
@@ -10,7 +10,7 @@ import { editArtwork, editArtworkUrlImage } from '@/lib/features/artistSlice'
 
 import { Button } from '@/components/ui/Button'
 
-const Sidebar = () => {
+export const RightPanel = () => {
   const dispatch = useDispatch()
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const artworks = useSelector((state) => state.artist.artworks)
@@ -92,7 +92,7 @@ const Sidebar = () => {
   }
 
   return (
-    <div className={styles.sidebar}>
+    <div className={styles.rightPanel}>
       Click on the wall to add an image
       {isWizardOpen && (
         <div className={styles.wizard}>
@@ -142,5 +142,3 @@ const Sidebar = () => {
     </div>
   )
 }
-
-export default Sidebar

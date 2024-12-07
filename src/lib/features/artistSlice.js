@@ -6,9 +6,13 @@ const artistSlice = createSlice({
     id: '123456',
     name: 'Eduardo',
     lastName: 'Plaza',
+    handler: '',
     artworks: [],
   },
   reducers: {
+    setHandler: (state, action) => {
+      state.handler = action.payload
+    },
     showEditMode: (state) => {
       state.isEditMode = true
     },
@@ -68,6 +72,7 @@ const artistSlice = createSlice({
 export const {
   showEditMode,
   hideEditMode,
+  setHandler,
   createArtwork,
   editArtwork,
   editArtworkUrlImage,

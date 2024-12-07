@@ -93,7 +93,7 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
         transparent: true,
         opacity: 0,
       }),
-    [hovered],
+    [],
   )
 
   const getEditIconMaterial = useMemo(
