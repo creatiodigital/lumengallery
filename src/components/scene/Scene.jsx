@@ -3,6 +3,7 @@
 import * as THREE from 'three'
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { useSelector } from 'react-redux'
 import { Canvas } from '@react-three/fiber'
 
 import SceneContext from '@/contexts/SceneContext'
@@ -10,12 +11,13 @@ import { Controls } from '@/components/scene/controls'
 import { Elements } from '@/components/scene/elements'
 import threeStyles from '@/styles/modules/threejs.module.scss'
 
-const Scene = ({ artworks = [] }) => {
+const Scene = () => {
   const [space, setSpace] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const wallRefs = useRef([])
   const { handler, space: spaceId } = useParams()
+  const artworks = useSelector((state) => state.artist.arworks)
 
   useEffect(() => {
     const fetchData = async () => {

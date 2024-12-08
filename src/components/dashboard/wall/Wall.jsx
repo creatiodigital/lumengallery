@@ -1,7 +1,14 @@
+import styles from './Wall.module.scss'
+
 import React, { useRef, useEffect, useState } from 'react'
+import c from 'classnames'
 import { useDispatch, useSelector } from 'react-redux'
-import { showWizard } from '@/lib/features/wizardSlice'
-import { createArtwork, editArtwork } from '@/lib/features/artistSlice'
+import { showWizard, hideWizard } from '@/lib/features/wizardSlice'
+import {
+  createArtwork,
+  editArtwork,
+  deleteArtwork,
+} from '@/lib/features/artistSlice'
 import { edit3DCoordinates } from '@/lib/features/artistSlice'
 
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
@@ -47,6 +54,90 @@ export const Wall = ({ scaleFactor }) => {
 
     setDragging(true)
     setDraggedArtworkId(artworkId)
+  }
+
+  const handleArtworkClick = (event, artworkId) => {
+    event.stopPropagation()
+
+    // Select the clicked artwork
+    dispatch(chooseCurrentArtworkId(artworkId))
+
+    // Show the wizard when an artwork is selected
+    if (!isWizardOpen) {
+      dispatch(showWizard())
+    }
+  }
+
+  const handleResize = (event, artworkId, direction) => {
+    event.stopPropagation()
+
+    const artwork = artworks.find((art) => art.id === artworkId)
+    if (!artwork) return
+
+    const startX = event.clientX
+    const startY = event.clientY
+    const initialWidth = artwork.canvas.width
+    const initialHeight = artwork.canvas.height
+    const initialX = artwork.canvas.x
+    const initialY = artwork.canvas.y
+
+    const handleMouseMove = (moveEvent) => {
+      const deltaX = (moveEvent.clientX - startX) / scaleFactor
+      const deltaY = (moveEvent.clientY - startY) / scaleFactor
+
+      let newWidth = initialWidth
+      let newHeight = initialHeight
+      let newX = initialX
+      let newY = initialY
+
+      // Adjust width and x for left handles
+      if (direction.includes('left')) {
+        newWidth = Math.max(20, initialWidth - deltaX)
+        newX = initialX + deltaX // Shift x position to keep resizing anchored
+      }
+
+      // Adjust width for right handles
+      if (direction.includes('right')) {
+        newWidth = Math.max(20, initialWidth + deltaX)
+      }
+
+      // Adjust height and y for top handles
+      if (direction.includes('top')) {
+        newHeight = Math.max(20, initialHeight - deltaY)
+        newY = initialY + deltaY // Shift y position to keep resizing anchored
+      }
+
+      // Adjust height for bottom handles
+      if (direction.includes('bottom')) {
+        newHeight = Math.max(20, initialHeight + deltaY)
+      }
+
+      const updatedArtwork = {
+        ...artwork,
+        canvas: {
+          x: newX,
+          y: newY,
+          width: newWidth,
+          height: newHeight,
+        },
+      }
+
+      // Dispatch updated sizes and position
+      dispatch(
+        editArtwork({
+          currentArtworkId: artworkId,
+          newArtworkSizes: updatedArtwork.canvas,
+        }),
+      )
+    }
+
+    const handleMouseUp = () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
   }
 
   const handleDragMove = (event) => {
@@ -170,8 +261,16 @@ export const Wall = ({ scaleFactor }) => {
     }
   }, [dragging])
 
+  const handleDeselect = () => {
+    dispatch(chooseCurrentArtworkId(null))
+    if (isWizardOpen) {
+      dispatch(hideWizard())
+    }
+  }
+
   const handleWallClick = (event) => {
     if (isWizardOpen) return
+
     const rect = wallRef.current.getBoundingClientRect()
     const x = (event.clientX - rect.left - 20) / scaleFactor
     const y = (event.clientY - rect.top - 20) / scaleFactor
@@ -197,10 +296,24 @@ export const Wall = ({ scaleFactor }) => {
     )
   }
 
+  const handleKeyDown = (e) => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && currentArtworkId) {
+      dispatch(deleteArtwork({ artworkId: currentArtworkId }))
+    }
+  }
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [currentArtworkId])
+
   return (
     <div
       ref={wallRef}
       onDoubleClick={handleWallClick}
+      onClick={handleDeselect}
       style={{
         position: 'relative',
         border: '1px dashed #aaaaaa',
@@ -222,14 +335,42 @@ export const Wall = ({ scaleFactor }) => {
                 width: `${artwork.canvas.width}px`,
                 height: `${artwork.canvas.height}px`,
                 backgroundColor: 'black',
-                backgroundImage: currentArtworkId
-                  ? `url(${artwork.url})`
-                  : 'none',
+                backgroundImage: artwork.url ? `url(${artwork.url})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }}
               onMouseDown={(event) => handleDragStart(event, artwork.id)}
-            />
+              onClick={(event) => handleArtworkClick(event, artwork.id)}
+            >
+              {currentArtworkId === artwork.id && (
+                <>
+                  <div
+                    className={c([styles.resizeHandle, styles.topLeft])}
+                    onMouseDown={(event) =>
+                      handleResize(event, artwork.id, 'top-left')
+                    }
+                  />
+                  <div
+                    className={c([styles.resizeHandle, styles.topRight])}
+                    onMouseDown={(event) =>
+                      handleResize(event, artwork.id, 'top-right')
+                    }
+                  />
+                  <div
+                    className={c([styles.resizeHandle, styles.bottomLeft])}
+                    onMouseDown={(event) =>
+                      handleResize(event, artwork.id, 'bottom-left')
+                    }
+                  />
+                  <div
+                    className={c([styles.resizeHandle, styles.bottomRight])}
+                    onMouseDown={(event) =>
+                      handleResize(event, artwork.id, 'bottom-right')
+                    }
+                  />
+                </>
+              )}
+            </div>
           )
         })}
     </div>

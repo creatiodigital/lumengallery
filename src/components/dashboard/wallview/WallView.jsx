@@ -1,25 +1,27 @@
-import React, { useState } from 'react'
 import styles from './WallView.module.scss'
+import { useSelector, useDispatch } from 'react-redux'
+import { setPanPosition } from '@/lib/features/wallViewSlice'
 import { Wall } from '@/components/dashboard/wall/Wall'
 
-export const WallView = ({ scaleFactor, panPosition, setPanPosition }) => {
+export const WallView = () => {
+  const dispatch = useDispatch()
+  const panPosition = useSelector((state) => state.wallView.panPosition)
+  const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
   const handleWheel = (e) => {
-    const scrollSpeedFactor = 0.4 // Increase this value to make the movement faster
+    const scrollSpeedFactor = 0.4
+    const deltaX = -e.deltaX * scrollSpeedFactor
+    const deltaY = -e.deltaY * scrollSpeedFactor
 
-    const deltaX = -e.deltaX * scrollSpeedFactor // Reverse direction
-    const deltaY = -e.deltaY * scrollSpeedFactor // Reverse direction
-
-    setPanPosition((prev) => ({
-      x: prev.x + (deltaX / window.innerWidth) * 100,
-      y: prev.y + (deltaY / window.innerHeight) * 100,
-    }))
+    dispatch(
+      setPanPosition({
+        deltaX: deltaX / window.innerWidth,
+        deltaY: deltaY / window.innerHeight,
+      }),
+    )
   }
 
   return (
-    <div
-      className={styles.wallView}
-      onWheel={handleWheel} // Add the onWheel event listener here
-    >
+    <div className={styles.wallView} onWheel={handleWheel}>
       <div
         id="wallWrapper"
         className={styles.wallWrapper}

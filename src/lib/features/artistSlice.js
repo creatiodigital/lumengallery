@@ -20,18 +20,25 @@ const artistSlice = createSlice({
       state.isEditMode = false
     },
     createArtwork: (state, action) => {
+      const { wallId, id, canvas } = action.payload;
+    
+      // Count existing artworks for the current wall
+      const wallArtworksCount = state.artworks.filter(
+        (artwork) => artwork.wallId === wallId
+      ).length;
+    
+      // Generate a sequential name (e.g., Artwork1, Artwork2)
+      const artworkName = `Artwork${wallArtworksCount + 1}`;
+    
       const newArtwork = {
-        id: action.payload.id,
-        wallId: action.payload.wallId,
-        canvas: {
-          x: action.payload.canvas.x,
-          y: action.payload.canvas.y,
-          width: action.payload.canvas.width,
-          height: action.payload.canvas.height,
-        },
+        id,
+        name: artworkName, // Add the name property
+        wallId,
+        canvas,
         space: [],
-      }
-      state.artworks.push(newArtwork)
+      };
+    
+      state.artworks.push(newArtwork);
     },
     editArtwork: (state, action) => {
       const { currentArtworkId, newArtworkSizes } = action.payload
@@ -46,6 +53,10 @@ const artistSlice = createSlice({
           height: newArtworkSizes.height,
         }
       }
+    },
+    deleteArtwork: (state, action) => {
+      const { artworkId } = action.payload;
+      state.artworks = state.artworks.filter((artwork) => artwork.id !== artworkId);
     },
     editArtworkUrlImage: (state, action) => {
       const { currentArtworkId, url } = action.payload
@@ -77,5 +88,6 @@ export const {
   editArtwork,
   editArtworkUrlImage,
   edit3DCoordinates,
+  deleteArtwork
 } = artistSlice.actions
 export default artistSlice.reducer

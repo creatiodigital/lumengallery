@@ -1,37 +1,74 @@
 import styles from './LeftPanel.module.scss'
-
-// import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
-
+import c from 'classnames'
 import { useDispatch, useSelector } from 'react-redux'
-// import {
-//   hideWizard,
-//   setArtworkUploadedTrue,
-//   setArtworkUploadedFalse,
-// } from '@/lib/features/wizardSlice'
-// import { editArtwork, editArtworkUrlImage } from '@/lib/features/artistSlice'
-
-// import { Button } from '@/components/ui/Button'
-
-export const LeftPanel = ({
-  handleSaveWallView,
-  zoomIn,
-  zoomOut,
+import {
+  increaseScaleFactor,
+  decreaseScaleFactor,
   resetPan,
-}) => {
-  // const artworks = useSelector((state) => state.artist.artworks)
-  // const currentArtworkId = useSelector(
-  //   (state) => state.wallView.currentArtworkId,
-  // )
+  hideWallView,
+  chooseCurrentArtworkId,
+} from '@/lib/features/wallViewSlice'
+import { showEditMode } from '@/lib/features/dashboardSlice'
 
-  // console.log('currentArtworkId', currentArtworkId)
+export const LeftPanel = () => {
+  const dispatch = useDispatch()
+
+  // Get artworks, current wall ID, and current artwork ID from the store
+  const artworks = useSelector((state) => state.artist.artworks)
+  const currentWallId = useSelector((state) => state.wallView.currentWallId)
+  const currentArtworkId = useSelector(
+    (state) => state.wallView.currentArtworkId,
+  )
+
+  // Filter artworks by the current wall ID
+  const wallArtworks = artworks.filter(
+    (artwork) => artwork.wallId === currentWallId,
+  )
+
+  const handleZoomIn = () => {
+    dispatch(increaseScaleFactor())
+  }
+
+  const handleZoomOut = () => {
+    dispatch(decreaseScaleFactor())
+  }
+
+  const handleResetPan = () => {
+    dispatch(resetPan())
+  }
+
+  const handleSaveWallView = () => {
+    dispatch(hideWallView())
+    dispatch(showEditMode())
+  }
+
+  const handleSelectArtwork = (artworkId) => {
+    dispatch(chooseCurrentArtworkId(artworkId))
+  }
 
   return (
     <div className={styles.leftPanel}>
-      <Button onClick={handleSaveWallView}>Save</Button>
-      <Button onClick={zoomIn}>+</Button>
-      <Button onClick={zoomOut}>-</Button>
-      <Button onClick={resetPan}>Reset Pan</Button>
+      <div className={styles.ctas}>
+        <Button onClick={handleSaveWallView}>Save</Button>
+        <Button onClick={handleZoomIn}>+</Button>
+        <Button onClick={handleZoomOut}>-</Button>
+        <Button onClick={handleResetPan}>Reset Pan</Button>
+      </div>
+      <ul className={styles.artworks}>
+        {wallArtworks.map((artwork) => (
+          <li
+            key={artwork.id}
+            onClick={() => handleSelectArtwork(artwork.id)} // Select the artwork when clicked
+            className={c(styles.artwork, {
+              [styles.selected]: artwork.id === currentArtworkId,
+            })}
+            style={{ cursor: 'pointer' }}
+          >
+            {artwork.name} {/* Display the artwork name */}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

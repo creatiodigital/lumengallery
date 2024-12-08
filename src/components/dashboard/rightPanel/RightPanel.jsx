@@ -21,49 +21,54 @@ export const RightPanel = () => {
   const [height, setHeight] = useState('')
 
   useEffect(() => {
-    if (isWizardOpen) {
-      setWidth(40)
-      setHeight(40)
+    const currentEdited = artworks.find(
+      (artwork) => artwork.id === currentArtworkId,
+    )
+    if (currentEdited) {
+      setWidth(currentEdited.canvas.width)
+      setHeight(currentEdited.canvas.height)
     }
-  }, [isWizardOpen])
+  }, [artworks, currentArtworkId])
 
-  const handleWidthChange = (newWidth) => {
+  const handleWidthChange = (e) => {
+    const newWidth = parseFloat(e.target.value)
+    setWidth(newWidth)
+
     const currentEdited = artworks.find(
       (artwork) => artwork.id === currentArtworkId,
     )
     if (!currentEdited) return
 
     const { x, width: currentWidth } = currentEdited.canvas
-
-    const newX = x + (currentWidth - parseFloat(newWidth)) / 2
+    const newX = x + (currentWidth - newWidth) / 2
 
     const newArtworkSizes = {
       ...currentEdited.canvas,
-      width: parseFloat(newWidth),
+      width: newWidth,
       x: newX,
     }
 
-    setWidth(newWidth)
     dispatch(editArtwork({ currentArtworkId, newArtworkSizes }))
   }
 
-  const handleHeightChange = (newHeight) => {
+  const handleHeightChange = (e) => {
+    const newHeight = parseFloat(e.target.value)
+    setHeight(newHeight)
+
     const currentEdited = artworks.find(
       (artwork) => artwork.id === currentArtworkId,
     )
     if (!currentEdited) return
 
     const { y, height: currentHeight } = currentEdited.canvas
-
-    const newY = y + (currentHeight - parseFloat(newHeight)) / 2
+    const newY = y + (currentHeight - newHeight) / 2
 
     const newArtworkSizes = {
       ...currentEdited.canvas,
-      height: parseFloat(newHeight),
+      height: newHeight,
       y: newY,
     }
 
-    setHeight(newHeight)
     dispatch(editArtwork({ currentArtworkId, newArtworkSizes }))
   }
 
@@ -100,18 +105,14 @@ export const RightPanel = () => {
             <div>Choose size of the image (meters)</div>
             <p>
               <label>Width</label>
-              <input
-                type="number"
-                value={width}
-                onChange={(e) => handleWidthChange(e.target.value)}
-              />
+              <input type="number" value={width} onChange={handleWidthChange} />
             </p>
             <p>
               <label>Height</label>
               <input
                 type="number"
                 value={height}
-                onChange={(e) => handleHeightChange(e.target.value)}
+                onChange={handleHeightChange}
               />
             </p>
           </div>
@@ -132,10 +133,6 @@ export const RightPanel = () => {
                 style={{ display: 'none' }}
               />
             </div>
-          </div>
-
-          <div>
-            <Button onClick={handleOnWizardDone}>Close Wizard</Button>
           </div>
         </div>
       )}
