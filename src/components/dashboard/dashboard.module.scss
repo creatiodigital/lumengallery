@@ -1,7 +1,3 @@
-.dashboard {
-  padding: 0;
-}
-
 .header {
   width: 100%;
   display: flex;
@@ -13,10 +9,12 @@
   padding: 20px 0;
 }
 
-.editModeHeader {
-  margin-bottom: 30px;
+
+.walls {
+  display: flex;
 }
 
-.wallDashboard {
-  display: flex;
+.space {
+  width: 100vw;
+  height: calc( 100vh - 48px);
 }

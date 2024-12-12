@@ -1,6 +1,8 @@
 'use client'
 
-import styles from './dashboard.module.scss'
+//TODO: rename, re-organize, split
+
+import styles from './Dashboard.module.scss'
 
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -61,34 +63,32 @@ export const Dashboard = () => {
                     </Button>
                   )}
                 </div>
-                <div>
-                  <SceneContext.Provider value={{ wallRefs }}>
-                    <div>
-                      <Canvas
-                        gl={{
-                          toneMapping: ACESFilmicToneMapping,
-                          toneMappingExposure: 1,
-                          outputColorSpace: SRGBColorSpace,
-                          antialias: true,
-                        }}
-                      >
-                        <group>
-                          <Controls />
-                          <Elements
-                            onPlaceholderClick={handlePlaceholderClick}
-                            artworks={artworks}
-                            wallRefs={wallRefs.current}
-                          />
-                        </group>
-                      </Canvas>
-                    </div>
-                  </SceneContext.Provider>
-                </div>
+                <SceneContext.Provider value={{ wallRefs }}>
+                  <div className={styles.space}>
+                    <Canvas
+                      gl={{
+                        toneMapping: ACESFilmicToneMapping,
+                        toneMappingExposure: 1,
+                        outputColorSpace: SRGBColorSpace,
+                        antialias: true,
+                      }}
+                    >
+                      <group>
+                        <Controls />
+                        <Elements
+                          onPlaceholderClick={handlePlaceholderClick}
+                          artworks={artworks}
+                          wallRefs={wallRefs.current}
+                        />
+                      </group>
+                    </Canvas>
+                  </div>
+                </SceneContext.Provider>
               </div>
             )}
           </div>
           {isWallView && (
-            <div className={styles.wallDashboard}>
+            <div className={styles.walls}>
               <LeftPanel />
               <WallView />
               <RightPanel />

@@ -1,11 +1,11 @@
 @import "variables";
 @import "normalize";
 
-html {
-  font-family: 'Cabin', sans-serif;
-  // font-family: 'Fraunces', serif;
+* {
+  box-sizing: border-box;
 }
 
-body {
+html, body {
   font-family: 'Cabin', sans-serif;
+  // font-family: 'Fraunces', serif;
 }
