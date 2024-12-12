@@ -10,7 +10,6 @@ import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 import SceneContext from '@/contexts/SceneContext'
 import { Controls } from '@/components/scene/controls'
 import { Elements } from '@/components/scene/elements/Elements'
-import threeStyles from '@/styles/modules/threejs.module.scss'
 
 const Scene = () => {
   const [space, setSpace] = useState(null)
@@ -51,7 +50,7 @@ const Scene = () => {
 
   return (
     <SceneContext.Provider value={{ wallRefs }}>
-      <div className={threeStyles.container}>
+      <div>
         <Canvas
           gl={{
             toneMapping: ACESFilmicToneMapping,

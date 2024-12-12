@@ -1,9 +1,8 @@
-import styles from '@/styles/modules/page.module.scss'
-
 export default async function Home() {
   return (
-    <main className={styles.main}>
+    <main>
       <h1>Home page</h1>
+      <p>Hello</p>
     </main>
   )
 }

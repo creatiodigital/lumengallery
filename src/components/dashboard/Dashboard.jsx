@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/Button'
 import SceneContext from '@/contexts/SceneContext'
 import { Controls } from '@/components/scene/controls'
 import { Elements } from '@/components/scene/elements/Elements'
-import threeStyles from '@/styles/modules/threejs.module.scss'
 import { RightPanel } from '@/components/dashboard/rightPanel/RightPanel'
 import { LeftPanel } from '@/components/dashboard/leftPanel/LeftPanel'
 import { WallView } from '@/components/dashboard/wallView/WallView'
@@ -64,7 +63,7 @@ export const Dashboard = () => {
                 </div>
                 <div>
                   <SceneContext.Provider value={{ wallRefs }}>
-                    <div className={threeStyles.container}>
+                    <div>
                       <Canvas
                         gl={{
                           toneMapping: ACESFilmicToneMapping,
