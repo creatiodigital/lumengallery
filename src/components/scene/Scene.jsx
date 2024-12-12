@@ -5,10 +5,11 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useSelector } from 'react-redux'
 import { Canvas } from '@react-three/fiber'
+import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 
 import SceneContext from '@/contexts/SceneContext'
 import { Controls } from '@/components/scene/controls'
-import { Elements } from '@/components/scene/elements'
+import { Elements } from '@/components/scene/elements/Elements'
 import threeStyles from '@/styles/modules/threejs.module.scss'
 
 const Scene = () => {
@@ -51,7 +52,14 @@ const Scene = () => {
   return (
     <SceneContext.Provider value={{ wallRefs }}>
       <div className={threeStyles.container}>
-        <Canvas gl={{ antialias: true }}>
+        <Canvas
+          gl={{
+            toneMapping: ACESFilmicToneMapping,
+            toneMappingExposure: 1,
+            outputColorSpace: SRGBColorSpace,
+            antialias: true,
+          }}
+        >
           <group>
             <Controls />
             <Elements artworks={artworks} isSpace />

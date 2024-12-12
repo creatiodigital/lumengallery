@@ -3,7 +3,7 @@ import SceneContext from '@/contexts/SceneContext'
 import { Lights } from './lights/Lights'
 import OneSpace from '@/components/galleries/OneSpace'
 
-const Elements = ({ onPlaceholderClick, artworks, isSpace }) => {
+export const Elements = ({ onPlaceholderClick, artworks, isSpace }) => {
   const { wallRefs } = useContext(SceneContext)
 
   const wallRefArray = useMemo(
@@ -24,5 +24,3 @@ const Elements = ({ onPlaceholderClick, artworks, isSpace }) => {
     </>
   )
 }
-
-export default Elements

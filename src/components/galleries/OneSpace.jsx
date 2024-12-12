@@ -72,7 +72,7 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
       new MeshStandardMaterial({
         color: '#ffffff',
         emissive: '#ffffff',
-        emissiveIntensity: 10,
+        emissiveIntensity: 1,
       }),
     [],
   )

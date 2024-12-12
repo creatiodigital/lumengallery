@@ -15,7 +15,7 @@ import { Canvas } from '@react-three/fiber'
 import { Button } from '@/components/ui/Button'
 import SceneContext from '@/contexts/SceneContext'
 import { Controls } from '@/components/scene/controls'
-import { Elements } from '@/components/scene/elements'
+import { Elements } from '@/components/scene/elements/Elements'
 import threeStyles from '@/styles/modules/threejs.module.scss'
 import { RightPanel } from '@/components/dashboard/rightPanel/RightPanel'
 import { LeftPanel } from '@/components/dashboard/leftPanel/LeftPanel'
@@ -68,7 +68,7 @@ export const Dashboard = () => {
                       <Canvas
                         gl={{
                           toneMapping: ACESFilmicToneMapping,
-                          toneMappingExposure: 3,
+                          toneMappingExposure: 1,
                           outputColorSpace: SRGBColorSpace,
                           antialias: true,
                         }}
