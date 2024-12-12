@@ -21,7 +21,7 @@ import {
 } from './utils'
 
 export const Wall = ({ scaleFactor }) => {
-  const { nodes } = useGLTF('/assets/one-space3.glb')
+  const { nodes } = useGLTF('/assets/one-space1.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
@@ -377,4 +377,4 @@ export const Wall = ({ scaleFactor }) => {
   )
 }
 
-useGLTF.preload('/assets/one-space3.glb')
+useGLTF.preload('/assets/one-space1.glb')

@@ -1,7 +1,7 @@
 import React from 'react'
 
-const AmbientLight = ({ color = 'white', intensity = 1 }) => {
-  return <ambientLight intensity={intensity} color={color} />
+const AmbientLight = () => {
+  return <ambientLight intensity={0.9} color="#ffffff" />
 }
 
 export default AmbientLight

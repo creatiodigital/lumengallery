@@ -1,15 +1,11 @@
 import React from 'react'
 import AmbientLight from './AmbientLight'
-import { ambientLight } from '@/data/lights'
-const Lights = () => {
+import { HDRI } from './HDRI'
+export const Lights = () => {
   return (
     <>
-      <AmbientLight
-        color={ambientLight.color}
-        intensity={ambientLight.intensity}
-      />
+      <AmbientLight />
+      <HDRI />
     </>
   )
 }
-
-export default Lights

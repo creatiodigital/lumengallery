@@ -15,7 +15,7 @@ import {
 } from 'three'
 
 const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/one-space3.glb')
+  const { nodes, materials } = useGLTF('/assets/one-space1.glb')
   const artworks = useSelector((state) => state.artist.artworks)
 
   const [hovered, setHovered] = useState([])
@@ -58,14 +58,14 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
   const rectLightsArray = Array.from({ length: 5 })
   const lampsArray = Array.from({ length: 27 })
 
-  const lampMaterial = useMemo(
-    () =>
-      new MeshStandardMaterial({
-        color: '#ffffff',
-        roughness: 0.8,
-      }),
-    [],
-  )
+  const lampMaterial = useMemo(() => {
+    return new MeshStandardMaterial({
+      color: '#ffffff',
+      roughness: 0.4,
+      metalness: 0.1,
+      envMapIntensity: 1,
+    })
+  }, [])
 
   const rectLightMaterial = useMemo(
     () =>
@@ -123,7 +123,6 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
     })
   }, [])
 
-  // Precompute artwork data
   const precomputedArtworks = useMemo(
     () =>
       artworks?.map((artwork) => {
@@ -274,6 +273,6 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
   )
 }
 
-useGLTF.preload('/assets/one-space3.glb')
+useGLTF.preload('/assets/one-space1.glb')
 
 export default OneSpace

@@ -51,13 +51,7 @@ const Scene = () => {
   return (
     <SceneContext.Provider value={{ wallRefs }}>
       <div className={threeStyles.container}>
-        <Canvas
-          gl={{
-            toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 2,
-            antialias: true,
-          }}
-        >
+        <Canvas gl={{ antialias: true }}>
           <group>
             <Controls />
             <Elements artworks={artworks} isSpace />
