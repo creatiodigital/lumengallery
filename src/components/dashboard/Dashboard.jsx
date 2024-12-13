@@ -16,13 +16,13 @@ import React, { useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Button } from '@/components/ui/Button'
 import SceneContext from '@/contexts/SceneContext'
-import { Controls } from '@/components/scene/controls'
-import { Elements } from '@/components/scene/elements/Elements'
-import { RightPanel } from '@/components/dashboard/rightPanel/RightPanel'
-import { LeftPanel } from '@/components/dashboard/leftPanel/LeftPanel'
-import { WallView } from '@/components/dashboard/wallView/WallView'
+import { RightPanel } from '@/components/wallview/RightPanel'
+import { LeftPanel } from '@/components/wallview/LeftPanel'
+import { WallView } from '@/components/wallview'
+import { Elements } from '@/components/scene/elements'
+import Controls from '@/components/scene/controls'
 
-export const Dashboard = () => {
+const Dashboard = () => {
   const dispatch = useDispatch()
   const pathname = usePathname()
   const handler = pathname?.split('/')[1]
@@ -57,11 +57,9 @@ export const Dashboard = () => {
             {isEditMode && !isWallView && (
               <div className={styles.editMode}>
                 <div className={styles.editModeHeader}>
-                  {isEditMode && (
-                    <Button onClick={() => dispatch(hideEditMode())}>
-                      Close Edit Mode
-                    </Button>
-                  )}
+                  <Button onClick={() => dispatch(hideEditMode())}>
+                    Close Edit Mode
+                  </Button>
                 </div>
                 <SceneContext.Provider value={{ wallRefs }}>
                   <div className={styles.space}>
@@ -99,3 +97,5 @@ export const Dashboard = () => {
     </>
   )
 }
+
+export default Dashboard
