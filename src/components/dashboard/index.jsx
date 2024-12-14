@@ -22,7 +22,7 @@ import { WallView } from '@/components/wallview'
 import { Elements } from '@/components/scene/elements'
 import Controls from '@/components/scene/controls'
 
-const Dashboard = () => {
+export const Dashboard = () => {
   const dispatch = useDispatch()
   const pathname = usePathname()
   const handler = pathname?.split('/')[1]
@@ -97,5 +97,3 @@ const Dashboard = () => {
     </>
   )
 }
-
-export default Dashboard

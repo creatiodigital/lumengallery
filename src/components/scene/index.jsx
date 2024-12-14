@@ -8,8 +8,8 @@ import { Canvas } from '@react-three/fiber'
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 
 import SceneContext from '@/contexts/SceneContext'
-import { Elements } from '@/components/scene-view/elements'
-import Controls from '@/components/controls'
+import Elements from './elements'
+import Controls from './controls'
 
 const Scene = () => {
   const wallRefs = useRef([])
