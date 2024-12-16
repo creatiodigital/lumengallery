@@ -22,15 +22,13 @@ const artistSlice = createSlice({
     createArtwork: (state, action) => {
       const { wallId, id, canvas } = action.payload
 
-      // Count existing artworks for the current wall
       const wallArtworksCount = state.artworks.filter((artwork) => artwork.wallId === wallId).length
 
-      // Generate a sequential name (e.g., Artwork1, Artwork2)
       const artworkName = `Artwork${wallArtworksCount + 1}`
 
       const newArtwork = {
         id,
-        name: artworkName, // Add the name property
+        name: artworkName,
         wallId,
         canvas,
         space: [],
@@ -69,6 +67,20 @@ const artistSlice = createSlice({
         artwork.space = serialized3DCoordinate
       }
     },
+    editArtworkName: (state, action) => {
+      const { currentArtworkId, name } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.name = name
+      }
+    },
+    editArtworkAuthor: (state, action) => {
+      const { currentArtworkId, author } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.author = author
+      }
+    },
   },
 })
 
@@ -81,5 +93,7 @@ export const {
   editArtworkUrlImage,
   edit3DCoordinates,
   deleteArtwork,
+  editArtworkName,
+  editArtworkAuthor,
 } = artistSlice.actions
 export default artistSlice.reducer

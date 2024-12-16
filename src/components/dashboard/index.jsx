@@ -17,8 +17,8 @@ import { RightPanel } from '@/components/wallview/RightPanel'
 import SceneContext from '@/contexts/SceneContext'
 import { setHandler } from '@/lib/features/artistSlice'
 import { showEditMode, hideEditMode } from '@/lib/features/dashboardSlice'
-import { showWallView } from '@/lib/features/wallViewSlice'
 
+import { ArtworkPanel } from './ArtworkPanel'
 import styles from './Dashboardx.module.scss'
 
 export const Dashboard = () => {
@@ -39,10 +39,6 @@ export const Dashboard = () => {
 
   const handleEditGallery = () => {
     dispatch(showEditMode())
-  }
-
-  const handlePlaceholderClick = (mesh) => {
-    dispatch(showWallView(mesh.uuid))
   }
 
   return (
@@ -68,15 +64,12 @@ export const Dashboard = () => {
                     >
                       <group>
                         <Controls />
-                        <Elements
-                          onPlaceholderClick={handlePlaceholderClick}
-                          artworks={artworks}
-                          wallRefs={wallRefs.current}
-                        />
+                        <Elements artworks={artworks} wallRefs={wallRefs.current} />
                       </group>
                     </Canvas>
                   </div>
                 </SceneContext.Provider>
+                <ArtworkPanel />
               </div>
             )}
           </div>

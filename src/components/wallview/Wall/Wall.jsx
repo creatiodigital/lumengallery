@@ -34,12 +34,24 @@ export const Wall = ({ scaleFactor }) => {
 
   const currentArtwork = artworks.find((art) => art.id === currentArtworkId)
 
+  const dispatchEdit3DCoordinates = (artworkId, coordinate) => {
+    dispatch(edit3DCoordinates({ currentArtworkId: artworkId, serialized3DCoordinate: coordinate }))
+  }
+
+  const dispatchSizesAndPositions = (artworkId, canvas) => {
+    dispatch(
+      editArtwork({
+        currentArtworkId: artworkId,
+        newArtworkSizes: canvas,
+      }),
+    )
+  }
+
   const handleDragStart = (event, artworkId) => {
     const rect = wallRef.current.getBoundingClientRect()
     const artwork = artworks.find((art) => art.id === artworkId)
     if (!artwork) return
 
-    // Adjust offset by dividing by scaleFactor
     const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.canvas.x
     const offsetY = (event.clientY - rect.top) / scaleFactor - artwork.canvas.y
     setOffset({ x: offsetX, y: offsetY })
@@ -51,10 +63,8 @@ export const Wall = ({ scaleFactor }) => {
   const handleArtworkClick = (event, artworkId) => {
     event.stopPropagation()
 
-    // Select the clicked artwork
     dispatch(chooseCurrentArtworkId(artworkId))
 
-    // Show the wizard when an artwork is selected
     if (!isWizardOpen) {
       dispatch(showWizard())
     }
@@ -82,24 +92,20 @@ export const Wall = ({ scaleFactor }) => {
       let newX = initialX
       let newY = initialY
 
-      // Adjust width and x for left handles
       if (direction.includes('left')) {
         newWidth = Math.max(20, initialWidth - deltaX)
-        newX = initialX + deltaX // Shift x position to keep resizing anchored
+        newX = initialX + deltaX
       }
 
-      // Adjust width for right handles
       if (direction.includes('right')) {
         newWidth = Math.max(20, initialWidth + deltaX)
       }
 
-      // Adjust height and y for top handles
       if (direction.includes('top')) {
         newHeight = Math.max(20, initialHeight - deltaY)
-        newY = initialY + deltaY // Shift y position to keep resizing anchored
+        newY = initialY + deltaY
       }
 
-      // Adjust height for bottom handles
       if (direction.includes('bottom')) {
         newHeight = Math.max(20, initialHeight + deltaY)
       }
@@ -114,13 +120,7 @@ export const Wall = ({ scaleFactor }) => {
         },
       }
 
-      // Dispatch updated sizes and position
-      dispatch(
-        editArtwork({
-          currentArtworkId: artworkId,
-          newArtworkSizes: updatedArtwork.canvas,
-        }),
-      )
+      dispatchSizesAndPositions(artworkId, updatedArtwork.canvas)
 
       if (boundingData) {
         const new3DCoordinate = convert2DTo3D(
@@ -135,12 +135,7 @@ export const Wall = ({ scaleFactor }) => {
           boundingData,
         )
 
-        dispatch(
-          edit3DCoordinates({
-            currentArtworkId: artworkId,
-            serialized3DCoordinate: new3DCoordinate,
-          }),
-        )
+        dispatchEdit3DCoordinates(artworkId, new3DCoordinate)
       }
     }
 
@@ -158,11 +153,9 @@ export const Wall = ({ scaleFactor }) => {
 
     const rect = wallRef.current.getBoundingClientRect()
 
-    // Calculate mouse position adjusted by scaleFactor
     const scaledMouseX = (event.clientX - rect.left) / scaleFactor
     const scaledMouseY = (event.clientY - rect.top) / scaleFactor
 
-    // Adjust by the captured offset (already scaled)
     let x = scaledMouseX - offset.x
     let y = scaledMouseY - offset.y
 
@@ -171,16 +164,14 @@ export const Wall = ({ scaleFactor }) => {
 
     const { width: artworkWidth, height: artworkHeight } = artwork.canvas
 
-    // Clamp the position to stay within the wall boundaries
-    x = Math.max(0, Math.min(x, boundingData.width * 100 - artworkWidth)) // Prevent x from going out of bounds
-    y = Math.max(0, Math.min(y, boundingData.height * 100 - artworkHeight)) // Prevent y from going out of bounds
+    x = Math.max(0, Math.min(x, boundingData.width * 100 - artworkWidth))
+    y = Math.max(0, Math.min(y, boundingData.height * 100 - artworkHeight))
 
     const updatedArtwork = {
       ...artwork,
       canvas: { ...artwork.canvas, x, y },
     }
 
-    // Dispatch 2D position update for this specific artwork
     dispatch(
       editArtwork({
         currentArtworkId: draggedArtworkId,
@@ -188,7 +179,6 @@ export const Wall = ({ scaleFactor }) => {
       }),
     )
 
-    // Recalculate 3D coordinates for this specific artwork
     const new3DCoordinate = convert2DTo3D(
       {
         x,
@@ -200,12 +190,8 @@ export const Wall = ({ scaleFactor }) => {
       },
       boundingData,
     )
-    dispatch(
-      edit3DCoordinates({
-        currentArtworkId: draggedArtworkId,
-        serialized3DCoordinate: new3DCoordinate,
-      }),
-    )
+
+    dispatchEdit3DCoordinates(draggedArtworkId, new3DCoordinate)
   }
 
   const handleDragEnd = () => {
@@ -290,7 +276,6 @@ export const Wall = ({ scaleFactor }) => {
       dispatch(showWizard())
     }
 
-    // Create the artwork in Redux state
     dispatch(chooseCurrentArtworkId(artworkId))
     dispatch(
       createArtwork({
@@ -306,7 +291,6 @@ export const Wall = ({ scaleFactor }) => {
       }),
     )
 
-    // Calculate and dispatch 3D coordinates for the new artwork
     if (boundingData) {
       const new3DCoordinate = convert2DTo3D(
         {
@@ -319,12 +303,8 @@ export const Wall = ({ scaleFactor }) => {
         },
         boundingData,
       )
-      dispatch(
-        edit3DCoordinates({
-          currentArtworkId: artworkId,
-          serialized3DCoordinate: new3DCoordinate,
-        }),
-      )
+
+      dispatchEdit3DCoordinates(artworkId, new3DCoordinate)
     }
   }
 
