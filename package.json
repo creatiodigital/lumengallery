@@ -1,18 +1,22 @@
 {
-  "name": "lumengallery",
+  "name": "creatiogallery",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write .",
+    "check-format": "prettier --check ."
   },
   "dependencies": {
     "@react-three/drei": "^9.102.6",
     "@react-three/fiber": "^8.16.1",
     "@reduxjs/toolkit": "^2.3.0",
-    "next": "14.1.4",
+    "classnames": "^2.5.1",
+    "next": "^14.2.20",
     "react": "^18",
     "react-dom": "^18",
     "react-redux": "^9.1.2",

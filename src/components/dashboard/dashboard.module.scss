@@ -1,7 +1,3 @@
-.dashboard {
-  padding: 40px;
-}
-
 .header {
   width: 100%;
   display: flex;
@@ -9,14 +5,16 @@
   justify-content: center;
 }
 
-.main {
-  padding: 20px 0;
-}
-
 .edit {
   padding: 20px 0;
 }
 
-.editModeHeader {
-  margin-bottom: 30px;
+
+.walls {
+  display: flex;
+}
+
+.space {
+  width: 100vw;
+  height: calc( 100vh - 48px);
 }

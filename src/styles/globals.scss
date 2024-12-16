@@ -1,22 +1,11 @@
-@import "css-variables";
+@import "variables";
 @import "normalize";
 
-html,
-body {
-  max-width: 100vw;
+* {
+  box-sizing: border-box;
 }
 
-body {
-  color: var(--c-text);
-  background: var(--c-bg);
-}
-
-a {
-  color: var(--c-link-text);
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+html, body {
+  font-family: 'Cabin', sans-serif;
+  // font-family: 'Fraunces', serif;
 }

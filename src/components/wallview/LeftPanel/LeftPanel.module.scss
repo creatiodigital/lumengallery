@@ -1,0 +1,27 @@
+.leftPanel {
+  width: 300px;
+  max-width: 300px;
+  background-color: #f0f0f0;
+  padding: 30px;
+}
+
+.ctas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.artworks {
+  list-style: inside;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.artwork {
+  color: #000000;
+  margin: 0 0 10px 0;
+}
+
+.selected {
+  color: #007bff;
+}
