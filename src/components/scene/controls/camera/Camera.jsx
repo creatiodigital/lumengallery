@@ -1,6 +1,8 @@
-import { useContext, useEffect, useRef, useState, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { useContext, useEffect, useRef, useState, useCallback } from 'react'
+
 import SceneContext from '@/contexts/SceneContext'
+
 import {
   createMouseState,
   handleMouseMove,
@@ -23,22 +25,11 @@ const Camera = () => {
   const moveSpeed = 0.1
 
   const onMouseMove = useCallback(handleMouseMove(mouseState, setTick), [])
-  const onMouseDown = useCallback(
-    attachMouseHandlers(onMouseMove, mouseState),
-    [onMouseMove],
-  )
-  const onMouseUp = useCallback(detachMouseHandlers(onMouseMove, mouseState), [
-    onMouseMove,
-  ])
+  const onMouseDown = useCallback(attachMouseHandlers(onMouseMove, mouseState), [onMouseMove])
+  const onMouseUp = useCallback(detachMouseHandlers(onMouseMove, mouseState), [onMouseMove])
 
-  const onKeyDown = useCallback(
-    (event) => handleKeyPress(keysPressed, event.key, true),
-    [],
-  )
-  const onKeyUp = useCallback(
-    (event) => handleKeyPress(keysPressed, event.key, false),
-    [],
-  )
+  const onKeyDown = useCallback((event) => handleKeyPress(keysPressed, event.key, true), [])
+  const onKeyUp = useCallback((event) => handleKeyPress(keysPressed, event.key, false), [])
 
   useEffect(() => {
     window.addEventListener('keydown', onKeyDown)

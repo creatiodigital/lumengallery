@@ -51,10 +51,7 @@ export const convert2DTo3D = ({ x, y, size }, boundingData) => {
   y3D += v.y * (adjustedHeight / 2)
   z3D += v.z * (adjustedHeight / 2)
 
-  const quaternion = new Quaternion().setFromUnitVectors(
-    new Vector3(0, 0, 1),
-    normal,
-  )
+  const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), normal)
 
   return {
     position: {

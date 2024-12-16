@@ -1,8 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit'
-import dashboardReducer from './features/dashboardSlice'
-import wizardReducer from './features/wizardSlice'
-import wallViewReducer from './features/wallViewSlice'
+
 import artistReducer from './features/artistSlice'
+import dashboardReducer from './features/dashboardSlice'
+import wallViewReducer from './features/wallViewSlice'
+import wizardReducer from './features/wizardSlice'
 
 export const makeStore = () => {
   return configureStore({

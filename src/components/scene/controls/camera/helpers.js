@@ -56,12 +56,7 @@ export const calculateMovementVector = (keysPressed, moveSpeed, camera) => {
   return moveVector
 }
 
-export const detectCollisions = (
-  camera,
-  moveVector,
-  wallRefs,
-  collisionDistance = 2,
-) => {
+export const detectCollisions = (camera, moveVector, wallRefs, collisionDistance = 2) => {
   const direction = new THREE.Vector3().copy(moveVector).normalize()
   const raycaster = new THREE.Raycaster(camera.position, direction, 0, 3)
 
@@ -69,10 +64,7 @@ export const detectCollisions = (
   wallRefs.current.forEach((ref) => {
     if (ref.current) {
       const intersections = raycaster.intersectObject(ref.current, true)
-      if (
-        intersections.length > 0 &&
-        intersections[0].distance <= collisionDistance
-      ) {
+      if (intersections.length > 0 && intersections[0].distance <= collisionDistance) {
         collisionDetected = true
       }
     }

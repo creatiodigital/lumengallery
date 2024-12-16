@@ -2,25 +2,24 @@
 
 //TODO: rename, re-organize, split
 
-import styles from './Dashboard.module.scss'
-
-import { useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { Canvas } from '@react-three/fiber'
 import { usePathname } from 'next/navigation'
+import React, { useEffect, useRef } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
+
+import Controls from '@/components/scene/controls'
+import { Elements } from '@/components/scene/elements'
+import { Button } from '@/components/ui/Button'
+import { WallView } from '@/components/wallview'
+import { LeftPanel } from '@/components/wallview/LeftPanel'
+import { RightPanel } from '@/components/wallview/RightPanel'
+import SceneContext from '@/contexts/SceneContext'
+import { setHandler } from '@/lib/features/artistSlice'
 import { showEditMode, hideEditMode } from '@/lib/features/dashboardSlice'
 import { showWallView } from '@/lib/features/wallViewSlice'
-import { setHandler } from '@/lib/features/artistSlice'
 
-import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
-import React, { useRef } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { Button } from '@/components/ui/Button'
-import SceneContext from '@/contexts/SceneContext'
-import { RightPanel } from '@/components/wallview/RightPanel'
-import { LeftPanel } from '@/components/wallview/LeftPanel'
-import { WallView } from '@/components/wallview'
-import { Elements } from '@/components/scene/elements'
-import Controls from '@/components/scene/controls'
+import styles from './Dashboard.module.scss'
 
 export const Dashboard = () => {
   const dispatch = useDispatch()
@@ -51,15 +50,11 @@ export const Dashboard = () => {
       {artist.handler && (
         <div className={styles.dashboard}>
           <div className={styles.main}>
-            {!isEditMode && (
-              <Button onClick={handleEditGallery}>Edit Gallery</Button>
-            )}
+            {!isEditMode && <Button onClick={handleEditGallery}>Edit Gallery</Button>}
             {isEditMode && !isWallView && (
               <div className={styles.editMode}>
                 <div className={styles.editModeHeader}>
-                  <Button onClick={() => dispatch(hideEditMode())}>
-                    Close Edit Mode
-                  </Button>
+                  <Button onClick={() => dispatch(hideEditMode())}>Close Edit Mode</Button>
                 </div>
                 <SceneContext.Provider value={{ wallRefs }}>
                   <div className={styles.space}>

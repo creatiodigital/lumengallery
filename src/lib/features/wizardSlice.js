@@ -22,10 +22,6 @@ const wizardSlice = createSlice({
   },
 })
 
-export const {
-  showWizard,
-  hideWizard,
-  setArtworkUploadedTrue,
-  setArtworkUploadedFalse,
-} = wizardSlice.actions
+export const { showWizard, hideWizard, setArtworkUploadedTrue, setArtworkUploadedFalse } =
+  wizardSlice.actions
 export default wizardSlice.reducer

@@ -1,7 +1,9 @@
-import styles from './WallView.module.scss'
 import { useSelector, useDispatch } from 'react-redux'
-import { setPanPosition } from '@/lib/features/wallViewSlice'
+
 import { Wall } from '@/components/wallview/Wall/Wall'
+import { setPanPosition } from '@/lib/features/wallViewSlice'
+
+import styles from './WallView.module.scss'
 
 export const WallView = () => {
   const dispatch = useDispatch()

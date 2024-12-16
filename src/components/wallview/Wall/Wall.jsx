@@ -1,24 +1,20 @@
-import styles from './Wall.module.scss'
-
-import React, { useRef, useEffect, useState } from 'react'
+import { useGLTF } from '@react-three/drei'
 import c from 'classnames'
+import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { showWizard, hideWizard } from '@/lib/features/wizardSlice'
+import { v4 as uuidv4 } from 'uuid'
+
 import {
   createArtwork,
   editArtwork,
   deleteArtwork,
+  edit3DCoordinates,
 } from '@/lib/features/artistSlice'
-import { edit3DCoordinates } from '@/lib/features/artistSlice'
-
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
-import { v4 as uuidv4 } from 'uuid'
-import { useGLTF } from '@react-three/drei'
-import {
-  calculateAverageNormal,
-  calculateDimensionsAndBasis,
-  convert2DTo3D,
-} from './utils'
+import { showWizard, hideWizard } from '@/lib/features/wizardSlice'
+
+import { calculateAverageNormal, calculateDimensionsAndBasis, convert2DTo3D } from './utils'
+import styles from './Wall.module.scss'
 
 export const Wall = ({ scaleFactor }) => {
   const { nodes } = useGLTF('/assets/one-space1.glb')
@@ -30,12 +26,8 @@ export const Wall = ({ scaleFactor }) => {
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 }) // Offset between mouse and artwork
 
-  const isArtworkUploaded = useSelector(
-    (state) => state.wizard.isArtworkUploaded,
-  )
-  const currentArtworkId = useSelector(
-    (state) => state.wallView.currentArtworkId,
-  )
+  const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
+  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const dispatch = useDispatch()
 
   const wallRef = useRef(null)
@@ -129,6 +121,27 @@ export const Wall = ({ scaleFactor }) => {
           newArtworkSizes: updatedArtwork.canvas,
         }),
       )
+
+      if (boundingData) {
+        const new3DCoordinate = convert2DTo3D(
+          {
+            x: newX,
+            y: newY,
+            size: {
+              w: newWidth,
+              h: newHeight,
+            },
+          },
+          boundingData,
+        )
+
+        dispatch(
+          edit3DCoordinates({
+            currentArtworkId: artworkId,
+            serialized3DCoordinate: new3DCoordinate,
+          }),
+        )
+      }
     }
 
     const handleMouseUp = () => {
@@ -141,8 +154,7 @@ export const Wall = ({ scaleFactor }) => {
   }
 
   const handleDragMove = (event) => {
-    if (!dragging || !draggedArtworkId || !wallRef.current || !boundingData)
-      return
+    if (!dragging || !draggedArtworkId || !wallRef.current || !boundingData) return
 
     const rect = wallRef.current.getBoundingClientRect()
 
@@ -202,9 +214,7 @@ export const Wall = ({ scaleFactor }) => {
   }
 
   useEffect(() => {
-    const currentWall = Object.values(nodes).find(
-      (obj) => obj.uuid === currentWallId,
-    )
+    const currentWall = Object.values(nodes).find((obj) => obj.uuid === currentWallId)
 
     if (currentWall?.geometry?.boundingBox) {
       const boundingBox = currentWall.geometry.boundingBox
@@ -280,6 +290,7 @@ export const Wall = ({ scaleFactor }) => {
       dispatch(showWizard())
     }
 
+    // Create the artwork in Redux state
     dispatch(chooseCurrentArtworkId(artworkId))
     dispatch(
       createArtwork({
@@ -294,6 +305,27 @@ export const Wall = ({ scaleFactor }) => {
         imageURL: null,
       }),
     )
+
+    // Calculate and dispatch 3D coordinates for the new artwork
+    if (boundingData) {
+      const new3DCoordinate = convert2DTo3D(
+        {
+          x,
+          y,
+          size: {
+            w: 40,
+            h: 40,
+          },
+        },
+        boundingData,
+      )
+      dispatch(
+        edit3DCoordinates({
+          currentArtworkId: artworkId,
+          serialized3DCoordinate: new3DCoordinate,
+        }),
+      )
+    }
   }
 
   const handleKeyDown = (e) => {
@@ -346,27 +378,19 @@ export const Wall = ({ scaleFactor }) => {
                 <>
                   <div
                     className={c([styles.resizeHandle, styles.topLeft])}
-                    onMouseDown={(event) =>
-                      handleResize(event, artwork.id, 'top-left')
-                    }
+                    onMouseDown={(event) => handleResize(event, artwork.id, 'top-left')}
                   />
                   <div
                     className={c([styles.resizeHandle, styles.topRight])}
-                    onMouseDown={(event) =>
-                      handleResize(event, artwork.id, 'top-right')
-                    }
+                    onMouseDown={(event) => handleResize(event, artwork.id, 'top-right')}
                   />
                   <div
                     className={c([styles.resizeHandle, styles.bottomLeft])}
-                    onMouseDown={(event) =>
-                      handleResize(event, artwork.id, 'bottom-left')
-                    }
+                    onMouseDown={(event) => handleResize(event, artwork.id, 'bottom-left')}
                   />
                   <div
                     className={c([styles.resizeHandle, styles.bottomRight])}
-                    onMouseDown={(event) =>
-                      handleResize(event, artwork.id, 'bottom-right')
-                    }
+                    onMouseDown={(event) => handleResize(event, artwork.id, 'bottom-right')}
                   />
                 </>
               )}

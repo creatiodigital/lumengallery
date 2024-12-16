@@ -1,29 +1,22 @@
-import styles from './RightPanel.module.scss'
 import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import {
-  hideWizard,
-  setArtworkUploadedTrue,
-  setArtworkUploadedFalse,
-} from '@/lib/features/wizardSlice'
-import { editArtwork, editArtworkUrlImage } from '@/lib/features/artistSlice'
 
 import { Button } from '@/components/ui/Button'
+import { editArtwork, editArtworkUrlImage } from '@/lib/features/artistSlice'
+import { setArtworkUploadedTrue } from '@/lib/features/wizardSlice'
+
+import styles from './RightPanel.module.scss'
 
 const RightPanel = () => {
   const dispatch = useDispatch()
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const artworks = useSelector((state) => state.artist.artworks)
-  const currentArtworkId = useSelector(
-    (state) => state.wallView.currentArtworkId,
-  )
+  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const [width, setWidth] = useState('')
   const [height, setHeight] = useState('')
 
   useEffect(() => {
-    const currentEdited = artworks.find(
-      (artwork) => artwork.id === currentArtworkId,
-    )
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (currentEdited) {
       setWidth(currentEdited.canvas.width)
       setHeight(currentEdited.canvas.height)
@@ -34,9 +27,7 @@ const RightPanel = () => {
     const newWidth = parseFloat(e.target.value)
     setWidth(newWidth)
 
-    const currentEdited = artworks.find(
-      (artwork) => artwork.id === currentArtworkId,
-    )
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
     const { x, width: currentWidth } = currentEdited.canvas
@@ -55,9 +46,7 @@ const RightPanel = () => {
     const newHeight = parseFloat(e.target.value)
     setHeight(newHeight)
 
-    const currentEdited = artworks.find(
-      (artwork) => artwork.id === currentArtworkId,
-    )
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
     const { y, height: currentHeight } = currentEdited.canvas
@@ -70,11 +59,6 @@ const RightPanel = () => {
     }
 
     dispatch(editArtwork({ currentArtworkId, newArtworkSizes }))
-  }
-
-  const handleOnWizardDone = () => {
-    dispatch(hideWizard())
-    dispatch(setArtworkUploadedFalse())
   }
 
   const handleFileChange = (event) => {
@@ -109,20 +93,13 @@ const RightPanel = () => {
             </p>
             <p>
               <label>Height</label>
-              <input
-                type="number"
-                value={height}
-                onChange={handleHeightChange}
-              />
+              <input type="number" value={height} onChange={handleHeightChange} />
             </p>
           </div>
           <div>
             <p>Upload an image (jpg, png)</p>
             <div className={styles.cta}>
-              <Button
-                onClick={triggerFileUpload}
-                className={styles.uploadButton}
-              >
+              <Button onClick={triggerFileUpload} className={styles.uploadButton}>
                 Choose File
               </Button>
               <input

@@ -1,8 +1,6 @@
+import { useGLTF } from '@react-three/drei'
 import React, { useMemo, useCallback, useState, Fragment } from 'react'
 import { useSelector } from 'react-redux'
-
-import { useGLTF } from '@react-three/drei'
-
 import {
   MeshStandardMaterial,
   DoubleSide,
@@ -126,7 +124,7 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
   const precomputedArtworks = useMemo(
     () =>
       artworks?.map((artwork) => {
-        if (!artwork.url) return null
+        if (!artwork.url || !artwork.space) return null
 
         const position = new Vector3(
           artwork.space.position.x,
@@ -256,9 +254,7 @@ const OneSpace = ({ wallRefs, onPlaceholderClick, isSpace, ...props }) => {
               quaternion={artwork.quaternion}
               renderOrder={2}
             >
-              <planeGeometry
-                args={[artwork.space.width || 1, artwork.space.height || 1]}
-              />
+              <planeGeometry args={[artwork.space.width || 1, artwork.space.height || 1]} />
               <meshBasicMaterial
                 side={DoubleSide}
                 toneMapped={false}

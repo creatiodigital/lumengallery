@@ -1,12 +1,15 @@
 {
-  "name": "lumengallery",
+  "name": "creatiogallery",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write .",
+    "check-format": "prettier --check ."
   },
   "dependencies": {
     "@react-three/drei": "^9.102.6",

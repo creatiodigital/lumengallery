@@ -1,15 +1,15 @@
 'use client'
 
-import styles from './Scene.module.scss'
-
+import { Canvas } from '@react-three/fiber'
 import React, { useRef } from 'react'
 import { useSelector } from 'react-redux'
-import { Canvas } from '@react-three/fiber'
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 
 import SceneContext from '@/contexts/SceneContext'
-import Elements from './elements'
+
 import Controls from './controls'
+import Elements from './elements'
+import styles from './Scene.module.scss'
 
 const Scene = () => {
   const wallRefs = useRef([])

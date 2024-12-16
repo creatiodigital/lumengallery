@@ -20,31 +20,27 @@ const artistSlice = createSlice({
       state.isEditMode = false
     },
     createArtwork: (state, action) => {
-      const { wallId, id, canvas } = action.payload;
-    
+      const { wallId, id, canvas } = action.payload
+
       // Count existing artworks for the current wall
-      const wallArtworksCount = state.artworks.filter(
-        (artwork) => artwork.wallId === wallId
-      ).length;
-    
+      const wallArtworksCount = state.artworks.filter((artwork) => artwork.wallId === wallId).length
+
       // Generate a sequential name (e.g., Artwork1, Artwork2)
-      const artworkName = `Artwork${wallArtworksCount + 1}`;
-    
+      const artworkName = `Artwork${wallArtworksCount + 1}`
+
       const newArtwork = {
         id,
         name: artworkName, // Add the name property
         wallId,
         canvas,
         space: [],
-      };
-    
-      state.artworks.push(newArtwork);
+      }
+
+      state.artworks.push(newArtwork)
     },
     editArtwork: (state, action) => {
       const { currentArtworkId, newArtworkSizes } = action.payload
-      const artwork = state.artworks.find(
-        (artwork) => artwork.id === currentArtworkId,
-      )
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork.canvas = {
           x: newArtworkSizes.x,
@@ -55,14 +51,12 @@ const artistSlice = createSlice({
       }
     },
     deleteArtwork: (state, action) => {
-      const { artworkId } = action.payload;
-      state.artworks = state.artworks.filter((artwork) => artwork.id !== artworkId);
+      const { artworkId } = action.payload
+      state.artworks = state.artworks.filter((artwork) => artwork.id !== artworkId)
     },
     editArtworkUrlImage: (state, action) => {
       const { currentArtworkId, url } = action.payload
-      const artwork = state.artworks.find(
-        (artwork) => artwork.id === currentArtworkId,
-      )
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork.url = url
       }
@@ -70,9 +64,7 @@ const artistSlice = createSlice({
 
     edit3DCoordinates: (state, action) => {
       const { currentArtworkId, serialized3DCoordinate } = action.payload
-      const artwork = state.artworks.find(
-        (artwork) => artwork.id === currentArtworkId,
-      )
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork.space = serialized3DCoordinate
       }
@@ -88,6 +80,6 @@ export const {
   editArtwork,
   editArtworkUrlImage,
   edit3DCoordinates,
-  deleteArtwork
+  deleteArtwork,
 } = artistSlice.actions
 export default artistSlice.reducer

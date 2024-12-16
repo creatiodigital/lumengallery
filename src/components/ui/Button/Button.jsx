@@ -10,12 +10,7 @@ function Button(props) {
   }, [onClick])
 
   return (
-    <button
-      className={styles.default}
-      type={type}
-      onClick={handleClick}
-      disabled={disabled}
-    >
+    <button className={styles.default} type={type} onClick={handleClick} disabled={disabled}>
       {children}
     </button>
   )

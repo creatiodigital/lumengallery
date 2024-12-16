@@ -1,9 +1,10 @@
-import { Cabin, Fraunces } from 'next/font/google'
+import { Cabin /*Fraunces*/ } from 'next/font/google'
+
 import StoreProvider from './storeProvider'
 import '@/styles/globals.scss'
 
 const cabin = Cabin({ subsets: ['latin'] })
-const fraunces = Fraunces({ subsets: ['latin'] })
+// const fraunces = Fraunces({ subsets: ['latin'] })
 
 export const metadata = {
   title: 'Next.js project',
@@ -12,7 +13,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" >
+    <html lang="en">
       <body className={cabin.variable}>
         <StoreProvider>
           <header></header>

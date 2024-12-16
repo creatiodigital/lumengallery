@@ -1,7 +1,8 @@
-import styles from './LeftPanel.module.scss'
-import { Button } from '@/components/ui/Button'
 import c from 'classnames'
 import { useDispatch, useSelector } from 'react-redux'
+
+import { Button } from '@/components/ui/Button'
+import { showEditMode } from '@/lib/features/dashboardSlice'
 import {
   increaseScaleFactor,
   decreaseScaleFactor,
@@ -9,7 +10,8 @@ import {
   hideWallView,
   chooseCurrentArtworkId,
 } from '@/lib/features/wallViewSlice'
-import { showEditMode } from '@/lib/features/dashboardSlice'
+
+import styles from './LeftPanel.module.scss'
 
 export const LeftPanel = () => {
   const dispatch = useDispatch()
@@ -17,14 +19,10 @@ export const LeftPanel = () => {
   // Get artworks, current wall ID, and current artwork ID from the store
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
-  const currentArtworkId = useSelector(
-    (state) => state.wallView.currentArtworkId,
-  )
+  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
   // Filter artworks by the current wall ID
-  const wallArtworks = artworks.filter(
-    (artwork) => artwork.wallId === currentWallId,
-  )
+  const wallArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId)
 
   const handleZoomIn = () => {
     dispatch(increaseScaleFactor())
