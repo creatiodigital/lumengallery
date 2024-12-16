@@ -19,7 +19,7 @@ import { setHandler } from '@/lib/features/artistSlice'
 import { showEditMode, hideEditMode } from '@/lib/features/dashboardSlice'
 import { showWallView } from '@/lib/features/wallViewSlice'
 
-import styles from './Dashboard.module.scss'
+import styles from './Dashboardx.module.scss'
 
 export const Dashboard = () => {
   const dispatch = useDispatch()
