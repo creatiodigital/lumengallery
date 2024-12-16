@@ -1,30 +1,27 @@
 import { useGLTF } from '@react-three/drei'
-import c from 'classnames'
 import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { v4 as uuidv4 } from 'uuid'
 
-import {
-  createArtwork,
-  editArtwork,
-  deleteArtwork,
-  edit3DCoordinates,
-} from '@/lib/features/artistSlice'
+import { edit3DCoordinates } from '@/lib/features/artistSlice'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
-import { showWizard, hideWizard } from '@/lib/features/wizardSlice'
+import { showWizard } from '@/lib/features/wizardSlice'
 
-import { calculateAverageNormal, calculateDimensionsAndBasis, convert2DTo3D } from './utils'
-import styles from './Wallx.module.scss'
+import { useBoundingData } from './useBoundingData'
+import { useCreateArtwork } from './useCreateArtwork'
+import { useDeselectArtwork } from './useDeselectArtwork'
+import { useGlobalMouseUp } from './useGlobalMouseUp'
+import { useKeyboardEvents } from './useKeyboardEvents'
+import { useMoveArtwork } from './useMoveArtwork'
+import { useResizeArtwork } from './useResizeArtwork'
+import { convert2DTo3D, getArtworkStyles } from './utils'
+import { Handles } from '../Handles'
 
 export const Wall = ({ scaleFactor }) => {
   const { nodes } = useGLTF('/assets/one-space1.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
-  const [boundingData, setBoundingData] = useState(null)
   const [dragging, setDragging] = useState(false)
-  const [draggedArtworkId, setDraggedArtworkId] = useState(null)
-  const [offset, setOffset] = useState({ x: 0, y: 0 }) // Offset between mouse and artwork
 
   const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
@@ -33,32 +30,17 @@ export const Wall = ({ scaleFactor }) => {
   const wallRef = useRef(null)
 
   const currentArtwork = artworks.find((art) => art.id === currentArtworkId)
+  const boundingData = useBoundingData(nodes, currentWallId)
 
-  const dispatchEdit3DCoordinates = (artworkId, coordinate) => {
-    dispatch(edit3DCoordinates({ currentArtworkId: artworkId, serialized3DCoordinate: coordinate }))
-  }
+  const { handleDragStart, handleDragMove, handleDragEnd } = useMoveArtwork(
+    wallRef,
+    boundingData,
+    scaleFactor,
+  )
 
-  const dispatchSizesAndPositions = (artworkId, canvas) => {
-    dispatch(
-      editArtwork({
-        currentArtworkId: artworkId,
-        newArtworkSizes: canvas,
-      }),
-    )
-  }
+  const { handleResize } = useResizeArtwork(boundingData, scaleFactor)
 
-  const handleDragStart = (event, artworkId) => {
-    const rect = wallRef.current.getBoundingClientRect()
-    const artwork = artworks.find((art) => art.id === artworkId)
-    if (!artwork) return
-
-    const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.canvas.x
-    const offsetY = (event.clientY - rect.top) / scaleFactor - artwork.canvas.y
-    setOffset({ x: offsetX, y: offsetY })
-
-    setDragging(true)
-    setDraggedArtworkId(artworkId)
-  }
+  const { handleCreateArtwork } = useCreateArtwork(boundingData, scaleFactor, currentWallId)
 
   const handleArtworkClick = (event, artworkId) => {
     event.stopPropagation()
@@ -69,146 +51,6 @@ export const Wall = ({ scaleFactor }) => {
       dispatch(showWizard())
     }
   }
-
-  const handleResize = (event, artworkId, direction) => {
-    event.stopPropagation()
-
-    const artwork = artworks.find((art) => art.id === artworkId)
-    if (!artwork) return
-
-    const startX = event.clientX
-    const startY = event.clientY
-    const initialWidth = artwork.canvas.width
-    const initialHeight = artwork.canvas.height
-    const initialX = artwork.canvas.x
-    const initialY = artwork.canvas.y
-
-    const handleMouseMove = (moveEvent) => {
-      const deltaX = (moveEvent.clientX - startX) / scaleFactor
-      const deltaY = (moveEvent.clientY - startY) / scaleFactor
-
-      let newWidth = initialWidth
-      let newHeight = initialHeight
-      let newX = initialX
-      let newY = initialY
-
-      if (direction.includes('left')) {
-        newWidth = Math.max(20, initialWidth - deltaX)
-        newX = initialX + deltaX
-      }
-
-      if (direction.includes('right')) {
-        newWidth = Math.max(20, initialWidth + deltaX)
-      }
-
-      if (direction.includes('top')) {
-        newHeight = Math.max(20, initialHeight - deltaY)
-        newY = initialY + deltaY
-      }
-
-      if (direction.includes('bottom')) {
-        newHeight = Math.max(20, initialHeight + deltaY)
-      }
-
-      const updatedArtwork = {
-        ...artwork,
-        canvas: {
-          x: newX,
-          y: newY,
-          width: newWidth,
-          height: newHeight,
-        },
-      }
-
-      dispatchSizesAndPositions(artworkId, updatedArtwork.canvas)
-
-      if (boundingData) {
-        const new3DCoordinate = convert2DTo3D(
-          {
-            x: newX,
-            y: newY,
-            size: {
-              w: newWidth,
-              h: newHeight,
-            },
-          },
-          boundingData,
-        )
-
-        dispatchEdit3DCoordinates(artworkId, new3DCoordinate)
-      }
-    }
-
-    const handleMouseUp = () => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseup', handleMouseUp)
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseup', handleMouseUp)
-  }
-
-  const handleDragMove = (event) => {
-    if (!dragging || !draggedArtworkId || !wallRef.current || !boundingData) return
-
-    const rect = wallRef.current.getBoundingClientRect()
-
-    const scaledMouseX = (event.clientX - rect.left) / scaleFactor
-    const scaledMouseY = (event.clientY - rect.top) / scaleFactor
-
-    let x = scaledMouseX - offset.x
-    let y = scaledMouseY - offset.y
-
-    const artwork = artworks.find((art) => art.id === draggedArtworkId)
-    if (!artwork) return
-
-    const { width: artworkWidth, height: artworkHeight } = artwork.canvas
-
-    x = Math.max(0, Math.min(x, boundingData.width * 100 - artworkWidth))
-    y = Math.max(0, Math.min(y, boundingData.height * 100 - artworkHeight))
-
-    const updatedArtwork = {
-      ...artwork,
-      canvas: { ...artwork.canvas, x, y },
-    }
-
-    dispatch(
-      editArtwork({
-        currentArtworkId: draggedArtworkId,
-        newArtworkSizes: updatedArtwork.canvas,
-      }),
-    )
-
-    const new3DCoordinate = convert2DTo3D(
-      {
-        x,
-        y,
-        size: {
-          w: updatedArtwork.canvas.width,
-          h: updatedArtwork.canvas.height,
-        },
-      },
-      boundingData,
-    )
-
-    dispatchEdit3DCoordinates(draggedArtworkId, new3DCoordinate)
-  }
-
-  const handleDragEnd = () => {
-    setDragging(false)
-    setDraggedArtworkId(null)
-  }
-
-  useEffect(() => {
-    const currentWall = Object.values(nodes).find((obj) => obj.uuid === currentWallId)
-
-    if (currentWall?.geometry?.boundingBox) {
-      const boundingBox = currentWall.geometry.boundingBox
-      const normal = calculateAverageNormal(currentWall)
-      const dimensions = calculateDimensionsAndBasis(boundingBox, normal)
-      setBoundingData({ ...dimensions, boundingBox, normal })
-    }
-  }, [currentWallId, nodes])
 
   useEffect(() => {
     if (boundingData && wallRef.current) {
@@ -240,91 +82,16 @@ export const Wall = ({ scaleFactor }) => {
     }
   }, [isArtworkUploaded])
 
-  useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (dragging) {
-        setDragging(false)
-        setDraggedArtworkId(null)
-      }
-    }
+  useGlobalMouseUp(dragging, setDragging)
 
-    if (dragging) {
-      window.addEventListener('mouseup', handleGlobalMouseUp)
-    }
+  const handleDeselect = useDeselectArtwork()
 
-    return () => {
-      window.removeEventListener('mouseup', handleGlobalMouseUp)
-    }
-  }, [dragging])
-
-  const handleDeselect = () => {
-    dispatch(chooseCurrentArtworkId(null))
-    if (isWizardOpen) {
-      dispatch(hideWizard())
-    }
-  }
-
-  const handleWallClick = (event) => {
-    if (isWizardOpen) return
-
-    const rect = wallRef.current.getBoundingClientRect()
-    const x = (event.clientX - rect.left - 20) / scaleFactor
-    const y = (event.clientY - rect.top - 20) / scaleFactor
-    const artworkId = uuidv4()
-
-    if (boundingData) {
-      dispatch(showWizard())
-    }
-
-    dispatch(chooseCurrentArtworkId(artworkId))
-    dispatch(
-      createArtwork({
-        id: artworkId,
-        wallId: currentWallId,
-        canvas: {
-          x,
-          y,
-          width: 40,
-          height: 40,
-        },
-        imageURL: null,
-      }),
-    )
-
-    if (boundingData) {
-      const new3DCoordinate = convert2DTo3D(
-        {
-          x,
-          y,
-          size: {
-            w: 40,
-            h: 40,
-          },
-        },
-        boundingData,
-      )
-
-      dispatchEdit3DCoordinates(artworkId, new3DCoordinate)
-    }
-  }
-
-  const handleKeyDown = (e) => {
-    if ((e.key === 'Delete' || e.key === 'Backspace') && currentArtworkId) {
-      dispatch(deleteArtwork({ artworkId: currentArtworkId }))
-    }
-  }
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [currentArtworkId])
+  useKeyboardEvents(currentArtworkId)
 
   return (
     <div
       ref={wallRef}
-      onDoubleClick={handleWallClick}
+      onDoubleClick={(event) => handleCreateArtwork(event, wallRef)}
       onClick={handleDeselect}
       style={{
         position: 'relative',
@@ -340,39 +107,12 @@ export const Wall = ({ scaleFactor }) => {
           return (
             <div
               key={artwork.id}
-              style={{
-                position: 'absolute',
-                top: `${artwork.canvas.y}px`,
-                left: `${artwork.canvas.x}px`,
-                width: `${artwork.canvas.width}px`,
-                height: `${artwork.canvas.height}px`,
-                backgroundColor: 'black',
-                backgroundImage: artwork.url ? `url(${artwork.url})` : 'none',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}
+              style={getArtworkStyles(artwork.canvas, artwork.url)}
               onMouseDown={(event) => handleDragStart(event, artwork.id)}
               onClick={(event) => handleArtworkClick(event, artwork.id)}
             >
               {currentArtworkId === artwork.id && (
-                <>
-                  <div
-                    className={c([styles.resizeHandle, styles.topLeft])}
-                    onMouseDown={(event) => handleResize(event, artwork.id, 'top-left')}
-                  />
-                  <div
-                    className={c([styles.resizeHandle, styles.topRight])}
-                    onMouseDown={(event) => handleResize(event, artwork.id, 'top-right')}
-                  />
-                  <div
-                    className={c([styles.resizeHandle, styles.bottomLeft])}
-                    onMouseDown={(event) => handleResize(event, artwork.id, 'bottom-left')}
-                  />
-                  <div
-                    className={c([styles.resizeHandle, styles.bottomRight])}
-                    onMouseDown={(event) => handleResize(event, artwork.id, 'bottom-right')}
-                  />
-                </>
+                <Handles artworkId={artwork.id} handleResize={handleResize} />
               )}
             </div>
           )
