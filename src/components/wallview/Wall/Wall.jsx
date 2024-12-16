@@ -14,7 +14,7 @@ import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 import { showWizard, hideWizard } from '@/lib/features/wizardSlice'
 
 import { calculateAverageNormal, calculateDimensionsAndBasis, convert2DTo3D } from './utils'
-import styles from './Wall.module.scss'
+import styles from './Wallx.module.scss'
 
 export const Wall = ({ scaleFactor }) => {
   const { nodes } = useGLTF('/assets/one-space1.glb')

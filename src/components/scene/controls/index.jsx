@@ -1,4 +1,4 @@
-import { Camera } from '@/components/scene/controls/Camera'
+import { Camera } from './Camera'
 
 const Controls = () => <Camera />
 
