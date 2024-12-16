@@ -23,3 +23,5 @@ export const Elements = ({ onPlaceholderClick, artworks, isSpace }) => {
     </>
   )
 }
+
+export default Elements

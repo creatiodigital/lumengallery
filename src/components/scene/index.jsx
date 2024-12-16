@@ -8,10 +8,10 @@ import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 import SceneContext from '@/contexts/SceneContext'
 
 import Controls from './controls'
-import Elements from './elements'
+import { Elements } from './elements'
 import styles from './Scene.module.scss'
 
-const Scene = () => {
+export const Scene = () => {
   const wallRefs = useRef([])
   const artworks = useSelector((state) => state.artist.arworks)
 
@@ -35,5 +35,3 @@ const Scene = () => {
     </SceneContext.Provider>
   )
 }
-
-export default Scene
