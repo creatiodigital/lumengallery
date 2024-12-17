@@ -74,6 +74,13 @@ const artistSlice = createSlice({
         artwork.name = name
       }
     },
+    editArtworkDescription: (state, action) => {
+      const { currentArtworkId, description } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.description = description
+      }
+    },
     editArtworkAuthor: (state, action) => {
       const { currentArtworkId, author } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -94,6 +101,7 @@ export const {
   edit3DCoordinates,
   deleteArtwork,
   editArtworkName,
+  editArtworkDescription,
   editArtworkAuthor,
 } = artistSlice.actions
 export default artistSlice.reducer

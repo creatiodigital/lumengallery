@@ -1,8 +1,46 @@
-.rightPanel {
+@import '@/styles/mixins';
+
+.panel {
   width: 300px;
   max-width: 300px;
   background-color: #f0f0f0;
   padding: 30px;
+}
+
+.section {
+  margin: 0 0 20px 0;
+  padding: 0 0 20px 0;
+  border-bottom: 1px solid var(--borderLight);
+
+  &:last-child {
+    border: none;
+  }
+}
+
+.subsection {
+  margin-bottom: 10px;
+}
+
+.title {
+  @include smallSans();
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  @include tinySans();
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.item {
+  flex: 1;
 }
 
 .cta {

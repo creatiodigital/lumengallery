@@ -26,11 +26,16 @@
 }
 
 .author {
-  @include titleSerif();
+  @include largeSerif();
   text-transform: uppercase;
 }
 
-.name {
-  @include textSerif();
+.title {
+  @include mediumSerif();
   font-style: italic;
+  margin-bottom: 5px;
+}
+
+.description {
+  @include mediumSerif();
 }

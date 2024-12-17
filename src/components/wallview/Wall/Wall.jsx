@@ -1,5 +1,3 @@
-import styles from './Wall.module.scss'
-
 import { useGLTF } from '@react-three/drei'
 import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -16,6 +14,7 @@ import { useKeyboardEvents } from './useKeyboardEvents'
 import { useMoveArtwork } from './useMoveArtwork'
 import { useResizeArtwork } from './useResizeArtwork'
 import { convert2DTo3D } from './utils'
+import styles from './Wall.module.scss'
 import { Artwork } from '../Artwork'
 
 export const Wall = ({ scaleFactor }) => {

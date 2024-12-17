@@ -5,10 +5,11 @@ export const useArtworkDetails = (currentArtworkId) => {
     state.artist.artworks.find((art) => art.id === currentArtworkId),
   )
 
-  if (!artwork) return { width: '', height: '', x: '', y: '', name: '', author: '' }
+  if (!artwork)
+    return { width: '', height: '', x: '', y: '', name: '', author: '', description: '' }
 
   const { width, height, x, y } = artwork.canvas
-  const { name, author } = artwork
+  const { name, author, description } = artwork
 
   return {
     width: Math.round(width),
@@ -17,5 +18,6 @@ export const useArtworkDetails = (currentArtworkId) => {
     y: Math.round(y),
     name,
     author,
+    description,
   }
 }

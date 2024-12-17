@@ -1,13 +1,23 @@
 import { useDispatch, useSelector } from 'react-redux'
-import { editArtwork, editArtworkName, editArtworkAuthor } from '@/lib/features/artistSlice'
+
+import {
+  editArtwork,
+  editArtworkName,
+  editArtworkAuthor,
+  editArtworkDescription,
+} from '@/lib/features/artistSlice'
 
 export const useArtworkHandlers = (currentArtworkId) => {
   const dispatch = useDispatch()
   const artworks = useSelector((state) => state.artist.artworks)
 
+  const sanitizeInput = (value) => {
+    const parsedValue = parseFloat(value.trim())
+    return isNaN(parsedValue) || parsedValue < 0 ? 0 : Math.round(parsedValue)
+  }
+
   const handleWidthChange = (e) => {
-    const inputValue = e.target.value.trim()
-    const newWidth = inputValue === '' ? 0 : Math.round(parseFloat(inputValue))
+    const newWidth = sanitizeInput(e.target.value)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -24,8 +34,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
   }
 
   const handleHeightChange = (e) => {
-    const inputValue = e.target.value.trim()
-    const newHeight = inputValue === '' ? 0 : Math.round(parseFloat(inputValue))
+    const newHeight = sanitizeInput(e.target.value)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -42,8 +51,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
   }
 
   const handleMoveXChange = (e) => {
-    const inputValue = e.target.value.trim()
-    const newX = inputValue === '' ? 0 : Math.round(parseFloat(inputValue))
+    const newX = sanitizeInput(e.target.value)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -57,8 +65,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
   }
 
   const handleMoveYChange = (e) => {
-    const inputValue = e.target.value.trim()
-    const newY = inputValue === '' ? 0 : Math.round(parseFloat(inputValue))
+    const newY = sanitizeInput(e.target.value)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -77,6 +84,12 @@ export const useArtworkHandlers = (currentArtworkId) => {
     dispatch(editArtworkName({ currentArtworkId, name: newName }))
   }
 
+  const handleDescriptionChange = (e) => {
+    const newDescription = e.target.value
+
+    dispatch(editArtworkDescription({ currentArtworkId, description: newDescription }))
+  }
+
   const handleAuthorChange = (e) => {
     const newAuthor = e.target.value
 
@@ -88,6 +101,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
     handleHeightChange,
     handleNameChange,
     handleAuthorChange,
+    handleDescriptionChange,
     handleMoveXChange,
     handleMoveYChange,
   }

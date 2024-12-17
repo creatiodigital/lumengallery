@@ -1,0 +1,11 @@
+@import '@/styles/mixins';
+
+.textarea {
+  @include smallSans();
+  width: 100%;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background-color: var(--white);
+  border: none;
+  min-height: 100px;
+}
