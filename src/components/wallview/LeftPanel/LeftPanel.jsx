@@ -53,10 +53,10 @@ export const LeftPanel = () => {
   return (
     <div className={styles.leftPanel}>
       <div className={styles.ctas}>
-        <Button onClick={handleSaveWallView}>Save</Button>
-        <Button onClick={handleZoomIn}>+</Button>
-        <Button onClick={handleZoomOut}>-</Button>
-        <Button onClick={handleResetPan}>Reset Pan</Button>
+        <Button type="small" onClick={handleSaveWallView} label="Save" />
+        <Button type="small" onClick={handleSaveWallView} label="+" />
+        <Button type="small" onClick={handleSaveWallView} label="-" />
+        <Button type="small" onClick={handleSaveWallView} label="Reset" />
       </div>
       <ul className={styles.artworks}>
         {wallArtworks.map((artwork) => (

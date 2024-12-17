@@ -35,7 +35,7 @@ const RightPanel = () => {
     if (currentEdited) {
       setWidth(currentEdited.canvas.width)
       setHeight(currentEdited.canvas.height)
-      setName(currentEdited.name || '') // Pre-fill the name if it exists
+      setName(currentEdited.name || '')
     }
   }, [artworks, currentArtworkId])
 
@@ -118,11 +118,10 @@ const RightPanel = () => {
 
   return (
     <div className={styles.rightPanel}>
-      Click on the wall to add an image
+      Artwork Panel
       {isWizardOpen && (
         <div className={styles.wizard}>
           <div>
-            <div>Choose size of the image (meters)</div>
             <p>
               <label>Width</label>
               <input type="number" value={width} onChange={handleWidthChange} />
@@ -133,11 +132,8 @@ const RightPanel = () => {
             </p>
           </div>
           <div>
-            <p>Upload an image (jpg, png)</p>
             <div className={styles.cta}>
-              <Button onClick={triggerFileUpload} className={styles.uploadButton}>
-                Choose File
-              </Button>
+              <Button onClick={triggerFileUpload} type="small" label="Choose Image" />
               <input
                 id="file-upload"
                 type="file"

@@ -4,7 +4,6 @@ import React from 'react'
 import { Artworks } from './Artworks'
 import { Ceiling } from './Ceiling'
 import { Floor } from './Floor'
-import { Handler } from './Handler'
 import { Lamp } from './Lamp'
 import { Placeholder } from './Placeholder'
 import { RectLight } from './RectLight'
@@ -15,7 +14,6 @@ const OneSpace = ({ wallRefs, isSpace, ...props }) => {
 
   const wallsArray = Array.from({ length: 1 })
   const placeholdersArray = Array.from({ length: 6 }) || []
-  const handlersArray = Array.from({ length: 6 }) || []
   const rectLightsArray = Array.from({ length: 5 })
   const lampsArray = Array.from({ length: 27 })
 
@@ -27,7 +25,6 @@ const OneSpace = ({ wallRefs, isSpace, ...props }) => {
         <Wall key={i} i={i} wallRef={wallRefs[i]} nodes={nodes} materials={materials} />
       ))}
       {!isSpace && placeholdersArray.map((_, i) => <Placeholder key={i} i={i} nodes={nodes} />)}
-      {!isSpace && handlersArray.map((_, i) => <Handler key={i} i={i} nodes={nodes} />)}
       {rectLightsArray.map((_, i) => (
         <RectLight key={i} i={i} nodes={nodes} />
       ))}

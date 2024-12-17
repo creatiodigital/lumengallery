@@ -1,7 +1,11 @@
 import React, { useMemo } from 'react'
 import { MeshStandardMaterial, EdgesGeometry, LineDashedMaterial } from 'three'
+import { useDispatch } from 'react-redux'
+import { hideArtworkPanel } from '@/lib/features/sceneSlice'
+import { showWallView } from '@/lib/features/wallViewSlice'
 
 const Placeholder = ({ i, nodes }) => {
+  const dispatch = useDispatch()
   const dashedLineMaterial = useMemo(
     () =>
       new LineDashedMaterial({
@@ -22,12 +26,18 @@ const Placeholder = ({ i, nodes }) => {
     [],
   )
 
+  const handleOnPlaceholderClick = (mesh) => {
+    dispatch(showWallView(mesh.uuid))
+    dispatch(hideArtworkPanel())
+  }
+
   return (
     <>
       <mesh
         name={`placeholder${i}`}
         castShadow
         receiveShadow
+        onDoubleClick={() => handleOnPlaceholderClick(nodes[`placeholder${i}`])}
         geometry={nodes[`placeholder${i}`].geometry}
         material={getPlaceholderMaterial(i)}
       />
