@@ -1,3 +1,5 @@
+import styles from './Wall.module.scss'
+
 import { useGLTF } from '@react-three/drei'
 import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -13,8 +15,8 @@ import { useGlobalMouseUp } from './useGlobalMouseUp'
 import { useKeyboardEvents } from './useKeyboardEvents'
 import { useMoveArtwork } from './useMoveArtwork'
 import { useResizeArtwork } from './useResizeArtwork'
-import { convert2DTo3D, getArtworkStyles } from './utils'
-import { Handles } from '../Handles'
+import { convert2DTo3D } from './utils'
+import { Artwork } from '../Artwork'
 
 export const Wall = ({ scaleFactor }) => {
   const { nodes } = useGLTF('/assets/one-space1.glb')
@@ -91,13 +93,9 @@ export const Wall = ({ scaleFactor }) => {
   return (
     <div
       ref={wallRef}
+      className={styles.wall}
       onDoubleClick={(event) => handleCreateArtwork(event, wallRef)}
       onClick={handleDeselect}
-      style={{
-        position: 'relative',
-        border: '1px dashed #aaaaaa',
-        background: 'white',
-      }}
       onMouseMove={handleDragMove}
       onMouseUp={handleDragEnd}
     >
@@ -105,16 +103,13 @@ export const Wall = ({ scaleFactor }) => {
         .filter((artwork) => artwork.wallId === currentWallId)
         .map((artwork) => {
           return (
-            <div
+            <Artwork
               key={artwork.id}
-              style={getArtworkStyles(artwork.canvas, artwork.url)}
-              onMouseDown={(event) => handleDragStart(event, artwork.id)}
-              onClick={(event) => handleArtworkClick(event, artwork.id)}
-            >
-              {currentArtworkId === artwork.id && (
-                <Handles artworkId={artwork.id} handleResize={handleResize} />
-              )}
-            </div>
+              artwork={artwork}
+              onArtworkClick={handleArtworkClick}
+              onDragStart={handleDragStart}
+              onHandleResize={handleResize}
+            />
           )
         })}
     </div>

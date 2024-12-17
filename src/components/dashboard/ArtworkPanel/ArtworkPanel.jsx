@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { hideArtworkPanel } from '@/lib/features/sceneSlice'
 
 import styles from './ArtworkPanel.module.scss'
+import { Button } from '@/components/ui/Button'
 
 const ArtworkPanel = () => {
   const dispatch = useDispatch()
@@ -17,11 +18,17 @@ const ArtworkPanel = () => {
 
   return (
     <div className={styles.artworkPanel}>
-      <button className={styles.closeButton} onClick={() => dispatch(hideArtworkPanel())}>
-        Close
-      </button>
-      {artworks?.length > 0 && selectedArtwork && <h2>{selectedArtwork.name}</h2>}
-      {artworks?.length > 0 && selectedArtwork && <h2>{selectedArtwork.author}</h2>}
+      <div className={styles.info}>
+        {artworks?.length > 0 && selectedArtwork && (
+          <h3 className={styles.author}>{selectedArtwork.author}</h3>
+        )}
+        {artworks?.length > 0 && selectedArtwork && (
+          <span className={styles.name}>{selectedArtwork.name}</span>
+        )}
+      </div>
+      <div style={styles.cta}>
+        <Button type="outline" label="Close" onClick={() => dispatch(hideArtworkPanel())} />
+      </div>
     </div>
   )
 }

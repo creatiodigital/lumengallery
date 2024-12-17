@@ -1,5 +1,14 @@
 :root {
-  --black: #000000;
+  --font-sans: 'Cabin', sans-serif;
+  --font-serif: 'Fraunces', serif;
 
+  --black: #000000;
+  --white: #ffffff;
+  --grayDark: #666666;
+  --grayLight: #f1f1f1;
+  --grayMedium: #bbbbbb;
+
+  --bgLight: var(--grayLight);
+  --borderLight: var(--grayMedium);
   --text: var(--black);
 }

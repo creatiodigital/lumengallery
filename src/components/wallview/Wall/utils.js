@@ -69,15 +69,3 @@ export const convert2DTo3D = ({ x, y, size }, boundingData) => {
     height: adjustedHeight,
   }
 }
-
-export const getArtworkStyles = (canvas, url) => ({
-  position: 'absolute',
-  top: `${canvas.y}px`,
-  left: `${canvas.x}px`,
-  width: `${canvas.width}px`,
-  height: `${canvas.height}px`,
-  backgroundColor: 'black',
-  backgroundImage: url ? `url(${url})` : 'none',
-  backgroundSize: 'cover',
-  backgroundPosition: 'center',
-})

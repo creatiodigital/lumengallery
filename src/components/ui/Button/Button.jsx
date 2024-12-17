@@ -1,17 +1,12 @@
-import React, { useCallback } from 'react'
+import React from 'react'
+import c from 'classnames'
 
 import styles from './Button.module.scss'
 
-function Button(props) {
-  const { children, disabled, type = 'button', onClick = () => {} } = props
-
-  const handleClick = useCallback(() => {
-    onClick()
-  }, [onClick])
-
+function Button({ type, onClick, label }) {
   return (
-    <button className={styles.default} type={type} onClick={handleClick} disabled={disabled}>
-      {children}
+    <button className={c([styles.button, styles[type]])} onClick={onClick}>
+      {label}
     </button>
   )
 }

@@ -1,0 +1,27 @@
+@mixin titleSans($size: 28px, $weight: 500, $lineHeight: 33px) {
+  font-family: var(--font-sans);
+  font-size: $size;
+  font-weight: $weight;
+  line-height: $lineHeight;
+}
+
+@mixin titleSerif($size: 28px, $weight: 500, $lineHeight: 33px) {
+  font-family: var(--font-serif);
+  font-size: $size;
+  font-weight: $weight;
+  line-height: $lineHeight;
+}
+
+@mixin textSans($size: 1rem, $weight: 400, $lineHeight: 1.5) {
+  font-family: var(--font-sans);
+  font-size: $size;
+  font-weight: $weight;
+  line-height: $lineHeight;
+}
+
+@mixin textSerif($size: 16px, $weight: 400, $lineHeight: 24px) {
+  font-family: var(--font-serif);
+  font-size: $size;
+  font-weight: $weight;
+  line-height: $lineHeight;
+}
