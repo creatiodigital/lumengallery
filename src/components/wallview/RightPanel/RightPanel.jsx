@@ -1,120 +1,33 @@
-import { useState, useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import React from 'react'
+import { useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
-import {
-  editArtwork,
-  editArtworkUrlImage,
-  editArtworkName,
-  editArtworkAuthor,
-} from '@/lib/features/artistSlice'
-import { setArtworkUploadedTrue } from '@/lib/features/wizardSlice'
+import { Input } from '@/components/ui/Input'
+import { FileInput } from '@/components/ui/FileInput'
+// import { Icon } from '@/components/ui/Icon'
+
+import { useArtworkDetails } from './useArtworkDetails'
+import { useArtworkHandlers } from './useArtworkHandlers'
+import { useFileUpload } from './useFileUpload'
 
 import styles from './RightPanel.module.scss'
 
 const RightPanel = () => {
-  const dispatch = useDispatch()
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
-  const artworks = useSelector((state) => state.artist.artworks)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
-  const [width, setWidth] = useState('')
-  const [height, setHeight] = useState('')
-  const [name, setName] = useState('')
-  const [author, setAuthor] = useState('')
 
-  useEffect(() => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (currentEdited) {
-      setWidth(currentEdited.canvas.width)
-      setHeight(currentEdited.canvas.height)
-    }
-  }, [artworks, currentArtworkId])
+  const { width, height, x, y, name, author } = useArtworkDetails(currentArtworkId)
 
-  useEffect(() => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (currentEdited) {
-      setWidth(currentEdited.canvas.width)
-      setHeight(currentEdited.canvas.height)
-      setName(currentEdited.name || '')
-    }
-  }, [artworks, currentArtworkId])
+  const {
+    handleWidthChange,
+    handleHeightChange,
+    handleNameChange,
+    handleAuthorChange,
+    handleMoveXChange,
+    handleMoveYChange,
+  } = useArtworkHandlers(currentArtworkId)
 
-  const handleWidthChange = (e) => {
-    let newWidth = parseFloat(e.target.value)
-    newWidth = parseFloat(newWidth.toFixed(1))
-    setWidth(newWidth)
-
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    const { x, width: currentWidth } = currentEdited.canvas
-    const newX = x + (currentWidth - newWidth) / 2
-
-    const newArtworkSizes = {
-      ...currentEdited.canvas,
-      width: newWidth,
-      x: newX,
-    }
-
-    dispatch(editArtwork({ currentArtworkId, newArtworkSizes }))
-  }
-
-  const handleNameChange = (e) => {
-    const newName = e.target.value
-    setName(newName)
-
-    if (currentArtworkId) {
-      dispatch(editArtworkName({ currentArtworkId, name: newName }))
-    }
-  }
-
-  const handleAuthorChange = (e) => {
-    const newAuthor = e.target.value
-    setAuthor(newAuthor)
-
-    if (currentArtworkId) {
-      dispatch(editArtworkAuthor({ currentArtworkId, author: newAuthor }))
-    }
-  }
-
-  const handleHeightChange = (e) => {
-    let newHeight = parseFloat(e.target.value)
-    newHeight = parseFloat(newHeight.toFixed(1))
-    setHeight(newHeight)
-
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    const { y, height: currentHeight } = currentEdited.canvas
-    const newY = y + (currentHeight - newHeight) / 2
-
-    const newArtworkSizes = {
-      ...currentEdited.canvas,
-      height: newHeight,
-      y: newY,
-    }
-
-    dispatch(editArtwork({ currentArtworkId, newArtworkSizes }))
-  }
-
-  const handleFileChange = (event) => {
-    const file = event.target.files[0]
-    if (file && currentArtworkId) {
-      const url = URL.createObjectURL(file)
-      dispatch(editArtworkUrlImage({ currentArtworkId, url }))
-    }
-  }
-
-  const triggerFileUpload = () => {
-    const fileInput = document.getElementById('file-upload')
-    if (fileInput) {
-      setTimeout(() => fileInput.click(), 0)
-    } else {
-      console.error('File input not found')
-    }
-
-    dispatch(setArtworkUploadedTrue())
-  }
+  const { handleFileChange, triggerFileUpload } = useFileUpload(currentArtworkId)
 
   return (
     <div className={styles.rightPanel}>
@@ -124,32 +37,35 @@ const RightPanel = () => {
           <div>
             <p>
               <label>Width</label>
-              <input type="number" value={width} onChange={handleWidthChange} />
+              {/* <Icon name="expand" size={24} color="black" /> */}
+              <Input value={width} onChange={handleWidthChange} />
             </p>
             <p>
               <label>Height</label>
-              <input type="number" value={height} onChange={handleHeightChange} />
+              <Input value={height} onChange={handleHeightChange} />
+            </p>
+            <p>
+              <label>X</label>
+              <Input value={x} onChange={handleMoveXChange} />
+            </p>
+            <p>
+              <label>Y</label>
+              <Input value={y} onChange={handleMoveYChange} />
             </p>
           </div>
           <div>
             <div className={styles.cta}>
               <Button onClick={triggerFileUpload} type="small" label="Choose Image" />
-              <input
-                id="file-upload"
-                type="file"
-                accept="image/*"
-                onInput={handleFileChange}
-                style={{ display: 'none' }}
-              />
+              <FileInput id="file-upload" onInput={handleFileChange} />
             </div>
           </div>
           <div>
             <h2>Name</h2>
-            <input type="text" value={name} onChange={handleNameChange} />
+            <Input value={name} onChange={handleNameChange} />
           </div>
           <div>
             <h2>Author</h2>
-            <input type="text" value={author} onChange={handleAuthorChange} />
+            <Input value={author} onChange={handleAuthorChange} />
           </div>
         </div>
       )}
