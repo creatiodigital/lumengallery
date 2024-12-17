@@ -1,7 +1,5 @@
 'use client'
 
-//TODO: rename, re-organize, split
-
 import { Canvas } from '@react-three/fiber'
 import { usePathname } from 'next/navigation'
 import React, { useEffect, useRef } from 'react'
@@ -46,11 +44,17 @@ export const Dashboard = () => {
       {artist.handler && (
         <div className={styles.dashboard}>
           <div className={styles.main}>
-            {!isEditMode && <Button onClick={handleEditGallery}>Edit Gallery</Button>}
+            {!isEditMode && (
+              <Button type="small" onClick={handleEditGallery} label="Edit Exhibition" />
+            )}
             {isEditMode && !isWallView && (
               <div className={styles.editMode}>
                 <div className={styles.editModeHeader}>
-                  <Button onClick={() => dispatch(hideEditMode())}>Close Edit Mode</Button>
+                  <Button
+                    type="small"
+                    onClick={() => dispatch(hideEditMode())}
+                    label="Close Edit Mode"
+                  />
                 </div>
                 <SceneContext.Provider value={{ wallRefs }}>
                   <div className={styles.space}>

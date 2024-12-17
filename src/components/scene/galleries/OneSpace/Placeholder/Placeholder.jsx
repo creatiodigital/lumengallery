@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
-import { MeshStandardMaterial, EdgesGeometry, LineDashedMaterial } from 'three'
 import { useDispatch } from 'react-redux'
+import { MeshStandardMaterial, EdgesGeometry, LineDashedMaterial } from 'three'
+
 import { hideArtworkPanel } from '@/lib/features/sceneSlice'
 import { showWallView } from '@/lib/features/wallViewSlice'
 

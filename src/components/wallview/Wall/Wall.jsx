@@ -1,5 +1,3 @@
-import styles from './Wall.module.scss'
-
 import { useGLTF } from '@react-three/drei'
 import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -16,6 +14,7 @@ import { useKeyboardEvents } from './useKeyboardEvents'
 import { useMoveArtwork } from './useMoveArtwork'
 import { useResizeArtwork } from './useResizeArtwork'
 import { convert2DTo3D } from './utils'
+import styles from './Wall.module.scss'
 import { Artwork } from '../Artwork'
 
 export const Wall = ({ scaleFactor }) => {
@@ -24,6 +23,7 @@ export const Wall = ({ scaleFactor }) => {
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const [dragging, setDragging] = useState(false)
+  const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
 
   const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
@@ -88,7 +88,7 @@ export const Wall = ({ scaleFactor }) => {
 
   const handleDeselect = useDeselectArtwork()
 
-  useKeyboardEvents(currentArtworkId)
+  useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
 
   return (
     <div
@@ -101,17 +101,16 @@ export const Wall = ({ scaleFactor }) => {
     >
       {artworks
         .filter((artwork) => artwork.wallId === currentWallId)
-        .map((artwork) => {
-          return (
-            <Artwork
-              key={artwork.id}
-              artwork={artwork}
-              onArtworkClick={handleArtworkClick}
-              onDragStart={handleDragStart}
-              onHandleResize={handleResize}
-            />
-          )
-        })}
+        .map((artwork) => (
+          <Artwork
+            key={artwork.id}
+            artwork={artwork}
+            onArtworkClick={handleArtworkClick}
+            onDragStart={handleDragStart}
+            onHandleResize={handleResize}
+            setHoveredArtworkId={setHoveredArtworkId}
+          />
+        ))}
     </div>
   )
 }

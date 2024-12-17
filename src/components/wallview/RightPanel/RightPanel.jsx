@@ -1,157 +1,87 @@
-import { useState, useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import React from 'react'
+import { useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
-import {
-  editArtwork,
-  editArtworkUrlImage,
-  editArtworkName,
-  editArtworkAuthor,
-} from '@/lib/features/artistSlice'
-import { setArtworkUploadedTrue } from '@/lib/features/wizardSlice'
+import { FileInput } from '@/components/ui/FileInput'
+import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 
 import styles from './RightPanel.module.scss'
+import { useArtworkDetails } from './useArtworkDetails'
+import { useArtworkHandlers } from './useArtworkHandlers'
+import { useFileUpload } from './useFileUpload'
 
 const RightPanel = () => {
-  const dispatch = useDispatch()
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
-  const artworks = useSelector((state) => state.artist.artworks)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
-  const [width, setWidth] = useState('')
-  const [height, setHeight] = useState('')
-  const [name, setName] = useState('')
-  const [author, setAuthor] = useState('')
 
-  useEffect(() => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (currentEdited) {
-      setWidth(currentEdited.canvas.width)
-      setHeight(currentEdited.canvas.height)
-    }
-  }, [artworks, currentArtworkId])
+  const { width, height, x, y, name, description, author } = useArtworkDetails(currentArtworkId)
 
-  useEffect(() => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (currentEdited) {
-      setWidth(currentEdited.canvas.width)
-      setHeight(currentEdited.canvas.height)
-      setName(currentEdited.name || '')
-    }
-  }, [artworks, currentArtworkId])
+  const {
+    handleWidthChange,
+    handleHeightChange,
+    handleNameChange,
+    handleAuthorChange,
+    handleDescriptionChange,
+    handleMoveXChange,
+    handleMoveYChange,
+  } = useArtworkHandlers(currentArtworkId)
 
-  const handleWidthChange = (e) => {
-    let newWidth = parseFloat(e.target.value)
-    newWidth = parseFloat(newWidth.toFixed(1))
-    setWidth(newWidth)
-
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    const { x, width: currentWidth } = currentEdited.canvas
-    const newX = x + (currentWidth - newWidth) / 2
-
-    const newArtworkSizes = {
-      ...currentEdited.canvas,
-      width: newWidth,
-      x: newX,
-    }
-
-    dispatch(editArtwork({ currentArtworkId, newArtworkSizes }))
-  }
-
-  const handleNameChange = (e) => {
-    const newName = e.target.value
-    setName(newName)
-
-    if (currentArtworkId) {
-      dispatch(editArtworkName({ currentArtworkId, name: newName }))
-    }
-  }
-
-  const handleAuthorChange = (e) => {
-    const newAuthor = e.target.value
-    setAuthor(newAuthor)
-
-    if (currentArtworkId) {
-      dispatch(editArtworkAuthor({ currentArtworkId, author: newAuthor }))
-    }
-  }
-
-  const handleHeightChange = (e) => {
-    let newHeight = parseFloat(e.target.value)
-    newHeight = parseFloat(newHeight.toFixed(1))
-    setHeight(newHeight)
-
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    const { y, height: currentHeight } = currentEdited.canvas
-    const newY = y + (currentHeight - newHeight) / 2
-
-    const newArtworkSizes = {
-      ...currentEdited.canvas,
-      height: newHeight,
-      y: newY,
-    }
-
-    dispatch(editArtwork({ currentArtworkId, newArtworkSizes }))
-  }
-
-  const handleFileChange = (event) => {
-    const file = event.target.files[0]
-    if (file && currentArtworkId) {
-      const url = URL.createObjectURL(file)
-      dispatch(editArtworkUrlImage({ currentArtworkId, url }))
-    }
-  }
-
-  const triggerFileUpload = () => {
-    const fileInput = document.getElementById('file-upload')
-    if (fileInput) {
-      setTimeout(() => fileInput.click(), 0)
-    } else {
-      console.error('File input not found')
-    }
-
-    dispatch(setArtworkUploadedTrue())
-  }
+  const { handleFileChange, triggerFileUpload } = useFileUpload(currentArtworkId)
 
   return (
-    <div className={styles.rightPanel}>
-      Artwork Panel
+    <div className={styles.panel}>
       {isWizardOpen && (
-        <div className={styles.wizard}>
-          <div>
-            <p>
-              <label>Width</label>
-              <input type="number" value={width} onChange={handleWidthChange} />
-            </p>
-            <p>
-              <label>Height</label>
-              <input type="number" value={height} onChange={handleHeightChange} />
-            </p>
-          </div>
-          <div>
-            <div className={styles.cta}>
-              <Button onClick={triggerFileUpload} type="small" label="Choose Image" />
-              <input
-                id="file-upload"
-                type="file"
-                accept="image/*"
-                onInput={handleFileChange}
-                style={{ display: 'none' }}
-              />
+        <>
+          <div className={styles.section}>
+            <h2 className={styles.title}>Layout</h2>
+            <div className={styles.subsection}>
+              <h3 className={styles.subtitle}>Size</h3>
+              <div className={styles.row}>
+                <div className={styles.item}>
+                  <Input value={width} icon="expand" onChange={handleWidthChange} />
+                </div>
+                <div className={styles.item}>
+                  <Input value={height} icon="expand" rotate={90} onChange={handleHeightChange} />
+                </div>
+              </div>
+            </div>
+            <div className={styles.subsection}>
+              <h3 className={styles.subtitle}>Position</h3>
+              <div className={styles.row}>
+                <div className={styles.item}>
+                  <Input value={x} icon="move" onChange={handleMoveXChange} />
+                </div>
+                <div className={styles.item}>
+                  <Input value={y} icon="move" rotate={90} onChange={handleMoveYChange} />
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <h2>Name</h2>
-            <input type="text" value={name} onChange={handleNameChange} />
+
+          <div className={styles.section}>
+            <div className={styles.subsection}>
+              <Button onClick={triggerFileUpload} type="small" label="Choose Image" />
+              <FileInput id="file-upload" onInput={handleFileChange} />
+            </div>
           </div>
-          <div>
-            <h2>Author</h2>
-            <input type="text" value={author} onChange={handleAuthorChange} />
+
+          <div className={styles.section}>
+            <h2 className={styles.title}>Meta</h2>
+            <div className={styles.subsection}>
+              <h3 className={styles.subtitle}>Title</h3>
+              <Input value={name} onChange={handleNameChange} />
+            </div>
+            <div className={styles.subsection}>
+              <h3 className={styles.subtitle}>Author</h3>
+              <Input value={author} onChange={handleAuthorChange} />
+            </div>
+            <div className={styles.subsection}>
+              <h3 className={styles.subtitle}>Description</h3>
+              <Textarea value={description} onChange={handleDescriptionChange} />
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
