@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit'
 
 import artistReducer from './features/artistSlice'
 import dashboardReducer from './features/dashboardSlice'
+import sceneReducer from './features/sceneSlice'
 import wallViewReducer from './features/wallViewSlice'
 import wizardReducer from './features/wizardSlice'
 
@@ -12,6 +13,7 @@ export const makeStore = () => {
       wizard: wizardReducer,
       wallView: wallViewReducer,
       artist: artistReducer,
+      scene: sceneReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({

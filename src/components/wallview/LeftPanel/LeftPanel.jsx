@@ -10,6 +10,7 @@ import {
   hideWallView,
   chooseCurrentArtworkId,
 } from '@/lib/features/wallViewSlice'
+import { showWizard } from '@/lib/features/wizardSlice'
 
 import styles from './LeftPanel.module.scss'
 
@@ -20,6 +21,7 @@ export const LeftPanel = () => {
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
 
   // Filter artworks by the current wall ID
   const wallArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId)
@@ -43,15 +45,18 @@ export const LeftPanel = () => {
 
   const handleSelectArtwork = (artworkId) => {
     dispatch(chooseCurrentArtworkId(artworkId))
+    if (!isWizardOpen) {
+      dispatch(showWizard())
+    }
   }
 
   return (
     <div className={styles.leftPanel}>
       <div className={styles.ctas}>
-        <Button onClick={handleSaveWallView}>Save</Button>
-        <Button onClick={handleZoomIn}>+</Button>
-        <Button onClick={handleZoomOut}>-</Button>
-        <Button onClick={handleResetPan}>Reset Pan</Button>
+        <Button type="small" onClick={handleSaveWallView} label="Save" />
+        <Button type="small" onClick={handleSaveWallView} label="+" />
+        <Button type="small" onClick={handleSaveWallView} label="-" />
+        <Button type="small" onClick={handleSaveWallView} label="Reset" />
       </div>
       <ul className={styles.artworks}>
         {wallArtworks.map((artwork) => (

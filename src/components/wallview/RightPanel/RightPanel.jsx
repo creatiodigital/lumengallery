@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
-import { editArtwork, editArtworkUrlImage } from '@/lib/features/artistSlice'
+import {
+  editArtwork,
+  editArtworkUrlImage,
+  editArtworkName,
+  editArtworkAuthor,
+} from '@/lib/features/artistSlice'
 import { setArtworkUploadedTrue } from '@/lib/features/wizardSlice'
 
 import styles from './RightPanel.module.scss'
@@ -14,6 +19,8 @@ const RightPanel = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const [width, setWidth] = useState('')
   const [height, setHeight] = useState('')
+  const [name, setName] = useState('')
+  const [author, setAuthor] = useState('')
 
   useEffect(() => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -23,8 +30,18 @@ const RightPanel = () => {
     }
   }, [artworks, currentArtworkId])
 
+  useEffect(() => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (currentEdited) {
+      setWidth(currentEdited.canvas.width)
+      setHeight(currentEdited.canvas.height)
+      setName(currentEdited.name || '')
+    }
+  }, [artworks, currentArtworkId])
+
   const handleWidthChange = (e) => {
-    const newWidth = parseFloat(e.target.value)
+    let newWidth = parseFloat(e.target.value)
+    newWidth = parseFloat(newWidth.toFixed(1))
     setWidth(newWidth)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -42,8 +59,27 @@ const RightPanel = () => {
     dispatch(editArtwork({ currentArtworkId, newArtworkSizes }))
   }
 
+  const handleNameChange = (e) => {
+    const newName = e.target.value
+    setName(newName)
+
+    if (currentArtworkId) {
+      dispatch(editArtworkName({ currentArtworkId, name: newName }))
+    }
+  }
+
+  const handleAuthorChange = (e) => {
+    const newAuthor = e.target.value
+    setAuthor(newAuthor)
+
+    if (currentArtworkId) {
+      dispatch(editArtworkAuthor({ currentArtworkId, author: newAuthor }))
+    }
+  }
+
   const handleHeightChange = (e) => {
-    const newHeight = parseFloat(e.target.value)
+    let newHeight = parseFloat(e.target.value)
+    newHeight = parseFloat(newHeight.toFixed(1))
     setHeight(newHeight)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -82,11 +118,10 @@ const RightPanel = () => {
 
   return (
     <div className={styles.rightPanel}>
-      Click on the wall to add an image
+      Artwork Panel
       {isWizardOpen && (
         <div className={styles.wizard}>
           <div>
-            <div>Choose size of the image (meters)</div>
             <p>
               <label>Width</label>
               <input type="number" value={width} onChange={handleWidthChange} />
@@ -97,11 +132,8 @@ const RightPanel = () => {
             </p>
           </div>
           <div>
-            <p>Upload an image (jpg, png)</p>
             <div className={styles.cta}>
-              <Button onClick={triggerFileUpload} className={styles.uploadButton}>
-                Choose File
-              </Button>
+              <Button onClick={triggerFileUpload} type="small" label="Choose Image" />
               <input
                 id="file-upload"
                 type="file"
@@ -110,6 +142,14 @@ const RightPanel = () => {
                 style={{ display: 'none' }}
               />
             </div>
+          </div>
+          <div>
+            <h2>Name</h2>
+            <input type="text" value={name} onChange={handleNameChange} />
+          </div>
+          <div>
+            <h2>Author</h2>
+            <input type="text" value={author} onChange={handleAuthorChange} />
           </div>
         </div>
       )}

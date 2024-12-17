@@ -1,15 +1,27 @@
-.default {
-  padding: 5px 10px;
-  background: black;
-  color: white;
-  border: none;
-  cursor: pointer;
-  margin-bottom: 20px;
-  border-radius: 5px;
+@import '@/styles/mixins';
 
-  &:disabled {
-    background: var(--c-button-bg-disabled);
-    color: var(--c-button-text-disabled);
-    cursor: not-allowed;
+.button {
+  cursor: pointer;
+}
+
+.outline {
+  @include textSerif();
+  padding: 10px 20px;
+  background: transparent;
+  color: var(--black);
+  border: 1px solid var(--black);
+
+  &:hover {
+    background: var(--black);
+    color: var(--white);
   }
+}
+
+.small {
+  @include smallSans();
+  padding: 5px 10px;
+  background: var(--black);
+  color: var(--white);
+  border: 1px solid var(--black);
+  border-radius: 4px;
 }

@@ -1,11 +1,27 @@
-@import "variables";
-@import "normalize";
+@import 'variables';
+@import 'normalize';
+@import 'mixins';
 
 * {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   font-family: 'Cabin', sans-serif;
-  // font-family: 'Fraunces', serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  padding: 0;
+}
+
+p {
+  margin: 0;
+  padding: 0;
 }
