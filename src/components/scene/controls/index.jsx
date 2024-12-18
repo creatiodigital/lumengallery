@@ -1,5 +1,5 @@
-import { Camera } from './Camerax'
+import { MainCamera } from './MainCamera'
 
-const Controls = () => <Camera />
+const Controls = () => <MainCamera />
 
 export default Controls

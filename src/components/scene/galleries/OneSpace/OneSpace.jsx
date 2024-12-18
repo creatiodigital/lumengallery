@@ -10,7 +10,7 @@ import { RectLight } from './RectLight'
 import { Wall } from './Wall'
 
 const OneSpace = ({ wallRefs, isSpace, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/one-space1.glb')
+  const { nodes, materials } = useGLTF('/assets/one-space33.glb')
 
   const wallsArray = Array.from({ length: 1 })
   const placeholdersArray = Array.from({ length: 6 }) || []
@@ -36,6 +36,6 @@ const OneSpace = ({ wallRefs, isSpace, ...props }) => {
   )
 }
 
-useGLTF.preload('/assets/one-space1.glb')
+useGLTF.preload('/assets/one-space33.glb')
 
 export default OneSpace
