@@ -2,7 +2,7 @@
 
 import { Canvas } from '@react-three/fiber'
 import { usePathname } from 'next/navigation'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 
@@ -17,7 +17,7 @@ import { setHandler } from '@/lib/features/artistSlice'
 import { showEditMode, hideEditMode } from '@/lib/features/dashboardSlice'
 
 import { ArtworkPanel } from './ArtworkPanel'
-import styles from './Dashboardx.module.scss'
+import styles from './Dashboard.module.scss'
 
 export const Dashboard = () => {
   const dispatch = useDispatch()
@@ -28,6 +28,7 @@ export const Dashboard = () => {
   const artworks = useSelector((state) => state.artist.arworks)
   const artist = useSelector((state) => state.artist)
   const wallRefs = useRef([])
+  const [isPlaceholdersShown, setIsPlaceholdersShown] = useState(true)
 
   useEffect(() => {
     if (handler) {
@@ -48,13 +49,14 @@ export const Dashboard = () => {
               <Button type="small" onClick={handleEditGallery} label="Edit Exhibition" />
             )}
             {isEditMode && !isWallView && (
-              <div className={styles.editMode}>
-                <div className={styles.editModeHeader}>
+              <div>
+                <div className={styles.menu}>
                   <Button
                     type="small"
-                    onClick={() => dispatch(hideEditMode())}
-                    label="Close Edit Mode"
+                    onClick={() => setIsPlaceholdersShown((prev) => !prev)}
+                    label="view"
                   />
+                  <Button type="small" onClick={() => dispatch(hideEditMode())} label="close" />
                 </div>
                 <SceneContext.Provider value={{ wallRefs }}>
                   <div className={styles.space}>
@@ -68,7 +70,11 @@ export const Dashboard = () => {
                     >
                       <group>
                         <Controls />
-                        <Elements artworks={artworks} wallRefs={wallRefs.current} />
+                        <Elements
+                          artworks={artworks}
+                          wallRefs={wallRefs.current}
+                          isSpace={!isPlaceholdersShown}
+                        />
                       </group>
                     </Canvas>
                   </div>
@@ -78,7 +84,7 @@ export const Dashboard = () => {
             )}
           </div>
           {isWallView && (
-            <div className={styles.walls}>
+            <div className={styles.panels}>
               <LeftPanel />
               <WallView />
               <RightPanel />
