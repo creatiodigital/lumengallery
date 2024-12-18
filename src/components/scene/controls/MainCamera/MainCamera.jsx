@@ -13,7 +13,7 @@ import {
   detectCollisions,
 } from './helpers'
 
-const Camera = () => {
+const MainCamera = () => {
   const [, setTick] = useState(0)
   const { wallRefs } = useContext(SceneContext)
   const keysPressed = useRef({})
@@ -70,4 +70,4 @@ const Camera = () => {
   return null
 }
 
-export default Camera
+export default MainCamera
