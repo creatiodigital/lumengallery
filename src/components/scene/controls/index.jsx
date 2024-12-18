@@ -1,4 +1,4 @@
-import { Camera } from './Camerax'
+import { Camera } from './Camera'
 
 const Controls = () => <Camera />
 

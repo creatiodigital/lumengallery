@@ -18,11 +18,13 @@ import styles from './Wall.module.scss'
 import { Artwork } from '../Artwork'
 
 export const Wall = ({ scaleFactor }) => {
-  const { nodes } = useGLTF('/assets/one-space1.glb')
+  const { nodes } = useGLTF('/assets/one-space33.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const [dragging, setDragging] = useState(false)
+  const [wallWidth, setWallWidth] = useState('')
+  const [wallHeight, setWallHeight] = useState('')
   const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
 
   const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
@@ -33,6 +35,8 @@ export const Wall = ({ scaleFactor }) => {
 
   const currentArtwork = artworks.find((art) => art.id === currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
+
+  console.log('xxx', boundingData)
 
   const { handleDragStart, handleDragMove, handleDragEnd } = useMoveArtwork(
     wallRef,
@@ -58,6 +62,8 @@ export const Wall = ({ scaleFactor }) => {
     if (boundingData && wallRef.current) {
       wallRef.current.style.width = `${boundingData.width * 100}px`
       wallRef.current.style.height = `${boundingData.height * 100}px`
+      setWallWidth(boundingData.width.toFixed(2))
+      setWallHeight(boundingData.height.toFixed(2))
     }
   }, [boundingData])
 
@@ -91,28 +97,32 @@ export const Wall = ({ scaleFactor }) => {
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
 
   return (
-    <div
-      ref={wallRef}
-      className={styles.wall}
-      onDoubleClick={(event) => handleCreateArtwork(event, wallRef)}
-      onClick={handleDeselect}
-      onMouseMove={handleDragMove}
-      onMouseUp={handleDragEnd}
-    >
-      {artworks
-        .filter((artwork) => artwork.wallId === currentWallId)
-        .map((artwork) => (
-          <Artwork
-            key={artwork.id}
-            artwork={artwork}
-            onArtworkClick={handleArtworkClick}
-            onDragStart={handleDragStart}
-            onHandleResize={handleResize}
-            setHoveredArtworkId={setHoveredArtworkId}
-          />
-        ))}
+    <div className={styles.wrapper}>
+      <span className={styles.wallWidth}>{`${wallWidth} M`}</span>
+      <span className={styles.wallHeight}>{`${wallHeight} M`}</span>
+      <div
+        ref={wallRef}
+        className={styles.wall}
+        onDoubleClick={(event) => handleCreateArtwork(event, wallRef)}
+        onClick={handleDeselect}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+      >
+        {artworks
+          .filter((artwork) => artwork.wallId === currentWallId)
+          .map((artwork) => (
+            <Artwork
+              key={artwork.id}
+              artwork={artwork}
+              onArtworkClick={handleArtworkClick}
+              onDragStart={handleDragStart}
+              onHandleResize={handleResize}
+              setHoveredArtworkId={setHoveredArtworkId}
+            />
+          ))}
+      </div>
     </div>
   )
 }
 
-useGLTF.preload('/assets/one-space1.glb')
+useGLTF.preload('/assets/one-space33.glb')

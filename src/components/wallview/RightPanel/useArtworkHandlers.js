@@ -11,13 +11,13 @@ export const useArtworkHandlers = (currentArtworkId) => {
   const dispatch = useDispatch()
   const artworks = useSelector((state) => state.artist.artworks)
 
-  const sanitizeInput = (value) => {
-    const parsedValue = parseFloat(value.trim())
-    return isNaN(parsedValue) || parsedValue < 0 ? 0 : Math.round(parsedValue)
+  const sanitizeNumberInput = (value) => {
+    const normalizedValue = value * 100
+    return normalizedValue
   }
 
   const handleWidthChange = (e) => {
-    const newWidth = sanitizeInput(e.target.value)
+    const newWidth = sanitizeNumberInput(e.target.value)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -34,7 +34,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
   }
 
   const handleHeightChange = (e) => {
-    const newHeight = sanitizeInput(e.target.value)
+    const newHeight = sanitizeNumberInput(e.target.value)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -51,7 +51,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
   }
 
   const handleMoveXChange = (e) => {
-    const newX = sanitizeInput(e.target.value)
+    const newX = sanitizeNumberInput(e.target.value)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -65,7 +65,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
   }
 
   const handleMoveYChange = (e) => {
-    const newY = sanitizeInput(e.target.value)
+    const newY = sanitizeNumberInput(e.target.value)
 
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return

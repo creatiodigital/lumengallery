@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { Button } from '@/components/ui/Button'
 import { FileInput } from '@/components/ui/FileInput'
 import { Input } from '@/components/ui/Input'
+import { NumberInput } from '@/components/ui/NumberInput'
 import { Textarea } from '@/components/ui/Textarea'
 
 import styles from './RightPanel.module.scss'
@@ -36,24 +37,50 @@ const RightPanel = () => {
           <div className={styles.section}>
             <h2 className={styles.title}>Layout</h2>
             <div className={styles.subsection}>
-              <h3 className={styles.subtitle}>Size</h3>
+              <h3 className={styles.subtitle}>Size (meters)</h3>
               <div className={styles.row}>
                 <div className={styles.item}>
-                  <Input value={width} icon="expand" onChange={handleWidthChange} />
+                  <NumberInput
+                    value={width / 100}
+                    icon="expand"
+                    rotate={90}
+                    min={0.1}
+                    max={10}
+                    onChange={handleWidthChange}
+                  />
                 </div>
                 <div className={styles.item}>
-                  <Input value={height} icon="expand" rotate={90} onChange={handleHeightChange} />
+                  <NumberInput
+                    value={height / 100}
+                    icon="expand"
+                    min={0.1}
+                    max={10}
+                    onChange={handleHeightChange}
+                  />
                 </div>
               </div>
             </div>
             <div className={styles.subsection}>
-              <h3 className={styles.subtitle}>Position</h3>
+              <h3 className={styles.subtitle}>Position (meters)</h3>
               <div className={styles.row}>
                 <div className={styles.item}>
-                  <Input value={x} icon="move" onChange={handleMoveXChange} />
+                  <NumberInput
+                    value={x / 100}
+                    icon="move"
+                    rotate={90}
+                    min={0}
+                    max={10}
+                    onChange={handleMoveXChange}
+                  />
                 </div>
                 <div className={styles.item}>
-                  <Input value={y} icon="move" rotate={90} onChange={handleMoveYChange} />
+                  <NumberInput
+                    value={y / 100}
+                    icon="move"
+                    min={0}
+                    max={10}
+                    onChange={handleMoveYChange}
+                  />
                 </div>
               </div>
             </div>

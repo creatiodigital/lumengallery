@@ -1,4 +1,29 @@
+@import '@/styles/mixins';
+
+.wrapper {
+  padding: 40px;
+  position: relative;
+}
+
+.wallWidth {
+  @include xlargeSans();
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.wallHeight {
+  @include xlargeSans();
+  color: var(--black);
+  position: absolute;
+  top: 50%;
+  left: -20px;
+  transform: translateY(-50%) rotate(-90deg);
+}
+
 .wall {
+  color: var(--black);
   position: relative;
   border: 1px solid var(--black);
   background: var(--white);
