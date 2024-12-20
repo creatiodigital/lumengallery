@@ -2,13 +2,13 @@ import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
-import { hideArtworkPanel } from '@/lib/features/sceneSlice'
+import { hideArtworkPanel } from '@/lib/features/dashboardSlice'
 
 import styles from './ArtworkPanel.module.scss'
 
 const ArtworkPanel = () => {
   const dispatch = useDispatch()
-  const isArtworkPanelOpen = useSelector((state) => state.scene.isArtworkPanelOpen)
+  const isArtworkPanelOpen = useSelector((state) => state.dashboard.isArtworkPanelOpen)
   const artworks = useSelector((state) => state.artist.artworks)
   const selectedSceneArtworkId = useSelector((state) => state.scene.currentArtworkId)
 

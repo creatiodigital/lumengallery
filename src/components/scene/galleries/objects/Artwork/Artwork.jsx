@@ -2,7 +2,8 @@ import React from 'react'
 import { useDispatch } from 'react-redux'
 import { DoubleSide } from 'three'
 
-import { showArtworkPanel, setCurrentArtwork } from '@/lib/features/sceneSlice'
+import { setCurrentArtwork } from '@/lib/features/sceneSlice'
+import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 
 const Artwork = ({ artwork }) => {
   const { id, position, quaternion, space, texture } = artwork

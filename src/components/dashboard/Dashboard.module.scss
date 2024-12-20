@@ -1,22 +1,16 @@
-.menu {
+.dashboard {
+  position: relative;
+}
+
+.main {
+  padding: 20px;
+  display: flex;
+}
+
+.left {
+  width: 140px;
+}
+
+.edit {
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  position: fixed;
-  left: 20px;
-  bottom: 20px;
-  width: 60px;
-  z-index: 2;
-  gap: 10px;
-}
-
-.space {
-  width: 100vw;
-  height: calc(100vh);
-}
-
-.panels {
-  display: flex;
 }

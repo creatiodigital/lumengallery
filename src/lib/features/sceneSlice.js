@@ -4,20 +4,22 @@ const sceneSlice = createSlice({
   name: 'scene',
   initialState: {
     isArtworkPanelOpen: false,
+    isPlaceholdersShown: false,
     currentArtworkId: null,
   },
   reducers: {
-    showArtworkPanel: (state) => {
-      state.isArtworkPanelOpen = true
-    },
-    hideArtworkPanel: (state) => {
-      state.isArtworkPanelOpen = false
-    },
     setCurrentArtwork: (state, action) => {
       state.currentArtworkId = action.payload
+    },
+    showPlaceholders: (state) => {
+      console.log('ppp')
+      state.isPlaceholdersShown = true
+    },
+    hidePlaceholders: (state) => {
+      state.isPlaceholdersShown = false
     },
   },
 })
 
-export const { showArtworkPanel, hideArtworkPanel, setCurrentArtwork } = sceneSlice.actions
+export const { setCurrentArtwork, showPlaceholders, hidePlaceholders } = sceneSlice.actions
 export default sceneSlice.reducer
