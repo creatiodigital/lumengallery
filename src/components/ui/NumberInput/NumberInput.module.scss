@@ -1,0 +1,30 @@
+@import '@/styles/mixins';
+
+.wrapper {
+  position: relative;
+}
+
+.input {
+  @include smallSans();
+  width: 100%;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background-color: var(--white);
+  border: none;
+}
+
+.withIcon {
+  padding: 3px 3px 3px 25px;
+}
+
+.icon {
+  position: absolute;
+  left: 4px;
+  top: 5px;
+}
+.rotate90 {
+  top: 3px;
+  left: 2px;
+  transform: rotate(90deg);
+  transform-origin: center;
+}

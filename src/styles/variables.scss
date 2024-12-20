@@ -1,0 +1,16 @@
+:root {
+  --font-sans: 'Cabin', sans-serif;
+  --font-serif: 'Fraunces', serif;
+
+  --black: #000000;
+  --white: #ffffff;
+  --grayDark: #666666;
+  --grayLighter: #f5f5f5;
+  --grayLight: #efefef;
+  --grayMedium: #d3d3d3;
+
+  --bgLighter: var(--grayLighter);
+  --bgLight: var(--grayLight);
+  --borderLight: var(--grayMedium);
+  --text: var(--black);
+}

@@ -1,1 +1,5 @@
-export { default as Controls } from './Controls'
+import { MainCamera } from './MainCamera'
+
+const Controls = () => <MainCamera />
+
+export default Controls
