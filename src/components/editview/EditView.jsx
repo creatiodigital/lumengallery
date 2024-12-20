@@ -3,17 +3,19 @@ import { WallView } from '@/components/wallview'
 import { useSelector } from 'react-redux'
 
 import { Menu } from '@/components/dashboard/Menu'
+import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
 import { Scene } from '@/components/scene'
 
 function EditView() {
-  const isEditMode = useSelector((state) => state.dashboard.isEditMode)
   const isWallView = useSelector((state) => state.wallView.isWallView)
+  const isArtworkPanelOpen = useSelector((state) => state.dashboard.isArtworkPanelOpen)
   return (
     <>
-      {isEditMode && !isWallView && (
+      {!isWallView && (
         <div>
           <Menu />
           <Scene />
+          {isArtworkPanelOpen && <ArtworkPanel />}
         </div>
       )}
       {isWallView && <WallView />}

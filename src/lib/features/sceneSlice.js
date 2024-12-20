@@ -4,7 +4,7 @@ const sceneSlice = createSlice({
   name: 'scene',
   initialState: {
     isArtworkPanelOpen: false,
-    isPlaceholdersShown: false,
+    isPlaceholdersShown: true,
     currentArtworkId: null,
   },
   reducers: {
