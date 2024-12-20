@@ -2,7 +2,9 @@ import c from 'classnames'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
+import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { showEditMode } from '@/lib/features/dashboardSlice'
+import { showGrid, hideGrid, showPerson, hidePerson } from '@/lib/features/wallViewSlice'
 import {
   increaseScaleFactor,
   decreaseScaleFactor,
@@ -21,6 +23,8 @@ export const LeftPanel = () => {
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
+  const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
+  const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
 
   const wallArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId)
 
@@ -32,13 +36,31 @@ export const LeftPanel = () => {
     dispatch(decreaseScaleFactor())
   }
 
-  const handleResetPan = () => {
+  const handleResetView = () => {
     dispatch(resetPan())
   }
 
   const handleSaveWallView = () => {
+    dispatch(hideGrid())
+    dispatch(hidePerson())
     dispatch(hideWallView())
     dispatch(showEditMode())
+  }
+
+  const handleToggleGrid = () => {
+    if (isGridVisible) {
+      dispatch(hideGrid())
+    } else {
+      dispatch(showGrid())
+    }
+  }
+
+  const handleTogglePerson = () => {
+    if (isPersonVisible) {
+      dispatch(hidePerson())
+    } else {
+      dispatch(showPerson())
+    }
   }
 
   const handleSelectArtwork = (artworkId) => {
@@ -51,22 +73,40 @@ export const LeftPanel = () => {
   return (
     <div className={styles.panel}>
       <div className={styles.section}>
-        <h2 className={styles.title}>View</h2>
         <div className={styles.subsection}>
           <div className={styles.row}>
             <div className={styles.item}>
               <Button type="small" onClick={handleSaveWallView} label="Save" />
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <h2 className={styles.title}>Helpers</h2>
+        <div className={styles.subsection}>
+          <div className={styles.row}>
             <div className={styles.item}>
-              <Button type="small" onClick={handleResetPan} label="Reset" />
+              <ButtonIcon icon="zoomOut" onClick={handleZoomOut} />
+            </div>
+            <div className={styles.item}>
+              <ButtonIcon icon="zoomIn" onClick={handleZoomIn} />
             </div>
           </div>
           <div className={styles.row}>
             <div className={styles.item}>
-              <Button type="small" onClick={handleZoomIn} label="+" />
+              <ButtonIcon icon="reset" onClick={handleResetView} />
             </div>
             <div className={styles.item}>
-              <Button type="small" onClick={handleZoomOut} label="-" />
+              <ButtonIcon icon="grid" onClick={handleToggleGrid} />
+            </div>
+          </div>
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <ButtonIcon icon="person" onClick={handleTogglePerson} />
+            </div>
+            <div className={styles.item}>
+              <ButtonIcon icon="person" onClick={handleTogglePerson} />
             </div>
           </div>
         </div>
@@ -80,13 +120,13 @@ export const LeftPanel = () => {
               {wallArtworks.map((artwork) => (
                 <li
                   key={artwork.id}
-                  onClick={() => handleSelectArtwork(artwork.id)} // Select the artwork when clicked
+                  onClick={() => handleSelectArtwork(artwork.id)}
                   className={c(styles.artwork, {
                     [styles.selected]: artwork.id === currentArtworkId,
                   })}
                   style={{ cursor: 'pointer' }}
                 >
-                  {artwork.name} {/* Display the artwork name */}
+                  {artwork.name}
                 </li>
               ))}
             </ul>

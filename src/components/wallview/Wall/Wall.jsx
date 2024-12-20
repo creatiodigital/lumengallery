@@ -1,4 +1,5 @@
 import { useGLTF } from '@react-three/drei'
+import Image from 'next/image'
 import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
@@ -6,19 +7,19 @@ import { edit3DCoordinates } from '@/lib/features/artistSlice'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
-import { useBoundingData } from './useBoundingData'
-import { useCreateArtwork } from './useCreateArtwork'
-import { useDeselectArtwork } from './useDeselectArtwork'
-import { useGlobalMouseUp } from './useGlobalMouseUp'
-import { useKeyboardEvents } from './useKeyboardEvents'
-import { useMoveArtwork } from './useMoveArtwork'
-import { useResizeArtwork } from './useResizeArtwork'
+import { useBoundingData } from './hooks/useBoundingData'
+import { useCreateArtwork } from './hooks/useCreateArtwork'
+import { useDeselectArtwork } from './hooks/useDeselectArtwork'
+import { useGlobalMouseUp } from './hooks/useGlobalMouseUp'
+import { useKeyboardEvents } from './hooks/useKeyboardEvents'
+import { useMoveArtwork } from './hooks/useMoveArtwork'
+import { useResizeArtwork } from './hooks/useResizeArtwork'
 import { convert2DTo3D } from './utils'
 import styles from './Wall.module.scss'
 import { Artwork } from '../Artwork'
 
 export const Wall = ({ scaleFactor }) => {
-  const { nodes } = useGLTF('/assets/one-space33.glb')
+  const { nodes } = useGLTF('/assets/one-space36.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
@@ -28,6 +29,8 @@ export const Wall = ({ scaleFactor }) => {
   const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
 
   const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
+  const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
+  const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const dispatch = useDispatch()
 
@@ -35,8 +38,6 @@ export const Wall = ({ scaleFactor }) => {
 
   const currentArtwork = artworks.find((art) => art.id === currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
-
-  console.log('xxx', boundingData)
 
   const { handleDragStart, handleDragMove, handleDragEnd } = useMoveArtwork(
     wallRef,
@@ -108,6 +109,13 @@ export const Wall = ({ scaleFactor }) => {
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
       >
+        {isPersonVisible && (
+          <div className={styles.person}>
+            <Image src="/assets/person.png" alt="person" width="70" height="180" />
+          </div>
+        )}
+        {isGridVisible && <div className={styles.grid} />}
+
         {artworks
           .filter((artwork) => artwork.wallId === currentWallId)
           .map((artwork) => (
@@ -125,4 +133,4 @@ export const Wall = ({ scaleFactor }) => {
   )
 }
 
-useGLTF.preload('/assets/one-space33.glb')
+useGLTF.preload('/assets/one-space36.glb')

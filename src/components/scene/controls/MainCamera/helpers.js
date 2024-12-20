@@ -61,7 +61,7 @@ export const attachTouchHandlers = (handleTouchMove, mouseState) => (event) => {
   }
 }
 
-export const detachTouchHandlers = (handleTouchMove, mouseState) => (event) => {
+export const detachTouchHandlers = (handleTouchMove, mouseState) => () => {
   mouseState.current.isTouchActive = false
   mouseState.current.deltaX = 0
   window.removeEventListener('touchmove', handleTouchMove)

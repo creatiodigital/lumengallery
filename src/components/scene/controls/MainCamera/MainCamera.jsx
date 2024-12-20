@@ -59,7 +59,7 @@ const MainCamera = () => {
   useFrame(({ camera }) => {
     if (!initialPositionSet.current) {
       camera.position.set(0, 1.4, 0)
-      camera.fov = 75
+      camera.fov = 70
       camera.updateProjectionMatrix()
       initialPositionSet.current = true
     }
