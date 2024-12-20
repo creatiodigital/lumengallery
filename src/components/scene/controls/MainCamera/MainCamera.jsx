@@ -6,9 +6,12 @@ import SceneContext from '@/contexts/SceneContext'
 import {
   createMouseState,
   handleMouseMove,
+  handleTouchMove,
   handleKeyPress,
   attachMouseHandlers,
+  attachTouchHandlers,
   detachMouseHandlers,
+  detachTouchHandlers,
   calculateMovementVector,
   detectCollisions,
 } from './helpers'
@@ -28,6 +31,10 @@ const MainCamera = () => {
   const onMouseDown = useCallback(attachMouseHandlers(onMouseMove, mouseState), [onMouseMove])
   const onMouseUp = useCallback(detachMouseHandlers(onMouseMove, mouseState), [onMouseMove])
 
+  const onTouchMove = useCallback(handleTouchMove(mouseState, setTick), [])
+  const onTouchStart = useCallback(attachTouchHandlers(onTouchMove, mouseState), [onTouchMove])
+  const onTouchEnd = useCallback(detachTouchHandlers(onTouchMove, mouseState), [onTouchMove])
+
   const onKeyDown = useCallback((event) => handleKeyPress(keysPressed, event.key, true), [])
   const onKeyUp = useCallback((event) => handleKeyPress(keysPressed, event.key, false), [])
 
@@ -36,18 +43,24 @@ const MainCamera = () => {
     window.addEventListener('keyup', onKeyUp)
     window.addEventListener('mousedown', onMouseDown)
     window.addEventListener('mouseup', onMouseUp)
+    window.addEventListener('touchstart', onTouchStart)
+    window.addEventListener('touchend', onTouchEnd)
 
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('mousedown', onMouseDown)
       window.removeEventListener('mouseup', onMouseUp)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchend', onTouchEnd)
     }
-  }, [onKeyDown, onKeyUp, onMouseDown, onMouseUp])
+  }, [onKeyDown, onKeyUp, onMouseDown, onMouseUp, onTouchStart, onTouchEnd])
 
   useFrame(({ camera }) => {
     if (!initialPositionSet.current) {
       camera.position.set(0, 1.4, 0)
+      camera.fov = 70
+      camera.updateProjectionMatrix()
       initialPositionSet.current = true
     }
 

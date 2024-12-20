@@ -1,16 +1,16 @@
 import { useGLTF } from '@react-three/drei'
 import React from 'react'
 
-import { Artworks } from './Artworks'
-import { Ceiling } from './Ceiling'
-import { Floor } from './Floor'
-import { Lamp } from './Lamp'
-import { Placeholder } from './Placeholder'
-import { RectLight } from './RectLight'
-import { Wall } from './Wall'
+import { Artworks } from '../objects/Artworks'
+import { Ceiling } from '../objects/Ceiling'
+import { Floor } from '../objects/Floor'
+import { Lamp } from '../objects/Lamp'
+import { Placeholder } from '../objects/Placeholder'
+import { RectLight } from '../objects/RectLight'
+import { Wall } from '../objects/Wall'
 
 const OneSpace = ({ wallRefs, isSpace, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/one-space33.glb')
+  const { nodes, materials } = useGLTF('/assets/one-space36.glb')
 
   const wallsArray = Array.from({ length: 1 })
   const placeholdersArray = Array.from({ length: 6 }) || []
@@ -36,6 +36,6 @@ const OneSpace = ({ wallRefs, isSpace, ...props }) => {
   )
 }
 
-useGLTF.preload('/assets/one-space33.glb')
+useGLTF.preload('/assets/one-space36.glb')
 
 export default OneSpace

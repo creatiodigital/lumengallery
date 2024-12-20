@@ -2,7 +2,8 @@ import * as THREE from 'three'
 
 export const createMouseState = () => ({
   isLeftButtonPressed: false,
-  lastMouseX: null,
+  isTouchActive: false,
+  lastTouchX: null,
   deltaX: 0,
 })
 
@@ -12,6 +13,15 @@ export const handleMouseMove = (mouseState, setTick) => (event) => {
   const deltaX = currentX - mouseState.current.lastMouseX
   mouseState.current.deltaX = deltaX
   mouseState.current.lastMouseX = currentX
+  setTick((tick) => tick + 1)
+}
+
+export const handleTouchMove = (mouseState, setTick) => (event) => {
+  if (!mouseState.current.isTouchActive) return
+  const currentX = event.touches[0].clientX
+  const deltaX = currentX - mouseState.current.lastTouchX
+  mouseState.current.deltaX = deltaX
+  mouseState.current.lastTouchX = currentX
   setTick((tick) => tick + 1)
 }
 
@@ -37,6 +47,24 @@ export const detachMouseHandlers = (handleMouseMove, mouseState) => (event) => {
     mouseState.current.deltaX = 0
     window.removeEventListener('mousemove', handleMouseMove)
   }
+}
+
+export const attachTouchHandlers = (handleTouchMove, mouseState) => (event) => {
+  if (event.touches.length === 2) {
+    mouseState.current = {
+      ...mouseState.current,
+      isTouchActive: true,
+      lastTouchX: event.touches[0].clientX,
+      deltaX: 0,
+    }
+    window.addEventListener('touchmove', handleTouchMove)
+  }
+}
+
+export const detachTouchHandlers = (handleTouchMove, mouseState) => () => {
+  mouseState.current.isTouchActive = false
+  mouseState.current.deltaX = 0
+  window.removeEventListener('touchmove', handleTouchMove)
 }
 
 export const calculateMovementVector = (keysPressed, moveSpeed, camera) => {

@@ -8,6 +8,8 @@ const wallViewSlice = createSlice({
     currentWallId: null,
     scaleFactor: 1,
     panPosition: { x: -50, y: -50 },
+    isGridVisible: false,
+    isPersonVisible: false,
   },
   reducers: {
     showWallView: (state, action) => {
@@ -17,6 +19,18 @@ const wallViewSlice = createSlice({
     hideWallView: (state) => {
       state.isWallView = false
       state.currentWallId = null
+    },
+    showGrid: (state) => {
+      state.isGridVisible = true
+    },
+    hideGrid: (state) => {
+      state.isGridVisible = false
+    },
+    showPerson: (state) => {
+      state.isPersonVisible = true
+    },
+    hidePerson: (state) => {
+      state.isPersonVisible = false
     },
     chooseCurrentArtworkId: (state, action) => {
       state.currentArtworkId = action.payload
@@ -38,6 +52,7 @@ const wallViewSlice = createSlice({
     },
     resetPan: (state) => {
       state.panPosition = { x: -50, y: -50 }
+      state.scaleFactor = 1
     },
   },
 })
@@ -45,6 +60,10 @@ const wallViewSlice = createSlice({
 export const {
   showWallView,
   hideWallView,
+  showGrid,
+  hideGrid,
+  showPerson,
+  hidePerson,
   chooseCurrentArtworkId,
   resetWallView,
   increaseScaleFactor,
