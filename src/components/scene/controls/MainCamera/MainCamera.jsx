@@ -24,6 +24,7 @@ const MainCamera = () => {
   const initialPositionSet = useRef(false)
   const rotationVelocity = useRef(0)
   const dampingFactor = 0.6
+  const collitionDistance = 1
 
   const moveSpeed = 0.04
 
@@ -73,7 +74,7 @@ const MainCamera = () => {
 
     const moveVector = calculateMovementVector(keysPressed, moveSpeed, camera)
 
-    if (!detectCollisions(camera, moveVector, wallRefs)) {
+    if (!detectCollisions(camera, moveVector, wallRefs, collitionDistance)) {
       camera.position.add(moveVector)
     }
 
