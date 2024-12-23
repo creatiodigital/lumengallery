@@ -41,14 +41,14 @@ const Artwork = ({ artwork }) => {
         <>
           {/* <planeGeometry args={[space.width || 1, space.height || 1]} /> */}
           <Text
-            fontSize={space.height / 10 || 0.5} // Dynamically scale font size based on height
-            color="black" // Text color
-            anchorX="center" // Center align horizontally
-            anchorY="middle" // Center align vertically
-            maxWidth={space.width || 1} // Constrain text width to plane width
-            textAlign="center" // Align text centrally within the plane
-            lineHeight={1.2} // Adjust line height for paragraph spacing
-            whiteSpace="normal" // Break long words if needed
+            fontSize={0.14}
+            lineHeight={1.7}
+            color="black"
+            anchorX="center"
+            anchorY="middle"
+            maxWidth={space.width}
+            textAlign="left"
+            whiteSpace="normal"
           >
             {artisticText}
           </Text>

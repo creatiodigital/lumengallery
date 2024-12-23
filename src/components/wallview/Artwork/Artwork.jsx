@@ -1,8 +1,8 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
-
 import { Handles } from '../Handles'
 import { ArtisticText } from '@/components/wallview/ArtisticText'
+import { ArtisticImage } from '@/components/wallview/ArtisticImage'
 import styles from './Artwork.module.scss'
 
 const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHoveredArtworkId }) => {
@@ -27,7 +27,6 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
         left: `${x}px`,
         width: `${width}px`,
         height: `${height}px`,
-        backgroundImage: url ? `url(${url})` : 'none',
       }}
       onMouseDown={(event) => onDragStart(event, id)}
       onClick={(event) => onArtworkClick(event, id)}
@@ -35,9 +34,8 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
       onMouseLeave={handleMouseLeave}
     >
       {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
-      {currentArtworkId === id && artworkType === 'text' && artisticText && (
-        <ArtisticText artworkId={id} />
-      )}
+      {artworkType === 'text' && <ArtisticText artworkId={id} />}
+      {artworkType === 'paint' && <ArtisticImage artworkId={id} url={url} />}
     </div>
   )
 }

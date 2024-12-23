@@ -8,7 +8,6 @@ import { chooseCurrentArtworkId, setWallDimensions } from '@/lib/features/wallVi
 import { showWizard } from '@/lib/features/wizardSlice'
 
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
-import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
 import { useGlobalMouseUp } from '@/components/wallview/hooks/useGlobalMouseUp'
 import { useKeyboardEvents } from '@/components/wallview/hooks/useKeyboardEvents'

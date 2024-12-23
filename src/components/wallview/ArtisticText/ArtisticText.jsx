@@ -1,30 +1,45 @@
-import React from 'react'
-import { useSelector } from 'react-redux'
-
+import React, { useState, useRef } from 'react'
+import { useDispatch } from 'react-redux'
 import styles from './ArtisticText.module.scss'
+import { useArtisticText } from '@/components/wallview/hooks/useArtisticText'
+import { setEditingArtwork } from '@/lib/features/dashboardSlice'
 
 const ArtisticText = ({ artworkId }) => {
-  const artwork = useSelector((state) =>
-    state.artist.artworks.find((artwork) => artwork.id === artworkId),
-  )
+  const contentRef = useRef(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const dispatch = useDispatch()
 
-  const text = artwork?.artisticText
-  const textAlign = artwork?.artisticTextStyles?.textAlign || 'left'
+  const { artisticText, textAlign, handleArtisticTextChange } = useArtisticText(artworkId)
 
-  console.log('textAlign', textAlign)
+  const handleDoubleClick = () => {
+    setIsEditing(true)
+    dispatch(setEditingArtwork(true))
+  }
+
+  const handleBlur = () => {
+    setIsEditing(false)
+    dispatch(setEditingArtwork(false))
+    if (contentRef.current) {
+      const updatedText = contentRef.current.innerText
+      handleArtisticTextChange(updatedText)
+    }
+  }
 
   return (
     <div className={styles.text}>
       <div
+        ref={contentRef}
         style={{
           textAlign,
-          color: 'red',
-          fontSize: 14,
-          lineHeight: 1.5,
+          color: 'black',
         }}
-        className={styles.content}
+        className={`${styles.content} ${isEditing ? styles.editable : ''}`}
+        contentEditable={isEditing}
+        suppressContentEditableWarning={true}
+        onDoubleClick={handleDoubleClick}
+        onBlur={handleBlur}
       >
-        {text}
+        {artisticText}
       </div>
     </div>
   )

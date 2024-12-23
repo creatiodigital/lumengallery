@@ -37,8 +37,6 @@ export const useCreateArtwork = (boundingData, scaleFactor, currentWallId) => {
       }),
     )
 
-    console.log('artworkType', artworkType)
-
     dispatch(
       editArtworkType({
         currentArtworkId: artworkId,

@@ -1,8 +1,6 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 
-import { Button } from '@/components/ui/Button'
-import { FileInput } from '@/components/ui/FileInput'
 import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { Textarea } from '@/components/ui/Textarea'
@@ -10,34 +8,25 @@ import { Textarea } from '@/components/ui/Textarea'
 import styles from './RightPanel.module.scss'
 import { useArtworkDetails } from './useArtworkDetails'
 import { useArtworkHandlers } from './useArtworkHandlers'
-import { useFileUpload } from './useFileUpload'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 
 const RightPanel = () => {
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { width, height, x, y, name, description, artisticText, author, artworkType } =
+  const { width, height, x, y, name, description, author, artworkType } =
     useArtworkDetails(currentArtworkId)
 
   const {
     handleWidthChange,
     handleHeightChange,
-    handleTypeChange,
     handleNameChange,
     handleAuthorChange,
     handleDescriptionChange,
     handleTextAlign,
-    handleArtisticTextChange,
     handleMoveXChange,
     handleMoveYChange,
   } = useArtworkHandlers(currentArtworkId)
-
-  const { handleFileChange, triggerFileUpload } = useFileUpload(currentArtworkId)
-
-  const handleSelectOption = (value) => {
-    handleTypeChange(value)
-  }
 
   return (
     <div className={styles.panel}>
@@ -96,14 +85,6 @@ const RightPanel = () => {
                   </div>
                 </div>
               </div>
-              {artworkType === 'paint' && (
-                <div className={styles.section}>
-                  <div className={styles.subsection}>
-                    <Button onClick={triggerFileUpload} type="small" label="Choose Image" />
-                    <FileInput id="file-upload" onInput={handleFileChange} />
-                  </div>
-                </div>
-              )}
 
               <div className={styles.section}>
                 <h2 className={styles.title}>Meta</h2>
@@ -120,14 +101,6 @@ const RightPanel = () => {
                     <div className={styles.subsection}>
                       <h3 className={styles.subtitle}>Description</h3>
                       <Textarea value={description} onChange={handleDescriptionChange} />
-                    </div>
-                  </>
-                )}
-                {artworkType === 'text' && (
-                  <>
-                    <div className={styles.subsection}>
-                      <h3 className={styles.subtitle}>Artistic Text</h3>
-                      <Textarea value={artisticText} onChange={handleArtisticTextChange} />
                     </div>
                   </>
                 )}
