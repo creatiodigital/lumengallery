@@ -9,7 +9,7 @@ const Artworks = () => {
 
   const precomputedArtworks = useMemo(() => {
     return artworks?.map((artwork) => {
-      if (!artwork.url || !artwork.space) return null
+      if (!artwork.space) return null // Ensure `space` is available
 
       const position = new Vector3(
         artwork.space.position.x,
@@ -24,15 +24,31 @@ const Artworks = () => {
         artwork.space.quaternion.w,
       )
 
-      const texture = (() => {
-        if (!artwork.url) return null
-        const loader = new TextureLoader()
-        const loadedTexture = loader.load(artwork.url)
-        loadedTexture.colorSpace = SRGBColorSpace
-        return loadedTexture
-      })()
+      // Load texture only if URL exists
+      const texture = artwork.url
+        ? (() => {
+            const loader = new TextureLoader()
+            const loadedTexture = loader.load(artwork.url)
+            loadedTexture.colorSpace = SRGBColorSpace
+            return loadedTexture
+          })()
+        : null
 
-      return { ...artwork, position, quaternion, texture }
+      // Default width and height if not provided
+      const width = artwork.space.width || 1
+      const height = artwork.space.height || 1
+
+      return {
+        ...artwork,
+        position,
+        quaternion,
+        texture,
+        space: {
+          ...artwork.space,
+          width,
+          height,
+        },
+      }
     })
   }, [artworks])
 

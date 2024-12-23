@@ -4,25 +4,26 @@ import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { edit3DCoordinates } from '@/lib/features/artistSlice'
-import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
+import { chooseCurrentArtworkId, setWallDimensions } from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
-import { useBoundingData } from './hooks/useBoundingData'
-import { useCreateArtwork } from './hooks/useCreateArtwork'
-import { useDeselectArtwork } from './hooks/useDeselectArtwork'
-import { useGlobalMouseUp } from './hooks/useGlobalMouseUp'
-import { useKeyboardEvents } from './hooks/useKeyboardEvents'
-import { useMoveArtwork } from './hooks/useMoveArtwork'
-import { useResizeArtwork } from './hooks/useResizeArtwork'
-import { convert2DTo3D } from './utils'
+import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
+import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
+import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
+import { useGlobalMouseUp } from '@/components/wallview/hooks/useGlobalMouseUp'
+import { useKeyboardEvents } from '@/components/wallview/hooks/useKeyboardEvents'
+import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
+import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
+import { convert2DTo3D } from '@/components/wallview/utils'
 import styles from './Wall.module.scss'
 import { Artwork } from '../Artwork'
 
-export const Wall = ({ scaleFactor }) => {
+export const Wall = () => {
   const { nodes } = useGLTF('/assets/one-space36.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
+  const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
   const [dragging, setDragging] = useState(false)
   const [wallWidth, setWallWidth] = useState('')
   const [wallHeight, setWallHeight] = useState('')
@@ -47,8 +48,6 @@ export const Wall = ({ scaleFactor }) => {
 
   const { handleResize } = useResizeArtwork(boundingData, scaleFactor)
 
-  const { handleCreateArtwork } = useCreateArtwork(boundingData, scaleFactor, currentWallId)
-
   const handleArtworkClick = (event, artworkId) => {
     event.stopPropagation()
 
@@ -61,10 +60,16 @@ export const Wall = ({ scaleFactor }) => {
 
   useEffect(() => {
     if (boundingData && wallRef.current) {
-      wallRef.current.style.width = `${boundingData.width * 100}px`
-      wallRef.current.style.height = `${boundingData.height * 100}px`
-      setWallWidth(boundingData.width.toFixed(2))
-      setWallHeight(boundingData.height.toFixed(2))
+      const width = boundingData.width
+      const height = boundingData.height
+
+      wallRef.current.style.width = `${width * 100}px`
+      wallRef.current.style.height = `${height * 100}px`
+
+      setWallWidth(width.toFixed(2))
+      setWallHeight(height.toFixed(2))
+
+      dispatch(setWallDimensions({ width, height }))
     }
   }, [boundingData])
 
@@ -104,7 +109,6 @@ export const Wall = ({ scaleFactor }) => {
       <div
         ref={wallRef}
         className={styles.wall}
-        onDoubleClick={(event) => handleCreateArtwork(event, wallRef)}
         onClick={handleDeselect}
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}

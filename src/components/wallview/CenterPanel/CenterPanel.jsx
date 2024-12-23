@@ -31,7 +31,7 @@ export const CenterPanel = () => {
           transform: `translate(${panPosition.x}%, ${panPosition.y}%) scale(${scaleFactor || 1})`,
         }}
       >
-        <Wall scaleFactor={scaleFactor} />
+        <Wall />
       </div>
     </div>
   )

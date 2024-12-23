@@ -12,7 +12,6 @@ const sceneSlice = createSlice({
       state.currentArtworkId = action.payload
     },
     showPlaceholders: (state) => {
-      console.log('ppp')
       state.isPlaceholdersShown = true
     },
     hidePlaceholders: (state) => {

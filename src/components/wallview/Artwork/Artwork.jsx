@@ -2,20 +2,21 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 
 import { Handles } from '../Handles'
+import { ArtisticText } from '@/components/wallview/ArtisticText'
 import styles from './Artwork.module.scss'
 
 const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHoveredArtworkId }) => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { canvas, id, url } = artwork
+  const { canvas, id, url, artworkType, artisticText } = artwork
   const { y, x, width, height } = canvas
 
   const handleMouseEnter = () => {
-    setHoveredArtworkId(id) // Indicate this artwork is being hovered over
+    setHoveredArtworkId(id)
   }
 
   const handleMouseLeave = () => {
-    setHoveredArtworkId(null) // Indicate no artwork is being hovered over
+    setHoveredArtworkId(null)
   }
 
   return (
@@ -34,6 +35,9 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
       onMouseLeave={handleMouseLeave}
     >
       {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
+      {currentArtworkId === id && artworkType === 'text' && artisticText && (
+        <ArtisticText artworkId={id} />
+      )}
     </div>
   )
 }

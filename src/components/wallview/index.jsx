@@ -1,6 +1,7 @@
 import { LeftPanel } from '@/components/wallview/LeftPanel'
 import { RightPanel } from '@/components/wallview/RightPanel'
 import { CenterPanel } from '@/components/wallview/CenterPanel'
+import { CreatePanel } from '@/components/wallview/CreatePanel'
 
 import styles from './WallView.module.scss'
 
@@ -10,6 +11,7 @@ export const WallView = () => {
       <LeftPanel />
       <CenterPanel />
       <RightPanel />
+      <CreatePanel />
     </div>
   )
 }
