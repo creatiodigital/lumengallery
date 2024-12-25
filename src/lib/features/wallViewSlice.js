@@ -54,6 +54,11 @@ const wallViewSlice = createSlice({
       state.panPosition = { x: -50, y: -50 }
       state.scaleFactor = 1
     },
+    setWallDimensions: (state, action) => {
+      const { width, height } = action.payload
+      state.wallWidth = width
+      state.wallHeight = height
+    },
   },
 })
 
@@ -70,5 +75,6 @@ export const {
   decreaseScaleFactor,
   setPanPosition,
   resetPan,
+  setWallDimensions,
 } = wallViewSlice.actions
 export default wallViewSlice.reducer

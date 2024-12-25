@@ -29,12 +29,20 @@ const artistSlice = createSlice({
       const newArtwork = {
         id,
         name: artworkName,
+        artworkType: '',
         wallId,
         canvas,
         space: [],
       }
 
       state.artworks.push(newArtwork)
+    },
+    editArtworkType: (state, action) => {
+      const { currentArtworkId, artworkType } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.artworkType = artworkType
+      }
     },
     editArtwork: (state, action) => {
       const { currentArtworkId, newArtworkSizes } = action.payload
@@ -81,11 +89,28 @@ const artistSlice = createSlice({
         artwork.description = description
       }
     },
+    editArtworkArtisticText: (state, action) => {
+      const { currentArtworkId, artisticText } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.artisticText = artisticText
+      }
+    },
     editArtworkAuthor: (state, action) => {
       const { currentArtworkId, author } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork.author = author
+      }
+    },
+    editArtworkTextAlign: (state, action) => {
+      const { currentArtworkId, textAlign } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.textAlign = textAlign
       }
     },
   },
@@ -102,6 +127,9 @@ export const {
   deleteArtwork,
   editArtworkName,
   editArtworkDescription,
+  editArtworkArtisticText,
   editArtworkAuthor,
+  editArtworkType,
+  editArtworkTextAlign,
 } = artistSlice.actions
 export default artistSlice.reducer

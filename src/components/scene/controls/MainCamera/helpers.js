@@ -84,7 +84,7 @@ export const calculateMovementVector = (keysPressed, moveSpeed, camera) => {
   return moveVector
 }
 
-export const detectCollisions = (camera, moveVector, wallRefs, collisionDistance = 2) => {
+export const detectCollisions = (camera, moveVector, wallRefs, collisionDistance) => {
   const direction = new THREE.Vector3().copy(moveVector).normalize()
   const raycaster = new THREE.Raycaster(camera.position, direction, 0, 3)
 
