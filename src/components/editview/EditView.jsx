@@ -1,10 +1,10 @@
 import React from 'react'
-import { WallView } from '@/components/wallview'
 import { useSelector } from 'react-redux'
 
 import { Menu } from '@/components/dashboard/Menu'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
 import { Scene } from '@/components/scene'
+import { WallView } from '@/components/wallview'
 
 function EditView() {
   const isWallView = useSelector((state) => state.wallView.isWallView)

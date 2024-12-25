@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { editArtworkUrlImage } from '@/lib/features/artistSlice'
+
 import { FileInput } from '@/components/ui/FileInput'
+import { editArtworkUrlImage } from '@/lib/features/artistSlice'
+
 import styles from './ArtisticImage.module.scss'
 
 const ArtisticImage = ({ artworkId, url }) => {

@@ -23,6 +23,8 @@ const Placeholder = ({ i, nodes }) => {
       new MeshStandardMaterial({
         transparent: true,
         opacity: 0,
+        depthTest: false,
+        depthWrite: false,
       }),
     [],
   )

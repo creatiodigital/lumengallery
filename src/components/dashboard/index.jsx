@@ -4,8 +4,8 @@ import { usePathname } from 'next/navigation'
 import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { Button } from '@/components/ui/Button'
 import { EditView } from '@/components/editview'
+import { Button } from '@/components/ui/Button'
 import { setHandler } from '@/lib/features/artistSlice'
 import { showEditMode } from '@/lib/features/dashboardSlice'
 

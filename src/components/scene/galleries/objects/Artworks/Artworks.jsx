@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { useSelector } from 'react-redux'
-import { TextureLoader, Vector3, Quaternion, SRGBColorSpace } from 'three'
+import { Vector3, Quaternion } from 'three'
 
 import { Artwork } from '../Artwork'
 
@@ -9,7 +9,7 @@ const Artworks = () => {
 
   const precomputedArtworks = useMemo(() => {
     return artworks?.map((artwork) => {
-      if (!artwork.space) return null // Ensure `space` is available
+      if (!artwork.space) return null
 
       const position = new Vector3(
         artwork.space.position.x,
@@ -24,17 +24,6 @@ const Artworks = () => {
         artwork.space.quaternion.w,
       )
 
-      // Load texture only if URL exists
-      const texture = artwork.url
-        ? (() => {
-            const loader = new TextureLoader()
-            const loadedTexture = loader.load(artwork.url)
-            loadedTexture.colorSpace = SRGBColorSpace
-            return loadedTexture
-          })()
-        : null
-
-      // Default width and height if not provided
       const width = artwork.space.width || 1
       const height = artwork.space.height || 1
 
@@ -42,7 +31,6 @@ const Artworks = () => {
         ...artwork,
         position,
         quaternion,
-        texture,
         space: {
           ...artwork.space,
           width,

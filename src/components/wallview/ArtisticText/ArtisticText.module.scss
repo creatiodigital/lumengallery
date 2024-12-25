@@ -13,10 +13,14 @@
   height: 100%;
   outline: none;
   @include mediumSans();
-  // pointer-events: auto; /* Allows user interaction */
+  // pointer-events: auto;
+  cursor: default;
+  word-wrap: break-word; /* For legacy support */
+  overflow-wrap: break-word; /* Modern browsers */
+  white-space: pre-wrap;
 
   &.editable {
-    border: 1px dashed gray;
     background-color: #f9f9f9;
+    cursor: text;
   }
 }

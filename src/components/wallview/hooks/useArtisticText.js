@@ -1,4 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux'
+
 import { editArtworkArtisticText } from '@/lib/features/artistSlice'
 
 export const useArtisticText = (artworkId) => {

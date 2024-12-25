@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react'
 import { useDispatch } from 'react-redux'
-import styles from './ArtisticText.module.scss'
+
 import { useArtisticText } from '@/components/wallview/hooks/useArtisticText'
 import { setEditingArtwork } from '@/lib/features/dashboardSlice'
+
+import styles from './ArtisticText.module.scss'
 
 const ArtisticText = ({ artworkId }) => {
   const contentRef = useRef(null)

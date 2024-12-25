@@ -3,10 +3,6 @@ import Image from 'next/image'
 import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { edit3DCoordinates } from '@/lib/features/artistSlice'
-import { chooseCurrentArtworkId, setWallDimensions } from '@/lib/features/wallViewSlice'
-import { showWizard } from '@/lib/features/wizardSlice'
-
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
 import { useGlobalMouseUp } from '@/components/wallview/hooks/useGlobalMouseUp'
@@ -14,11 +10,15 @@ import { useKeyboardEvents } from '@/components/wallview/hooks/useKeyboardEvents
 import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
 import { convert2DTo3D } from '@/components/wallview/utils'
+import { edit3DCoordinates } from '@/lib/features/artistSlice'
+import { chooseCurrentArtworkId, setWallDimensions } from '@/lib/features/wallViewSlice'
+import { showWizard } from '@/lib/features/wizardSlice'
+
 import styles from './Wall.module.scss'
 import { Artwork } from '../Artwork'
 
 export const Wall = () => {
-  const { nodes } = useGLTF('/assets/one-space36.glb')
+  const { nodes } = useGLTF('/assets/one-space40.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
@@ -136,4 +136,4 @@ export const Wall = () => {
   )
 }
 
-useGLTF.preload('/assets/one-space36.glb')
+useGLTF.preload('/assets/one-space40.glb')

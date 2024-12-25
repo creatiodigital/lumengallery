@@ -1,14 +1,14 @@
 import { useGLTF } from '@react-three/drei'
-import { ButtonIcon } from '@/components/ui/ButtonIcon'
-import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useSelector } from 'react-redux'
 
+import { ButtonIcon } from '@/components/ui/ButtonIcon'
+import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 
 import styles from './CreatePanel.module.scss'
 
 export const CreatePanel = () => {
-  const { nodes } = useGLTF('/assets/one-space36.glb')
+  const { nodes } = useGLTF('/assets/one-space40.glb')
   const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes, currentWallId)

@@ -1,6 +1,7 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 
+import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { Textarea } from '@/components/ui/Textarea'
@@ -8,7 +9,6 @@ import { Textarea } from '@/components/ui/Textarea'
 import styles from './RightPanel.module.scss'
 import { useArtworkDetails } from './useArtworkDetails'
 import { useArtworkHandlers } from './useArtworkHandlers'
-import { ButtonIcon } from '@/components/ui/ButtonIcon'
 
 const RightPanel = () => {
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)

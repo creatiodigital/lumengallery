@@ -1,11 +1,10 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
 
+import { convert2DTo3D } from '@/components/wallview/utils'
 import { createArtwork, edit3DCoordinates, editArtworkType } from '@/lib/features/artistSlice'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
-
-import { convert2DTo3D } from '@/components/wallview/utils'
 
 export const useCreateArtwork = (boundingData, scaleFactor, currentWallId) => {
   const dispatch = useDispatch()

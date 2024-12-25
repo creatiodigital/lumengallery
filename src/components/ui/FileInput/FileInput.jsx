@@ -1,4 +1,5 @@
 import React, { forwardRef } from 'react'
+
 import styles from './FileInput.module.scss'
 
 const FileInput = forwardRef(({ id, onInput }, ref) => {
@@ -13,5 +14,7 @@ const FileInput = forwardRef(({ id, onInput }, ref) => {
     />
   )
 })
+
+FileInput.displayName = 'FileInput'
 
 export default FileInput
