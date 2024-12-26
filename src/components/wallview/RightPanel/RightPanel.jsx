@@ -1,10 +1,10 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 
-import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
-import { Textarea } from '@/components/ui/Textarea'
+import { ArtText } from './ArtText'
+import { Paint } from './Paint'
 
 import styles from './RightPanel.module.scss'
 import { useArtworkDetails } from './useArtworkDetails'
@@ -14,16 +14,12 @@ const RightPanel = () => {
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { width, height, x, y, name, description, author, artworkType } =
-    useArtworkDetails(currentArtworkId)
+  const { width, height, x, y, name, artworkType } = useArtworkDetails(currentArtworkId)
 
   const {
     handleWidthChange,
     handleHeightChange,
     handleNameChange,
-    handleAuthorChange,
-    handleDescriptionChange,
-    handleTextAlign,
     handleMoveXChange,
     handleMoveYChange,
   } = useArtworkHandlers(currentArtworkId)
@@ -85,46 +81,15 @@ const RightPanel = () => {
                   </div>
                 </div>
               </div>
-
               <div className={styles.section}>
                 <h2 className={styles.title}>Meta</h2>
                 <div className={styles.subsection}>
                   <h3 className={styles.subtitle}>Title</h3>
                   <Input value={name} onChange={handleNameChange} />
                 </div>
-                {artworkType === 'paint' && (
-                  <>
-                    <div className={styles.subsection}>
-                      <h3 className={styles.subtitle}>Author</h3>
-                      <Input value={author} onChange={handleAuthorChange} />
-                    </div>
-                    <div className={styles.subsection}>
-                      <h3 className={styles.subtitle}>Description</h3>
-                      <Textarea value={description} onChange={handleDescriptionChange} />
-                    </div>
-                  </>
-                )}
               </div>
-
-              {artworkType === 'text' && (
-                <div className={styles.section}>
-                  <h2 className={styles.title}>Text Styles</h2>
-                  <div className={styles.subsection}>
-                    <h3 className={styles.subtitle}>Text Align</h3>
-                    <div className={styles.row}>
-                      <div className={styles.item}>
-                        <ButtonIcon icon="close" onClick={() => handleTextAlign('left')} />
-                      </div>
-                      <div className={styles.item}>
-                        <ButtonIcon icon="close" onClick={() => handleTextAlign('center')} />
-                      </div>
-                      <div className={styles.item}>
-                        <ButtonIcon icon="close" onClick={() => handleTextAlign('right')} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {artworkType === 'paint' && <Paint />}
+              {artworkType === 'text' && <ArtText />}
             </div>
           )}
         </div>

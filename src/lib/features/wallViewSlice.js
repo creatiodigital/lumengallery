@@ -39,7 +39,7 @@ const wallViewSlice = createSlice({
       state.scaleFactor = Math.min(state.scaleFactor + 0.02, 1.5)
     },
     decreaseScaleFactor: (state) => {
-      state.scaleFactor = Math.max(state.scaleFactor - 0.02, 0.54)
+      state.scaleFactor = Math.max(state.scaleFactor - 0.02, 0.64)
     },
     setPanPosition: (state, action) => {
       const deltaX = action.payload.deltaX

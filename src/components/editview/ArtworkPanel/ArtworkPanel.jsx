@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useRef, useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
@@ -8,6 +8,7 @@ import styles from './ArtworkPanel.module.scss'
 
 const ArtworkPanel = () => {
   const dispatch = useDispatch()
+  const panelRef = useRef(null) // Reference for the panel
   const artworks = useSelector((state) => state.artist.artworks)
   const selectedSceneArtworkId = useSelector((state) => state.scene.currentArtworkId)
 
@@ -18,8 +19,23 @@ const ArtworkPanel = () => {
 
   const { author, name, description } = selectedArtwork || {}
 
+  // Close panel when clicking outside of it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (panelRef.current && !panelRef.current.contains(event.target)) {
+        dispatch(hideArtworkPanel())
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside) // Add listener
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside) // Clean up listener
+    }
+  }, [dispatch])
+
   return (
-    <div className={styles.artworkPanel}>
+    <div ref={panelRef} className={styles.artworkPanel}>
       <div className={styles.info}>
         {selectedArtwork && (
           <div>
