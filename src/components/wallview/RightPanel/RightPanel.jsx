@@ -3,9 +3,9 @@ import { useSelector } from 'react-redux'
 
 import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
+
 import { ArtText } from './ArtText'
 import { Paint } from './Paint'
-
 import styles from './RightPanel.module.scss'
 import { useArtworkDetails } from './useArtworkDetails'
 import { useArtworkHandlers } from './useArtworkHandlers'

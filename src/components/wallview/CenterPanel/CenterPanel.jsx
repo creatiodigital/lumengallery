@@ -1,8 +1,8 @@
 import { useSelector, useDispatch } from 'react-redux'
 
+import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
 import { Wall } from '@/components/wallview/Wall/Wall'
 import { setPanPosition } from '@/lib/features/wallViewSlice'
-import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
 
 import styles from './CenterPanel.module.scss'
 

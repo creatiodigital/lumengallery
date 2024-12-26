@@ -1,6 +1,6 @@
 import c from 'classnames'
-import { useDispatch, useSelector } from 'react-redux'
 import { useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'

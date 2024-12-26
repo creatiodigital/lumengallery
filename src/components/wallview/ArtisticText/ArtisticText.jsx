@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { useDispatch } from 'react-redux'
+
 import { Icon } from '@/components/ui/Icon'
 import { useArtisticText } from '@/components/wallview/hooks/useArtisticText'
 import { setEditingArtwork } from '@/lib/features/dashboardSlice'
@@ -13,7 +14,7 @@ const ArtisticText = ({ artworkId }) => {
 
   const { artisticText, textAlign, handleArtisticTextChange } = useArtisticText(artworkId)
 
-  const handleDoubleClick = (e) => {
+  const handleDoubleClick = () => {
     if (!isEditing) {
       setIsEditing(true)
       dispatch(setEditingArtwork(true))

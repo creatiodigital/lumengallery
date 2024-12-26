@@ -1,9 +1,11 @@
-import React, { useRef, useState } from 'react'
 import c from 'classnames'
+import React, { useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { Icon } from '@/components/ui/Icon'
+
 import { FileInput } from '@/components/ui/FileInput'
+import { Icon } from '@/components/ui/Icon'
 import { editArtworkUrlImage } from '@/lib/features/artistSlice'
+
 import styles from './ArtisticImage.module.scss'
 
 const ArtisticImage = ({ artworkId, url }) => {
