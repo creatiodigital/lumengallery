@@ -31,14 +31,16 @@
 
 .grid {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%; /* Matches wall size */
+  height: 100%; /* Matches wall size */
   pointer-events: none;
   background-image: linear-gradient(to right, rgba(0, 0, 0, 0.1) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-size: 20px 20px; /* Match grid snapping size */
+  background-position: center; /* Centers grid lines */
 }
 
 .person {

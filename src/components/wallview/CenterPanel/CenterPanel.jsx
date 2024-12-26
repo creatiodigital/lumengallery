@@ -1,5 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux'
 
+import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
 import { Wall } from '@/components/wallview/Wall/Wall'
 import { setPanPosition } from '@/lib/features/wallViewSlice'
 
@@ -22,11 +23,14 @@ export const CenterPanel = () => {
     )
   }
 
+  const handleDeselect = useDeselectArtwork()
+
   return (
     <div className={styles.panel} onWheel={handleWheel}>
       <div
         id="wallWrapper"
         className={styles.wrapper}
+        onClick={handleDeselect}
         style={{
           transform: `translate(${panPosition.x}%, ${panPosition.y}%) scale(${scaleFactor || 1})`,
         }}

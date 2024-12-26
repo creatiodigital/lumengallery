@@ -118,7 +118,6 @@ export const Wall = () => {
           </div>
         )}
         {isGridVisible && <div className={styles.grid} />}
-
         {artworks
           .filter((artwork) => artwork.wallId === currentWallId)
           .map((artwork) => (

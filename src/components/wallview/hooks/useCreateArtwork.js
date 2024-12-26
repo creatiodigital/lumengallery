@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { createArtwork, edit3DCoordinates, editArtworkType } from '@/lib/features/artistSlice'
+import { createArtwork, edit3DCoordinates } from '@/lib/features/artistSlice'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
@@ -15,8 +15,8 @@ export const useCreateArtwork = (boundingData, scaleFactor, currentWallId) => {
   const handleCreateArtwork = (artworkType) => {
     if (!boundingData) return
 
-    const x = (wallWidth * 100) / 2 - 20 / scaleFactor
-    const y = (wallHeight * 100) / 2 - 20 / scaleFactor
+    const x = (wallWidth * 100) / 2 - 50 / scaleFactor
+    const y = (wallHeight * 100) / 2 - 50 / scaleFactor
     const artworkId = uuidv4()
 
     dispatch(showWizard())
@@ -25,21 +25,15 @@ export const useCreateArtwork = (boundingData, scaleFactor, currentWallId) => {
     dispatch(
       createArtwork({
         id: artworkId,
+        artworkType,
         wallId: currentWallId,
         canvas: {
           x,
           y,
-          width: 40,
-          height: 40,
+          width: 100,
+          height: 100,
         },
         imageURL: null,
-      }),
-    )
-
-    dispatch(
-      editArtworkType({
-        currentArtworkId: artworkId,
-        artworkType,
       }),
     )
 
@@ -48,8 +42,8 @@ export const useCreateArtwork = (boundingData, scaleFactor, currentWallId) => {
         x,
         y,
         size: {
-          w: 40,
-          h: 40,
+          w: 100,
+          h: 100,
         },
       },
       boundingData,

@@ -8,6 +8,10 @@ const artistSlice = createSlice({
     lastName: 'Plaza',
     handler: '',
     artworks: [],
+    artworkCounters: {
+      paint: 0,
+      text: 0,
+    },
   },
   reducers: {
     setHandler: (state, action) => {
@@ -20,29 +24,26 @@ const artistSlice = createSlice({
       state.isEditMode = false
     },
     createArtwork: (state, action) => {
-      const { wallId, id, canvas } = action.payload
+      const { wallId, id, canvas, artworkType } = action.payload
 
-      const wallArtworksCount = state.artworks.filter((artwork) => artwork.wallId === wallId).length
+      if (artworkType in state.artworkCounters) {
+        state.artworkCounters[artworkType] += 1
+      } else {
+        state.artworkCounters[artworkType] = 1
+      }
 
-      const artworkName = `Artwork${wallArtworksCount + 1}`
+      const artworkName = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)}${state.artworkCounters[artworkType]}`
 
       const newArtwork = {
         id,
         name: artworkName,
-        artworkType: '',
+        artworkType,
         wallId,
         canvas,
         space: [],
       }
 
       state.artworks.push(newArtwork)
-    },
-    editArtworkType: (state, action) => {
-      const { currentArtworkId, artworkType } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.artworkType = artworkType
-      }
     },
     editArtwork: (state, action) => {
       const { currentArtworkId, newArtworkSizes } = action.payload
@@ -129,7 +130,6 @@ export const {
   editArtworkDescription,
   editArtworkArtisticText,
   editArtworkAuthor,
-  editArtworkType,
   editArtworkTextAlign,
 } = artistSlice.actions
 export default artistSlice.reducer

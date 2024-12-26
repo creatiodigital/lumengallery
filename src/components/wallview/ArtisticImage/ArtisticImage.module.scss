@@ -1,30 +1,38 @@
-.artisticImage {
+@import '@/styles/mixins';
+
+.image {
   position: relative;
   width: 100%;
   height: 100%;
   background-size: cover;
   background-position: center;
-  border: 2px solid transparent;
   transition: border-color 0.2s ease;
 
   &.dragOver {
-    border-color: #4caf50;
+    border: 2px dashed var(--primary-color);
   }
 }
 
-.dropOverlay {
+.empty {
+  @include smallSans();
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
+  background: var(--white);
+  color: var(--black);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  font-weight: bold;
+  flex-direction: column;
+  gap: 5px;
+  text-align: center;
   pointer-events: none;
-  z-index: 10;
+  z-index: 2;
+}
+
+.over {
+  background: var(--black);
+  color: var(--white);
 }
