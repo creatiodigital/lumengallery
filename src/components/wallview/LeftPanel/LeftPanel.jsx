@@ -1,4 +1,5 @@
 import c from 'classnames'
+import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
@@ -26,7 +27,7 @@ export const LeftPanel = () => {
   const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
 
-  const wallArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId)
+  const wallArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId).reverse()
 
   const handleZoomIn = () => {
     dispatch(increaseScaleFactor())
@@ -70,6 +71,25 @@ export const LeftPanel = () => {
     }
   }
 
+  useEffect(() => {
+    const handleWheelZoom = (event) => {
+      if (event.metaKey) {
+        event.preventDefault()
+        if (event.deltaY < 0) {
+          dispatch(increaseScaleFactor())
+        } else if (event.deltaY > 0) {
+          dispatch(decreaseScaleFactor())
+        }
+      }
+    }
+
+    window.addEventListener('wheel', handleWheelZoom)
+
+    return () => {
+      window.removeEventListener('wheel', handleWheelZoom)
+    }
+  }, [])
+
   return (
     <div className={styles.panel}>
       <div className={styles.section}>
@@ -81,7 +101,6 @@ export const LeftPanel = () => {
           </div>
         </div>
       </div>
-
       <div className={styles.section}>
         <h2 className={styles.title}>Helpers</h2>
         <div className={styles.subsection}>
@@ -111,11 +130,9 @@ export const LeftPanel = () => {
           </div>
         </div>
       </div>
-
-      <div className={styles.section}>
-        <h2 className={styles.title}>Pictures</h2>
-        <div className={styles.subsection}>
-          {wallArtworks.length > 0 && (
+      {wallArtworks.length > 0 && (
+        <div className={styles.section}>
+          <div className={styles.subsection}>
             <ul className={styles.artworks}>
               {wallArtworks.map((artwork) => (
                 <li
@@ -130,9 +147,9 @@ export const LeftPanel = () => {
                 </li>
               ))}
             </ul>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

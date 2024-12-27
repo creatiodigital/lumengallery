@@ -1,5 +1,6 @@
 import { useGLTF } from '@react-three/drei'
 import React from 'react'
+import { useSelector } from 'react-redux'
 
 import { Artworks } from '../objects/Artworks'
 import { Ceiling } from '../objects/Ceiling'
@@ -9,8 +10,10 @@ import { Placeholder } from '../objects/Placeholder'
 import { RectLight } from '../objects/RectLight'
 import { Wall } from '../objects/Wall'
 
-const OneSpace = ({ wallRefs, isSpace, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/one-space36.glb')
+const OneSpace = ({ wallRefs, ...props }) => {
+  const { nodes, materials } = useGLTF('/assets/one-space40.glb')
+
+  const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
 
   const wallsArray = Array.from({ length: 1 })
   const placeholdersArray = Array.from({ length: 6 }) || []
@@ -24,7 +27,8 @@ const OneSpace = ({ wallRefs, isSpace, ...props }) => {
       {wallsArray.map((_, i) => (
         <Wall key={i} i={i} wallRef={wallRefs[i]} nodes={nodes} materials={materials} />
       ))}
-      {!isSpace && placeholdersArray.map((_, i) => <Placeholder key={i} i={i} nodes={nodes} />)}
+      {isPlaceholdersShown &&
+        placeholdersArray.map((_, i) => <Placeholder key={i} i={i} nodes={nodes} />)}
       {rectLightsArray.map((_, i) => (
         <RectLight key={i} i={i} nodes={nodes} />
       ))}
@@ -36,6 +40,6 @@ const OneSpace = ({ wallRefs, isSpace, ...props }) => {
   )
 }
 
-useGLTF.preload('/assets/one-space36.glb')
+useGLTF.preload('/assets/one-space40.glb')
 
 export default OneSpace

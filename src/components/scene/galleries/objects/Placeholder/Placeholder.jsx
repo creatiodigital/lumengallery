@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { useDispatch } from 'react-redux'
 import { MeshStandardMaterial, EdgesGeometry, LineDashedMaterial } from 'three'
 
-import { hideArtworkPanel } from '@/lib/features/sceneSlice'
+import { hideArtworkPanel } from '@/lib/features/dashboardSlice'
 import { showWallView } from '@/lib/features/wallViewSlice'
 
 const Placeholder = ({ i, nodes }) => {
@@ -23,6 +23,8 @@ const Placeholder = ({ i, nodes }) => {
       new MeshStandardMaterial({
         transparent: true,
         opacity: 0,
+        depthTest: false,
+        depthWrite: false,
       }),
     [],
   )

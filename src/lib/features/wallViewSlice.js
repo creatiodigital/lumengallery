@@ -39,7 +39,7 @@ const wallViewSlice = createSlice({
       state.scaleFactor = Math.min(state.scaleFactor + 0.02, 1.5)
     },
     decreaseScaleFactor: (state) => {
-      state.scaleFactor = Math.max(state.scaleFactor - 0.02, 0.54)
+      state.scaleFactor = Math.max(state.scaleFactor - 0.02, 0.64)
     },
     setPanPosition: (state, action) => {
       const deltaX = action.payload.deltaX
@@ -53,6 +53,11 @@ const wallViewSlice = createSlice({
     resetPan: (state) => {
       state.panPosition = { x: -50, y: -50 }
       state.scaleFactor = 1
+    },
+    setWallDimensions: (state, action) => {
+      const { width, height } = action.payload
+      state.wallWidth = width
+      state.wallHeight = height
     },
   },
 })
@@ -70,5 +75,6 @@ export const {
   decreaseScaleFactor,
   setPanPosition,
   resetPan,
+  setWallDimensions,
 } = wallViewSlice.actions
 export default wallViewSlice.reducer

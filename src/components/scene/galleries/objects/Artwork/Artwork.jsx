@@ -1,34 +1,17 @@
 import React from 'react'
-import { useDispatch } from 'react-redux'
-import { DoubleSide } from 'three'
 
-import { showArtworkPanel, setCurrentArtwork } from '@/lib/features/sceneSlice'
+import { ArtText } from '../ArtText'
+import { Paint } from '../Paint'
 
 const Artwork = ({ artwork }) => {
-  const { id, position, quaternion, space, texture } = artwork
-  const dispatch = useDispatch()
-
-  return (
-    <mesh
-      key={id}
-      position={position}
-      quaternion={quaternion}
-      renderOrder={2}
-      onClick={() => {
-        dispatch(showArtworkPanel())
-        dispatch(setCurrentArtwork(artwork.id))
-      }}
-    >
-      <planeGeometry args={[space.width || 1, space.height || 1]} />
-      <meshBasicMaterial
-        side={DoubleSide}
-        toneMapped={false}
-        map={texture || null}
-        roughness={1}
-        metalness={0}
-      />
-    </mesh>
-  )
+  switch (artwork?.artworkType) {
+    case 'paint':
+      return <Paint artwork={artwork} />
+    case 'text':
+      return <ArtText artwork={artwork} />
+    default:
+      return <div>Unknown artwork type</div>
+  }
 }
 
 export default Artwork

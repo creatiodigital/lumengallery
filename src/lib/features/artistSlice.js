@@ -8,6 +8,10 @@ const artistSlice = createSlice({
     lastName: 'Plaza',
     handler: '',
     artworks: [],
+    artworkCounters: {
+      paint: 0,
+      text: 0,
+    },
   },
   reducers: {
     setHandler: (state, action) => {
@@ -20,18 +24,24 @@ const artistSlice = createSlice({
       state.isEditMode = false
     },
     createArtwork: (state, action) => {
-      const { wallId, id, canvas } = action.payload
+      const { wallId, id, canvas, artworkType } = action.payload
 
-      const wallArtworksCount = state.artworks.filter((artwork) => artwork.wallId === wallId).length
+      if (artworkType in state.artworkCounters) {
+        state.artworkCounters[artworkType] += 1
+      } else {
+        state.artworkCounters[artworkType] = 1
+      }
 
-      const artworkName = `Artwork${wallArtworksCount + 1}`
+      const artworkName = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)}${state.artworkCounters[artworkType]}`
 
       const newArtwork = {
         id,
         name: artworkName,
+        artworkType,
         wallId,
         canvas,
         space: [],
+        showFrame: false,
       }
 
       state.artworks.push(newArtwork)
@@ -81,11 +91,35 @@ const artistSlice = createSlice({
         artwork.description = description
       }
     },
+    editArtworkArtisticText: (state, action) => {
+      const { currentArtworkId, artisticText } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.artisticText = artisticText
+      }
+    },
     editArtworkAuthor: (state, action) => {
       const { currentArtworkId, author } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork.author = author
+      }
+    },
+    editArtworkTextAlign: (state, action) => {
+      const { currentArtworkId, textAlign } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.textAlign = textAlign
+      }
+    },
+    showArtworkFrame: (state, action) => {
+      const { currentArtworkId, showFrame } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.showFrame = showFrame
       }
     },
   },
@@ -102,6 +136,9 @@ export const {
   deleteArtwork,
   editArtworkName,
   editArtworkDescription,
+  editArtworkArtisticText,
   editArtworkAuthor,
+  editArtworkTextAlign,
+  showArtworkFrame,
 } = artistSlice.actions
 export default artistSlice.reducer

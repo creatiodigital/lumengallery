@@ -1,0 +1,38 @@
+@import '@/styles/mixins';
+
+.image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  transition: border-color 0.2s ease;
+
+  &.dragOver {
+    border: 2px dashed var(--primary-color);
+  }
+}
+
+.empty {
+  @include smallSans();
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--white);
+  color: var(--black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.over {
+  background: var(--black);
+  color: var(--white);
+}

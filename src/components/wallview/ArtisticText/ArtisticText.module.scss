@@ -1,0 +1,41 @@
+@import '@/styles/mixins';
+
+.text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  background: var(--white);
+
+  &.editing {
+    background-color: #f0f0f0;
+  }
+}
+
+.content {
+  width: 100%;
+  height: 100%;
+  outline: none;
+  @include mediumSans();
+  cursor: default;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+
+  &.editable {
+    background-color: #f9f9f9;
+    cursor: text;
+  }
+}
+
+.empty {
+  @include smallSans();
+  color: var(--black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+}

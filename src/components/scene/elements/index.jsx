@@ -5,7 +5,7 @@ import SceneContext from '@/contexts/SceneContext'
 
 import { Lights } from './lights'
 
-export const Elements = ({ onPlaceholderClick, artworks, isSpace }) => {
+export const Elements = ({ onPlaceholderClick, artworks }) => {
   const { wallRefs } = useContext(SceneContext)
 
   const wallRefArray = useMemo(() => Array.from({ length: 6 }, () => React.createRef()), [])
@@ -18,7 +18,6 @@ export const Elements = ({ onPlaceholderClick, artworks, isSpace }) => {
         wallRefs={wallRefs.current}
         onPlaceholderClick={onPlaceholderClick}
         artworks={artworks}
-        isSpace={isSpace}
       />
     </>
   )
