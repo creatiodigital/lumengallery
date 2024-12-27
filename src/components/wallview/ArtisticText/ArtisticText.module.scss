@@ -7,9 +7,10 @@
   height: 100%;
   width: 100%;
   position: relative;
+  background: var(--white);
 
   &.editing {
-    background-color: #f0f0f0; /* Optional to highlight editing mode */
+    background-color: #f0f0f0;
   }
 }
 
@@ -19,8 +20,8 @@
   outline: none;
   @include mediumSans();
   cursor: default;
-  word-wrap: break-word; /* For legacy support */
-  overflow-wrap: break-word; /* Modern browsers */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   white-space: pre-wrap;
 
   &.editable {

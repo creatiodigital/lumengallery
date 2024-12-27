@@ -15,6 +15,10 @@ export const CreatePanel = () => {
 
   const { handleCreateArtwork } = useCreateArtwork(boundingData, scaleFactor, currentWallId)
 
+  const handleDragStart = (e, artworkType) => {
+    e.dataTransfer.setData('artworkType', artworkType)
+  }
+
   return (
     <div className={styles.panel}>
       <div className={styles.options}>
@@ -23,12 +27,16 @@ export const CreatePanel = () => {
           icon="painting"
           label="Paint"
           onClick={() => handleCreateArtwork('paint')}
+          draggable
+          onDragStart={(e) => handleDragStart(e, 'paint')}
         />
         <ButtonIcon
           size="big"
           icon="text"
           label="Text"
           onClick={() => handleCreateArtwork('text')}
+          draggable
+          onDragStart={(e) => handleDragStart(e, 'text')}
         />
       </div>
     </div>

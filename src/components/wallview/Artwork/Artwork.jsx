@@ -29,6 +29,7 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
         left: `${x}px`,
         width: `${width}px`,
         height: `${height}px`,
+        zIndex: currentArtworkId === id ? 10 : 1,
       }}
       onMouseDown={(event) => onDragStart(event, id)}
       onClick={(event) => onArtworkClick(event, id)}
