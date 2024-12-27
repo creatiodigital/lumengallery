@@ -1,5 +1,7 @@
 import { useFrame } from '@react-three/fiber'
+import { Vector3 } from 'three'
 import { useContext, useEffect, useRef, useState, useCallback } from 'react'
+import { useSelector } from 'react-redux'
 
 import SceneContext from '@/contexts/SceneContext'
 
@@ -27,6 +29,7 @@ const MainCamera = () => {
   const collitionDistance = 1
 
   const moveSpeed = 0.04
+  const cameraElevation = 1.4
 
   const onMouseMove = useCallback(handleMouseMove(mouseState, setTick), [])
   const onMouseDown = useCallback(attachMouseHandlers(onMouseMove, mouseState), [onMouseMove])
@@ -38,6 +41,11 @@ const MainCamera = () => {
 
   const onKeyDown = useCallback((event) => handleKeyPress(keysPressed, event.key, true), [])
   const onKeyUp = useCallback((event) => handleKeyPress(keysPressed, event.key, false), [])
+
+  const wallCoordinates = useSelector((state) => state.wallView.currentWallCoordinates)
+  const wallNormal = useSelector((state) => state.wallView.currentWallNormal)
+
+  console.log('xxx', wallNormal)
 
   useEffect(() => {
     window.addEventListener('keydown', onKeyDown)
@@ -59,9 +67,18 @@ const MainCamera = () => {
 
   useFrame(({ camera }) => {
     if (!initialPositionSet.current) {
-      camera.position.set(0, 1.4, 0)
-      camera.fov = 70
-      camera.updateProjectionMatrix()
+      // Initialize camera position and orientation based on wallCoordinates and wallNormal
+      if (wallCoordinates && wallNormal) {
+        const lookAt = new Vector3(wallCoordinates.x, cameraElevation, wallCoordinates.z)
+        const offsetDistance = 5
+        const offset = new Vector3(wallNormal.x * offsetDistance, 0, wallNormal.z * offsetDistance)
+        const cameraPosition = lookAt.clone().add(offset)
+
+        camera.position.set(cameraPosition.x, cameraElevation, cameraPosition.z)
+        camera.lookAt(lookAt)
+        camera.updateProjectionMatrix()
+      }
+
       initialPositionSet.current = true
     }
 
@@ -70,7 +87,9 @@ const MainCamera = () => {
     }
 
     rotationVelocity.current *= dampingFactor
-    camera.rotation.y -= rotationVelocity.current
+
+    const rotationDelta = -rotationVelocity.current
+    camera.rotateY(rotationDelta)
 
     const moveVector = calculateMovementVector(keysPressed, moveSpeed, camera)
 

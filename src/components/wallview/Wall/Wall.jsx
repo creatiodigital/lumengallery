@@ -12,7 +12,11 @@ import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { edit3DCoordinates } from '@/lib/features/artistSlice'
-import { chooseCurrentArtworkId, setWallDimensions } from '@/lib/features/wallViewSlice'
+import {
+  chooseCurrentArtworkId,
+  setWallDimensions,
+  setWallCoordinates,
+} from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
 import styles from './Wall.module.scss'
@@ -90,7 +94,17 @@ export const Wall = () => {
       setWallWidth(width.toFixed(2))
       setWallHeight(height.toFixed(2))
 
-      dispatch(setWallDimensions({ width, height }))
+      const { boundingBox, normal } = boundingData
+      const { min, max } = boundingBox
+
+      const x = (min.x + max.x) / 2
+      const y = (min.y + max.y) / 2
+      const z = (min.z + max.z) / 2
+
+      const wallCoordinates = { x, y, z }
+      const wallNormal = { x: normal.x, y: normal.y, z: normal.z }
+
+      dispatch(setWallCoordinates({ coordinates: wallCoordinates, normal: wallNormal }))
     }
   }, [boundingData])
 
