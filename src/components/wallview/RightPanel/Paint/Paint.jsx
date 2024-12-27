@@ -18,24 +18,28 @@ const Paint = () => {
     useArtworkHandlers(currentArtworkId)
 
   return (
-    <div className={styles.section}>
-      <div className={styles.subsection}>
-        <h3 className={styles.subtitle}>Author</h3>
-        <Input value={author} onChange={handleAuthorChange} />
-      </div>
-      <div className={styles.subsection}>
-        <h3 className={styles.subtitle}>Description</h3>
-        <Textarea value={description} onChange={handleDescriptionChange} />
+    <>
+      <div className={styles.section}>
+        <div className={styles.subsection}>
+          <h3 className={styles.subtitle}>Author</h3>
+          <Input value={author} onChange={handleAuthorChange} />
+        </div>
+        <div className={styles.subsection}>
+          <h3 className={styles.subtitle}>Description</h3>
+          <Textarea value={description} onChange={handleDescriptionChange} />
+        </div>
       </div>
 
-      <div className={styles.subsection}>
-        <Checkbox
-          checked={showFrame}
-          onChange={(e) => handleShowFrame(e.target.checked)}
-          label="Show Frame"
-        />
+      <div className={styles.section}>
+        <div className={styles.subsection}>
+          <Checkbox
+            checked={showFrame}
+            onChange={(e) => handleShowFrame(e.target.checked)}
+            label="Show Frame"
+          />
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
