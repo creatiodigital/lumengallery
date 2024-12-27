@@ -41,6 +41,7 @@ const artistSlice = createSlice({
         wallId,
         canvas,
         space: [],
+        showFrame: false,
       }
 
       state.artworks.push(newArtwork)
@@ -114,6 +115,13 @@ const artistSlice = createSlice({
         artwork.artisticTextStyles.textAlign = textAlign
       }
     },
+    showArtworkFrame: (state, action) => {
+      const { currentArtworkId, showFrame } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.showFrame = showFrame
+      }
+    },
   },
 })
 
@@ -131,5 +139,6 @@ export const {
   editArtworkArtisticText,
   editArtworkAuthor,
   editArtworkTextAlign,
+  showArtworkFrame,
 } = artistSlice.actions
 export default artistSlice.reducer

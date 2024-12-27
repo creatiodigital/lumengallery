@@ -8,6 +8,7 @@ import {
   editArtworkArtisticText,
   editArtworkTextAlign,
   editArtworkType,
+  showArtworkFrame,
 } from '@/lib/features/artistSlice'
 
 export const useArtworkHandlers = (currentArtworkId) => {
@@ -121,6 +122,18 @@ export const useArtworkHandlers = (currentArtworkId) => {
     dispatch(editArtworkTextAlign({ currentArtworkId, textAlign }))
   }
 
+  const handleShowFrame = (showFrame) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      showArtworkFrame({
+        currentArtworkId,
+        showFrame,
+      }),
+    )
+  }
+
   return {
     handleTypeChange,
     handleWidthChange,
@@ -132,5 +145,6 @@ export const useArtworkHandlers = (currentArtworkId) => {
     handleMoveYChange,
     handleArtisticTextChange,
     handleTextAlign,
+    handleShowFrame,
   }
 }

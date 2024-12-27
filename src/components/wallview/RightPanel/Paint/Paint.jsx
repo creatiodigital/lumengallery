@@ -1,6 +1,7 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 
+import { Checkbox } from '@/components/ui/Checkbox'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 
@@ -11,9 +12,10 @@ import { useArtworkHandlers } from '../useArtworkHandlers'
 const Paint = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { description, author } = useArtworkDetails(currentArtworkId)
+  const { description, author, showFrame } = useArtworkDetails(currentArtworkId)
 
-  const { handleAuthorChange, handleDescriptionChange } = useArtworkHandlers(currentArtworkId)
+  const { handleAuthorChange, handleDescriptionChange, handleShowFrame } =
+    useArtworkHandlers(currentArtworkId)
 
   return (
     <div className={styles.section}>
@@ -24,6 +26,14 @@ const Paint = () => {
       <div className={styles.subsection}>
         <h3 className={styles.subtitle}>Description</h3>
         <Textarea value={description} onChange={handleDescriptionChange} />
+      </div>
+
+      <div className={styles.subsection}>
+        <Checkbox
+          checked={showFrame}
+          onChange={(e) => handleShowFrame(e.target.checked)}
+          label="Show Frame"
+        />
       </div>
     </div>
   )
