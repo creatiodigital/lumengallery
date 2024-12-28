@@ -24,7 +24,10 @@ export const Menu = () => {
   return (
     <div className={styles.menu}>
       <ButtonIcon icon="close" onClick={() => dispatch(hideEditMode())} />
-      <ButtonIcon icon="placeholder" onClick={() => togglePlaceholders()} />
+      <ButtonIcon
+        icon={isPlaceholdersShown ? 'preview' : 'placeholder'}
+        onClick={() => togglePlaceholders()}
+      />
     </div>
   )
 }

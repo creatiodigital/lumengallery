@@ -4,6 +4,7 @@ import Expand from '@/icons/expand.svg'
 import Grid from '@/icons/grid.svg'
 import Move from '@/icons/move.svg'
 import Painting from '@/icons/painting.svg'
+import Preview from '@/icons/preview.svg'
 import Person from '@/icons/person.svg'
 import Picture from '@/icons/picture.svg'
 import Placeholder from '@/icons/placeholder.svg'
@@ -23,6 +24,7 @@ const icons = {
   move: Move,
   painting: Painting,
   person: Person,
+  preview: Preview,
   picture: Picture,
   placeholder: Placeholder,
   zoomIn: ZoomIn,

@@ -1,7 +1,7 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 
-import { Menu } from '@/components/dashboard/Menu'
+import { Menu } from '@/components/editview/Menu'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
 import { Scene } from '@/components/scene'
 import { WallView } from '@/components/wallview'

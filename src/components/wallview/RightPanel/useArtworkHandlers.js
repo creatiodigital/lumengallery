@@ -7,7 +7,6 @@ import {
   editArtworkDescription,
   editArtworkArtisticText,
   editArtworkTextAlign,
-  editArtworkType,
   showArtworkFrame,
 } from '@/lib/features/artistSlice'
 
@@ -18,18 +17,6 @@ export const useArtworkHandlers = (currentArtworkId) => {
   const sanitizeNumberInput = (value) => {
     const normalizedValue = value * 100
     return normalizedValue
-  }
-
-  const handleTypeChange = (artworkType) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    dispatch(
-      editArtworkType({
-        currentArtworkId,
-        artworkType,
-      }),
-    )
   }
 
   const handleWidthChange = (e) => {
@@ -135,7 +122,6 @@ export const useArtworkHandlers = (currentArtworkId) => {
   }
 
   return {
-    handleTypeChange,
     handleWidthChange,
     handleHeightChange,
     handleNameChange,

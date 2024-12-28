@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber'
-import { Vector3 } from 'three'
 import { useContext, useEffect, useRef, useState, useCallback } from 'react'
 import { useSelector } from 'react-redux'
+import { Vector3 } from 'three'
 
 import SceneContext from '@/contexts/SceneContext'
 
@@ -31,21 +31,40 @@ const MainCamera = () => {
   const moveSpeed = 0.04
   const cameraElevation = 1.4
 
-  const onMouseMove = useCallback(handleMouseMove(mouseState, setTick), [])
-  const onMouseDown = useCallback(attachMouseHandlers(onMouseMove, mouseState), [onMouseMove])
-  const onMouseUp = useCallback(detachMouseHandlers(onMouseMove, mouseState), [onMouseMove])
-
-  const onTouchMove = useCallback(handleTouchMove(mouseState, setTick), [])
-  const onTouchStart = useCallback(attachTouchHandlers(onTouchMove, mouseState), [onTouchMove])
-  const onTouchEnd = useCallback(detachTouchHandlers(onTouchMove, mouseState), [onTouchMove])
-
-  const onKeyDown = useCallback((event) => handleKeyPress(keysPressed, event.key, true), [])
-  const onKeyUp = useCallback((event) => handleKeyPress(keysPressed, event.key, false), [])
-
+  const onMouseMove = useCallback(
+    (event) => handleMouseMove(mouseState, setTick)(event),
+    [mouseState, setTick],
+  )
+  const onMouseDown = useCallback(
+    (event) => attachMouseHandlers(onMouseMove, mouseState)(event),
+    [onMouseMove, mouseState],
+  )
+  const onMouseUp = useCallback(
+    (event) => detachMouseHandlers(onMouseMove, mouseState)(event),
+    [onMouseMove, mouseState],
+  )
+  const onTouchMove = useCallback(
+    (event) => handleTouchMove(mouseState, setTick)(event),
+    [mouseState, setTick],
+  )
+  const onTouchStart = useCallback(
+    (event) => attachTouchHandlers(onTouchMove, mouseState)(event),
+    [onTouchMove, mouseState],
+  )
+  const onTouchEnd = useCallback(
+    () => detachTouchHandlers(onTouchMove, mouseState)(),
+    [onTouchMove, mouseState],
+  )
+  const onKeyDown = useCallback(
+    (event) => handleKeyPress(keysPressed, event.key, true),
+    [keysPressed],
+  )
+  const onKeyUp = useCallback(
+    (event) => handleKeyPress(keysPressed, event.key, false),
+    [keysPressed],
+  )
   const wallCoordinates = useSelector((state) => state.wallView.currentWallCoordinates)
   const wallNormal = useSelector((state) => state.wallView.currentWallNormal)
-
-  console.log('xxx', wallNormal)
 
   useEffect(() => {
     window.addEventListener('keydown', onKeyDown)
