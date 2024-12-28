@@ -6,11 +6,16 @@ import { ColorPicker } from '@/components/ui/ColorPicker'
 
 import styles from '../RightPanel.module.scss'
 import { useArtworkHandlers } from '../useArtworkHandlers'
+import { useArtworkDetails } from '../useArtworkDetails'
 
 const ArtText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
   const { handleTextAlign, handleColorSelect } = useArtworkHandlers(currentArtworkId)
+
+  const { artisticTextStyles } = useArtworkDetails(currentArtworkId)
+
+  const color = artisticTextStyles?.color ?? '#000000'
 
   return (
     <div className={styles.section}>
@@ -33,7 +38,7 @@ const ArtText = () => {
         <h3 className={styles.subtitle}>Color</h3>
         <div className={styles.row}>
           <div className={styles.item}>
-            <ColorPicker onColorSelect={handleColorSelect} />
+            <ColorPicker textColor={color} onColorSelect={handleColorSelect} />
           </div>
         </div>
       </div>

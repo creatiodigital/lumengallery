@@ -20,7 +20,6 @@ const ArtisticText = ({ artworkId }) => {
       setIsEditing(true)
       dispatch(setEditingArtwork(true))
 
-      // Programmatically focus only on the first transition to editing mode
       setTimeout(() => {
         if (contentRef.current) {
           contentRef.current.focus()

@@ -1,9 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import styles from './ColorPicker.module.scss'
 
-const ColorPicker = ({ onColorSelect }) => {
-  const [selectedColor, setSelectedColor] = useState('#000000')
+const ColorPicker = ({ textColor, onColorSelect }) => {
+  const [selectedColor, setSelectedColor] = useState(textColor)
+
+  useEffect(() => {
+    setSelectedColor(textColor)
+  }, [textColor])
 
   const handleColorChange = (event) => {
     const color = event.target.value
