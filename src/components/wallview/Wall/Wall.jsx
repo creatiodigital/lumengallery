@@ -12,7 +12,11 @@ import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { edit3DCoordinates } from '@/lib/features/artistSlice'
-import { chooseCurrentArtworkId, setWallCoordinates } from '@/lib/features/wallViewSlice'
+import {
+  chooseCurrentArtworkId,
+  setWallDimensions,
+  setWallCoordinates,
+} from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
 import styles from './Wall.module.scss'
@@ -102,10 +106,10 @@ export const Wall = () => {
 
       dispatch(setWallCoordinates({ coordinates: wallCoordinates, normal: wallNormal }))
     }
-  }, [boundingData, dispatch])
+  }, [boundingData])
 
   useEffect(() => {
-    if (boundingData && currentArtwork?.canvas) {
+    if (boundingData) {
       const new3DCoordinate = convert2DTo3D(
         {
           x: currentArtwork.canvas.x,
@@ -125,7 +129,7 @@ export const Wall = () => {
         }),
       )
     }
-  }, [isArtworkUploaded, boundingData, currentArtwork?.canvas, currentArtworkId, dispatch])
+  }, [isArtworkUploaded])
 
   useGlobalMouseUp(dragging, setDragging)
 
