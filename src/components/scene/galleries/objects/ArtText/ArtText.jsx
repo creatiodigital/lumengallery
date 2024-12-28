@@ -1,14 +1,11 @@
 import { Text } from '@react-three/drei'
 import React, { useState, useRef, useEffect } from 'react'
-import { useSelector } from 'react-redux'
 
 const ArtText = ({ artwork }) => {
-  const { id, position, quaternion, space, artisticText } = artwork
+  const { id, position, quaternion, space, artisticText, artisticTextStyles } = artwork
 
-  const editArtworkTextAlign = useSelector((state) => {
-    const currentArtwork = state.artist.artworks.find((a) => a.id === artwork.id)
-    return currentArtwork?.artisticTextStyles?.textAlign || 'left'
-  })
+  const textAlign = artisticTextStyles?.textAlign || 'left'
+  const textColor = artisticTextStyles?.color || '#000000'
 
   const textRef = useRef()
   const [textWidth, setTextWidth] = useState(0)
@@ -55,11 +52,11 @@ const ArtText = ({ artwork }) => {
         ref={textRef}
         fontSize={0.14}
         lineHeight={1.7}
-        color="black"
-        anchorX={getAnchorX(editArtworkTextAlign, space.width)}
+        color={textColor}
+        anchorX={getAnchorX(textAlign, space.width)}
         anchorY={getAnchorY(space.height)}
         maxWidth={space.width}
-        textAlign={editArtworkTextAlign}
+        textAlign={textAlign}
         whiteSpace="normal"
         overflowWrap="break-word"
         onSync={calculateTextWidth}

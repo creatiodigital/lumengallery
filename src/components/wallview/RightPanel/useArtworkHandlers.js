@@ -7,6 +7,7 @@ import {
   editArtworkDescription,
   editArtworkArtisticText,
   editArtworkTextAlign,
+  editArtworkTextColor,
   showArtworkFrame,
 } from '@/lib/features/artistSlice'
 
@@ -109,6 +110,10 @@ export const useArtworkHandlers = (currentArtworkId) => {
     dispatch(editArtworkTextAlign({ currentArtworkId, textAlign }))
   }
 
+  const handleColorSelect = (color) => {
+    dispatch(editArtworkTextColor({ currentArtworkId, color }))
+  }
+
   const handleShowFrame = (showFrame) => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -131,6 +136,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
     handleMoveYChange,
     handleArtisticTextChange,
     handleTextAlign,
+    handleColorSelect,
     handleShowFrame,
   }
 }
