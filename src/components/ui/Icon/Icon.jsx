@@ -7,6 +7,7 @@ import Painting from '@/icons/painting.svg'
 import Person from '@/icons/person.svg'
 import Picture from '@/icons/picture.svg'
 import Placeholder from '@/icons/placeholder.svg'
+import Preview from '@/icons/preview.svg'
 import Reset from '@/icons/reset.svg'
 import TextCenter from '@/icons/text-center.svg'
 import TextLeft from '@/icons/text-left.svg'
@@ -23,6 +24,7 @@ const icons = {
   move: Move,
   painting: Painting,
   person: Person,
+  preview: Preview,
   picture: Picture,
   placeholder: Placeholder,
   zoomIn: ZoomIn,

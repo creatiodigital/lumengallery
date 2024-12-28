@@ -83,12 +83,12 @@ export const LeftPanel = () => {
       }
     }
 
-    window.addEventListener('wheel', handleWheelZoom)
+    window.addEventListener('wheel', handleWheelZoom, { passive: false })
 
     return () => {
       window.removeEventListener('wheel', handleWheelZoom)
     }
-  }, [])
+  }, [dispatch])
 
   return (
     <div className={styles.panel}>

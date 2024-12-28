@@ -1,6 +1,6 @@
 import { Image } from '@react-three/drei'
 import React from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { DoubleSide, MeshStandardMaterial } from 'three'
 
 import { Frame } from '@/components/scene/galleries/objects/Frame'
@@ -9,11 +9,15 @@ import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const Paint = ({ artwork }) => {
   const { position, quaternion, space, url, showFrame } = artwork
+
+  const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
 
   const handleClick = () => {
-    dispatch(showArtworkPanel())
-    dispatch(setCurrentArtwork(artwork.id))
+    if (!isPlaceholdersShown) {
+      dispatch(showArtworkPanel())
+      dispatch(setCurrentArtwork(artwork.id))
+    }
   }
 
   const planeWidth = space.width || 1
@@ -28,7 +32,7 @@ const Paint = ({ artwork }) => {
   })
 
   return (
-    <group position={position} quaternion={quaternion} onClick={handleClick}>
+    <group position={position} quaternion={quaternion} onDoubleClick={handleClick}>
       <mesh renderOrder={2}>
         <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
           <planeGeometry args={[planeWidth, planeHeight]} />

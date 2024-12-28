@@ -11,6 +11,7 @@ export const useArtisticText = (artworkId) => {
 
   const artisticText = artwork?.artisticText || ''
   const textAlign = artwork?.artisticTextStyles?.textAlign || 'left'
+  const textColor = artwork?.artisticTextStyles?.color || '#000000'
 
   const handleArtisticTextChange = (updatedText) => {
     if (!artworkId) return
@@ -26,6 +27,7 @@ export const useArtisticText = (artworkId) => {
   return {
     artisticText,
     textAlign,
+    textColor,
     handleArtisticTextChange,
   }
 }

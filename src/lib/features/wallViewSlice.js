@@ -6,10 +6,14 @@ const wallViewSlice = createSlice({
     isWallView: false,
     currentArtworkId: null,
     currentWallId: null,
+    currentWallCoordinates: { x: 0, y: 0, z: 0 },
+    currentWallNormal: { x: 0, y: 0, z: 1 },
     scaleFactor: 1,
     panPosition: { x: -50, y: -50 },
     isGridVisible: false,
     isPersonVisible: false,
+    wallHeight: null,
+    wallWidth: null,
   },
   reducers: {
     showWallView: (state, action) => {
@@ -59,6 +63,11 @@ const wallViewSlice = createSlice({
       state.wallWidth = width
       state.wallHeight = height
     },
+    setWallCoordinates: (state, action) => {
+      const { coordinates, normal } = action.payload
+      state.currentWallCoordinates = coordinates
+      state.currentWallNormal = { x: normal.x, y: normal.y, z: normal.z }
+    },
   },
 })
 
@@ -76,5 +85,6 @@ export const {
   setPanPosition,
   resetPan,
   setWallDimensions,
+  setWallCoordinates,
 } = wallViewSlice.actions
 export default wallViewSlice.reducer

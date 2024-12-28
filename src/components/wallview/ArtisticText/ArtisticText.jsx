@@ -12,7 +12,8 @@ const ArtisticText = ({ artworkId }) => {
   const [isEditing, setIsEditing] = useState(false)
   const dispatch = useDispatch()
 
-  const { artisticText, textAlign, handleArtisticTextChange } = useArtisticText(artworkId)
+  const { artisticText, textAlign, handleArtisticTextChange, textColor } =
+    useArtisticText(artworkId)
 
   const handleDoubleClick = () => {
     if (!isEditing) {
@@ -52,7 +53,7 @@ const ArtisticText = ({ artworkId }) => {
           ref={contentRef}
           style={{
             textAlign,
-            color: 'black',
+            color: textColor,
           }}
           className={`${styles.content} ${isEditing ? styles.editable : ''}`}
           contentEditable={isEditing}

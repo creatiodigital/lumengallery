@@ -1,3 +1,5 @@
+@import '@/styles/mixins';
+
 .checkbox {
   display: flex;
   align-items: center;
@@ -11,7 +13,7 @@
   .customCheckbox {
     width: 16px;
     height: 16px;
-    border: 1px solid #000;
+    border: 1px solid var(--black);
     border-radius: 2px;
     display: inline-block;
     position: relative;
@@ -25,7 +27,7 @@
       left: 50%;
       width: 8px;
       height: 8px;
-      background-color: #000;
+      background-color: var(--black);
       border-radius: 2px;
       transform: scale(0) translate(-50%, -50%);
       transition: all 0.2s ease;
@@ -38,12 +40,12 @@
 
   .hiddenCheckbox:checked + .customCheckbox {
     background-color: #f0f0f0;
-    border-color: #000;
+    border-color: var(--black);
   }
 
   .labelText {
+    @include tinySans();
     margin-left: 8px;
-    font-size: 14px;
-    color: #333;
+    color: var(--black);
   }
 }
