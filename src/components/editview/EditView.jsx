@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
 import { Scene } from '@/components/scene'
 import { WallView } from '@/components/wallview'
+
 import { Menu } from './Menu'
 
 function EditView() {
