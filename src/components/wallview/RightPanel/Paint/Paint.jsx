@@ -35,7 +35,7 @@ const Paint = () => {
           <Checkbox
             checked={showFrame}
             onChange={(e) => handleShowFrame(e.target.checked)}
-            label="Show Frame"
+            label="Add Frame"
           />
         </div>
       </div>

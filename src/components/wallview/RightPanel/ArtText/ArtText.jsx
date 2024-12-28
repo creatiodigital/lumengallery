@@ -5,8 +5,8 @@ import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 
 import styles from '../RightPanel.module.scss'
-import { useArtworkHandlers } from '../useArtworkHandlers'
 import { useArtworkDetails } from '../useArtworkDetails'
+import { useArtworkHandlers } from '../useArtworkHandlers'
 
 const ArtText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
