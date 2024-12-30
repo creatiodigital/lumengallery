@@ -125,6 +125,56 @@ const artistSlice = createSlice({
         artwork.artisticTextStyles.color = color
       }
     },
+    editArtworkTextFontSize: (state, action) => {
+      const { currentArtworkId, fontSize } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.fontSize = fontSize
+      }
+    },
+    editArtworkTextLineHeight: (state, action) => {
+      const { currentArtworkId, lineHeight } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.lineHeight = lineHeight
+      }
+    },
+    editArtworkTextFontWeight: (state, action) => {
+      const { currentArtworkId, fontWeight } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.fontWeight = fontWeight
+      }
+    },
+    editArtworkTextLetterSpacing: (state, action) => {
+      const { currentArtworkId, letterSpacing } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.letterSpacing = letterSpacing
+      }
+    },
+    editArtworkTextFontFamily: (state, action) => {
+      const { currentArtworkId, fontFamily } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.fontFamily = fontFamily
+      }
+    },
     showArtworkFrame: (state, action) => {
       const { currentArtworkId, showFrame } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -150,6 +200,11 @@ export const {
   editArtworkAuthor,
   editArtworkTextAlign,
   editArtworkTextColor,
+  editArtworkTextFontSize,
+  editArtworkTextLineHeight,
+  editArtworkTextFontWeight,
+  editArtworkTextLetterSpacing,
+  editArtworkTextFontFamily,
   showArtworkFrame,
 } = artistSlice.actions
 export default artistSlice.reducer

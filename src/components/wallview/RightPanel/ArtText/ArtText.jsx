@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux'
 
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { ColorPicker } from '@/components/ui/ColorPicker'
+import { Select } from '@/components/ui/Select'
+import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } from './constants'
 
 import styles from '../RightPanel.module.scss'
 import { useArtworkDetails } from '../useArtworkDetails'
@@ -11,7 +13,15 @@ import { useArtworkHandlers } from '../useArtworkHandlers'
 const ArtText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { handleTextAlign, handleColorSelect } = useArtworkHandlers(currentArtworkId)
+  const {
+    handleTextAlign,
+    handleColorSelect,
+    handleTextFontSizeSelect,
+    handleTextLineHeightSelect,
+    handleTextFontWeightSelect,
+    handleTextFontFamilySelect,
+    handleTextLetterSpacingSelect,
+  } = useArtworkHandlers(currentArtworkId)
 
   const { artisticTextStyles } = useArtworkDetails(currentArtworkId)
 
@@ -39,6 +49,66 @@ const ArtText = () => {
         <div className={styles.row}>
           <div className={styles.item}>
             <ColorPicker textColor={color} onColorSelect={handleColorSelect} />
+          </div>
+        </div>
+      </div>
+      <div className={styles.subsection}>
+        <h3 className={styles.subtitle}>Font size</h3>
+        <div className={styles.row}>
+          <div className={styles.item}>
+            <Select
+              options={fontSizes}
+              onSelect={handleTextFontSizeSelect}
+              selectedLabel={artisticTextStyles?.fontSize || 16}
+            />
+          </div>
+        </div>
+      </div>
+      <div className={styles.subsection}>
+        <h3 className={styles.subtitle}>Line Height</h3>
+        <div className={styles.row}>
+          <div className={styles.item}>
+            <Select
+              options={lineHeights}
+              onSelect={handleTextLineHeightSelect}
+              selectedLabel={artisticTextStyles?.lineHeight || 1}
+            />
+          </div>
+        </div>
+      </div>
+      <div className={styles.subsection}>
+        <h3 className={styles.subtitle}>Font Weight</h3>
+        <div className={styles.row}>
+          <div className={styles.item}>
+            <Select
+              options={fontWeights}
+              onSelect={handleTextFontWeightSelect}
+              selectedLabel={artisticTextStyles?.fontWeight || 'Regular'}
+            />
+          </div>
+        </div>
+      </div>
+      <div className={styles.subsection}>
+        <h3 className={styles.subtitle}>Letter Spacing</h3>
+        <div className={styles.row}>
+          <div className={styles.item}>
+            <Select
+              options={letterSpacings}
+              onSelect={handleTextLetterSpacingSelect}
+              selectedLabel={artisticTextStyles?.letterSpacing || 1}
+            />
+          </div>
+        </div>
+      </div>
+      <div className={styles.subsection}>
+        <h3 className={styles.subtitle}>Font family</h3>
+        <div className={styles.row}>
+          <div className={styles.item}>
+            <Select
+              options={fontFamilies}
+              onSelect={handleTextFontFamilySelect}
+              selectedLabel={artisticTextStyles?.fontFamily || 'Roboto'}
+            />
           </div>
         </div>
       </div>

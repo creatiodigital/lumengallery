@@ -6,6 +6,27 @@ const ArtText = ({ artwork }) => {
 
   const textAlign = artisticTextStyles?.textAlign || 'left'
   const textColor = artisticTextStyles?.color || '#000000'
+  const fontSize = Number(artisticTextStyles?.fontSize) || 16
+  const lineHeight = Number(artisticTextStyles?.lineHeight) || 1
+  const fontWeight = artisticTextStyles?.fontWeight || 'Regular'
+  const letterSpacing = artisticTextStyles?.letterSpacing || 1
+  const fontFamily = artisticTextStyles?.fontFamily || 'Roboto'
+
+  const fontSizeFactor = 0.01
+  const letterSpacingFactor = 0.01
+
+  const fontMap = {
+    Roboto: {
+      Regular: '/fonts/roboto.ttf',
+      Bold: '/fonts/roboto-bold.ttf',
+    },
+    Lora: {
+      Regular: '/fonts/lora.ttf',
+      Bold: '/fonts/lora-bold.ttf',
+    },
+  }
+
+  const fontUrl = fontMap[fontFamily]?.[fontWeight] || fontMap['Roboto']['Regular']
 
   const textRef = useRef()
   const [textWidth, setTextWidth] = useState(0)
@@ -50,9 +71,11 @@ const ArtText = ({ artwork }) => {
     <mesh key={id} position={position} quaternion={quaternion} renderOrder={2}>
       <Text
         ref={textRef}
-        fontSize={0.14}
-        lineHeight={1.7}
+        fontSize={fontSize * fontSizeFactor}
+        lineHeight={lineHeight}
+        // letterSpacing={letterSpacing * letterSpacingFactor}
         color={textColor}
+        font={fontUrl}
         anchorX={getAnchorX(textAlign, space.width)}
         anchorY={getAnchorY(space.height)}
         maxWidth={space.width}
