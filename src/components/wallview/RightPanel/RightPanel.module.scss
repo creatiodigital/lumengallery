@@ -9,7 +9,6 @@
 
 .section {
   margin: 0 0 20px 0;
-  padding: 0 0 20px 0;
   border-bottom: 1px solid var(--borderLight);
 
   &:last-child {
@@ -18,7 +17,7 @@
 }
 
 .subsection {
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .title {
@@ -33,14 +32,24 @@
   margin-bottom: 2px;
 }
 
+.label {
+  @include tinySans();
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
 .row {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+  margin-bottom: 10px;
 }
 
 .item {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .cta {

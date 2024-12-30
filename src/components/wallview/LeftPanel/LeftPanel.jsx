@@ -102,7 +102,6 @@ export const LeftPanel = () => {
         </div>
       </div>
       <div className={styles.section}>
-        <h2 className={styles.title}>Helpers</h2>
         <div className={styles.subsection}>
           <div className={styles.row}>
             <div className={styles.item}>

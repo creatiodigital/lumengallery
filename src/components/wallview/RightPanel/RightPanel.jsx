@@ -31,11 +31,20 @@ const RightPanel = () => {
           {artworkType !== '' && (
             <div className={styles.properties}>
               <div className={styles.section}>
-                <h2 className={styles.title}>Layout</h2>
                 <div className={styles.subsection}>
-                  <h3 className={styles.subtitle}>Size (meters)</h3>
                   <div className={styles.row}>
                     <div className={styles.item}>
+                      <span className={styles.label}>Title</span>
+                      <Input value={name} onChange={handleNameChange} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.section}>
+                <div className={styles.subsection}>
+                  <div className={styles.row}>
+                    <div className={styles.item}>
+                      <span className={styles.label}>Width (mts)</span>
                       <NumberInput
                         value={width / 100}
                         icon="expand"
@@ -46,6 +55,7 @@ const RightPanel = () => {
                       />
                     </div>
                     <div className={styles.item}>
+                      <span className={styles.label}>Height (mts)</span>
                       <NumberInput
                         value={height / 100}
                         icon="expand"
@@ -57,9 +67,9 @@ const RightPanel = () => {
                   </div>
                 </div>
                 <div className={styles.subsection}>
-                  <h3 className={styles.subtitle}>Position (meters)</h3>
                   <div className={styles.row}>
                     <div className={styles.item}>
+                      <span className={styles.label}>Horizontal</span>
                       <NumberInput
                         value={x / 100}
                         icon="move"
@@ -70,6 +80,7 @@ const RightPanel = () => {
                       />
                     </div>
                     <div className={styles.item}>
+                      <span className={styles.label}>Vertical</span>
                       <NumberInput
                         value={y / 100}
                         icon="move"
@@ -81,13 +92,7 @@ const RightPanel = () => {
                   </div>
                 </div>
               </div>
-              <div className={styles.section}>
-                <h2 className={styles.title}>Meta</h2>
-                <div className={styles.subsection}>
-                  <h3 className={styles.subtitle}>Title</h3>
-                  <Input value={name} onChange={handleNameChange} />
-                </div>
-              </div>
+
               {artworkType === 'paint' && <Paint />}
               {artworkType === 'text' && <ArtText />}
             </div>

@@ -21,22 +21,34 @@ const Paint = () => {
     <>
       <div className={styles.section}>
         <div className={styles.subsection}>
-          <h3 className={styles.subtitle}>Author</h3>
-          <Input value={author} onChange={handleAuthorChange} />
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <span className={styles.label}>Author</span>
+              <Input value={author} onChange={handleAuthorChange} />
+            </div>
+          </div>
         </div>
         <div className={styles.subsection}>
-          <h3 className={styles.subtitle}>Description</h3>
-          <Textarea value={description} onChange={handleDescriptionChange} />
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <span className={styles.label}>Description</span>
+              <Textarea value={description} onChange={handleDescriptionChange} />
+            </div>
+          </div>
         </div>
       </div>
 
       <div className={styles.section}>
         <div className={styles.subsection}>
-          <Checkbox
-            checked={showFrame}
-            onChange={(e) => handleShowFrame(e.target.checked)}
-            label="Add Frame"
-          />
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <Checkbox
+                checked={showFrame}
+                onChange={(e) => handleShowFrame(e.target.checked)}
+                label="Add Frame"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </>

@@ -29,7 +29,6 @@ const ArtText = () => {
 
   return (
     <div className={styles.section}>
-      <h2 className={styles.title}>Text Styles</h2>
       <div className={styles.subsection}>
         <h3 className={styles.subtitle}>Alignment</h3>
         <div className={styles.row}>
@@ -44,30 +43,20 @@ const ArtText = () => {
           </div>
         </div>
       </div>
+
       <div className={styles.subsection}>
-        <h3 className={styles.subtitle}>Color</h3>
         <div className={styles.row}>
           <div className={styles.item}>
-            <ColorPicker textColor={color} onColorSelect={handleColorSelect} />
-          </div>
-        </div>
-      </div>
-      <div className={styles.subsection}>
-        <h3 className={styles.subtitle}>Font size</h3>
-        <div className={styles.row}>
-          <div className={styles.item}>
+            <span className={styles.label}>Font size</span>
             <Select
               options={fontSizes}
               onSelect={handleTextFontSizeSelect}
               selectedLabel={artisticTextStyles?.fontSize || 16}
             />
           </div>
-        </div>
-      </div>
-      <div className={styles.subsection}>
-        <h3 className={styles.subtitle}>Line Height</h3>
-        <div className={styles.row}>
+
           <div className={styles.item}>
+            <span className={styles.label}>Line height</span>
             <Select
               options={lineHeights}
               onSelect={handleTextLineHeightSelect}
@@ -75,23 +64,17 @@ const ArtText = () => {
             />
           </div>
         </div>
-      </div>
-      <div className={styles.subsection}>
-        <h3 className={styles.subtitle}>Font Weight</h3>
         <div className={styles.row}>
           <div className={styles.item}>
+            <span className={styles.label}>Font Weight</span>
             <Select
               options={fontWeights}
               onSelect={handleTextFontWeightSelect}
               selectedLabel={artisticTextStyles?.fontWeight || 'Regular'}
             />
           </div>
-        </div>
-      </div>
-      <div className={styles.subsection}>
-        <h3 className={styles.subtitle}>Letter Spacing</h3>
-        <div className={styles.row}>
           <div className={styles.item}>
+            <span className={styles.label}>Letter Spacing</span>
             <Select
               options={letterSpacings}
               onSelect={handleTextLetterSpacingSelect}
@@ -99,16 +82,22 @@ const ArtText = () => {
             />
           </div>
         </div>
-      </div>
-      <div className={styles.subsection}>
-        <h3 className={styles.subtitle}>Font family</h3>
         <div className={styles.row}>
           <div className={styles.item}>
+            <span className={styles.label}>Font Family</span>
             <Select
               options={fontFamilies}
               onSelect={handleTextFontFamilySelect}
               selectedLabel={artisticTextStyles?.fontFamily || 'Roboto'}
             />
+          </div>
+        </div>
+      </div>
+      <div className={styles.subsection}>
+        <div className={styles.row}>
+          <div className={styles.item}>
+            <span className={styles.label}>Color</span>
+            <ColorPicker textColor={color} onColorSelect={handleColorSelect} />
           </div>
         </div>
       </div>
