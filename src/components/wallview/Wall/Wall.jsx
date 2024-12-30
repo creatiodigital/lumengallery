@@ -50,7 +50,7 @@ export const Wall = () => {
     scaleFactor,
   )
 
-  const { handleResize } = useResizeArtwork(boundingData, scaleFactor)
+  const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
 
   const handleArtworkClick = (event, artworkId) => {
     event.stopPropagation()
