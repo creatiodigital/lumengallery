@@ -15,7 +15,7 @@ const ArtText = () => {
 
   const {
     handleTextAlign,
-    handleColorSelect,
+    handleTextColorSelect,
     handleTextFontSizeSelect,
     handleTextLineHeightSelect,
     handleTextFontWeightSelect,
@@ -97,7 +97,7 @@ const ArtText = () => {
         <div className={styles.row}>
           <div className={styles.item}>
             <span className={styles.label}>Color</span>
-            <ColorPicker textColor={color} onColorSelect={handleColorSelect} />
+            <ColorPicker textColor={color} onColorSelect={handleTextColorSelect} />
           </div>
         </div>
       </div>

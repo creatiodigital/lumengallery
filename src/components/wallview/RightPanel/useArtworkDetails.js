@@ -18,11 +18,20 @@ export const useArtworkDetails = (currentArtworkId) => {
       artisticTextStyles: {},
       artworkType: '',
       showFrame: false,
+      frameStyles: {},
     }
 
   const { width, height, x, y } = artwork.canvas
-  const { name, author, description, artisticText, artworkType, showFrame, artisticTextStyles } =
-    artwork
+  const {
+    name,
+    author,
+    description,
+    artisticText,
+    artworkType,
+    showFrame,
+    frameStyles,
+    artisticTextStyles,
+  } = artwork
 
   return {
     width: Math.round(width),
@@ -36,5 +45,6 @@ export const useArtworkDetails = (currentArtworkId) => {
     artisticTextStyles,
     artworkType,
     showFrame,
+    frameStyles,
   }
 }

@@ -8,7 +8,8 @@ import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const Paint = ({ artwork }) => {
-  const { position, quaternion, space, url, showFrame } = artwork
+  const { position, quaternion, space, url, showFrame, frameStyles } = artwork
+  const { frameColor } = frameStyles
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
@@ -26,9 +27,9 @@ const Paint = ({ artwork }) => {
   const frameThickness = 0.02
 
   const frameMaterial = new MeshStandardMaterial({
-    color: '#000000',
-    roughness: 0.1,
-    metalness: 0.6,
+    color: frameColor,
+    roughness: 0.3,
+    metalness: 0,
   })
 
   return (

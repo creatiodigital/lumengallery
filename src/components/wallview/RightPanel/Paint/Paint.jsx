@@ -8,13 +8,15 @@ import { Textarea } from '@/components/ui/Textarea'
 import styles from '../RightPanel.module.scss'
 import { useArtworkDetails } from '../useArtworkDetails'
 import { useArtworkHandlers } from '../useArtworkHandlers'
+import { ColorPicker } from '@/components/ui/ColorPicker'
 
 const Paint = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { description, author, showFrame } = useArtworkDetails(currentArtworkId)
+  const { description, author, showFrame, frameStyles } = useArtworkDetails(currentArtworkId)
+  const { frameColor } = frameStyles
 
-  const { handleAuthorChange, handleDescriptionChange, handleShowFrame } =
+  const { handleAuthorChange, handleDescriptionChange, handleShowFrame, handleFrameColorSelect } =
     useArtworkHandlers(currentArtworkId)
 
   return (
@@ -49,6 +51,14 @@ const Paint = () => {
               />
             </div>
           </div>
+          {showFrame && (
+            <div className={styles.row}>
+              <div className={styles.item}>
+                <span className={styles.label}>Frame Color</span>
+                <ColorPicker textColor={frameColor} onColorSelect={handleFrameColorSelect} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

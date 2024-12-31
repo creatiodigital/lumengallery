@@ -42,6 +42,15 @@ const artistSlice = createSlice({
         canvas,
         space: [],
         showFrame: false,
+        frameStyles: {
+          frameColor: '#000000',
+        },
+        artisticTextStyles: {
+          fontFamily: 'Roboto',
+          fontSize: 16,
+          lineHeight: 1,
+          color: '#000000',
+        },
       }
 
       state.artworks.push(newArtwork)
@@ -182,6 +191,13 @@ const artistSlice = createSlice({
         artwork.showFrame = showFrame
       }
     },
+    editArtworkFrameColor: (state, action) => {
+      const { currentArtworkId, frameColor } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (frameColor) {
+        artwork.frameStyles.frameColor = frameColor
+      }
+    },
   },
 })
 
@@ -206,5 +222,6 @@ export const {
   editArtworkTextLetterSpacing,
   editArtworkTextFontFamily,
   showArtworkFrame,
+  editArtworkFrameColor,
 } = artistSlice.actions
 export default artistSlice.reducer

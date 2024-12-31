@@ -14,6 +14,7 @@ import {
   editArtworkTextLetterSpacing,
   editArtworkTextFontFamily,
   showArtworkFrame,
+  editArtworkFrameColor,
 } from '@/lib/features/artistSlice'
 
 export const useArtworkHandlers = (currentArtworkId) => {
@@ -115,7 +116,7 @@ export const useArtworkHandlers = (currentArtworkId) => {
     dispatch(editArtworkTextAlign({ currentArtworkId, textAlign }))
   }
 
-  const handleColorSelect = (color) => {
+  const handleTextColorSelect = (color) => {
     dispatch(editArtworkTextColor({ currentArtworkId, color }))
   }
 
@@ -151,6 +152,18 @@ export const useArtworkHandlers = (currentArtworkId) => {
     )
   }
 
+  const handleFrameColorSelect = (frameColor) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      editArtworkFrameColor({
+        currentArtworkId,
+        frameColor,
+      }),
+    )
+  }
+
   return {
     handleWidthChange,
     handleHeightChange,
@@ -166,7 +179,8 @@ export const useArtworkHandlers = (currentArtworkId) => {
     handleTextFontWeightSelect,
     handleTextLetterSpacingSelect,
     handleTextFontFamilySelect,
-    handleColorSelect,
+    handleTextColorSelect,
     handleShowFrame,
+    handleFrameColorSelect,
   }
 }
