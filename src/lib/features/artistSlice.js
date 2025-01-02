@@ -44,6 +44,7 @@ const artistSlice = createSlice({
         showFrame: false,
         frameStyles: {
           frameColor: '#000000',
+          frameThickness: 2,
         },
         artisticTextStyles: {
           fontFamily: 'Roboto',
@@ -198,6 +199,13 @@ const artistSlice = createSlice({
         artwork.frameStyles.frameColor = frameColor
       }
     },
+    editArtworkFrameThickness: (state, action) => {
+      const { currentArtworkId, frameThickness } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (frameThickness) {
+        artwork.frameStyles.frameThickness = frameThickness
+      }
+    },
   },
 })
 
@@ -223,5 +231,6 @@ export const {
   editArtworkTextFontFamily,
   showArtworkFrame,
   editArtworkFrameColor,
+  editArtworkFrameThickness,
 } = artistSlice.actions
 export default artistSlice.reducer

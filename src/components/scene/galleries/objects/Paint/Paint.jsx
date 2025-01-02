@@ -9,7 +9,7 @@ import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const Paint = ({ artwork }) => {
   const { position, quaternion, space, url, showFrame, frameStyles } = artwork
-  const { frameColor } = frameStyles
+  const { frameColor, frameThickness } = frameStyles
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
@@ -24,12 +24,10 @@ const Paint = ({ artwork }) => {
   const planeWidth = space.width || 1
   const planeHeight = space.height || 1
 
-  const frameThickness = 0.02
-
   const frameMaterial = new MeshStandardMaterial({
     color: frameColor,
     roughness: 0.3,
-    metalness: 0,
+    metalness: 0.1,
   })
 
   return (
@@ -43,7 +41,7 @@ const Paint = ({ artwork }) => {
         <Frame
           width={planeWidth}
           height={planeHeight}
-          thickness={frameThickness}
+          thickness={frameThickness / 100}
           material={frameMaterial}
         />
       )}

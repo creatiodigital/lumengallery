@@ -4,6 +4,8 @@ import { useSelector } from 'react-redux'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { Select } from '@/components/ui/Select'
+import { frameThicknessOptions } from './constants'
 
 import styles from '../RightPanel.module.scss'
 import { useArtworkDetails } from '../useArtworkDetails'
@@ -14,10 +16,15 @@ const Paint = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
   const { description, author, showFrame, frameStyles } = useArtworkDetails(currentArtworkId)
-  const { frameColor } = frameStyles
+  const { frameColor, frameThickness } = frameStyles
 
-  const { handleAuthorChange, handleDescriptionChange, handleShowFrame, handleFrameColorSelect } =
-    useArtworkHandlers(currentArtworkId)
+  const {
+    handleAuthorChange,
+    handleDescriptionChange,
+    handleShowFrame,
+    handleFrameColorSelect,
+    handleFrameThicknessSelect,
+  } = useArtworkHandlers(currentArtworkId)
 
   return (
     <>
@@ -56,6 +63,14 @@ const Paint = () => {
               <div className={styles.item}>
                 <span className={styles.label}>Frame Color</span>
                 <ColorPicker textColor={frameColor} onColorSelect={handleFrameColorSelect} />
+              </div>
+              <div className={styles.item}>
+                <span className={styles.label}>Frame Thickness</span>
+                <Select
+                  options={frameThicknessOptions}
+                  onSelect={handleFrameThicknessSelect}
+                  selectedLabel={frameThickness}
+                />
               </div>
             </div>
           )}

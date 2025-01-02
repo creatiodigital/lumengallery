@@ -15,6 +15,7 @@ import {
   editArtworkTextFontFamily,
   showArtworkFrame,
   editArtworkFrameColor,
+  editArtworkFrameThickness,
 } from '@/lib/features/artistSlice'
 
 export const useArtworkHandlers = (currentArtworkId) => {
@@ -164,6 +165,18 @@ export const useArtworkHandlers = (currentArtworkId) => {
     )
   }
 
+  const handleFrameThicknessSelect = (frameThickness) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      editArtworkFrameThickness({
+        currentArtworkId,
+        frameThickness,
+      }),
+    )
+  }
+
   return {
     handleWidthChange,
     handleHeightChange,
@@ -182,5 +195,6 @@ export const useArtworkHandlers = (currentArtworkId) => {
     handleTextColorSelect,
     handleShowFrame,
     handleFrameColorSelect,
+    handleFrameThicknessSelect,
   }
 }
