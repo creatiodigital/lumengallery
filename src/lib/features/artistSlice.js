@@ -68,6 +68,14 @@ const artistSlice = createSlice({
         }
       }
     },
+    editAlignArtwork: (state, action) => {
+      const { currentArtworkId, artworkPosition } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.canvas.x = artworkPosition.x
+        artwork.canvas.y = artworkPosition.y
+      }
+    },
     deleteArtwork: (state, action) => {
       const { artworkId } = action.payload
       state.artworks = state.artworks.filter((artwork) => artwork.id !== artworkId)
@@ -215,6 +223,7 @@ export const {
   setHandler,
   createArtwork,
   editArtwork,
+  editAlignArtwork,
   editArtworkUrlImage,
   edit3DCoordinates,
   deleteArtwork,

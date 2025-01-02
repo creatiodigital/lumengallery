@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '@/components/ui/Button'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { showEditMode } from '@/lib/features/dashboardSlice'
-import { showGrid, hideGrid, showPerson, hidePerson } from '@/lib/features/wallViewSlice'
+import { showPerson, hidePerson } from '@/lib/features/wallViewSlice'
 import {
   increaseScaleFactor,
   decreaseScaleFactor,
@@ -41,7 +41,6 @@ export const LeftPanel = () => {
   }
 
   const handleSaveWallView = () => {
-    dispatch(hideGrid())
     dispatch(hidePerson())
     dispatch(hideWallView())
     dispatch(showEditMode())
