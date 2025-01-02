@@ -12,10 +12,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
   const artworks = useSelector((state) => state.artist.artworks)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
-  const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const dispatch = useDispatch()
-
-  const gridSize = 20
 
   const handleDragStart = (event, artworkId) => {
     if (isEditingArtwork || !wallRef.current) return
@@ -46,23 +43,6 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     if (!artwork) return
 
     const { width: artworkWidth, height: artworkHeight } = artwork.canvas
-
-    // Keep within bounds of the wall
-    x = Math.max(0, Math.min(x, boundingData.width * 100 - artworkWidth))
-    y = Math.max(0, Math.min(y, boundingData.height * 100 - artworkHeight))
-
-    // Snap to grid if grid is visible
-    if (isGridVisible && wallRef.current) {
-      const rect = wallRef.current.getBoundingClientRect()
-
-      // Calculate the grid offset caused by centering
-      const gridOffsetX = (rect.width % gridSize) / 2
-      const gridOffsetY = (rect.height % gridSize) / 2
-
-      // Snap the top-left corner of the artwork to the nearest grid line
-      x = Math.round((x - gridOffsetX - 10) / gridSize) * gridSize + gridOffsetX + 10
-      y = Math.round((y - gridOffsetY - 10) / gridSize) * gridSize + gridOffsetY + 10
-    }
 
     const updatedCanvas = { ...artwork.canvas, x, y }
 

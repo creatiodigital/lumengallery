@@ -24,7 +24,6 @@ export const LeftPanel = () => {
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
-  const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
 
   const wallArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId).reverse()
@@ -46,14 +45,6 @@ export const LeftPanel = () => {
     dispatch(hidePerson())
     dispatch(hideWallView())
     dispatch(showEditMode())
-  }
-
-  const handleToggleGrid = () => {
-    if (isGridVisible) {
-      dispatch(hideGrid())
-    } else {
-      dispatch(showGrid())
-    }
   }
 
   const handleTogglePerson = () => {
@@ -114,14 +105,6 @@ export const LeftPanel = () => {
           <div className={styles.row}>
             <div className={styles.item}>
               <ButtonIcon icon="reset" onClick={handleResetView} />
-            </div>
-            <div className={styles.item}>
-              <ButtonIcon icon="grid" onClick={handleToggleGrid} />
-            </div>
-          </div>
-          <div className={styles.row}>
-            <div className={styles.item}>
-              <ButtonIcon icon="person" onClick={handleTogglePerson} />
             </div>
             <div className={styles.item}>
               <ButtonIcon icon="person" onClick={handleTogglePerson} />
