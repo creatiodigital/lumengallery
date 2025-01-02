@@ -12,7 +12,11 @@ import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { edit3DCoordinates } from '@/lib/features/artistSlice'
-import { chooseCurrentArtworkId, setWallCoordinates } from '@/lib/features/wallViewSlice'
+import {
+  chooseCurrentArtworkId,
+  setWallCoordinates,
+  setWallDimensions,
+} from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
 import styles from './Wall.module.scss'
@@ -42,7 +46,7 @@ export const Wall = () => {
 
   const currentArtwork = artworks.find((art) => art.id === currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
-  const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, scaleFactor, currentWallId)
+  const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
   const { handleDragStart, handleDragMove, handleDragEnd } = useMoveArtwork(
     wallRef,
@@ -50,7 +54,7 @@ export const Wall = () => {
     scaleFactor,
   )
 
-  const { handleResize } = useResizeArtwork(boundingData, scaleFactor)
+  const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
 
   const handleArtworkClick = (event, artworkId) => {
     event.stopPropagation()
@@ -71,7 +75,7 @@ export const Wall = () => {
       const x = ((e.clientX - rect.left) / rect.width) * boundingData.width * scaling
       const y = ((e.clientY - rect.top) / rect.height) * boundingData.height * scaling
 
-      handleCreateArtworkDrag(artworkType, x / scaleFactor, y / scaleFactor)
+      handleCreateArtworkDrag(artworkType, x, y)
     }
   }
 
@@ -100,12 +104,14 @@ export const Wall = () => {
       const wallCoordinates = { x, y, z }
       const wallNormal = { x: normal.x, y: normal.y, z: normal.z }
 
+      dispatch(setWallDimensions({ width, height }))
+
       dispatch(setWallCoordinates({ coordinates: wallCoordinates, normal: wallNormal }))
     }
   }, [boundingData, dispatch])
 
   useEffect(() => {
-    if (boundingData && currentArtwork?.canvas) {
+    if (boundingData) {
       const new3DCoordinate = convert2DTo3D(
         {
           x: currentArtwork.canvas.x,
@@ -125,7 +131,7 @@ export const Wall = () => {
         }),
       )
     }
-  }, [isArtworkUploaded, boundingData, currentArtwork?.canvas, currentArtworkId, dispatch])
+  }, [isArtworkUploaded, dispatch])
 
   useGlobalMouseUp(dragging, setDragging)
 

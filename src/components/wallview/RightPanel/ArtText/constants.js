@@ -1,0 +1,5 @@
+export const fontSizes = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+export const lineHeights = [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2]
+export const fontWeights = ['Regular', 'Bold']
+export const fontFamilies = ['Roboto', 'Lora']
+export const letterSpacings = [1, 1.5, 2]

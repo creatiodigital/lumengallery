@@ -8,11 +8,16 @@ import { editArtworkUrlImage } from '@/lib/features/artistSlice'
 
 import styles from './ArtisticImage.module.scss'
 
-const ArtisticImage = ({ artworkId, url }) => {
+const ArtisticImage = ({ artwork, url, artworkId }) => {
+  //TODO: remove url and artworkId from props
   const fileInputRef = useRef(null)
   const dispatch = useDispatch()
   const [isDragOver, setIsDragOver] = useState(false)
   const allowedTypes = ['image/jpeg', 'image/png']
+
+  const { showFrame, frameStyles } = artwork
+
+  const { frameColor, frameThickness } = frameStyles
 
   const handleDoubleClick = () => {
     fileInputRef.current.click()
@@ -61,6 +66,7 @@ const ArtisticImage = ({ artworkId, url }) => {
       className={`${styles.image} ${isDragOver ? styles.dragOver : ''}`}
       style={{
         backgroundImage: url ? `url(${url})` : 'none',
+        outline: showFrame ? `${frameThickness}px solid ${frameColor}` : null,
       }}
       onDoubleClick={handleDoubleClick}
       onDragOver={handleDragOver}

@@ -42,6 +42,16 @@ const artistSlice = createSlice({
         canvas,
         space: [],
         showFrame: false,
+        frameStyles: {
+          frameColor: '#000000',
+          frameThickness: 2,
+        },
+        artisticTextStyles: {
+          fontFamily: 'Roboto',
+          fontSize: 16,
+          lineHeight: 1,
+          color: '#000000',
+        },
       }
 
       state.artworks.push(newArtwork)
@@ -56,6 +66,14 @@ const artistSlice = createSlice({
           width: newArtworkSizes.width,
           height: newArtworkSizes.height,
         }
+      }
+    },
+    editAlignArtwork: (state, action) => {
+      const { currentArtworkId, artworkPosition } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.canvas.x = artworkPosition.x
+        artwork.canvas.y = artworkPosition.y
       }
     },
     deleteArtwork: (state, action) => {
@@ -125,11 +143,75 @@ const artistSlice = createSlice({
         artwork.artisticTextStyles.color = color
       }
     },
+    editArtworkTextFontSize: (state, action) => {
+      const { currentArtworkId, fontSize } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.fontSize = fontSize
+      }
+    },
+    editArtworkTextLineHeight: (state, action) => {
+      const { currentArtworkId, lineHeight } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.lineHeight = lineHeight
+      }
+    },
+    editArtworkTextFontWeight: (state, action) => {
+      const { currentArtworkId, fontWeight } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.fontWeight = fontWeight
+      }
+    },
+    editArtworkTextLetterSpacing: (state, action) => {
+      const { currentArtworkId, letterSpacing } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.letterSpacing = letterSpacing
+      }
+    },
+    editArtworkTextFontFamily: (state, action) => {
+      const { currentArtworkId, fontFamily } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.artisticTextStyles) {
+          artwork.artisticTextStyles = {}
+        }
+        artwork.artisticTextStyles.fontFamily = fontFamily
+      }
+    },
     showArtworkFrame: (state, action) => {
       const { currentArtworkId, showFrame } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork.showFrame = showFrame
+      }
+    },
+    editArtworkFrameColor: (state, action) => {
+      const { currentArtworkId, frameColor } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (frameColor) {
+        artwork.frameStyles.frameColor = frameColor
+      }
+    },
+    editArtworkFrameThickness: (state, action) => {
+      const { currentArtworkId, frameThickness } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (frameThickness) {
+        artwork.frameStyles.frameThickness = frameThickness
       }
     },
   },
@@ -141,6 +223,7 @@ export const {
   setHandler,
   createArtwork,
   editArtwork,
+  editAlignArtwork,
   editArtworkUrlImage,
   edit3DCoordinates,
   deleteArtwork,
@@ -150,6 +233,13 @@ export const {
   editArtworkAuthor,
   editArtworkTextAlign,
   editArtworkTextColor,
+  editArtworkTextFontSize,
+  editArtworkTextLineHeight,
+  editArtworkTextFontWeight,
+  editArtworkTextLetterSpacing,
+  editArtworkTextFontFamily,
   showArtworkFrame,
+  editArtworkFrameColor,
+  editArtworkFrameThickness,
 } = artistSlice.actions
 export default artistSlice.reducer

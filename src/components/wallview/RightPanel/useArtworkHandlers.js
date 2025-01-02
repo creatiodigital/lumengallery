@@ -1,17 +1,28 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import {
+  edit3DCoordinates,
   editArtwork,
+  editAlignArtwork,
   editArtworkName,
   editArtworkAuthor,
   editArtworkDescription,
   editArtworkArtisticText,
   editArtworkTextAlign,
   editArtworkTextColor,
+  editArtworkTextFontSize,
+  editArtworkTextLineHeight,
+  editArtworkTextFontWeight,
+  editArtworkTextLetterSpacing,
+  editArtworkTextFontFamily,
   showArtworkFrame,
+  editArtworkFrameColor,
+  editArtworkFrameThickness,
 } from '@/lib/features/artistSlice'
 
-export const useArtworkHandlers = (currentArtworkId) => {
+import { convert2DTo3D } from '../utils'
+
+export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const dispatch = useDispatch()
   const artworks = useSelector((state) => state.artist.artworks)
 
@@ -60,12 +71,37 @@ export const useArtworkHandlers = (currentArtworkId) => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
+    const artworkWidth = currentEdited.canvas.width
+    const artworkHeight = currentEdited.canvas.height
+    const artworkY = currentEdited.canvas.y
+
     dispatch(
       editArtwork({
         currentArtworkId,
         newArtworkSizes: { ...currentEdited.canvas, x: newX },
       }),
     )
+
+    if (boundingData) {
+      const new3DCoordinate = convert2DTo3D(
+        {
+          x: newX,
+          y: artworkY,
+          size: {
+            w: artworkWidth,
+            h: artworkHeight,
+          },
+        },
+        boundingData,
+      )
+
+      dispatch(
+        edit3DCoordinates({
+          currentArtworkId,
+          serialized3DCoordinate: new3DCoordinate,
+        }),
+      )
+    }
   }
 
   const handleMoveYChange = (e) => {
@@ -74,12 +110,104 @@ export const useArtworkHandlers = (currentArtworkId) => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
+    const artworkWidth = currentEdited.canvas.width
+    const artworkHeight = currentEdited.canvas.height
+    const artworkX = currentEdited.canvas.x
+
     dispatch(
       editArtwork({
         currentArtworkId,
         newArtworkSizes: { ...currentEdited.canvas, y: newY },
       }),
     )
+
+    if (boundingData) {
+      const new3DCoordinate = convert2DTo3D(
+        {
+          x: artworkX,
+          y: newY,
+          size: {
+            w: artworkWidth,
+            h: artworkHeight,
+          },
+        },
+        boundingData,
+      )
+
+      dispatch(
+        edit3DCoordinates({
+          currentArtworkId,
+          serialized3DCoordinate: new3DCoordinate,
+        }),
+      )
+    }
+  }
+
+  const handleAlignChange = (alignment, wallWidth, wallHeight) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    const artworkWidth = currentEdited.canvas.width
+    const artworkHeight = currentEdited.canvas.height
+    const artworkX = currentEdited.canvas.x
+    const artworkY = currentEdited.canvas.y
+    const factor = 100
+
+    let newX = artworkX
+    let newY = artworkY
+
+    switch (alignment) {
+      case 'horizontalLeft':
+        newX = 0
+        break
+      case 'horizontalCenter':
+        newX = (wallWidth * factor) / 2 - artworkWidth / 2
+        break
+      case 'horizontalRight':
+        newX = wallWidth * factor - artworkWidth
+        break
+      case 'verticalTop':
+        newY = 0
+        break
+      case 'verticalCenter':
+        newY = (wallHeight * factor) / 2 - artworkHeight / 2
+        break
+      case 'verticalBottom':
+        newY = wallHeight * factor - artworkHeight
+        break
+      default:
+        break
+    }
+
+    const artworkPosition = { x: newX, y: newY }
+
+    dispatch(
+      editAlignArtwork({
+        currentArtworkId,
+        artworkPosition,
+      }),
+    )
+
+    if (boundingData) {
+      const new3DCoordinate = convert2DTo3D(
+        {
+          x: newX,
+          y: newY,
+          size: {
+            w: artworkWidth,
+            h: artworkHeight,
+          },
+        },
+        boundingData,
+      )
+
+      dispatch(
+        edit3DCoordinates({
+          currentArtworkId,
+          serialized3DCoordinate: new3DCoordinate,
+        }),
+      )
+    }
   }
 
   const handleNameChange = (e) => {
@@ -110,8 +238,28 @@ export const useArtworkHandlers = (currentArtworkId) => {
     dispatch(editArtworkTextAlign({ currentArtworkId, textAlign }))
   }
 
-  const handleColorSelect = (color) => {
+  const handleTextColorSelect = (color) => {
     dispatch(editArtworkTextColor({ currentArtworkId, color }))
+  }
+
+  const handleTextFontSizeSelect = (fontSize) => {
+    dispatch(editArtworkTextFontSize({ currentArtworkId, fontSize }))
+  }
+
+  const handleTextLineHeightSelect = (lineHeight) => {
+    dispatch(editArtworkTextLineHeight({ currentArtworkId, lineHeight }))
+  }
+
+  const handleTextFontWeightSelect = (fontWeight) => {
+    dispatch(editArtworkTextFontWeight({ currentArtworkId, fontWeight }))
+  }
+
+  const handleTextFontFamilySelect = (fontFamily) => {
+    dispatch(editArtworkTextFontFamily({ currentArtworkId, fontFamily }))
+  }
+
+  const handleTextLetterSpacingSelect = (letterSpacing) => {
+    dispatch(editArtworkTextLetterSpacing({ currentArtworkId, letterSpacing }))
   }
 
   const handleShowFrame = (showFrame) => {
@@ -126,6 +274,30 @@ export const useArtworkHandlers = (currentArtworkId) => {
     )
   }
 
+  const handleFrameColorSelect = (frameColor) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      editArtworkFrameColor({
+        currentArtworkId,
+        frameColor,
+      }),
+    )
+  }
+
+  const handleFrameThicknessSelect = (frameThickness) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      editArtworkFrameThickness({
+        currentArtworkId,
+        frameThickness,
+      }),
+    )
+  }
+
   return {
     handleWidthChange,
     handleHeightChange,
@@ -134,9 +306,17 @@ export const useArtworkHandlers = (currentArtworkId) => {
     handleDescriptionChange,
     handleMoveXChange,
     handleMoveYChange,
+    handleAlignChange,
     handleArtisticTextChange,
     handleTextAlign,
-    handleColorSelect,
+    handleTextFontSizeSelect,
+    handleTextLineHeightSelect,
+    handleTextFontWeightSelect,
+    handleTextLetterSpacingSelect,
+    handleTextFontFamilySelect,
+    handleTextColorSelect,
     handleShowFrame,
+    handleFrameColorSelect,
+    handleFrameThicknessSelect,
   }
 }

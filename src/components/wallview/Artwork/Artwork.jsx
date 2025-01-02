@@ -38,7 +38,7 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
     >
       {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
       {artworkType === 'text' && <ArtisticText artworkId={id} />}
-      {artworkType === 'paint' && <ArtisticImage artworkId={id} url={url} />}
+      {artworkType === 'paint' && <ArtisticImage artwork={artwork} artworkId={id} url={url} />}
     </div>
   )
 }
