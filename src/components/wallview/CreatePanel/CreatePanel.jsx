@@ -9,11 +9,10 @@ import styles from './CreatePanel.module.scss'
 
 export const CreatePanel = () => {
   const { nodes } = useGLTF('/assets/one-space40.glb')
-  const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes, currentWallId)
 
-  const { handleCreateArtwork } = useCreateArtwork(boundingData, scaleFactor, currentWallId)
+  const { handleCreateArtwork } = useCreateArtwork(boundingData, currentWallId)
 
   const handleDragStart = (e, artworkType) => {
     e.dataTransfer.setData('artworkType', artworkType)

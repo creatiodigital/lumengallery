@@ -6,7 +6,7 @@ import { createArtwork, edit3DCoordinates } from '@/lib/features/artistSlice'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
-export const useCreateArtwork = (boundingData, scaleFactor, currentWallId) => {
+export const useCreateArtwork = (boundingData, currentWallId) => {
   const dispatch = useDispatch()
   const initialSize = 100
 
@@ -16,8 +16,8 @@ export const useCreateArtwork = (boundingData, scaleFactor, currentWallId) => {
   const handleCreateArtwork = (artworkType) => {
     if (!boundingData) return
 
-    const x = (wallWidth * 100) / 2 - 50 / scaleFactor
-    const y = (wallHeight * 100) / 2 - 50 / scaleFactor
+    const x = (wallWidth * 100) / 2 - initialSize / 2
+    const y = (wallHeight * 100) / 2 - initialSize / 2
     const artworkId = uuidv4()
 
     dispatch(showWizard())
