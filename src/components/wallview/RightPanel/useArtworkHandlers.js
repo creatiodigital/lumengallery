@@ -1,5 +1,4 @@
 import { useDispatch, useSelector } from 'react-redux'
-import { convert2DTo3D } from '../utils'
 
 import {
   edit3DCoordinates,
@@ -20,6 +19,8 @@ import {
   editArtworkFrameColor,
   editArtworkFrameThickness,
 } from '@/lib/features/artistSlice'
+
+import { convert2DTo3D } from '../utils'
 
 export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const dispatch = useDispatch()

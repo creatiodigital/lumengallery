@@ -53,3 +53,10 @@
   font-weight: $weight;
   line-height: $lineHeight;
 }
+
+@mixin xtinySans($size: 10px, $weight: 300, $lineHeight: 12px) {
+  font-family: var(--font-sans);
+  font-size: $size;
+  font-weight: $weight;
+  line-height: $lineHeight;
+}

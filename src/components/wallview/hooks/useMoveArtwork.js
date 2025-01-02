@@ -42,8 +42,6 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     const artwork = artworks.find((art) => art.id === draggedArtworkId)
     if (!artwork) return
 
-    const { width: artworkWidth, height: artworkHeight } = artwork.canvas
-
     const updatedCanvas = { ...artwork.canvas, x, y }
 
     dispatch(

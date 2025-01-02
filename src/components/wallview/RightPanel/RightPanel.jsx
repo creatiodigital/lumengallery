@@ -2,10 +2,10 @@ import { useGLTF } from '@react-three/drei'
 import React from 'react'
 import { useSelector } from 'react-redux'
 
+import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
-import { ButtonIcon } from '@/components/ui/ButtonIcon'
 
 import { ArtText } from './ArtText'
 import { Paint } from './Paint'
@@ -54,7 +54,9 @@ const RightPanel = () => {
                 </div>
               </div>
               <div className={styles.section}>
+                <h2 className={styles.title}>Position</h2>
                 <div className={styles.subsection}>
+                  <h3 className={styles.subtitle}>Alignment</h3>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <ButtonIcon
@@ -92,34 +94,11 @@ const RightPanel = () => {
                       />
                     </div>
                   </div>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Width (mts)</span>
-                      <NumberInput
-                        value={width / 100}
-                        icon="expand"
-                        rotate={90}
-                        min={0.1}
-                        max={10}
-                        onChange={handleWidthChange}
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Height (mts)</span>
-                      <NumberInput
-                        value={height / 100}
-                        icon="expand"
-                        min={0.1}
-                        max={10}
-                        onChange={handleHeightChange}
-                      />
-                    </div>
-                  </div>
                 </div>
                 <div className={styles.subsection}>
+                  <h3 className={styles.subtitle}>Position (meters)</h3>
                   <div className={styles.row}>
                     <div className={styles.item}>
-                      <span className={styles.label}>Horizontal</span>
                       <NumberInput
                         value={x / 100}
                         icon="move"
@@ -130,13 +109,39 @@ const RightPanel = () => {
                       />
                     </div>
                     <div className={styles.item}>
-                      <span className={styles.label}>Vertical</span>
                       <NumberInput
                         value={y / 100}
                         icon="move"
                         min={0}
                         max={10}
                         onChange={handleMoveYChange}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className={styles.section}>
+                <h2 className={styles.title}>Layout</h2>
+                <div className={styles.subsection}>
+                  <h3 className={styles.subtitle}>Size (meters)</h3>
+                  <div className={styles.row}>
+                    <div className={styles.item}>
+                      <NumberInput
+                        value={width / 100}
+                        icon="expand"
+                        rotate={90}
+                        min={0.1}
+                        max={10}
+                        onChange={handleWidthChange}
+                      />
+                    </div>
+                    <div className={styles.item}>
+                      <NumberInput
+                        value={height / 100}
+                        icon="expand"
+                        min={0.1}
+                        max={10}
+                        onChange={handleHeightChange}
                       />
                     </div>
                   </div>

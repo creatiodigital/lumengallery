@@ -20,7 +20,6 @@ const ArtisticText = ({ artworkId }) => {
     fontSize,
     fontFamily,
     fontWeight,
-    letterSpacing,
     lineHeight,
   } = useArtisticText(artworkId)
 

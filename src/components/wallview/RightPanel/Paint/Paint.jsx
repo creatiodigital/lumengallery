@@ -2,15 +2,15 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 
 import { Checkbox } from '@/components/ui/Checkbox'
+import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Input } from '@/components/ui/Input'
-import { Textarea } from '@/components/ui/Textarea'
 import { Select } from '@/components/ui/Select'
-import { frameThicknessOptions } from './constants'
+import { Textarea } from '@/components/ui/Textarea'
 
+import { frameThicknessOptions } from './constants'
 import styles from '../RightPanel.module.scss'
 import { useArtworkDetails } from '../useArtworkDetails'
 import { useArtworkHandlers } from '../useArtworkHandlers'
-import { ColorPicker } from '@/components/ui/ColorPicker'
 
 const Paint = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
@@ -29,6 +29,7 @@ const Paint = () => {
   return (
     <>
       <div className={styles.section}>
+        <h2 className={styles.title}>Information</h2>
         <div className={styles.subsection}>
           <div className={styles.row}>
             <div className={styles.item}>
@@ -36,8 +37,6 @@ const Paint = () => {
               <Input value={author} onChange={handleAuthorChange} />
             </div>
           </div>
-        </div>
-        <div className={styles.subsection}>
           <div className={styles.row}>
             <div className={styles.item}>
               <span className={styles.label}>Description</span>
@@ -48,6 +47,7 @@ const Paint = () => {
       </div>
 
       <div className={styles.section}>
+        <h2 className={styles.title}>Features</h2>
         <div className={styles.subsection}>
           <div className={styles.row}>
             <div className={styles.item}>

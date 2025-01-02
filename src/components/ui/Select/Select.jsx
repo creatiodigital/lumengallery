@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+
 import styles from './Select.module.scss'
 
 const Select = ({ options, selectedLabel, onSelect }) => {

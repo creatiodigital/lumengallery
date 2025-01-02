@@ -1,5 +1,4 @@
 import c from 'classnames'
-import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
@@ -60,25 +59,6 @@ export const LeftPanel = () => {
       dispatch(showWizard())
     }
   }
-
-  useEffect(() => {
-    const handleWheelZoom = (event) => {
-      if (event.metaKey) {
-        event.preventDefault()
-        if (event.deltaY < 0) {
-          dispatch(increaseScaleFactor())
-        } else if (event.deltaY > 0) {
-          dispatch(decreaseScaleFactor())
-        }
-      }
-    }
-
-    window.addEventListener('wheel', handleWheelZoom, { passive: false })
-
-    return () => {
-      window.removeEventListener('wheel', handleWheelZoom)
-    }
-  }, [dispatch])
 
   return (
     <div className={styles.panel}>

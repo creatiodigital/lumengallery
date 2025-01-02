@@ -2,7 +2,6 @@ import Close from '@/icons/close.svg'
 import Drop from '@/icons/drop.svg'
 import Expand from '@/icons/expand.svg'
 import Grid from '@/icons/grid.svg'
-
 import HorizontalCenter from '@/icons/horizontal-center.svg'
 import HorizontalLeft from '@/icons/horizontal-left.svg'
 import HorizontalRight from '@/icons/horizontal-right.svg'

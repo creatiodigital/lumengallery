@@ -9,11 +9,9 @@ const ArtText = ({ artwork }) => {
   const fontSize = Number(artisticTextStyles?.fontSize) || 16
   const lineHeight = Number(artisticTextStyles?.lineHeight) || 1
   const fontWeight = artisticTextStyles?.fontWeight || 'Regular'
-  const letterSpacing = artisticTextStyles?.letterSpacing || 1
   const fontFamily = artisticTextStyles?.fontFamily || 'Roboto'
 
   const fontSizeFactor = 0.01
-  const letterSpacingFactor = 0.01
 
   const fontMap = {
     Roboto: {

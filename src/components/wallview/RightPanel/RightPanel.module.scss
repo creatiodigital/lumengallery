@@ -8,7 +8,7 @@
 }
 
 .section {
-  margin: 0 0 20px 0;
+  margin: 0 0 10px 0;
   border-bottom: 1px solid var(--borderLight);
 
   &:last-child {
@@ -21,19 +21,21 @@
 }
 
 .title {
-  @include smallSans();
+  @include tinySans();
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .subtitle {
-  @include tinySans();
+  @include xtinySans();
+  color: var(--grayDark);
   font-weight: 600;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .label {
-  @include tinySans();
+  @include xtinySans();
+  color: var(--grayDark);
   font-weight: 600;
   margin-bottom: 2px;
 }
@@ -41,8 +43,8 @@
 .row {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 5px;
+  margin-bottom: 5px;
 }
 
 .item {
