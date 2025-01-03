@@ -7,6 +7,7 @@
   background-size: cover;
   background-position: center;
   transition: border-color 0.2s ease;
+  cursor: grab;
 
   &.dragOver {
     border: 2px dashed var(--primary-color);

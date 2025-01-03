@@ -8,14 +8,15 @@ import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const Paint = ({ artwork }) => {
-  const { position, quaternion, space, url, showFrame, frameStyles } = artwork
+  const { position, quaternion, space, url, showFrame, showArtworkInformation, frameStyles } =
+    artwork
   const { frameColor, frameThickness } = frameStyles
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
 
   const handleClick = () => {
-    if (!isPlaceholdersShown) {
+    if (!isPlaceholdersShown && showArtworkInformation) {
       dispatch(showArtworkPanel())
       dispatch(setCurrentArtwork(artwork.id))
     }

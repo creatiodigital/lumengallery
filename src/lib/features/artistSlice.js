@@ -6,7 +6,7 @@ const artistSlice = createSlice({
     id: '123456',
     name: 'Eduardo',
     lastName: 'Plaza',
-    handler: '',
+    handler: 'eduardo-plaza',
     artworks: [],
     artworkCounters: {
       paint: 0,
@@ -87,7 +87,6 @@ const artistSlice = createSlice({
         artwork.url = url
       }
     },
-
     edit3DCoordinates: (state, action) => {
       const { currentArtworkId, serialized3DCoordinate } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -100,6 +99,20 @@ const artistSlice = createSlice({
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork.name = name
+      }
+    },
+    showArtworkInformation: (state, action) => {
+      const { currentArtworkId, showInformation } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.showArtworkInformation = showInformation
+      }
+    },
+    editArtworkAuthor: (state, action) => {
+      const { currentArtworkId, author } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.author = author
       }
     },
     editArtworkTitle: (state, action) => {
@@ -116,13 +129,6 @@ const artistSlice = createSlice({
         artwork.artworkYear = artworkYear
       }
     },
-    editArtworkDimensions: (state, action) => {
-      const { currentArtworkId, artworkDimensions } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.artworkDimensions = artworkDimensions
-      }
-    },
     editArtworkDescription: (state, action) => {
       const { currentArtworkId, description } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -130,18 +136,18 @@ const artistSlice = createSlice({
         artwork.description = description
       }
     },
+    editArtworkDimensions: (state, action) => {
+      const { currentArtworkId, artworkDimensions } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.artworkDimensions = artworkDimensions
+      }
+    },
     editArtworkArtisticText: (state, action) => {
       const { currentArtworkId, artisticText } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork.artisticText = artisticText
-      }
-    },
-    editArtworkAuthor: (state, action) => {
-      const { currentArtworkId, author } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.author = author
       }
     },
     editArtworkTextAlign: (state, action) => {
@@ -263,6 +269,7 @@ export const {
   editArtworkTextLetterSpacing,
   editArtworkTextFontFamily,
   showArtworkFrame,
+  showArtworkInformation,
   editArtworkFrameColor,
   editArtworkFrameThickness,
 } = artistSlice.actions

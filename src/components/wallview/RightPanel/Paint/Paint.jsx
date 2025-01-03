@@ -21,6 +21,7 @@ const Paint = () => {
     author,
     artworkYear,
     artworkDimensions,
+    showArtworkInformation,
     showFrame,
     frameStyles,
   } = useArtworkDetails(currentArtworkId)
@@ -33,77 +34,93 @@ const Paint = () => {
     handleDescriptionChange,
     handleArtworkDimensionsChange,
     handleShowFrame,
+    handleShowInformation,
     handleFrameColorSelect,
     handleFrameThicknessSelect,
   } = useArtworkImageHandlers(currentArtworkId)
 
   return (
     <>
-      <div className={styles.section}>
-        <h2 className={styles.title}>Information</h2>
-        <div className={styles.subsection}>
-          <div className={styles.row}>
-            <div className={styles.item}>
-              <span className={styles.label}>Author</span>
-              <Input value={author} onChange={handleAuthorChange} />
-            </div>
-          </div>
-          <div className={styles.row}>
-            <div className={styles.item}>
-              <span className={styles.label}>Artistic Title</span>
-              <Input value={artworkTitle} onChange={handleArtworkTitleChange} />
-            </div>
-          </div>
-          <div className={styles.row}>
-            <div className={styles.item}>
-              <span className={styles.label}>Year</span>
-              <Input value={artworkYear} onChange={handleArtworkYearChange} />
-            </div>
-          </div>
-          <div className={styles.row}>
-            <div className={styles.item}>
-              <span className={styles.label}>Description</span>
-              <Textarea value={description} onChange={handleDescriptionChange} />
-            </div>
-          </div>
-          <div className={styles.row}>
-            <div className={styles.item}>
-              <span className={styles.label}>Dimensions</span>
-              <Input value={artworkDimensions} onChange={handleArtworkDimensionsChange} />
-            </div>
+      <div className={styles.subsection}>
+        <div className={styles.row}>
+          <div className={styles.item}>
+            <Checkbox
+              checked={showArtworkInformation}
+              onChange={(e) => handleShowInformation(e.target.checked)}
+              label="Show Information"
+            />
           </div>
         </div>
       </div>
-      <div className={styles.section}>
-        <h2 className={styles.title}>Features</h2>
-        <div className={styles.subsection}>
-          <div className={styles.row}>
-            <div className={styles.item}>
-              <Checkbox
-                checked={showFrame}
-                onChange={(e) => handleShowFrame(e.target.checked)}
-                label="Add Frame"
-              />
+      {showArtworkInformation && (
+        <>
+          <div className={styles.section}>
+            <h2 className={styles.title}>Information</h2>
+            <div className={styles.subsection}>
+              <div className={styles.row}>
+                <div className={styles.item}>
+                  <span className={styles.label}>Author</span>
+                  <Input value={author} onChange={handleAuthorChange} />
+                </div>
+              </div>
+              <div className={styles.row}>
+                <div className={styles.item}>
+                  <span className={styles.label}>Artistic Title</span>
+                  <Input value={artworkTitle} onChange={handleArtworkTitleChange} />
+                </div>
+              </div>
+              <div className={styles.row}>
+                <div className={styles.item}>
+                  <span className={styles.label}>Year</span>
+                  <Input value={artworkYear} onChange={handleArtworkYearChange} />
+                </div>
+              </div>
+              <div className={styles.row}>
+                <div className={styles.item}>
+                  <span className={styles.label}>Description</span>
+                  <Textarea value={description} onChange={handleDescriptionChange} />
+                </div>
+              </div>
+              <div className={styles.row}>
+                <div className={styles.item}>
+                  <span className={styles.label}>Dimensions</span>
+                  <Input value={artworkDimensions} onChange={handleArtworkDimensionsChange} />
+                </div>
+              </div>
             </div>
           </div>
-          {showFrame && (
-            <div className={styles.row}>
-              <div className={styles.item}>
-                <span className={styles.label}>Frame Color</span>
-                <ColorPicker textColor={frameColor} onColorSelect={handleFrameColorSelect} />
+          <div className={styles.section}>
+            <h2 className={styles.title}>Features</h2>
+            <div className={styles.subsection}>
+              <div className={styles.row}>
+                <div className={styles.item}>
+                  <Checkbox
+                    checked={showFrame}
+                    onChange={(e) => handleShowFrame(e.target.checked)}
+                    label="Add Frame"
+                  />
+                </div>
               </div>
-              <div className={styles.item}>
-                <span className={styles.label}>Frame Thickness</span>
-                <Select
-                  options={frameThicknessOptions}
-                  onSelect={handleFrameThicknessSelect}
-                  selectedLabel={frameThickness}
-                />
-              </div>
+              {showFrame && (
+                <div className={styles.row}>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Frame Color</span>
+                    <ColorPicker textColor={frameColor} onColorSelect={handleFrameColorSelect} />
+                  </div>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Frame Thickness</span>
+                    <Select
+                      options={frameThicknessOptions}
+                      onSelect={handleFrameThicknessSelect}
+                      selectedLabel={frameThickness}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </>
   )
 }

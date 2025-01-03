@@ -7,6 +7,7 @@ import {
   editArtworkTitle,
   editArtworkDescription,
   showArtworkFrame,
+  showArtworkInformation,
   editArtworkFrameColor,
   editArtworkFrameThickness,
 } from '@/lib/features/artistSlice'
@@ -57,6 +58,18 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     )
   }
 
+  const handleShowInformation = (showInformation) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      showArtworkInformation({
+        currentArtworkId,
+        showInformation,
+      }),
+    )
+  }
+
   const handleFrameColorSelect = (frameColor) => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -88,6 +101,7 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     handleDescriptionChange,
     handleArtworkDimensionsChange,
     handleShowFrame,
+    handleShowInformation,
     handleFrameColorSelect,
     handleFrameThicknessSelect,
   }

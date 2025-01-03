@@ -2,12 +2,15 @@
   --black: #000000;
   --white: #ffffff;
   --grayDark: #666666;
+  --grayDarkest: #303030;
   --grayLighter: #f5f5f5;
   --grayLight: #efefef;
   --grayMedium: #d3d3d3;
+  --blue: #007aff;
 
   --bgLighter: var(--grayLighter);
   --bgLight: var(--grayLight);
   --borderLight: var(--grayMedium);
   --text: var(--black);
+  --handler: var(--blue);
 }

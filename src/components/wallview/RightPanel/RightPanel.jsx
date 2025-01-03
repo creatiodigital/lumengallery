@@ -104,7 +104,7 @@ const RightPanel = () => {
                         icon="move"
                         rotate={90}
                         min={0}
-                        max={10}
+                        max={30}
                         onChange={handleMoveXChange}
                       />
                     </div>
@@ -113,7 +113,7 @@ const RightPanel = () => {
                         value={y / 100}
                         icon="move"
                         min={0}
-                        max={10}
+                        max={30}
                         onChange={handleMoveYChange}
                       />
                     </div>

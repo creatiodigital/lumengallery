@@ -21,6 +21,7 @@ export const useArtworkDetails = (currentArtworkId) => {
       artisticTextStyles: {},
       artworkType: '',
       showFrame: false,
+      showArtworkInformation: false,
       frameStyles: {},
     }
 
@@ -35,6 +36,7 @@ export const useArtworkDetails = (currentArtworkId) => {
     artisticText,
     artworkType,
     showFrame,
+    showArtworkInformation,
     frameStyles,
     artisticTextStyles,
   } = artwork
@@ -54,6 +56,7 @@ export const useArtworkDetails = (currentArtworkId) => {
     artisticTextStyles,
     artworkType,
     showFrame,
+    showArtworkInformation,
     frameStyles,
   }
 }
