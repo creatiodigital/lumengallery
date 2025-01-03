@@ -7,7 +7,7 @@
 .input {
   @include smallSans();
   width: 100%;
-  padding: 3px 6px;
+  padding: 2px 6px;
   border-radius: 3px;
   background-color: var(--white);
   border: none;
@@ -18,7 +18,7 @@
 }
 
 .withIcon {
-  padding: 3px 3px 3px 25px;
+  padding: 2px 3px 2px 25px;
 }
 
 .icon {

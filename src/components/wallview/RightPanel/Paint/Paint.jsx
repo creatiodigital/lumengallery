@@ -6,29 +6,36 @@ import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
+import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArtworkDetails'
+import { useArtworkImageHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkImageHandlers'
 
 import { frameThicknessOptions } from './constants'
 import styles from '../RightPanel.module.scss'
-import { useArtworkDetails } from '../useArtworkDetails'
-import { useArtworkHandlers } from '../useArtworkHandlers'
 
 const Paint = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { artworkTitle, description, author, year, artworkDimensions, showFrame, frameStyles } =
-    useArtworkDetails(currentArtworkId)
+  const {
+    artworkTitle,
+    description,
+    author,
+    artworkYear,
+    artworkDimensions,
+    showFrame,
+    frameStyles,
+  } = useArtworkDetails(currentArtworkId)
   const { frameColor, frameThickness } = frameStyles
 
   const {
-    handleArtworkTitleChange,
     handleAuthorChange,
-    handleYearChange,
-    handleArtworkDimensionsChange,
+    handleArtworkTitleChange,
+    handleArtworkYearChange,
     handleDescriptionChange,
+    handleArtworkDimensionsChange,
     handleShowFrame,
     handleFrameColorSelect,
     handleFrameThicknessSelect,
-  } = useArtworkHandlers(currentArtworkId)
+  } = useArtworkImageHandlers(currentArtworkId)
 
   return (
     <>
@@ -50,7 +57,7 @@ const Paint = () => {
           <div className={styles.row}>
             <div className={styles.item}>
               <span className={styles.label}>Year</span>
-              <Input value={year} onChange={handleYearChange} />
+              <Input value={artworkYear} onChange={handleArtworkYearChange} />
             </div>
           </div>
           <div className={styles.row}>
@@ -67,7 +74,6 @@ const Paint = () => {
           </div>
         </div>
       </div>
-
       <div className={styles.section}>
         <h2 className={styles.title}>Features</h2>
         <div className={styles.subsection}>

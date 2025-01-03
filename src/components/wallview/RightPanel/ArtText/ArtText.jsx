@@ -4,11 +4,11 @@ import { useSelector } from 'react-redux'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Select } from '@/components/ui/Select'
+import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArtworkDetails'
+import { useArtworkTextHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkTextHandlers'
 
 import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } from './constants'
 import styles from '../RightPanel.module.scss'
-import { useArtworkDetails } from '../useArtworkDetails'
-import { useArtworkHandlers } from '../useArtworkHandlers'
 
 const ArtText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
@@ -21,7 +21,7 @@ const ArtText = () => {
     handleTextFontWeightSelect,
     handleTextFontFamilySelect,
     handleTextLetterSpacingSelect,
-  } = useArtworkHandlers(currentArtworkId)
+  } = useArtworkTextHandlers(currentArtworkId)
 
   const { artisticTextStyles } = useArtworkDetails(currentArtworkId)
 

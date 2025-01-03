@@ -8,10 +8,10 @@ import { NumberInput } from '@/components/ui/NumberInput'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 
 import { ArtText } from './ArtText'
+import { useArtworkDetails } from './hooks/useArtworkDetails'
+import { useArtworkHandlers } from './hooks/useArtworkHandlers'
 import { Paint } from './Paint'
 import styles from './RightPanel.module.scss'
-import { useArtworkDetails } from './useArtworkDetails'
-import { useArtworkHandlers } from './useArtworkHandlers'
 
 const RightPanel = () => {
   const { nodes } = useGLTF('/assets/one-space40.glb')
@@ -25,12 +25,12 @@ const RightPanel = () => {
   const wallHeight = useSelector((state) => state.wallView.wallHeight)
 
   const {
-    handleWidthChange,
-    handleHeightChange,
     handleNameChange,
+    handleAlignChange,
     handleMoveXChange,
     handleMoveYChange,
-    handleAlignChange,
+    handleWidthChange,
+    handleHeightChange,
   } = useArtworkHandlers(currentArtworkId, boundingData)
 
   const handleAlign = (alignment) => {

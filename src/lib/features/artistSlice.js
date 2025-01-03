@@ -110,10 +110,10 @@ const artistSlice = createSlice({
       }
     },
     editArtworkYear: (state, action) => {
-      const { currentArtworkId, year } = action.payload
+      const { currentArtworkId, artworkYear } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (year) {
-        artwork.year = year
+      if (artwork) {
+        artwork.artworkYear = artworkYear
       }
     },
     editArtworkDimensions: (state, action) => {

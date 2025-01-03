@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { Icon } from '@/components/ui/Icon'
 
 import styles from './Select.module.scss'
 
@@ -43,6 +44,7 @@ const Select = ({ options, selectedLabel, onSelect }) => {
       >
         {currentLabel}
       </div>
+      <Icon name="chevronDown" size={16} color="#333333" />
       {isOpen && (
         <ul className={styles.selectDropdown}>
           {options.map((option, i) => (

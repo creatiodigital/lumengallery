@@ -17,7 +17,8 @@ const ArtworkPanel = () => {
     [artworks, selectedSceneArtworkId],
   )
 
-  const { name, artworkTitle, author, year, description, artworkDimensions } = selectedArtwork || {}
+  const { name, artworkTitle, author, artworkYear, description, artworkDimensions } =
+    selectedArtwork || {}
 
   // Close panel when clicking outside of it
   useEffect(() => {
@@ -41,7 +42,7 @@ const ArtworkPanel = () => {
           <div>
             {author && <h3 className={styles.author}>{author}</h3>}
             {(artworkTitle || name) && <span className={styles.title}>{artworkTitle || name}</span>}
-            {year && <span className={styles.year}>{`, ${year}`}</span>}
+            {artworkYear && <span className={styles.year}>{`, ${artworkYear}`}</span>}
             {description && <div className={styles.description}>{description}</div>}
             {artworkDimensions && <span className={styles.dimensions}>{artworkDimensions}</span>}
           </div>

@@ -3,6 +3,12 @@
 .selectMenu {
   position: relative;
   width: 100%;
+
+  svg {
+    position: absolute;
+    right: 2px;
+    top: 5px;
+  }
 }
 
 .selectInput {

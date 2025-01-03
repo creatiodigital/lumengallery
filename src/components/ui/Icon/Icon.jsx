@@ -1,4 +1,5 @@
 import Close from '@/icons/close.svg'
+import ChevronDown from '@/icons/chevron-down.svg'
 import Drop from '@/icons/drop.svg'
 import Expand from '@/icons/expand.svg'
 import Grid from '@/icons/grid.svg'
@@ -23,6 +24,7 @@ import ZoomIn from '@/icons/zoom-in.svg'
 import ZoomOut from '@/icons/zoom-out.svg'
 
 const icons = {
+  chevronDown: ChevronDown,
   close: Close,
   drop: Drop,
   grid: Grid,
@@ -48,7 +50,7 @@ const icons = {
   verticalTop: VerticalTop,
 }
 
-const Icon = ({ name, size = 24, color = 'currentColor' }) => {
+const Icon = ({ name, size = 24, color = 'currentColor', className }) => {
   const SvgIcon = icons[name]
   return SvgIcon ? <SvgIcon width={size} height={size} fill={color} /> : null
 }
