@@ -28,6 +28,7 @@
 .author {
   @include largeSerif();
   text-transform: uppercase;
+  margin-bottom: 5px;
 }
 
 .title {
@@ -36,6 +37,14 @@
   margin-bottom: 5px;
 }
 
+.year {
+  @include mediumSerif();
+}
+
 .description {
+  @include mediumSerif();
+}
+
+.dimensions {
   @include mediumSerif();
 }

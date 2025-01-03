@@ -5,7 +5,10 @@ import {
   editArtwork,
   editAlignArtwork,
   editArtworkName,
+  editArtworkYear,
+  editArtworkDimensions,
   editArtworkAuthor,
+  editArtworkTitle,
   editArtworkDescription,
   editArtworkArtisticText,
   editArtworkTextAlign,
@@ -222,10 +225,28 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     dispatch(editArtworkDescription({ currentArtworkId, description: newDescription }))
   }
 
+  const handleArtworkTitleChange = (e) => {
+    const newTitle = e.target.value
+
+    dispatch(editArtworkTitle({ currentArtworkId, artworkTitle: newTitle }))
+  }
+
   const handleAuthorChange = (e) => {
     const newAuthor = e.target.value
 
     dispatch(editArtworkAuthor({ currentArtworkId, author: newAuthor }))
+  }
+
+  const handleYearChange = (e) => {
+    const newYear = e.target.value
+
+    dispatch(editArtworkYear({ currentArtworkId, year: newYear }))
+  }
+
+  const handleArtworkDimensionsChange = (e) => {
+    const newDimensions = e.target.value
+
+    dispatch(editArtworkDimensions({ currentArtworkId, artworkDimensions: newDimensions }))
   }
 
   const handleArtisticTextChange = (e) => {
@@ -302,7 +323,10 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     handleWidthChange,
     handleHeightChange,
     handleNameChange,
+    handleArtworkTitleChange,
     handleAuthorChange,
+    handleYearChange,
+    handleArtworkDimensionsChange,
     handleDescriptionChange,
     handleMoveXChange,
     handleMoveYChange,

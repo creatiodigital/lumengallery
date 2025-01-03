@@ -15,11 +15,15 @@ import { useArtworkHandlers } from '../useArtworkHandlers'
 const Paint = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { description, author, showFrame, frameStyles } = useArtworkDetails(currentArtworkId)
+  const { artworkTitle, description, author, year, artworkDimensions, showFrame, frameStyles } =
+    useArtworkDetails(currentArtworkId)
   const { frameColor, frameThickness } = frameStyles
 
   const {
+    handleArtworkTitleChange,
     handleAuthorChange,
+    handleYearChange,
+    handleArtworkDimensionsChange,
     handleDescriptionChange,
     handleShowFrame,
     handleFrameColorSelect,
@@ -39,8 +43,26 @@ const Paint = () => {
           </div>
           <div className={styles.row}>
             <div className={styles.item}>
+              <span className={styles.label}>Artistic Title</span>
+              <Input value={artworkTitle} onChange={handleArtworkTitleChange} />
+            </div>
+          </div>
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <span className={styles.label}>Year</span>
+              <Input value={year} onChange={handleYearChange} />
+            </div>
+          </div>
+          <div className={styles.row}>
+            <div className={styles.item}>
               <span className={styles.label}>Description</span>
               <Textarea value={description} onChange={handleDescriptionChange} />
+            </div>
+          </div>
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <span className={styles.label}>Dimensions</span>
+              <Input value={artworkDimensions} onChange={handleArtworkDimensionsChange} />
             </div>
           </div>
         </div>

@@ -102,6 +102,27 @@ const artistSlice = createSlice({
         artwork.name = name
       }
     },
+    editArtworkTitle: (state, action) => {
+      const { currentArtworkId, artworkTitle } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.artworkTitle = artworkTitle
+      }
+    },
+    editArtworkYear: (state, action) => {
+      const { currentArtworkId, year } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (year) {
+        artwork.year = year
+      }
+    },
+    editArtworkDimensions: (state, action) => {
+      const { currentArtworkId, artworkDimensions } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.artworkDimensions = artworkDimensions
+      }
+    },
     editArtworkDescription: (state, action) => {
       const { currentArtworkId, description } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -228,9 +249,12 @@ export const {
   edit3DCoordinates,
   deleteArtwork,
   editArtworkName,
+  editArtworkYear,
+  editArtworkDimensions,
   editArtworkDescription,
   editArtworkArtisticText,
   editArtworkAuthor,
+  editArtworkTitle,
   editArtworkTextAlign,
   editArtworkTextColor,
   editArtworkTextFontSize,
