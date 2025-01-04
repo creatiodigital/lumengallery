@@ -2,8 +2,19 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
+import { setAlignedPairs } from '@/lib/features/wallViewSlice'
 
 import { convert2DTo3D } from '../utils'
+
+const areAligned = (artworkA, artworkB, tolerance = 2) => {
+  const isHorizontallyAligned = Math.abs(artworkA.y - artworkB.y) <= tolerance
+  const isVerticallyAligned = Math.abs(artworkA.x - artworkB.x) <= tolerance
+
+  return {
+    horizontally: isHorizontallyAligned,
+    vertically: isVerticallyAligned,
+  }
+}
 
 export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const [dragging, setDragging] = useState(false)
@@ -42,7 +53,47 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     const artwork = artworks.find((art) => art.id === draggedArtworkId)
     if (!artwork) return
 
-    const updatedCanvas = { ...artwork.canvas, x, y }
+    // Initialize snapping adjustments
+    let snapX = x
+    let snapY = y
+
+    const alignedPairs = []
+
+    // Check alignment and apply snapping
+    artworks.forEach((otherArtwork) => {
+      if (otherArtwork.id !== draggedArtworkId) {
+        const alignment = areAligned(
+          { x: snapX, y: snapY }, // Current position of dragged artwork
+          otherArtwork.canvas,
+        )
+
+        if (alignment.horizontally) {
+          snapY = otherArtwork.canvas.y // Snap to the y position of the aligned artwork
+          alignedPairs.push({
+            from: draggedArtworkId,
+            to: otherArtwork.id,
+            direction: 'horizontal',
+          })
+        }
+
+        if (alignment.vertically) {
+          console.log(
+            `Artwork ${draggedArtworkId} is vertically aligned with Artwork ${otherArtwork.id}`,
+          )
+          snapX = otherArtwork.canvas.x // Snap to the x position of the aligned artwork
+          alignedPairs.push({
+            from: draggedArtworkId,
+            to: otherArtwork.id,
+            direction: 'vertical',
+          })
+        }
+      }
+    })
+
+    dispatch(setAlignedPairs(alignedPairs))
+
+    // Apply snapping adjustments to updated canvas
+    const updatedCanvas = { ...artwork.canvas, x: snapX, y: snapY }
 
     dispatch(
       editArtwork({
@@ -52,7 +103,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     )
 
     const new3DCoordinate = convert2DTo3D(
-      { x, y, size: { w: updatedCanvas.width, h: updatedCanvas.height } },
+      { x: snapX, y: snapY, size: { w: updatedCanvas.width, h: updatedCanvas.height } },
       boundingData,
     )
 

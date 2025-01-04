@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+
 import { setTooltipOpen } from '@/lib/features/dashboardSlice'
+
 import styles from './Tooltip.module.scss'
 
 const Tooltip = ({ label, children, id }) => {

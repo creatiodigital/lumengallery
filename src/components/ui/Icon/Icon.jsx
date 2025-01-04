@@ -1,5 +1,5 @@
-import Close from '@/icons/close.svg'
 import ChevronDown from '@/icons/chevron-down.svg'
+import Close from '@/icons/close.svg'
 import Drop from '@/icons/drop.svg'
 import Expand from '@/icons/expand.svg'
 import Grid from '@/icons/grid.svg'

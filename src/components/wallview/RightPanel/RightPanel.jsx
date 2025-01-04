@@ -5,7 +5,6 @@ import { useSelector } from 'react-redux'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
-import { Tooltip } from '@/components/ui/Tooltip'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 
 import { ArtText } from './ArtText'

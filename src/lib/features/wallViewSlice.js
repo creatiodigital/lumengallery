@@ -61,6 +61,12 @@ const wallViewSlice = createSlice({
       state.currentWallCoordinates = coordinates
       state.currentWallNormal = { x: normal.x, y: normal.y, z: normal.z }
     },
+    setAlignedPairs: (state, action) => {
+      state.alignedPairs = action.payload
+    },
+    clearAlignedPairs: (state) => {
+      state.alignedPairs = []
+    },
   },
 })
 
@@ -77,5 +83,7 @@ export const {
   resetPan,
   setWallDimensions,
   setWallCoordinates,
+  setAlignedPairs,
+  clearAlignedPairs,
 } = wallViewSlice.actions
 export default wallViewSlice.reducer

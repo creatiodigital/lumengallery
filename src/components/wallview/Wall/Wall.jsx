@@ -19,6 +19,7 @@ import {
 } from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
+import { AlignedLine } from './AlignedLine'
 import styles from './Wall.module.scss'
 import { Artwork } from '../Artwork'
 
@@ -37,6 +38,7 @@ export const Wall = () => {
   const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const alignedPairs = useSelector((state) => state.wallView.alignedPairs)
   const dispatch = useDispatch()
   const scaling = 100
   const personHeight = 180
@@ -175,6 +177,29 @@ export const Wall = () => {
               setHoveredArtworkId={setHoveredArtworkId}
             />
           ))}
+        {alignedPairs?.map((pair, index) => {
+          const from = artworks.find((art) => art.id === pair.from).canvas
+          const to = artworks.find((art) => art.id === pair.to).canvas
+
+          return (
+            <AlignedLine
+              key={index}
+              start={{
+                x: from.x,
+                y: from.y,
+                width: from.width,
+                height: from.height,
+              }}
+              end={{
+                x: to.x,
+                y: to.y,
+                width: to.width,
+                height: to.height,
+              }}
+              direction={pair.direction}
+            />
+          )
+        })}
       </div>
     </div>
   )
