@@ -28,7 +28,6 @@ const areAligned = (artworkA, artworkB) => {
 
   return directions
 }
-
 export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
