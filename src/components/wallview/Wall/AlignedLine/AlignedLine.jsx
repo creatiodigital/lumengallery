@@ -1,35 +1,32 @@
 import styles from './AlignedLine.module.scss'
 
 const AlignedLine = ({ start, end, direction }) => {
-  // Consider `top` and `bottom` as horizontal directions
   const isHorizontal = direction === 'horizontal' || direction === 'top' || direction === 'bottom'
-
-  console.log('direction', direction)
 
   const lineStart = {
     x: isHorizontal
-      ? Math.min(start.x, end.x) // Horizontal alignment: left or right
+      ? Math.min(start.x, end.x)
       : direction === 'right'
-        ? start.x + start.width // Start at the right border
-        : start.x, // Start at the left border
+        ? start.x + start.width
+        : start.x,
     y: isHorizontal
       ? direction === 'bottom'
-        ? start.y + start.height // Start at the bottom border
-        : start.y // Start at the top border
-      : Math.min(start.y, end.y), // Vertical alignment: top or bottom
+        ? start.y + start.height
+        : start.y
+      : Math.min(start.y, end.y),
   }
 
   const lineEnd = {
     x: isHorizontal
-      ? Math.max(start.x + start.width, end.x + end.width) // Horizontal alignment: extend to the right
+      ? Math.max(start.x + start.width, end.x + end.width)
       : direction === 'right'
-        ? end.x + end.width // Extend to the right border
-        : end.x, // Extend to the left border
+        ? end.x + end.width
+        : end.x,
     y: isHorizontal
       ? direction === 'bottom'
-        ? end.y + end.height // Extend to the bottom border
-        : end.y // Extend to the top border
-      : Math.max(start.y + start.height, end.y + end.height), // Vertical alignment: extend to the bottom
+        ? end.y + end.height
+        : end.y
+      : Math.max(start.y + start.height, end.y + end.height),
   }
 
   const style = {

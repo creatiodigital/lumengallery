@@ -13,7 +13,7 @@ const ArtworkPanel = () => {
   const selectedSceneArtworkId = useSelector((state) => state.scene.currentArtworkId)
 
   const selectedArtwork = useMemo(
-    () => artworks.find((artwork) => artwork.id === selectedSceneArtworkId),
+    () => artworks?.find((artwork) => artwork.id === selectedSceneArtworkId),
     [artworks, selectedSceneArtworkId],
   )
 

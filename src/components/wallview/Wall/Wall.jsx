@@ -45,7 +45,7 @@ export const Wall = () => {
 
   const wallRef = useRef(null)
 
-  const currentArtwork = artworks.find((art) => art.id === currentArtworkId)
+  const currentArtwork = artworks?.find((art) => art.id === currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
@@ -176,8 +176,8 @@ export const Wall = () => {
           ))}
         {alignedPairs?.map((pair, index) => {
           if (!isDragging) return null
-          const from = artworks.find((art) => art.id === pair.from).canvas
-          const to = artworks.find((art) => art.id === pair.to).canvas
+          const from = artworks?.find((art) => art.id === pair.from).canvas
+          const to = artworks?.find((art) => art.id === pair.to).canvas
 
           return (
             <AlignedLine

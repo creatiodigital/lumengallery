@@ -47,7 +47,7 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
   }
 
   const handleShowFrame = (showFrame) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    const currentEdited = artworks?.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
     dispatch(
@@ -59,7 +59,7 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
   }
 
   const handleShowInformation = (showInformation) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    const currentEdited = artworks?.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
     dispatch(

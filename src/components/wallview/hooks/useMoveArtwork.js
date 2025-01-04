@@ -41,7 +41,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     if (isEditingArtwork || !wallRef.current) return
 
     const rect = wallRef.current.getBoundingClientRect()
-    const artwork = artworks.find((art) => art.id === artworkId)
+    const artwork = artworks?.find((art) => art.id === artworkId)
     if (!artwork) return
 
     const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.canvas.x
