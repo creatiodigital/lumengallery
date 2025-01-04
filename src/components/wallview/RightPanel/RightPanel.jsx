@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 
 import { ArtText } from './ArtText'
@@ -47,7 +48,8 @@ const RightPanel = () => {
                 <div className={styles.subsection}>
                   <div className={styles.row}>
                     <div className={styles.item}>
-                      <span className={styles.label}>Title</span>
+                      <span className={styles.label}>Name</span>
+
                       <Input value={name} onChange={handleNameChange} />
                     </div>
                   </div>
@@ -57,6 +59,23 @@ const RightPanel = () => {
                 <h2 className={styles.title}>Position</h2>
                 <div className={styles.subsection}>
                   <h3 className={styles.subtitle}>Alignment</h3>
+                  <div className={styles.row}>
+                    <div className={styles.item}>
+                      <ButtonIcon icon="verticalTop" onClick={() => handleAlign('verticalTop')} />
+                    </div>
+                    <div className={styles.item}>
+                      <ButtonIcon
+                        icon="verticalCenter"
+                        onClick={() => handleAlign('verticalCenter')}
+                      />
+                    </div>
+                    <div className={styles.item}>
+                      <ButtonIcon
+                        icon="verticalBottom"
+                        onClick={() => handleAlign('verticalBottom')}
+                      />
+                    </div>
+                  </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <ButtonIcon
@@ -74,23 +93,6 @@ const RightPanel = () => {
                       <ButtonIcon
                         icon="horizontalRight"
                         onClick={() => handleAlign('horizontalRight')}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <ButtonIcon icon="verticalTop" onClick={() => handleAlign('verticalTop')} />
-                    </div>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="verticalCenter"
-                        onClick={() => handleAlign('verticalCenter')}
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="verticalBottom"
-                        onClick={() => handleAlign('verticalBottom')}
                       />
                     </div>
                   </div>

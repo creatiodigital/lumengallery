@@ -31,13 +31,22 @@ const Paint = ({ artwork }) => {
     metalness: 0.1,
   })
 
+  const innerWidth = planeWidth - frameThickness / 50
+  const innerHeight = planeHeight - frameThickness / 50
+
   return (
     <group position={position} quaternion={quaternion} onDoubleClick={handleClick}>
+      <mesh renderOrder={1}>
+        <planeGeometry args={[planeWidth, planeHeight]} />
+        <meshBasicMaterial visible={false} />
+      </mesh>
+
       <mesh renderOrder={2}>
         <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
-          <planeGeometry args={[planeWidth, planeHeight]} />
+          <planeGeometry args={[innerWidth, innerHeight]} />
         </Image>
       </mesh>
+
       {showFrame && (
         <Frame
           width={planeWidth}

@@ -63,10 +63,9 @@ const ArtisticImage = ({ artwork, url, artworkId }) => {
 
   return (
     <div
-      className={`${styles.image} ${isDragOver ? styles.dragOver : ''}`}
+      className={`${styles.frame} ${isDragOver ? styles.dragOver : ''}`}
       style={{
-        backgroundImage: url ? `url(${url})` : 'none',
-        outline: showFrame ? `${frameThickness}px solid ${frameColor}` : null,
+        border: showFrame ? `${frameThickness}px solid ${frameColor}` : null,
       }}
       onDoubleClick={handleDoubleClick}
       onDragOver={handleDragOver}
@@ -74,18 +73,24 @@ const ArtisticImage = ({ artwork, url, artworkId }) => {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {!url && (
-        <div className={c([styles.empty, { [styles.over]: isDragOver }])}>
-          <Icon name="picture" size={40} color={isDragOver ? '#ffffff' : '#000000'} />
-          <span>Drop image</span>
-        </div>
-      )}
-      <FileInput
-        ref={fileInputRef}
-        id={`file-upload-${artworkId}`}
-        onInput={handleFileChange}
-        style={{ display: 'none' }}
-      />
+      <div
+        className={styles.image}
+        style={{
+          backgroundImage: url ? `url(${url})` : 'none',
+        }}
+      >
+        {!url && (
+          <div className={c([styles.empty, { [styles.over]: isDragOver }])}>
+            <Icon name="picture" size={40} color={isDragOver ? '#ffffff' : '#000000'} />
+          </div>
+        )}
+        <FileInput
+          ref={fileInputRef}
+          id={`file-upload-${artworkId}`}
+          onInput={handleFileChange}
+          style={{ display: 'none' }}
+        />
+      </div>
     </div>
   )
 }

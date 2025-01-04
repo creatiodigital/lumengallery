@@ -13,6 +13,7 @@
 
 .selectInput {
   @include tinySans();
+  position: relative;
   padding: 4px;
   border-radius: 4px;
   cursor: pointer;

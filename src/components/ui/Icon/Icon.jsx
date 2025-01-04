@@ -50,7 +50,7 @@ const icons = {
   verticalTop: VerticalTop,
 }
 
-const Icon = ({ name, size = 24, color = 'currentColor', className }) => {
+const Icon = ({ name, size = 24, color = 'currentColor' }) => {
   const SvgIcon = icons[name]
   return SvgIcon ? <SvgIcon width={size} height={size} fill={color} /> : null
 }

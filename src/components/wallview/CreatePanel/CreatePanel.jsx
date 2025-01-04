@@ -23,7 +23,7 @@ export const CreatePanel = () => {
       <div className={styles.options}>
         <ButtonIcon
           size="big"
-          icon="painting"
+          icon="picture"
           label="Paint"
           onClick={() => handleCreateArtwork('paint')}
           draggable

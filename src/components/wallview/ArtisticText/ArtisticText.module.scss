@@ -8,6 +8,7 @@
   width: 100%;
   position: relative;
   background: var(--white);
+  cursor: grab;
 
   &.editing {
     background-color: var(--bgLight);

@@ -43,8 +43,9 @@ const Select = ({ options, selectedLabel, onSelect }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {currentLabel}
+        <Icon name="chevronDown" size={16} color="#333333" />
       </div>
-      <Icon name="chevronDown" size={16} color="#333333" />
+
       {isOpen && (
         <ul className={styles.selectDropdown}>
           {options.map((option, i) => (

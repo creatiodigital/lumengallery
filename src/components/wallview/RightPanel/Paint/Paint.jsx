@@ -65,7 +65,7 @@ const Paint = () => {
               </div>
               <div className={styles.row}>
                 <div className={styles.item}>
-                  <span className={styles.label}>Artistic Title</span>
+                  <span className={styles.label}>Title</span>
                   <Input value={artworkTitle} onChange={handleArtworkTitleChange} />
                 </div>
               </div>
