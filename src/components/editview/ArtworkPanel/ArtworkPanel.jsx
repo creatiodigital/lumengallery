@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react'
+import React, { useRef, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
@@ -19,21 +19,6 @@ const ArtworkPanel = () => {
 
   const { name, artworkTitle, author, artworkYear, description, artworkDimensions } =
     selectedArtwork || {}
-
-  // // Close panel when clicking outside of it
-  // useEffect(() => {
-  //   const handleClickOutside = (event) => {
-  //     if (panelRef.current && !panelRef.current.contains(event.target)) {
-  //       dispatch(hideArtworkPanel())
-  //     }
-  //   }
-
-  //   document.addEventListener('mousedown', handleClickOutside) // Add listener
-
-  //   return () => {
-  //     document.removeEventListener('mousedown', handleClickOutside) // Clean up listener
-  //   }
-  // }, [dispatch])
 
   return (
     <div ref={panelRef} className={styles.artworkPanel}>
