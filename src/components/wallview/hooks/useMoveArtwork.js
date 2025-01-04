@@ -6,14 +6,27 @@ import { setAlignedPairs, startDragging, stopDragging } from '@/lib/features/wal
 
 import { convert2DTo3D } from '../utils'
 
-const areAligned = (artworkA, artworkB, tolerance = 2) => {
-  const isHorizontallyAligned = Math.abs(artworkA.y - artworkB.y) <= tolerance
-  const isVerticallyAligned = Math.abs(artworkA.x - artworkB.x) <= tolerance
+const tolerance = 2
 
-  return {
-    horizontally: isHorizontallyAligned,
-    vertically: isVerticallyAligned,
+const areAligned = (artworkA, artworkB) => {
+  const directions = {
+    horizontal: null,
+    vertical: null,
   }
+
+  if (Math.abs(artworkA.y - artworkB.y) <= tolerance) {
+    directions.horizontal = 'top'
+  } else if (Math.abs(artworkA.y + artworkA.height - (artworkB.y + artworkB.height)) <= tolerance) {
+    directions.horizontal = 'bottom'
+  }
+
+  if (Math.abs(artworkA.x - artworkB.x) <= tolerance) {
+    directions.vertical = 'left'
+  } else if (Math.abs(artworkA.x + artworkA.width - (artworkB.x + artworkB.width)) <= tolerance) {
+    directions.vertical = 'right'
+  }
+
+  return directions
 }
 
 export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
@@ -60,26 +73,39 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
     artworks.forEach((otherArtwork) => {
       if (otherArtwork.id !== draggedArtworkId) {
-        const alignment = areAligned({ x: snapX, y: snapY }, otherArtwork.canvas)
+        const alignment = areAligned(
+          { x: snapX, y: snapY, width: artwork.canvas.width, height: artwork.canvas.height },
+          {
+            x: otherArtwork.canvas.x,
+            y: otherArtwork.canvas.y,
+            width: otherArtwork.canvas.width,
+            height: otherArtwork.canvas.height,
+          },
+        )
 
-        if (alignment.horizontally) {
-          snapY = otherArtwork.canvas.y
+        if (alignment.horizontal) {
+          if (alignment.horizontal === 'top') {
+            snapY = otherArtwork.canvas.y // Align top
+          } else if (alignment.horizontal === 'bottom') {
+            snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height // Align bottom
+          }
           alignedPairs.push({
             from: draggedArtworkId,
             to: otherArtwork.id,
-            direction: 'horizontal',
+            direction: alignment.horizontal,
           })
         }
 
-        if (alignment.vertically) {
-          console.log(
-            `Artwork ${draggedArtworkId} is vertically aligned with Artwork ${otherArtwork.id}`,
-          )
-          snapX = otherArtwork.canvas.x
+        if (alignment.vertical) {
+          if (alignment.vertical === 'left') {
+            snapX = otherArtwork.canvas.x // Align left
+          } else if (alignment.vertical === 'right') {
+            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width - artwork.canvas.width // Align right
+          }
           alignedPairs.push({
             from: draggedArtworkId,
             to: otherArtwork.id,
-            direction: 'vertical',
+            direction: alignment.vertical,
           })
         }
       }
@@ -87,7 +113,6 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
     dispatch(setAlignedPairs(alignedPairs))
 
-    // Apply snapping adjustments to updated canvas
     const updatedCanvas = { ...artwork.canvas, x: snapX, y: snapY }
 
     dispatch(
