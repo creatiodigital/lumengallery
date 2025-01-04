@@ -13,6 +13,7 @@ const wallViewSlice = createSlice({
     isPersonVisible: false,
     wallHeight: null,
     wallWidth: null,
+    isDragging: false,
   },
   reducers: {
     showWallView: (state, action) => {
@@ -67,6 +68,12 @@ const wallViewSlice = createSlice({
     clearAlignedPairs: (state) => {
       state.alignedPairs = []
     },
+    startDragging: (state) => {
+      state.isDragging = true
+    },
+    stopDragging: (state) => {
+      state.isDragging = false
+    },
   },
 })
 
@@ -85,5 +92,7 @@ export const {
   setWallCoordinates,
   setAlignedPairs,
   clearAlignedPairs,
+  startDragging,
+  stopDragging,
 } = wallViewSlice.actions
 export default wallViewSlice.reducer

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
-import { setAlignedPairs } from '@/lib/features/wallViewSlice'
+import { setAlignedPairs, startDragging, stopDragging } from '@/lib/features/wallViewSlice'
 
 import { convert2DTo3D } from '../utils'
 
@@ -17,12 +17,12 @@ const areAligned = (artworkA, artworkB, tolerance = 2) => {
 }
 
 export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
-  const [dragging, setDragging] = useState(false)
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
   const artworks = useSelector((state) => state.artist.artworks)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
+  const isDragging = useSelector((state) => state.wallView.isDragging)
   const dispatch = useDispatch()
 
   const handleDragStart = (event, artworkId) => {
@@ -36,12 +36,12 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     const offsetY = (event.clientY - rect.top) / scaleFactor - artwork.canvas.y
     setOffset({ x: offsetX, y: offsetY })
 
-    setDragging(true)
+    dispatch(startDragging())
     setDraggedArtworkId(artworkId)
   }
 
   const handleDragMove = (event) => {
-    if (!dragging || !draggedArtworkId || !wallRef.current || !boundingData) return
+    if (!isDragging || !draggedArtworkId || !wallRef.current || !boundingData) return
 
     const rect = wallRef.current.getBoundingClientRect()
     const scaledMouseX = (event.clientX - rect.left) / scaleFactor
@@ -53,22 +53,17 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     const artwork = artworks.find((art) => art.id === draggedArtworkId)
     if (!artwork) return
 
-    // Initialize snapping adjustments
     let snapX = x
     let snapY = y
 
     const alignedPairs = []
 
-    // Check alignment and apply snapping
     artworks.forEach((otherArtwork) => {
       if (otherArtwork.id !== draggedArtworkId) {
-        const alignment = areAligned(
-          { x: snapX, y: snapY }, // Current position of dragged artwork
-          otherArtwork.canvas,
-        )
+        const alignment = areAligned({ x: snapX, y: snapY }, otherArtwork.canvas)
 
         if (alignment.horizontally) {
-          snapY = otherArtwork.canvas.y // Snap to the y position of the aligned artwork
+          snapY = otherArtwork.canvas.y
           alignedPairs.push({
             from: draggedArtworkId,
             to: otherArtwork.id,
@@ -80,7 +75,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
           console.log(
             `Artwork ${draggedArtworkId} is vertically aligned with Artwork ${otherArtwork.id}`,
           )
-          snapX = otherArtwork.canvas.x // Snap to the x position of the aligned artwork
+          snapX = otherArtwork.canvas.x
           alignedPairs.push({
             from: draggedArtworkId,
             to: otherArtwork.id,
@@ -116,12 +111,11 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   }
 
   const handleDragEnd = () => {
-    setDragging(false)
+    dispatch(stopDragging())
     setDraggedArtworkId(null)
   }
 
   return {
-    dragging,
     draggedArtworkId,
     handleDragStart,
     handleDragMove,

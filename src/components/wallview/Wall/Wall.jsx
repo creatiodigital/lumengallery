@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
-import { useGlobalMouseUp } from '@/components/wallview/hooks/useGlobalMouseUp'
 import { useKeyboardEvents } from '@/components/wallview/hooks/useKeyboardEvents'
 import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
@@ -26,10 +25,10 @@ import { Artwork } from '../Artwork'
 export const Wall = () => {
   const { nodes } = useGLTF('/assets/one-space40.glb')
   const artworks = useSelector((state) => state.artist.artworks)
+  const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
-  const [dragging, setDragging] = useState(false)
   const [wallWidth, setWallWidth] = useState('')
   const [wallHeight, setWallHeight] = useState('')
   const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
@@ -135,8 +134,6 @@ export const Wall = () => {
     }
   }, [isArtworkUploaded, dispatch])
 
-  useGlobalMouseUp(dragging, setDragging)
-
   const handleDeselect = useDeselectArtwork()
 
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
@@ -178,6 +175,7 @@ export const Wall = () => {
             />
           ))}
         {alignedPairs?.map((pair, index) => {
+          if (!isDragging) return null
           const from = artworks.find((art) => art.id === pair.from).canvas
           const to = artworks.find((art) => art.id === pair.to).canvas
 
