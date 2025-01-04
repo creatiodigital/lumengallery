@@ -16,6 +16,13 @@
   gap: 20px;
 }
 
+.cta {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .info {
   display: flex;
   flex-direction: column;

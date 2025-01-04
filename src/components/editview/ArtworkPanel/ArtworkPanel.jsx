@@ -20,23 +20,26 @@ const ArtworkPanel = () => {
   const { name, artworkTitle, author, artworkYear, description, artworkDimensions } =
     selectedArtwork || {}
 
-  // Close panel when clicking outside of it
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (panelRef.current && !panelRef.current.contains(event.target)) {
-        dispatch(hideArtworkPanel())
-      }
-    }
+  // // Close panel when clicking outside of it
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (panelRef.current && !panelRef.current.contains(event.target)) {
+  //       dispatch(hideArtworkPanel())
+  //     }
+  //   }
 
-    document.addEventListener('mousedown', handleClickOutside) // Add listener
+  //   document.addEventListener('mousedown', handleClickOutside) // Add listener
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside) // Clean up listener
-    }
-  }, [dispatch])
+  //   return () => {
+  //     document.removeEventListener('mousedown', handleClickOutside) // Clean up listener
+  //   }
+  // }, [dispatch])
 
   return (
     <div ref={panelRef} className={styles.artworkPanel}>
+      <div className={styles.cta}>
+        <Button type="outline" label="Close" onClick={() => dispatch(hideArtworkPanel())} />
+      </div>
       <div className={styles.info}>
         {selectedArtwork && (
           <div>
@@ -47,9 +50,6 @@ const ArtworkPanel = () => {
             {artworkDimensions && <span className={styles.dimensions}>{artworkDimensions}</span>}
           </div>
         )}
-      </div>
-      <div className={styles.cta}>
-        <Button type="outline" label="Close" onClick={() => dispatch(hideArtworkPanel())} />
       </div>
     </div>
   )

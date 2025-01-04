@@ -176,8 +176,8 @@ export const Wall = () => {
           ))}
         {alignedPairs?.map((pair, index) => {
           if (!isDragging) return null
-          const from = artworks?.find((art) => art.id === pair.from).canvas
-          const to = artworks?.find((art) => art.id === pair.to).canvas
+          const from = artworks?.find((art) => art.id === pair.from)?.canvas || {}
+          const to = artworks?.find((art) => art.id === pair.to)?.canvas || {}
 
           return (
             <AlignedLine
