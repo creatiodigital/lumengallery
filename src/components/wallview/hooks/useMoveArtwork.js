@@ -6,7 +6,7 @@ import { setAlignedPairs, startDragging, stopDragging } from '@/lib/features/wal
 
 import { convert2DTo3D } from '../utils'
 
-const tolerance = 2
+const tolerance = 3
 
 const areAligned = (artworkA, artworkB) => {
   const directions = {
@@ -16,18 +16,32 @@ const areAligned = (artworkA, artworkB) => {
 
   if (Math.abs(artworkA.y - artworkB.y) <= tolerance) {
     directions.horizontal = 'top'
-  } else if (Math.abs(artworkA.y + artworkA.height - (artworkB.y + artworkB.height)) <= tolerance) {
+  }
+
+  if (Math.abs(artworkA.y + artworkA.height - (artworkB.y + artworkB.height)) <= tolerance) {
     directions.horizontal = 'bottom'
+  }
+
+  if (
+    Math.abs(artworkA.y + artworkA.height / 2 - (artworkB.y + artworkB.height / 2)) <= tolerance
+  ) {
+    directions.horizontal = 'center-horizontal'
   }
 
   if (Math.abs(artworkA.x - artworkB.x) <= tolerance) {
     directions.vertical = 'left'
-  } else if (Math.abs(artworkA.x + artworkA.width - (artworkB.x + artworkB.width)) <= tolerance) {
+  }
+
+  if (Math.abs(artworkA.x + artworkA.width - (artworkB.x + artworkB.width)) <= tolerance) {
     directions.vertical = 'right'
+  }
+  if (Math.abs(artworkA.x + artworkA.width / 2 - (artworkB.x + artworkB.width / 2)) <= tolerance) {
+    directions.vertical = 'center-vertical'
   }
 
   return directions
 }
+
 export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
@@ -85,9 +99,16 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
         if (alignment.horizontal) {
           if (alignment.horizontal === 'top') {
             snapY = otherArtwork.canvas.y // Align top
-          } else if (alignment.horizontal === 'bottom') {
+          }
+          if (alignment.horizontal === 'bottom') {
             snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height // Align bottom
           }
+
+          if (alignment.horizontal === 'center-horizontal') {
+            snapY =
+              otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2 // Align horizontal centers
+          }
+
           alignedPairs.push({
             from: draggedArtworkId,
             to: otherArtwork.id,
@@ -97,10 +118,16 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
         if (alignment.vertical) {
           if (alignment.vertical === 'left') {
-            snapX = otherArtwork.canvas.x // Align left
-          } else if (alignment.vertical === 'right') {
-            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width - artwork.canvas.width // Align right
+            snapX = otherArtwork.canvas.x
           }
+          if (alignment.vertical === 'right') {
+            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width - artwork.canvas.width
+          }
+
+          if (alignment.vertical === 'center-vertical') {
+            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width / 2 - artwork.canvas.width / 2
+          }
+
           alignedPairs.push({
             from: draggedArtworkId,
             to: otherArtwork.id,

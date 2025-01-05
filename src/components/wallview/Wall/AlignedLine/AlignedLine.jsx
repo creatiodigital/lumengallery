@@ -1,18 +1,26 @@
 import styles from './AlignedLine.module.scss'
 
 const AlignedLine = ({ start, end, direction }) => {
-  const isHorizontal = direction === 'horizontal' || direction === 'top' || direction === 'bottom'
+  const isHorizontal =
+    direction === 'horizontal' ||
+    direction === 'top' ||
+    direction === 'bottom' ||
+    direction === 'center-horizontal'
 
   const lineStart = {
     x: isHorizontal
       ? Math.min(start.x, end.x)
       : direction === 'right'
         ? start.x + start.width
-        : start.x,
+        : direction === 'center-vertical'
+          ? start.x + start.width / 2
+          : start.x,
     y: isHorizontal
       ? direction === 'bottom'
         ? start.y + start.height
-        : start.y
+        : direction === 'center-horizontal'
+          ? start.y + start.height / 2
+          : start.y
       : Math.min(start.y, end.y),
   }
 
@@ -21,11 +29,15 @@ const AlignedLine = ({ start, end, direction }) => {
       ? Math.max(start.x + start.width, end.x + end.width)
       : direction === 'right'
         ? end.x + end.width
-        : end.x,
+        : direction === 'center-vertical'
+          ? end.x + end.width / 2
+          : end.x,
     y: isHorizontal
       ? direction === 'bottom'
         ? end.y + end.height
-        : end.y
+        : direction === 'center-horizontal'
+          ? end.y + end.height / 2
+          : end.y
       : Math.max(start.y + start.height, end.y + end.height),
   }
 
