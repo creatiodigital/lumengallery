@@ -44,7 +44,7 @@ const artistSlice = createSlice({
         showFrame: false,
         frameStyles: {
           frameColor: '#000000',
-          frameThickness: 2,
+          frameThickness: 0,
         },
         artisticTextStyles: {
           fontFamily: 'Roboto',
