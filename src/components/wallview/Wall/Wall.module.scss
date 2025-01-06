@@ -6,17 +6,18 @@
 }
 
 .wallWidth {
-  @include xlargeSans();
+  @include largeSans();
   position: absolute;
+  color: var(--black);
   top: 0;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .wallHeight {
-  @include xlargeSans();
-  color: var(--black);
+  @include largeSans();
   position: absolute;
+  color: var(--black);
   top: 50%;
   left: -20px;
   transform: translateY(-50%) rotate(-90deg);

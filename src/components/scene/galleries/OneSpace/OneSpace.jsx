@@ -1,6 +1,6 @@
 import { useGLTF } from '@react-three/drei'
-import React from 'react'
-import { useSelector } from 'react-redux'
+import React, { useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 
 import { Artworks } from '../objects/Artworks'
 import { Ceiling } from '../objects/Ceiling'
@@ -10,8 +10,11 @@ import { Placeholder } from '../objects/Placeholder'
 import { RectLight } from '../objects/RectLight'
 import { Wall } from '../objects/Wall'
 
+import { addWall } from '@/lib/features/artistSlice'
+
 const OneSpace = ({ wallRefs, ...props }) => {
   const { nodes, materials } = useGLTF('/assets/one-space42.glb')
+  const dispatch = useDispatch()
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
 
@@ -19,6 +22,15 @@ const OneSpace = ({ wallRefs, ...props }) => {
   const placeholdersArray = Array.from({ length: 6 }) || []
   const rectLightsArray = Array.from({ length: 5 })
   const lampsArray = Array.from({ length: 27 })
+
+  useEffect(() => {
+    placeholdersArray.forEach((_, i) => {
+      const wallNode = nodes[`placeholder${i}`]
+      if (wallNode) {
+        dispatch(addWall({ id: wallNode.uuid, name: `Wall ${i + 1}` }))
+      }
+    })
+  }, [nodes, dispatch, wallsArray])
 
   return (
     <group {...props} dispose={null}>

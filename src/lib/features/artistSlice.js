@@ -12,6 +12,7 @@ const artistSlice = createSlice({
       paint: 0,
       text: 0,
     },
+    walls: [],
   },
   reducers: {
     setHandler: (state, action) => {
@@ -22,6 +23,19 @@ const artistSlice = createSlice({
     },
     hideEditMode: (state) => {
       state.isEditMode = false
+    },
+    addWall: (state, action) => {
+      const wallId = action.payload
+      const wallIndex = state.walls.length + 1
+      const readableName = `Wall ${wallIndex}`
+      state.walls.push({ id: wallId.id, name: readableName })
+    },
+    editWallName: (state, action) => {
+      const { wallId, newName } = action.payload
+      const wall = state.walls.find((wall) => wall.id === wallId)
+      if (wall) {
+        wall.name = newName
+      }
     },
     createArtwork: (state, action) => {
       const { wallId, id, canvas, artworkType } = action.payload
@@ -248,6 +262,8 @@ export const {
   showEditMode,
   hideEditMode,
   setHandler,
+  addWall,
+  editWallName,
   createArtwork,
   editArtwork,
   editAlignArtwork,

@@ -41,11 +41,20 @@ const Paint = ({ artwork }) => {
         <meshBasicMaterial visible={false} />
       </mesh>
 
-      <mesh renderOrder={2}>
-        <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
+      {!url && (
+        <mesh renderOrder={2}>
           <planeGeometry args={[innerWidth, innerHeight]} />
-        </Image>
-      </mesh>
+          <meshBasicMaterial color="white" side={DoubleSide} />
+        </mesh>
+      )}
+
+      {url && (
+        <mesh renderOrder={2}>
+          <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
+            <planeGeometry args={[innerWidth, innerHeight]} />
+          </Image>
+        </mesh>
+      )}
 
       {showFrame && (
         <Frame

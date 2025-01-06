@@ -1,14 +1,19 @@
-import PropTypes from 'prop-types'
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 
 import styles from './Checkbox.module.scss'
 
 const Checkbox = ({ checked, onChange, label }) => {
+  const [selectedValue, setSelectedValue] = useState(checked)
+
+  useEffect(() => {
+    setSelectedValue(checked)
+  }, [onChange])
+
   return (
     <label className={styles.checkbox}>
       <input
         type="checkbox"
-        checked={checked}
+        checked={selectedValue}
         onChange={onChange}
         className={styles.hiddenCheckbox}
       />
@@ -16,12 +21,6 @@ const Checkbox = ({ checked, onChange, label }) => {
       {label && <span className={styles.labelText}>{label}</span>}
     </label>
   )
-}
-
-Checkbox.propTypes = {
-  checked: PropTypes.bool.isRequired,
-  onChange: PropTypes.func.isRequired,
-  label: PropTypes.string,
 }
 
 export default Checkbox

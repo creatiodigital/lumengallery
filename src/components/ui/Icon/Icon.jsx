@@ -7,6 +7,7 @@ import HorizontalCenter from '@/icons/horizontal-center.svg'
 import HorizontalLeft from '@/icons/horizontal-left.svg'
 import HorizontalRight from '@/icons/horizontal-right.svg'
 import Move from '@/icons/move.svg'
+import Loading from '@/icons/loading.svg'
 import Painting from '@/icons/painting.svg'
 import Person from '@/icons/person.svg'
 import Picture from '@/icons/picture.svg'
@@ -32,6 +33,7 @@ const icons = {
   horizontalCenter: HorizontalCenter,
   horizontalRight: HorizontalRight,
   expand: Expand,
+  loading: Loading,
   move: Move,
   painting: Painting,
   person: Person,

@@ -1,8 +1,9 @@
 'use client'
 
 import { Canvas } from '@react-three/fiber'
-import React, { useRef } from 'react'
+import React, { useRef, Suspense } from 'react'
 import { useSelector } from 'react-redux'
+import { Loader } from '@/components/ui/Loader'
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 
 import SceneContext from '@/contexts/SceneContext'
@@ -26,10 +27,12 @@ export const Scene = () => {
             antialias: true,
           }}
         >
-          <group>
-            <Controls />
-            <Elements artworks={artworks} isSpace />
-          </group>
+          <Suspense fallback={<Loader />}>
+            <group>
+              <Controls />
+              <Elements artworks={artworks} isSpace />
+            </group>
+          </Suspense>
         </Canvas>
       </div>
     </SceneContext.Provider>

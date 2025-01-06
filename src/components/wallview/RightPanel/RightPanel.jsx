@@ -48,7 +48,6 @@ const RightPanel = () => {
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Name</span>
-
                       <Input value={name} onChange={handleNameChange} />
                     </div>
                   </div>

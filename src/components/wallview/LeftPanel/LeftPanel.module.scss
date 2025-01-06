@@ -23,6 +23,12 @@
   margin-bottom: 10px;
 }
 
+.wallTitle {
+  @include mediumSans();
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
 .title {
   @include smallSans();
   font-weight: 600;
@@ -54,11 +60,11 @@
 }
 
 .artwork {
-  @include smallSans();
+  @include tinySans();
   color: var(--black);
   margin: 0 0 10px 0;
 }
 
 .selected {
-  color: var(--grayDark);
+  color: var(--blue);
 }
