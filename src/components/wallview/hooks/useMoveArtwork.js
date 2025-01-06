@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
-import { setAlignedPairs, startDragging, stopDragging } from '@/lib/features/wallViewSlice'
+import {
+  setAlignedPairs,
+  startDragging,
+  stopDragging,
+  chooseCurrentArtworkId,
+} from '@/lib/features/wallViewSlice'
 
 import { convert2DTo3D } from '../utils'
 
@@ -65,6 +70,8 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
     dispatch(startDragging())
     setDraggedArtworkId(artworkId)
+
+    dispatch(chooseCurrentArtworkId(artworkId))
   }
 
   const handleDragMove = (event) => {
