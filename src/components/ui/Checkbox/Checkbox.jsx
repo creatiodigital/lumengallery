@@ -1,19 +1,12 @@
-import React, { useState, useEffect } from 'react'
-
+import React from 'react'
 import styles from './Checkbox.module.scss'
 
-const Checkbox = ({ checked, onChange, label }) => {
-  const [selectedValue, setSelectedValue] = useState(checked)
-
-  useEffect(() => {
-    setSelectedValue(checked)
-  }, [onChange])
-
+const Checkbox = ({ checked = false, onChange, label }) => {
   return (
     <label className={styles.checkbox}>
       <input
         type="checkbox"
-        checked={selectedValue}
+        checked={checked}
         onChange={onChange}
         className={styles.hiddenCheckbox}
       />

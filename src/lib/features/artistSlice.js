@@ -8,6 +8,7 @@ const artistSlice = createSlice({
     lastName: 'Plaza',
     handler: 'eduardo-plaza',
     artworks: [],
+
     artworkCounters: {
       paint: 0,
       text: 0,
@@ -56,6 +57,7 @@ const artistSlice = createSlice({
         canvas,
         space: [],
         showFrame: false,
+        showArtworkInformation: false,
         frameStyles: {
           frameColor: '#000000',
           frameThickness: 0,

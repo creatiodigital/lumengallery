@@ -30,7 +30,7 @@ const OneSpace = ({ wallRefs, ...props }) => {
         dispatch(addWall({ id: wallNode.uuid, name: `Wall ${i + 1}` }))
       }
     })
-  }, [nodes, dispatch, wallsArray])
+  }, [nodes, dispatch, wallsArray, placeholdersArray])
 
   return (
     <group {...props} dispose={null}>
