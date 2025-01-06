@@ -49,6 +49,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const artworks = useSelector((state) => state.artist.artworks)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
   const isDragging = useSelector((state) => state.wallView.isDragging)
+  const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const dispatch = useDispatch()
 
   const handleDragStart = (event, artworkId) => {
@@ -79,61 +80,62 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     const artwork = artworks.find((art) => art.id === draggedArtworkId)
     if (!artwork) return
 
+    // Filter artworks to only include those on the current wall
+    const sameWallArtworks = artworks.filter(
+      (otherArtwork) =>
+        otherArtwork.wallId === currentWallId && otherArtwork.id !== draggedArtworkId,
+    )
+
     let snapX = x
     let snapY = y
 
     const alignedPairs = []
 
-    artworks.forEach((otherArtwork) => {
-      if (otherArtwork.id !== draggedArtworkId) {
-        const alignment = areAligned(
-          { x: snapX, y: snapY, width: artwork.canvas.width, height: artwork.canvas.height },
-          {
-            x: otherArtwork.canvas.x,
-            y: otherArtwork.canvas.y,
-            width: otherArtwork.canvas.width,
-            height: otherArtwork.canvas.height,
-          },
-        )
+    sameWallArtworks.forEach((otherArtwork) => {
+      const alignment = areAligned(
+        { x: snapX, y: snapY, width: artwork.canvas.width, height: artwork.canvas.height },
+        {
+          x: otherArtwork.canvas.x,
+          y: otherArtwork.canvas.y,
+          width: otherArtwork.canvas.width,
+          height: otherArtwork.canvas.height,
+        },
+      )
 
-        if (alignment.horizontal) {
-          if (alignment.horizontal === 'top') {
-            snapY = otherArtwork.canvas.y // Align top
-          }
-          if (alignment.horizontal === 'bottom') {
-            snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height // Align bottom
-          }
-
-          if (alignment.horizontal === 'center-horizontal') {
-            snapY =
-              otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2 // Align horizontal centers
-          }
-
-          alignedPairs.push({
-            from: draggedArtworkId,
-            to: otherArtwork.id,
-            direction: alignment.horizontal,
-          })
+      if (alignment.horizontal) {
+        if (alignment.horizontal === 'top') {
+          snapY = otherArtwork.canvas.y // Align top
+        }
+        if (alignment.horizontal === 'bottom') {
+          snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height // Align bottom
+        }
+        if (alignment.horizontal === 'center-horizontal') {
+          snapY = otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2 // Align horizontal centers
         }
 
-        if (alignment.vertical) {
-          if (alignment.vertical === 'left') {
-            snapX = otherArtwork.canvas.x
-          }
-          if (alignment.vertical === 'right') {
-            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width - artwork.canvas.width
-          }
+        alignedPairs.push({
+          from: draggedArtworkId,
+          to: otherArtwork.id,
+          direction: alignment.horizontal,
+        })
+      }
 
-          if (alignment.vertical === 'center-vertical') {
-            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width / 2 - artwork.canvas.width / 2
-          }
-
-          alignedPairs.push({
-            from: draggedArtworkId,
-            to: otherArtwork.id,
-            direction: alignment.vertical,
-          })
+      if (alignment.vertical) {
+        if (alignment.vertical === 'left') {
+          snapX = otherArtwork.canvas.x
         }
+        if (alignment.vertical === 'right') {
+          snapX = otherArtwork.canvas.x + otherArtwork.canvas.width - artwork.canvas.width
+        }
+        if (alignment.vertical === 'center-vertical') {
+          snapX = otherArtwork.canvas.x + otherArtwork.canvas.width / 2 - artwork.canvas.width / 2
+        }
+
+        alignedPairs.push({
+          from: draggedArtworkId,
+          to: otherArtwork.id,
+          direction: alignment.vertical,
+        })
       }
     })
 
