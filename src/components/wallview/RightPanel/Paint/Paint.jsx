@@ -89,38 +89,40 @@ const Paint = () => {
               </div>
             </div>
           </div>
-          <div className={styles.section}>
-            <h2 className={styles.title}>Features</h2>
-            <div className={styles.subsection}>
-              <div className={styles.row}>
-                <div className={styles.item}>
-                  <Checkbox
-                    checked={showFrame}
-                    onChange={(e) => handleShowFrame(e.target.checked)}
-                    label="Add Frame"
-                  />
-                </div>
-              </div>
-              {showFrame && (
-                <div className={styles.row}>
-                  <div className={styles.item}>
-                    <span className={styles.label}>Frame Color</span>
-                    <ColorPicker textColor={frameColor} onColorSelect={handleFrameColorSelect} />
-                  </div>
-                  <div className={styles.item}>
-                    <span className={styles.label}>Frame Thickness</span>
-                    <Select
-                      options={frameThicknessOptions}
-                      onSelect={handleFrameThicknessSelect}
-                      selectedLabel={frameThickness}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </>
       )}
+      <div className={styles.section}>
+        <h2 className={styles.title}>Features</h2>
+      </div>
+      <div className={styles.subsection}>
+        <div className={styles.row}>
+          <div className={styles.item}>
+            <Checkbox
+              checked={showFrame}
+              onChange={(e) => handleShowFrame(e.target.checked)}
+              label="Add Frame"
+            />
+          </div>
+        </div>
+      </div>
+      <div className={styles.subsection}>
+        {showFrame && (
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <span className={styles.label}>Frame Color</span>
+              <ColorPicker textColor={frameColor} onColorSelect={handleFrameColorSelect} />
+            </div>
+            <div className={styles.item}>
+              <span className={styles.label}>Frame Thickness</span>
+              <Select
+                options={frameThicknessOptions}
+                onSelect={handleFrameThicknessSelect}
+                selectedLabel={frameThickness}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </>
   )
 }

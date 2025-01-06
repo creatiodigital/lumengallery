@@ -15,7 +15,7 @@ const ArtisticImage = ({ artwork, url, artworkId }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const allowedTypes = ['image/jpeg', 'image/png']
 
-  const { showFrame, frameStyles } = artwork
+  const { frameStyles, showFrame } = artwork
 
   const { frameColor, frameThickness } = frameStyles
 

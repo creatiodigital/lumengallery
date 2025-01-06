@@ -60,7 +60,7 @@ const artistSlice = createSlice({
         showArtworkInformation: false,
         frameStyles: {
           frameColor: '#000000',
-          frameThickness: 0,
+          frameThickness: 1,
         },
         artisticTextStyles: {
           fontFamily: 'Roboto',
