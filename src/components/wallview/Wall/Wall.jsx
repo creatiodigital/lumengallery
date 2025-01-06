@@ -140,8 +140,12 @@ export const Wall = () => {
 
   return (
     <div className={styles.wrapper}>
-      <span className={styles.wallWidth}>{`${wallWidth} M`}</span>
-      <span className={styles.wallHeight}>{`${wallHeight} M`}</span>
+      {wallWidth && wallHeight && (
+        <>
+          <span className={styles.wallWidth}>{`${wallWidth} M`}</span>
+          <span className={styles.wallHeight}>{`${wallHeight} M`}</span>
+        </>
+      )}
       <div
         ref={wallRef}
         className={styles.wall}

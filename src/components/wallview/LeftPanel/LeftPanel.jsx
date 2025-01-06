@@ -56,6 +56,7 @@ export const LeftPanel = () => {
     dispatch(hidePerson())
     dispatch(hideWallView())
     dispatch(showEditMode())
+    dispatch(chooseCurrentArtworkId(null))
   }
 
   const handleTogglePerson = () => {
