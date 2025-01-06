@@ -1,7 +1,8 @@
-import styles from './Loader.module.scss'
 import { Html } from '@react-three/drei'
 
 import { Icon } from '@/components/ui/Icon'
+
+import styles from './Loader.module.scss'
 
 const Loader = () => {
   return (

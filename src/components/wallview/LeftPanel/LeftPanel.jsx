@@ -1,12 +1,12 @@
 import c from 'classnames'
-import { useDispatch, useSelector } from 'react-redux'
 import { useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
-import { showEditMode } from '@/lib/features/dashboardSlice'
+import { Input } from '@/components/ui/Input'
 import { editWallName, editArtworkName } from '@/lib/features/artistSlice'
+import { showEditMode } from '@/lib/features/dashboardSlice'
 import { showPerson, hidePerson } from '@/lib/features/wallViewSlice'
 import {
   increaseScaleFactor,

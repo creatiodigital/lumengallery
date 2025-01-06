@@ -2,6 +2,8 @@ import { useGLTF } from '@react-three/drei'
 import React, { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
+import { addWall } from '@/lib/features/artistSlice'
+
 import { Artworks } from '../objects/Artworks'
 import { Ceiling } from '../objects/Ceiling'
 import { Floor } from '../objects/Floor'
@@ -9,8 +11,6 @@ import { Lamp } from '../objects/Lamp'
 import { Placeholder } from '../objects/Placeholder'
 import { RectLight } from '../objects/RectLight'
 import { Wall } from '../objects/Wall'
-
-import { addWall } from '@/lib/features/artistSlice'
 
 const OneSpace = ({ wallRefs, ...props }) => {
   const { nodes, materials } = useGLTF('/assets/one-space42.glb')

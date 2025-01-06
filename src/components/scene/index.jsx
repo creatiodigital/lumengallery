@@ -3,9 +3,9 @@
 import { Canvas } from '@react-three/fiber'
 import React, { useRef, Suspense } from 'react'
 import { useSelector } from 'react-redux'
-import { Loader } from '@/components/ui/Loader'
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three'
 
+import { Loader } from '@/components/ui/Loader'
 import SceneContext from '@/contexts/SceneContext'
 
 import Controls from './controls'
