@@ -80,7 +80,6 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     const artwork = artworks.find((art) => art.id === draggedArtworkId)
     if (!artwork) return
 
-    // Filter artworks to only include those on the current wall
     const sameWallArtworks = artworks.filter(
       (otherArtwork) =>
         otherArtwork.wallId === currentWallId && otherArtwork.id !== draggedArtworkId,

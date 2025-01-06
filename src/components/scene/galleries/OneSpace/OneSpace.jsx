@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { addWall } from '@/lib/features/artistSlice'
@@ -18,10 +18,10 @@ const OneSpace = ({ wallRefs, ...props }) => {
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
 
-  const wallsArray = Array.from({ length: 1 })
-  const placeholdersArray = Array.from({ length: 6 }) || []
-  const rectLightsArray = Array.from({ length: 5 })
-  const lampsArray = Array.from({ length: 27 })
+  const wallsArray = useMemo(() => Array.from({ length: 1 }), [])
+  const placeholdersArray = useMemo(() => Array.from({ length: 6 }), [])
+  const rectLightsArray = useMemo(() => Array.from({ length: 5 }), [])
+  const lampsArray = useMemo(() => Array.from({ length: 27 }), [])
 
   useEffect(() => {
     placeholdersArray.forEach((_, i) => {
