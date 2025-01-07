@@ -10,7 +10,7 @@ import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArt
 import { useArtworkImageHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkImageHandlers'
 
 import { frameThicknessOptions } from './constants'
-import styles from '../RightPanel.module.scss'
+import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 
 const Paint = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)

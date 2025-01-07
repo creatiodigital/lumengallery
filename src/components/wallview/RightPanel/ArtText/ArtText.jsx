@@ -8,7 +8,7 @@ import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArt
 import { useArtworkTextHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkTextHandlers'
 
 import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } from './constants'
-import styles from '../RightPanel.module.scss'
+import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 
 const ArtText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
