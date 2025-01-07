@@ -6,8 +6,6 @@ const dashboardSlice = createSlice({
     isEditMode: false,
     isArtworkPanelOpen: false,
     isEditingArtwork: false,
-    activeTooltipId: null, // Track the currently active tooltip
-    lastTooltipOpenedAt: null,
   },
   reducers: {
     showEditMode: (state) => {
@@ -25,22 +23,9 @@ const dashboardSlice = createSlice({
     setEditingArtwork: (state, action) => {
       state.isEditingArtwork = action.payload
     },
-    setTooltipOpen: (state, action) => {
-      const { isOpen, id } = action.payload
-      state.activeTooltipId = isOpen ? id : null
-      if (isOpen) {
-        state.lastTooltipOpenedAt = Date.now() // Update timestamp when a tooltip opens
-      }
-    },
   },
 })
 
-export const {
-  showEditMode,
-  hideEditMode,
-  showArtworkPanel,
-  hideArtworkPanel,
-  setEditingArtwork,
-  setTooltipOpen,
-} = dashboardSlice.actions
+export const { showEditMode, hideEditMode, showArtworkPanel, hideArtworkPanel, setEditingArtwork } =
+  dashboardSlice.actions
 export default dashboardSlice.reducer
