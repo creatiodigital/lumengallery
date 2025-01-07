@@ -8,14 +8,15 @@ import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const Paint = ({ artwork }) => {
-  const { position, quaternion, space, url, showFrame, frameStyles } = artwork
+  const { position, quaternion, space, url, showFrame, showArtworkInformation, frameStyles } =
+    artwork
   const { frameColor, frameThickness } = frameStyles
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
 
   const handleClick = () => {
-    if (!isPlaceholdersShown) {
+    if (!isPlaceholdersShown && showArtworkInformation) {
       dispatch(showArtworkPanel())
       dispatch(setCurrentArtwork(artwork.id))
     }
@@ -30,13 +31,31 @@ const Paint = ({ artwork }) => {
     metalness: 0.1,
   })
 
+  const innerWidth = planeWidth - frameThickness / 50
+  const innerHeight = planeHeight - frameThickness / 50
+
   return (
     <group position={position} quaternion={quaternion} onDoubleClick={handleClick}>
-      <mesh renderOrder={2}>
-        <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
-          <planeGeometry args={[planeWidth, planeHeight]} />
-        </Image>
+      <mesh renderOrder={1}>
+        <planeGeometry args={[planeWidth, planeHeight]} />
+        <meshBasicMaterial visible={false} />
       </mesh>
+
+      {!url && (
+        <mesh renderOrder={2}>
+          <planeGeometry args={[innerWidth, innerHeight]} />
+          <meshBasicMaterial color="white" side={DoubleSide} />
+        </mesh>
+      )}
+
+      {url && (
+        <mesh renderOrder={2}>
+          <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
+            <planeGeometry args={[innerWidth, innerHeight]} />
+          </Image>
+        </mesh>
+      )}
+
       {showFrame && (
         <Frame
           width={planeWidth}

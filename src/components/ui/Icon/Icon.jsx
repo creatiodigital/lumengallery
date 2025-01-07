@@ -1,3 +1,4 @@
+import ChevronDown from '@/icons/chevron-down.svg'
 import Close from '@/icons/close.svg'
 import Drop from '@/icons/drop.svg'
 import Expand from '@/icons/expand.svg'
@@ -5,6 +6,7 @@ import Grid from '@/icons/grid.svg'
 import HorizontalCenter from '@/icons/horizontal-center.svg'
 import HorizontalLeft from '@/icons/horizontal-left.svg'
 import HorizontalRight from '@/icons/horizontal-right.svg'
+import Loading from '@/icons/loading.svg'
 import Move from '@/icons/move.svg'
 import Painting from '@/icons/painting.svg'
 import Person from '@/icons/person.svg'
@@ -23,6 +25,7 @@ import ZoomIn from '@/icons/zoom-in.svg'
 import ZoomOut from '@/icons/zoom-out.svg'
 
 const icons = {
+  chevronDown: ChevronDown,
   close: Close,
   drop: Drop,
   grid: Grid,
@@ -30,6 +33,7 @@ const icons = {
   horizontalCenter: HorizontalCenter,
   horizontalRight: HorizontalRight,
   expand: Expand,
+  loading: Loading,
   move: Move,
   painting: Painting,
   person: Person,

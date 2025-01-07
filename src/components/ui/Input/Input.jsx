@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/Icon'
 
 import styles from './Input.module.scss'
 
-function Input({ type, value, onChange, icon, rotate }) {
+function Input({ type, value, onChange, icon, rotate, onBlur, onKeyDown, autoFocus = false }) {
   return (
     <div className={styles.wrapper}>
       <input
@@ -13,10 +13,15 @@ function Input({ type, value, onChange, icon, rotate }) {
         className={c([styles.input, styles[type], { [styles.withIcon]: !!icon }])}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
+        onKeyDown={onKeyDown}
+        autoFocus={autoFocus}
       />
-      <div className={c(styles.icon, { [styles[`rotate${rotate}`]]: !!rotate })}>
-        <Icon name={icon} size={16} color="#444444" />
-      </div>
+      {icon && (
+        <div className={c(styles.icon, { [styles[`rotate${rotate}`]]: !!rotate })}>
+          <Icon name={icon} size={16} color="#444444" />
+        </div>
+      )}
     </div>
   )
 }

@@ -13,7 +13,7 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
   const handleResize = (event, artworkId, direction) => {
     event.stopPropagation()
 
-    const artwork = artworks.find((art) => art.id === artworkId)
+    const artwork = artworks?.find((art) => art.id === artworkId)
     if (!artwork || !wallRef.current) return
 
     const rect = wallRef.current.getBoundingClientRect()

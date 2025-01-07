@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
-import { useGlobalMouseUp } from '@/components/wallview/hooks/useGlobalMouseUp'
 import { useKeyboardEvents } from '@/components/wallview/hooks/useKeyboardEvents'
 import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
@@ -19,16 +18,17 @@ import {
 } from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
+import { AlignedLine } from './AlignedLine'
 import styles from './Wall.module.scss'
 import { Artwork } from '../Artwork'
 
 export const Wall = () => {
-  const { nodes } = useGLTF('/assets/one-space40.glb')
+  const { nodes } = useGLTF('/assets/one-space42.glb')
   const artworks = useSelector((state) => state.artist.artworks)
+  const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
-  const [dragging, setDragging] = useState(false)
   const [wallWidth, setWallWidth] = useState('')
   const [wallHeight, setWallHeight] = useState('')
   const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
@@ -37,6 +37,7 @@ export const Wall = () => {
   const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const alignedPairs = useSelector((state) => state.wallView.alignedPairs)
   const dispatch = useDispatch()
   const scaling = 100
   const personHeight = 180
@@ -44,7 +45,7 @@ export const Wall = () => {
 
   const wallRef = useRef(null)
 
-  const currentArtwork = artworks.find((art) => art.id === currentArtworkId)
+  const currentArtwork = artworks?.find((art) => art.id === currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
@@ -133,16 +134,18 @@ export const Wall = () => {
     }
   }, [isArtworkUploaded, dispatch])
 
-  useGlobalMouseUp(dragging, setDragging)
-
   const handleDeselect = useDeselectArtwork()
 
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
 
   return (
     <div className={styles.wrapper}>
-      <span className={styles.wallWidth}>{`${wallWidth} M`}</span>
-      <span className={styles.wallHeight}>{`${wallHeight} M`}</span>
+      {wallWidth && wallHeight && (
+        <>
+          <span className={styles.wallWidth}>{`${wallWidth} M`}</span>
+          <span className={styles.wallHeight}>{`${wallHeight} M`}</span>
+        </>
+      )}
       <div
         ref={wallRef}
         className={styles.wall}
@@ -175,9 +178,33 @@ export const Wall = () => {
               setHoveredArtworkId={setHoveredArtworkId}
             />
           ))}
+        {alignedPairs?.map((pair, index) => {
+          if (!isDragging) return null
+          const from = artworks?.find((art) => art.id === pair.from)?.canvas || {}
+          const to = artworks?.find((art) => art.id === pair.to)?.canvas || {}
+
+          return (
+            <AlignedLine
+              key={index}
+              start={{
+                x: from.x,
+                y: from.y,
+                width: from.width,
+                height: from.height,
+              }}
+              end={{
+                x: to.x,
+                y: to.y,
+                width: to.width,
+                height: to.height,
+              }}
+              direction={pair.direction}
+            />
+          )
+        })}
       </div>
     </div>
   )
 }
 
-useGLTF.preload('/assets/one-space40.glb')
+useGLTF.preload('/assets/one-space42.glb')

@@ -4,11 +4,14 @@
   padding: 10px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: white;
 }
 
 .options {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+
+  button {
+    cursor: grab;
+  }
 }

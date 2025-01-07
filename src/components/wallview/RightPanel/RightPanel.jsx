@@ -8,13 +8,13 @@ import { NumberInput } from '@/components/ui/NumberInput'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 
 import { ArtText } from './ArtText'
+import { useArtworkDetails } from './hooks/useArtworkDetails'
+import { useArtworkHandlers } from './hooks/useArtworkHandlers'
 import { Paint } from './Paint'
 import styles from './RightPanel.module.scss'
-import { useArtworkDetails } from './useArtworkDetails'
-import { useArtworkHandlers } from './useArtworkHandlers'
 
 const RightPanel = () => {
-  const { nodes } = useGLTF('/assets/one-space40.glb')
+  const { nodes } = useGLTF('/assets/one-space42.glb')
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
@@ -25,12 +25,12 @@ const RightPanel = () => {
   const wallHeight = useSelector((state) => state.wallView.wallHeight)
 
   const {
-    handleWidthChange,
-    handleHeightChange,
     handleNameChange,
+    handleAlignChange,
     handleMoveXChange,
     handleMoveYChange,
-    handleAlignChange,
+    handleWidthChange,
+    handleHeightChange,
   } = useArtworkHandlers(currentArtworkId, boundingData)
 
   const handleAlign = (alignment) => {
@@ -47,7 +47,7 @@ const RightPanel = () => {
                 <div className={styles.subsection}>
                   <div className={styles.row}>
                     <div className={styles.item}>
-                      <span className={styles.label}>Title</span>
+                      <span className={styles.label}>Name</span>
                       <Input value={name} onChange={handleNameChange} />
                     </div>
                   </div>
@@ -57,6 +57,23 @@ const RightPanel = () => {
                 <h2 className={styles.title}>Position</h2>
                 <div className={styles.subsection}>
                   <h3 className={styles.subtitle}>Alignment</h3>
+                  <div className={styles.row}>
+                    <div className={styles.item}>
+                      <ButtonIcon icon="verticalTop" onClick={() => handleAlign('verticalTop')} />
+                    </div>
+                    <div className={styles.item}>
+                      <ButtonIcon
+                        icon="verticalCenter"
+                        onClick={() => handleAlign('verticalCenter')}
+                      />
+                    </div>
+                    <div className={styles.item}>
+                      <ButtonIcon
+                        icon="verticalBottom"
+                        onClick={() => handleAlign('verticalBottom')}
+                      />
+                    </div>
+                  </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <ButtonIcon
@@ -77,23 +94,6 @@ const RightPanel = () => {
                       />
                     </div>
                   </div>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <ButtonIcon icon="verticalTop" onClick={() => handleAlign('verticalTop')} />
-                    </div>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="verticalCenter"
-                        onClick={() => handleAlign('verticalCenter')}
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="verticalBottom"
-                        onClick={() => handleAlign('verticalBottom')}
-                      />
-                    </div>
-                  </div>
                 </div>
                 <div className={styles.subsection}>
                   <h3 className={styles.subtitle}>Position (meters)</h3>
@@ -104,7 +104,7 @@ const RightPanel = () => {
                         icon="move"
                         rotate={90}
                         min={0}
-                        max={10}
+                        max={30}
                         onChange={handleMoveXChange}
                       />
                     </div>
@@ -113,7 +113,7 @@ const RightPanel = () => {
                         value={y / 100}
                         icon="move"
                         min={0}
-                        max={10}
+                        max={30}
                         onChange={handleMoveYChange}
                       />
                     </div>
@@ -158,6 +158,6 @@ const RightPanel = () => {
   )
 }
 
-useGLTF.preload('/assets/one-space40.glb')
+useGLTF.preload('/assets/one-space42.glb')
 
 export default RightPanel

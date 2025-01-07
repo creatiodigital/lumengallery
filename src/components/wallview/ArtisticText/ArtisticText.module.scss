@@ -8,9 +8,10 @@
   width: 100%;
   position: relative;
   background: var(--white);
+  cursor: grab;
 
   &.editing {
-    background-color: #f0f0f0;
+    background-color: var(--bgLight);
   }
 }
 
@@ -23,9 +24,10 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+  cursor: grab;
 
   &.editable {
-    background-color: #f9f9f9;
+    background-color: var(--bgLight);
     cursor: text;
   }
 }

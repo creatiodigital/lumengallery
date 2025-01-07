@@ -1,0 +1,30 @@
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.content {
+  position: absolute;
+  top: calc(-100% - 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--black);
+  color: var(--white);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.content::after {
+  content: '';
+  position: absolute;
+  bottom: -10px; /* Position the arrow above the tooltip */
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--black) transparent transparent transparent; /* Inverted triangle */
+}
