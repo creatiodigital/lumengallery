@@ -1,8 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux'
 
-import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
-
 import { convert2DTo3D } from '@/components/wallview/utils'
+import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
   const artworks = useSelector((state) => state.artist.artworks)

@@ -1,5 +1,4 @@
 import { cabin, fraunces, roboto, lora } from '@/app/fonts'
-
 import StoreProvider from '@/app/storeProvider'
 import '@/styles/globals.scss'
 

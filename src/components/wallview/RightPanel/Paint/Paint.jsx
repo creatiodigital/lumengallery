@@ -8,9 +8,9 @@ import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArtworkDetails'
 import { useArtworkImageHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkImageHandlers'
+import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 
 import { frameThicknessOptions } from './constants'
-import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 
 const Paint = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)

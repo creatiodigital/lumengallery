@@ -3,8 +3,8 @@ import { useSelector } from 'react-redux'
 
 import { ArtisticImage } from '@/components/wallview/ArtisticImage'
 import { ArtisticText } from '@/components/wallview/ArtisticText'
-
 import { Handles } from '@/components/wallview/Handles'
+
 import styles from './Artwork.module.scss'
 
 const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHoveredArtworkId }) => {

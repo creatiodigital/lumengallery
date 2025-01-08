@@ -4,7 +4,6 @@ import OneSpace from '@/components/scene/galleries/OneSpace/OneSpace'
 import SceneContext from '@/contexts/SceneContext'
 
 import { Lights } from './lights'
-import { Shadows } from './shadows'
 
 export const Elements = ({ onPlaceholderClick, artworks }) => {
   const { wallRefs } = useContext(SceneContext)
