@@ -38,19 +38,16 @@ const Select = ({ options, selectedLabel, onSelect }) => {
   }, [])
 
   return (
-    <div className={styles.selectMenu} ref={selectRef}>
-      <div
-        className={`${styles.selectInput} ${isOpen ? styles.open : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
-      >
+    <div className={styles.select} ref={selectRef}>
+      <div className={styles.input} onClick={() => setIsOpen(!isOpen)}>
         {currentLabel}
         <Icon name="chevronDown" size={16} color="#333333" />
       </div>
 
       {isOpen && (
-        <ul className={styles.selectDropdown}>
+        <ul className={styles.dropdown}>
           {options.map((option, i) => (
-            <li key={i} className={styles.selectOption} onClick={() => handleSelect(option)}>
+            <li key={i} className={styles.option} onClick={() => handleSelect(option)}>
               {option}
             </li>
           ))}

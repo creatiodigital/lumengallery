@@ -13,7 +13,7 @@ import { RectLight } from '@/components/scene/galleries/objects/RectLight'
 import { Wall } from '@/components/scene/galleries/objects/Wall'
 
 const OneSpace = ({ wallRefs, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/galleries/one-space42.glb')
+  const { nodes, materials } = useGLTF('/assets/galleries/one-space51.glb')
   const dispatch = useDispatch()
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
@@ -52,6 +52,6 @@ const OneSpace = ({ wallRefs, ...props }) => {
   )
 }
 
-useGLTF.preload('/assets/galleries/one-space42.glb')
+useGLTF.preload('/assets/galleries/one-space51.glb')
 
 export default OneSpace

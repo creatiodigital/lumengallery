@@ -20,6 +20,7 @@ export const Scene = () => {
     <SceneContext.Provider value={{ wallRefs }}>
       <div className={styles.scene}>
         <Canvas
+          shadows
           gl={{
             toneMapping: ACESFilmicToneMapping,
             toneMappingExposure: 1,
@@ -30,6 +31,7 @@ export const Scene = () => {
           <Suspense fallback={<Loader />}>
             <group>
               <Controls />
+
               <Elements artworks={artworks} isSpace />
             </group>
           </Suspense>

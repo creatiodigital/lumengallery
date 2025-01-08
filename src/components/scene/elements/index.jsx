@@ -4,6 +4,7 @@ import OneSpace from '@/components/scene/galleries/OneSpace/OneSpace'
 import SceneContext from '@/contexts/SceneContext'
 
 import { Lights } from './lights'
+import { Shadows } from './shadows'
 
 export const Elements = ({ onPlaceholderClick, artworks }) => {
   const { wallRefs } = useContext(SceneContext)
@@ -14,6 +15,7 @@ export const Elements = ({ onPlaceholderClick, artworks }) => {
   return (
     <>
       <Lights />
+      {/* <Shadows /> */}
       <OneSpace
         wallRefs={wallRefs.current}
         onPlaceholderClick={onPlaceholderClick}

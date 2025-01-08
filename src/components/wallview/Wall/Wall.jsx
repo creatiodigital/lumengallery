@@ -23,7 +23,7 @@ import styles from './Wall.module.scss'
 import { Artwork } from '@/components/wallview/Artwork'
 
 export const Wall = () => {
-  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
+  const { nodes } = useGLTF('/assets/galleries/one-space51.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
@@ -207,4 +207,4 @@ export const Wall = () => {
   )
 }
 
-useGLTF.preload('/assets/galleries/one-space42.glb')
+useGLTF.preload('/assets/galleries/one-space51.glb')

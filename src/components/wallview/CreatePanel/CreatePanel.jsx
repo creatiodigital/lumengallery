@@ -9,7 +9,7 @@ import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import styles from './CreatePanel.module.scss'
 
 export const CreatePanel = () => {
-  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
+  const { nodes } = useGLTF('/assets/galleries/one-space51.glb')
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes, currentWallId)
 

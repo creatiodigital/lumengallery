@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import { Icon } from '@/components/ui/Icon'
 import { useArtisticText } from '@/components/wallview/hooks/useArtisticText'

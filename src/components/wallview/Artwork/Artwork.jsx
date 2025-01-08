@@ -10,7 +10,7 @@ import styles from './Artwork.module.scss'
 const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHoveredArtworkId }) => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { canvas, id, url, artworkType } = artwork
+  const { canvas, id, artworkType } = artwork
   const { y, x, width, height } = canvas
 
   const handleMouseEnter = () => {
@@ -38,7 +38,7 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
     >
       {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
       {artworkType === 'text' && <ArtisticText artworkId={id} />}
-      {artworkType === 'paint' && <ArtisticImage artwork={artwork} artworkId={id} url={url} />}
+      {artworkType === 'paint' && <ArtisticImage artwork={artwork} />}
     </div>
   )
 }

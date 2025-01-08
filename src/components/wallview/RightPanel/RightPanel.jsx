@@ -14,7 +14,7 @@ import { Paint } from './Paint'
 import styles from './RightPanel.module.scss'
 
 const RightPanel = () => {
-  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
+  const { nodes } = useGLTF('/assets/galleries/one-space51.glb')
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
@@ -158,6 +158,6 @@ const RightPanel = () => {
   )
 }
 
-useGLTF.preload('/assets/galleries/one-space42.glb')
+useGLTF.preload('/assets/galleries/one-space51.glb')
 
 export default RightPanel
