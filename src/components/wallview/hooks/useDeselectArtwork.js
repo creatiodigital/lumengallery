@@ -14,5 +14,5 @@ export const useDeselectArtwork = () => {
     }
   }
 
-  return handleDeselect
+  return { handleDeselect }
 }

@@ -3,7 +3,11 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { createArtwork, edit3DCoordinates } from '@/lib/features/artistSlice'
-import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
+import {
+  chooseCurrentArtworkId,
+  addArtworkToGroup,
+  removeGroup,
+} from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
 
 export const useCreateArtwork = (boundingData, currentWallId) => {
@@ -50,6 +54,9 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
       boundingData,
     )
 
+    dispatch(removeGroup())
+    dispatch(addArtworkToGroup(artworkId))
+
     dispatch(
       edit3DCoordinates({
         currentArtworkId: artworkId,
@@ -83,6 +90,9 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
         imageURL: null,
       }),
     )
+
+    dispatch(removeGroup())
+    dispatch(addArtworkToGroup(artworkId))
 
     const new3DCoordinate = convert2DTo3D(
       {

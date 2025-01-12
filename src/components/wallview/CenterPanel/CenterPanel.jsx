@@ -32,6 +32,8 @@ export const CenterPanel = () => {
     )
   }
 
+  const { handleDeselect } = useDeselectArtwork()
+
   useEffect(() => {
     const handleWheelZoom = (event) => {
       if (event.metaKey) {
@@ -50,8 +52,6 @@ export const CenterPanel = () => {
       window.removeEventListener('wheel', handleWheelZoom)
     }
   }, [dispatch])
-
-  const handleDeselect = useDeselectArtwork()
 
   return (
     <div className={styles.panel} onWheel={handleWheel}>

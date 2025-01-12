@@ -11,9 +11,9 @@ const Placeholder = ({ i, nodes }) => {
     () =>
       new LineDashedMaterial({
         color: '#555555',
-        dashSize: 0.2,
-        gapSize: 0.1,
-        linewidth: 2,
+        dashSize: 0.1,
+        gapSize: 0.05,
+        linewidth: 4,
       }),
     [],
   )

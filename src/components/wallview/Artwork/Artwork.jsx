@@ -9,6 +9,8 @@ import styles from './Artwork.module.scss'
 
 const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHoveredArtworkId }) => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+  const isGroupVisible = artworkGroupIds.length > 1
 
   const { canvas, id, artworkType } = artwork
   const { y, x, width, height } = canvas
@@ -36,7 +38,9 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
+      {currentArtworkId === id && !isGroupVisible && (
+        <Handles artworkId={id} handleResize={onHandleResize} />
+      )}
       {artworkType === 'text' && <ArtisticText artworkId={id} />}
       {artworkType === 'paint' && <ArtisticImage artwork={artwork} />}
     </div>

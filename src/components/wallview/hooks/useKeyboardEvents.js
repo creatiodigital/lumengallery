@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { deleteArtwork } from '@/lib/features/artistSlice'
+import { removeGroup } from '@/lib/features/wallViewSlice'
 
 export const useKeyboardEvents = (currentArtworkId, isMouseOver) => {
   const dispatch = useDispatch()
@@ -16,6 +17,7 @@ export const useKeyboardEvents = (currentArtworkId, isMouseOver) => {
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && currentArtworkId && isMouseOver) {
         dispatch(deleteArtwork({ artworkId: currentArtworkId }))
+        dispatch(removeGroup())
       }
     }
 
