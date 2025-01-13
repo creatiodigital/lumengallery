@@ -14,6 +14,7 @@ const wallViewSlice = createSlice({
     wallHeight: null,
     wallWidth: null,
     isDragging: false,
+    isDraggingGroup: false,
     isShiftKeyDown: false,
     artworkGroupIds: [],
     artworkGroup: {},
@@ -77,6 +78,12 @@ const wallViewSlice = createSlice({
     stopDragging: (state) => {
       state.isDragging = false
     },
+    startDraggingGroup: (state) => {
+      state.isDraggingGroup = true
+    },
+    stopDraggingGroup: (state) => {
+      state.isDraggingGroup = false
+    },
     setShiftKeyDown: (state, action) => {
       state.isShiftKeyDown = action.payload
     },
@@ -88,8 +95,11 @@ const wallViewSlice = createSlice({
       state.artworkGroupIds = filteredGroup
     },
     createArtworkGroup: (state, action) => {
-      console.log('group', state, action)
       state.artworkGroup = action.payload
+    },
+    editArtworkGroup: (state, action) => {
+      state.artworkGroup.groupX = action.payload.groupX
+      state.artworkGroup.groupY = action.payload.groupY
     },
     removeGroup: (state) => {
       state.artworkGroupIds = []
@@ -114,7 +124,10 @@ export const {
   clearAlignedPairs,
   startDragging,
   stopDragging,
+  startDraggingGroup,
+  stopDraggingGroup,
   createArtworkGroup,
+  editArtworkGroup,
   addArtworkToGroup,
   removeArtworkFromGroup,
   setShiftKeyDown,

@@ -1,12 +1,26 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { convert2DTo3D } from '@/components/wallview/utils'
 
-import { addArtworkToGroup, removeGroup, createArtworkGroup } from '@/lib/features/wallViewSlice'
+import { editArtwork, edit3DCoordinates } from '@/lib/features/artistSlice'
 
-export const useGroupArtwork = () => {
+import {
+  addArtworkToGroup,
+  removeGroup,
+  createArtworkGroup,
+  editArtworkGroup,
+  startDraggingGroup,
+  stopDraggingGroup,
+  chooseCurrentArtworkId,
+} from '@/lib/features/wallViewSlice'
+
+export const useGroupArtwork = (wallRef, boundingData, scaleFactor) => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+  const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
+  const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
   const artworks = useSelector((state) => state.artist.artworks)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
 
   const handleAddArtworkToGroup = (artworkId) => {
     if (!artworkGroupIds.includes(artworkId)) {
@@ -18,8 +32,81 @@ export const useGroupArtwork = () => {
     dispatch(removeGroup())
   }
 
-  const handleGroupDragStart = (e) => {
-    console.log('dragging', e)
+  const handleGroupDragStart = (event) => {
+    if (!wallRef.current) return
+
+    dispatch(chooseCurrentArtworkId(null))
+
+    const rect = wallRef.current.getBoundingClientRect()
+
+    const offsetX = (event.clientX - rect.left) / scaleFactor - artworkGroup.groupX
+    const offsetY = (event.clientY - rect.top) / scaleFactor - artworkGroup.groupY
+
+    setOffset({ x: offsetX, y: offsetY })
+
+    dispatch(startDraggingGroup())
+  }
+
+  const handleGroupDragMove = (event) => {
+    if (!isDraggingGroup || !wallRef.current || !boundingData) return
+
+    const rect = wallRef.current.getBoundingClientRect()
+    const scaledMouseX = (event.clientX - rect.left) / scaleFactor
+    const scaledMouseY = (event.clientY - rect.top) / scaleFactor
+
+    let x = scaledMouseX - offset.x
+    let y = scaledMouseY - offset.y
+
+    const deltaX = x - artworkGroup.groupX // Change in X position
+    const deltaY = y - artworkGroup.groupY
+
+    const artworkGroupProps = {
+      groupX: x,
+      groupY: y,
+    }
+
+    dispatch(editArtworkGroup(artworkGroupProps))
+
+    artworkGroupIds.forEach((artworkId) => {
+      const artwork = artworks.find((art) => art.id === artworkId)
+
+      if (artwork) {
+        const newArtworkCanvas = {
+          x: artwork.canvas.x + deltaX,
+          y: artwork.canvas.y + deltaY,
+          width: artwork.canvas.width,
+          height: artwork.canvas.height,
+        }
+
+        dispatch(
+          editArtwork({
+            currentArtworkId: artworkId,
+            newArtworkSizes: newArtworkCanvas,
+          }),
+        )
+
+        // Optional: Update 3D coordinates if needed
+        const new3DCoordinate = convert2DTo3D(
+          {
+            x: newArtworkCanvas.x,
+            y: newArtworkCanvas.y,
+            size: { w: newArtworkCanvas.width, h: newArtworkCanvas.height },
+          },
+          boundingData,
+        )
+
+        dispatch(
+          edit3DCoordinates({
+            currentArtworkId: artworkId,
+            serialized3DCoordinate: new3DCoordinate,
+          }),
+        )
+      }
+    })
+  }
+
+  const handleGroupDragEnd = () => {
+    dispatch(stopDraggingGroup())
   }
 
   const handleCreateArtworkGroup = () => {
@@ -55,5 +142,7 @@ export const useGroupArtwork = () => {
     handleAddArtworkToGroup,
     handleRemoveArtworkGroup,
     handleGroupDragStart,
+    handleGroupDragMove,
+    handleGroupDragEnd,
   }
 }

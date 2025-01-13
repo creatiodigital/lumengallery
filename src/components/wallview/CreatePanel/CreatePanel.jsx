@@ -15,7 +15,7 @@ export const CreatePanel = () => {
 
   const { handleCreateArtwork } = useCreateArtwork(boundingData, currentWallId)
 
-  const handleDragStart = (e, artworkType) => {
+  const handleArtworkDragStart = (e, artworkType) => {
     e.dataTransfer.setData('artworkType', artworkType)
   }
 
@@ -29,7 +29,7 @@ export const CreatePanel = () => {
             label="Paint"
             onClick={() => handleCreateArtwork('paint')}
             draggable
-            onDragStart={(e) => handleDragStart(e, 'paint')}
+            onDragStart={(e) => handleArtworkDragStart(e, 'paint')}
           />
         </Tooltip>
         <Tooltip label="Click or drag to create a text" top={-40}>
@@ -39,7 +39,7 @@ export const CreatePanel = () => {
             label="Text"
             onClick={() => handleCreateArtwork('text')}
             draggable
-            onDragStart={(e) => handleDragStart(e, 'text')}
+            onDragStart={(e) => handleArtworkDragStart(e, 'text')}
           />
         </Tooltip>
       </div>

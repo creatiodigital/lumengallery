@@ -8,12 +8,13 @@ import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
 import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
+import { Group } from '@/components/wallview/Group'
 import { useKeyboardEvents } from '@/components/wallview/hooks/useKeyboardEvents'
 import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { edit3DCoordinates } from '@/lib/features/artistSlice'
-import { setShiftKeyDown } from '@/lib/features/wallViewSlice'
+import { setShiftKeyDown, stopDraggingGroup } from '@/lib/features/wallViewSlice'
 import {
   chooseCurrentArtworkId,
   setWallCoordinates,
@@ -33,7 +34,6 @@ export const Wall = () => {
   const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const isShiftKeyDown = useSelector((state) => state.wallView.isShiftKeyDown)
-  const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
   const [wallWidth, setWallWidth] = useState('')
   const [wallHeight, setWallHeight] = useState('')
   const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
@@ -42,6 +42,7 @@ export const Wall = () => {
   const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
   const alignedPairs = useSelector((state) => state.wallView.alignedPairs)
   const dispatch = useDispatch()
   const scaling = 100
@@ -54,14 +55,13 @@ export const Wall = () => {
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
-  const { handleDragStart, handleDragMove, handleDragEnd } = useMoveArtwork(
+  const { handleArtworkDragStart, handleArtworkDragMove, handleArtworkDragEnd } = useMoveArtwork(
     wallRef,
     boundingData,
     scaleFactor,
   )
 
-  const { handleAddArtworkToGroup, handleRemoveArtworkGroup, handleGroupDragStart } =
-    useGroupArtwork()
+  const { handleAddArtworkToGroup, handleRemoveArtworkGroup } = useGroupArtwork()
 
   const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
 
@@ -85,24 +85,7 @@ export const Wall = () => {
   }
 
   useEffect(() => {
-    const handleShiftDown = (e) => {
-      if (e.key === 'Shift') {
-        dispatch(setShiftKeyDown(true))
-      }
-    }
-
-    const handleShiftUp = (e) => {
-      if (e.key === 'Shift') {
-        dispatch(setShiftKeyDown(false))
-      }
-    }
-
-    window.addEventListener('keydown', handleShiftDown)
-    window.addEventListener('keyup', handleShiftUp)
-
     return () => {
-      document.removeEventListener('keydown', handleShiftDown)
-      document.removeEventListener('keydown', handleShiftUp)
       dispatch(setShiftKeyDown(false))
     }
   }, [])
@@ -177,8 +160,11 @@ export const Wall = () => {
   const { handleDeselect } = useDeselectArtwork()
 
   const handleClickOnWall = () => {
-    handleDeselect()
-    handleRemoveArtworkGroup()
+    console.log('xxx', isDraggingGroup)
+    if (!isDraggingGroup) {
+      handleRemoveArtworkGroup()
+      handleDeselect()
+    }
   }
 
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
@@ -195,8 +181,8 @@ export const Wall = () => {
         ref={wallRef}
         className={styles.wall}
         onClick={handleClickOnWall}
-        onMouseMove={handleDragMove}
-        onMouseUp={handleDragEnd}
+        onMouseMove={handleArtworkDragMove}
+        onMouseUp={handleArtworkDragEnd}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
@@ -218,23 +204,14 @@ export const Wall = () => {
               key={artwork.id}
               artwork={artwork}
               onArtworkClick={handleArtworkClick}
-              onDragStart={handleDragStart}
+              onDragStart={handleArtworkDragStart}
               onHandleResize={handleResize}
               setHoveredArtworkId={setHoveredArtworkId}
             />
           ))}
 
         {artworkGroupIds.length > 1 && (
-          <div
-            className={styles.group}
-            style={{
-              height: artworkGroup.groupHeight,
-              width: artworkGroup.groupWidth,
-              top: artworkGroup.groupY,
-              left: artworkGroup.groupX,
-            }}
-            onMouseDown={(event) => handleGroupDragStart(event)}
-          />
+          <Group wallRef={wallRef} boundingData={boundingData} scaleFactor={scaleFactor} />
         )}
         {alignedPairs?.map((pair, index) => {
           if (!isDragging) return null

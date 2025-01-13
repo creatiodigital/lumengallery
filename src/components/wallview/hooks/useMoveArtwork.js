@@ -19,11 +19,16 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const artworks = useSelector((state) => state.artist.artworks)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
   const isDragging = useSelector((state) => state.wallView.isDragging)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const dispatch = useDispatch()
 
-  const handleDragStart = (event, artworkId) => {
-    if (isEditingArtwork || !wallRef.current) return
+  const isArtworkVisible = artworkGroupIds.length > 1
+
+  const handleArtworkDragStart = (event, artworkId) => {
+    if (isEditingArtwork || !wallRef.current || isArtworkVisible) return
+
+    event.stopPropagation()
 
     const rect = wallRef.current.getBoundingClientRect()
     const artwork = artworks?.find((art) => art.id === artworkId)
@@ -39,8 +44,10 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     dispatch(chooseCurrentArtworkId(artworkId))
   }
 
-  const handleDragMove = (event) => {
+  const handleArtworkDragMove = (event) => {
     if (!isDragging || !draggedArtworkId || !wallRef.current || !boundingData) return
+
+    event.stopPropagation()
 
     const rect = wallRef.current.getBoundingClientRect()
     const scaledMouseX = (event.clientX - rect.left) / scaleFactor
@@ -134,15 +141,15 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     )
   }
 
-  const handleDragEnd = () => {
+  const handleArtworkDragEnd = () => {
     dispatch(stopDragging())
     setDraggedArtworkId(null)
   }
 
   return {
     draggedArtworkId,
-    handleDragStart,
-    handleDragMove,
-    handleDragEnd,
+    handleArtworkDragStart,
+    handleArtworkDragMove,
+    handleArtworkDragEnd,
   }
 }

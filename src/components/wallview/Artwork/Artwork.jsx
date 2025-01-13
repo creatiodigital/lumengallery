@@ -10,6 +10,8 @@ import styles from './Artwork.module.scss'
 const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHoveredArtworkId }) => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+  const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
+
   const isGroupVisible = artworkGroupIds.length > 1
 
   const { canvas, id, artworkType } = artwork
@@ -17,6 +19,14 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
 
   const handleMouseEnter = () => {
     setHoveredArtworkId(id)
+  }
+
+  const handleMouseDown = (event) => {
+    if (isDraggingGroup) {
+      event.stopPropagation()
+      return
+    }
+    onDragStart(event, id)
   }
 
   const handleMouseLeave = () => {
@@ -33,7 +43,7 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
         height: `${height}px`,
         zIndex: currentArtworkId === id ? 10 : 1,
       }}
-      onMouseDown={(event) => onDragStart(event, id)}
+      onMouseDown={handleMouseDown}
       onClick={(event) => onArtworkClick(event, id)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
