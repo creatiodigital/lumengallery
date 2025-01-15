@@ -15,6 +15,7 @@ const Artwork = ({
   wallRef,
   boundingData,
   scaleFactor,
+  preventClick,
   onHandleResize,
   setHoveredArtworkId,
 }) => {
@@ -26,7 +27,6 @@ const Artwork = ({
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const isShiftKeyDown = useSelector((state) => state.wallView.isShiftKeyDown)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
-  const isDragging = useSelector((state) => state.wallView.isDragging)
 
   const { handleArtworkDragStart, handleArtworkDragMove, handleArtworkDragEnd } = useMoveArtwork(
     wallRef,
@@ -34,7 +34,12 @@ const Artwork = ({
     scaleFactor,
   )
 
-  const { handleAddArtworkToGroup } = useGroupArtwork()
+  const { handleAddArtworkToGroup } = useGroupArtwork(
+    wallRef,
+    boundingData,
+    scaleFactor,
+    preventClick,
+  )
 
   const handleArtworkClick = (event) => {
     event.stopPropagation()
@@ -56,9 +61,7 @@ const Artwork = ({
   const handleMouseLeave = () => setHoveredArtworkId(null)
 
   const handleMouseMove = (event) => {
-    if (isDragging) {
-      handleArtworkDragMove(event)
-    }
+    handleArtworkDragMove(event)
   }
 
   return (
@@ -70,7 +73,7 @@ const Artwork = ({
         width: `${width}px`,
         height: `${height}px`,
         zIndex: currentArtworkId === id ? 10 : 1,
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: 'grabbing',
       }}
       onMouseDown={(e) => handleArtworkDragStart(e, id)}
       onMouseMove={handleMouseMove}
@@ -79,7 +82,9 @@ const Artwork = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
+      {currentArtworkId === id && artworkGroupIds.length === 1 && (
+        <Handles artworkId={id} handleResize={onHandleResize} />
+      )}
       {artworkType === 'text' && <ArtisticText artworkId={id} />}
       {artworkType === 'paint' && <ArtisticImage artwork={artwork} />}
     </div>

@@ -37,7 +37,6 @@ export const Wall = () => {
   const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
   const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
-  const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
   const alignedPairs = useSelector((state) => state.wallView.alignedPairs)
   const dispatch = useDispatch()
   const scaling = 100
@@ -51,7 +50,7 @@ export const Wall = () => {
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
-  const { handleRemoveArtworkGroup, handleCreateArtworkGroup } = useGroupArtwork(
+  const { handleRemoveArtworkGroup } = useGroupArtwork(
     wallRef,
     boundingData,
     scaleFactor,
@@ -59,7 +58,7 @@ export const Wall = () => {
   )
 
   const { handleSelectMouseDown, handleSelectMouseMove, handleSelectMouseUp, selectionBox } =
-    useSelectBox(wallRef, scaleFactor, preventClick)
+    useSelectBox(wallRef, boundingData, scaleFactor, preventClick)
 
   const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
 
@@ -69,7 +68,7 @@ export const Wall = () => {
     }
   }, [])
 
-  const handleDrop = (e) => {
+  const handleDropArtworkOnWall = (e) => {
     e.preventDefault()
     const artworkType = e.dataTransfer.getData('artworkType')
 
@@ -82,7 +81,7 @@ export const Wall = () => {
     }
   }
 
-  const handleDragOver = (e) => {
+  const handleDragArtworkOverWall = (e) => {
     e.preventDefault()
   }
 
@@ -114,12 +113,6 @@ export const Wall = () => {
   }, [boundingData, dispatch])
 
   useEffect(() => {
-    if (artworkGroupIds.length > 1) {
-      handleCreateArtworkGroup()
-    }
-  }, [artworkGroupIds])
-
-  useEffect(() => {
     if (boundingData) {
       const new3DCoordinate = convert2DTo3D(
         {
@@ -145,15 +138,13 @@ export const Wall = () => {
   const { handleDeselect } = useDeselectArtwork()
 
   const handleClickOnWall = () => {
-    if (preventClick.current) {
-      preventClick.current = false
-      return
+    if (preventClick.current) return
+
+    if (!preventClick.current) {
+      handleRemoveArtworkGroup()
     }
 
-    if (!isDraggingGroup) {
-      handleRemoveArtworkGroup()
-      handleDeselect()
-    }
+    handleDeselect()
   }
 
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
@@ -168,8 +159,8 @@ export const Wall = () => {
         onMouseMove={handleSelectMouseMove}
         onMouseUp={handleSelectMouseUp}
         onClick={handleClickOnWall}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        onDragOver={handleDragArtworkOverWall}
+        onDrop={handleDropArtworkOnWall}
       >
         {isHumanVisible && <Human humanWidth={humanWidth} humanHeight={humanHeight} />}
         {artworks
@@ -183,6 +174,7 @@ export const Wall = () => {
               wallRef={wallRef}
               boundingData={boundingData}
               scaleFactor={scaleFactor}
+              preventClick={preventClick}
             />
           ))}
 

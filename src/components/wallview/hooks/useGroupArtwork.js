@@ -17,7 +17,6 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
   const artworks = useSelector((state) => state.artist.artworks)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
@@ -27,9 +26,36 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick
     }
   }
 
+  const handleCreateArtworkGroup = () => {
+    if (artworkGroupIds.length === 0) return
+
+    const artworkGroupItems = artworks.filter((artwork) => artworkGroupIds.includes(artwork.id))
+    const xValues = artworkGroupItems.map((artwork) => artwork.canvas.x)
+    const xEdgeValues = artworkGroupItems.map((artwork) => artwork.canvas.x + artwork.canvas.width)
+    const yValues = artworkGroupItems.map((artwork) => artwork.canvas.y)
+    const yEdgeValues = artworkGroupItems.map((artwork) => artwork.canvas.y + artwork.canvas.height)
+
+    const groupX = Math.min(...xValues)
+    const maxGroupX = Math.max(...xEdgeValues)
+    const groupY = Math.min(...yValues)
+    const maxGroupY = Math.max(...yEdgeValues)
+    const groupWidth = maxGroupX - groupX
+    const groupHeight = maxGroupY - groupY
+
+    const groupProps = {
+      groupX,
+      groupY,
+      groupWidth,
+      groupHeight,
+    }
+
+    dispatch(createArtworkGroup(groupProps))
+  }
+
   const handleRemoveArtworkGroup = () => {
     dispatch(removeGroup())
   }
+
   const handleGroupDragStart = (event) => {
     if (!wallRef.current) return
 
@@ -43,12 +69,11 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick
 
     dispatch(startDraggingGroup())
 
-    // Prevent click on wall after drag
     preventClick.current = true
   }
 
   const handleGroupDragMove = (event) => {
-    if (!isDraggingGroup || !wallRef.current || !boundingData) return
+    if (!wallRef.current || !boundingData) return
 
     const rect = wallRef.current.getBoundingClientRect()
     const scaledMouseX = (event.clientX - rect.left) / scaleFactor
@@ -108,36 +133,9 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick
   const handleGroupDragEnd = () => {
     dispatch(stopDraggingGroup())
 
-    // Reset preventClick after a brief delay
     setTimeout(() => {
       preventClick.current = false
-    }, 0)
-  }
-
-  const handleCreateArtworkGroup = () => {
-    if (artworkGroupIds.length === 0) return
-
-    const artworkGroupItems = artworks.filter((artwork) => artworkGroupIds.includes(artwork.id))
-    const xValues = artworkGroupItems.map((artwork) => artwork.canvas.x)
-    const xEdgeValues = artworkGroupItems.map((artwork) => artwork.canvas.x + artwork.canvas.width)
-    const yValues = artworkGroupItems.map((artwork) => artwork.canvas.y)
-    const yEdgeValues = artworkGroupItems.map((artwork) => artwork.canvas.y + artwork.canvas.height)
-
-    const groupX = Math.min(...xValues)
-    const maxGroupX = Math.max(...xEdgeValues)
-    const groupY = Math.min(...yValues)
-    const maxGroupY = Math.max(...yEdgeValues)
-    const groupWidth = maxGroupX - groupX
-    const groupHeight = maxGroupY - groupY
-
-    const groupProps = {
-      groupX,
-      groupY,
-      groupWidth,
-      groupHeight,
-    }
-
-    dispatch(createArtworkGroup(groupProps))
+    }, 100)
   }
 
   useEffect(() => {
