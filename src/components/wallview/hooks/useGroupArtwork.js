@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+
 import { convert2DTo3D } from '@/components/wallview/utils'
-
 import { editArtwork, edit3DCoordinates } from '@/lib/features/artistSlice'
-
 import {
   addArtworkToGroup,
   removeGroup,
@@ -14,7 +13,7 @@ import {
   chooseCurrentArtworkId,
 } from '@/lib/features/wallViewSlice'
 
-export const useGroupArtwork = (wallRef, boundingData, scaleFactor) => {
+export const useGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick) => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
@@ -31,20 +30,21 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor) => {
   const handleRemoveArtworkGroup = () => {
     dispatch(removeGroup())
   }
-
   const handleGroupDragStart = (event) => {
     if (!wallRef.current) return
 
     dispatch(chooseCurrentArtworkId(null))
 
     const rect = wallRef.current.getBoundingClientRect()
-
     const offsetX = (event.clientX - rect.left) / scaleFactor - artworkGroup.groupX
     const offsetY = (event.clientY - rect.top) / scaleFactor - artworkGroup.groupY
 
     setOffset({ x: offsetX, y: offsetY })
 
     dispatch(startDraggingGroup())
+
+    // Prevent click on wall after drag
+    preventClick.current = true
   }
 
   const handleGroupDragMove = (event) => {
@@ -107,9 +107,16 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor) => {
 
   const handleGroupDragEnd = () => {
     dispatch(stopDraggingGroup())
+
+    // Reset preventClick after a brief delay
+    setTimeout(() => {
+      preventClick.current = false
+    }, 0)
   }
 
   const handleCreateArtworkGroup = () => {
+    if (artworkGroupIds.length === 0) return
+
     const artworkGroupItems = artworks.filter((artwork) => artworkGroupIds.includes(artwork.id))
     const xValues = artworkGroupItems.map((artwork) => artwork.canvas.x)
     const xEdgeValues = artworkGroupItems.map((artwork) => artwork.canvas.x + artwork.canvas.width)
@@ -134,7 +141,9 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor) => {
   }
 
   useEffect(() => {
-    handleCreateArtworkGroup()
+    if (artworkGroupIds.length > 0) {
+      handleCreateArtworkGroup()
+    }
   }, [artworkGroupIds])
 
   return {
