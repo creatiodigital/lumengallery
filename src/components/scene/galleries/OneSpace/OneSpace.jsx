@@ -2,18 +2,17 @@ import { useGLTF } from '@react-three/drei'
 import React, { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
+import { Artworks } from '@/components/scene/galleries/objects/Artworks'
+import { Ceiling } from '@/components/scene/galleries/objects/Ceiling'
+import { Floor } from '@/components/scene/galleries/objects/Floor'
+import { Lamp } from '@/components/scene/galleries/objects/Lamp'
+import { Placeholder } from '@/components/scene/galleries/objects/Placeholder'
+import { RectLight } from '@/components/scene/galleries/objects/RectLight'
+import { Wall } from '@/components/scene/galleries/objects/Wall'
 import { addWall } from '@/lib/features/artistSlice'
 
-import { Artworks } from '../objects/Artworks'
-import { Ceiling } from '../objects/Ceiling'
-import { Floor } from '../objects/Floor'
-import { Lamp } from '../objects/Lamp'
-import { Placeholder } from '../objects/Placeholder'
-import { RectLight } from '../objects/RectLight'
-import { Wall } from '../objects/Wall'
-
 const OneSpace = ({ wallRefs, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/one-space42.glb')
+  const { nodes, materials } = useGLTF('/assets/galleries/one-space42.glb')
   const dispatch = useDispatch()
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
@@ -52,6 +51,6 @@ const OneSpace = ({ wallRefs, ...props }) => {
   )
 }
 
-useGLTF.preload('/assets/one-space42.glb')
+useGLTF.preload('/assets/galleries/one-space42.glb')
 
 export default OneSpace

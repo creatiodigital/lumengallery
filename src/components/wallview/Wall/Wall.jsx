@@ -1,73 +1,73 @@
 import { useGLTF } from '@react-three/drei'
-import Image from 'next/image'
 import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
+import { Artwork } from '@/components/wallview/Artwork'
+import { Group } from '@/components/wallview/Group'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
+import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 import { useKeyboardEvents } from '@/components/wallview/hooks/useKeyboardEvents'
-import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
+import { useSelectBox } from '@/components/wallview/hooks/useSelectBox'
+import { Human } from '@/components/wallview/Human'
+import { SelectionBox } from '@/components/wallview/SelectionBox'
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { edit3DCoordinates } from '@/lib/features/artistSlice'
-import {
-  chooseCurrentArtworkId,
-  setWallCoordinates,
-  setWallDimensions,
-} from '@/lib/features/wallViewSlice'
-import { showWizard } from '@/lib/features/wizardSlice'
+import { setShiftKeyDown } from '@/lib/features/wallViewSlice'
+import { setWallCoordinates, setWallDimensions } from '@/lib/features/wallViewSlice'
 
+import { Measurements } from '../Measurements'
 import { AlignedLine } from './AlignedLine'
 import styles from './Wall.module.scss'
-import { Artwork } from '../Artwork'
 
 export const Wall = () => {
-  const { nodes } = useGLTF('/assets/one-space42.glb')
+  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
   const artworks = useSelector((state) => state.artist.artworks)
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
-  const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const [wallWidth, setWallWidth] = useState('')
   const [wallHeight, setWallHeight] = useState('')
   const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
 
   const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
-  const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
-  const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
+  const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const alignedPairs = useSelector((state) => state.wallView.alignedPairs)
   const dispatch = useDispatch()
   const scaling = 100
-  const personHeight = 180
-  const personWidth = 70
+  const humanHeight = 180
+  const humanWidth = 70
 
   const wallRef = useRef(null)
+  const preventClick = useRef(false)
 
   const currentArtwork = artworks?.find((art) => art.id === currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
-  const { handleDragStart, handleDragMove, handleDragEnd } = useMoveArtwork(
+  const { handleRemoveArtworkGroup } = useGroupArtwork(
     wallRef,
     boundingData,
     scaleFactor,
+    preventClick,
   )
+
+  const { handleSelectMouseDown, handleSelectMouseMove, handleSelectMouseUp, selectionBox } =
+    useSelectBox(wallRef, boundingData, scaleFactor, preventClick)
 
   const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
 
-  const handleArtworkClick = (event, artworkId) => {
-    event.stopPropagation()
-
-    dispatch(chooseCurrentArtworkId(artworkId))
-
-    if (!isWizardOpen) {
-      dispatch(showWizard())
+  useEffect(() => {
+    return () => {
+      dispatch(setShiftKeyDown(false))
     }
-  }
+  }, [])
 
-  const handleDrop = (e) => {
+  const handleDropArtworkOnWall = (e) => {
     e.preventDefault()
     const artworkType = e.dataTransfer.getData('artworkType')
 
@@ -80,7 +80,7 @@ export const Wall = () => {
     }
   }
 
-  const handleDragOver = (e) => {
+  const handleDragArtworkOverWall = (e) => {
     e.preventDefault()
   }
 
@@ -134,50 +134,58 @@ export const Wall = () => {
     }
   }, [isArtworkUploaded, dispatch])
 
-  const handleDeselect = useDeselectArtwork()
+  const { handleDeselect } = useDeselectArtwork()
+
+  const handleClickOnWall = () => {
+    if (preventClick.current) return
+
+    if (!preventClick.current) {
+      handleRemoveArtworkGroup()
+    }
+
+    handleDeselect()
+  }
 
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
 
   return (
     <div className={styles.wrapper}>
-      {wallWidth && wallHeight && (
-        <>
-          <span className={styles.wallWidth}>{`${wallWidth} M`}</span>
-          <span className={styles.wallHeight}>{`${wallHeight} M`}</span>
-        </>
-      )}
+      {wallWidth && wallHeight && <Measurements width={wallWidth} height={wallHeight} />}
       <div
         ref={wallRef}
         className={styles.wall}
-        onClick={handleDeselect}
-        onMouseMove={handleDragMove}
-        onMouseUp={handleDragEnd}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        onMouseDown={handleSelectMouseDown}
+        onMouseMove={handleSelectMouseMove}
+        onMouseUp={handleSelectMouseUp}
+        onClick={handleClickOnWall}
+        onDragOver={handleDragArtworkOverWall}
+        onDrop={handleDropArtworkOnWall}
       >
-        {isPersonVisible && (
-          <div className={styles.person}>
-            <Image
-              src="/assets/person.png"
-              alt="person"
-              width={personWidth}
-              height={personHeight}
-            />
-          </div>
-        )}
-        {isGridVisible && <div className={styles.grid} />}
+        {isHumanVisible && <Human humanWidth={humanWidth} humanHeight={humanHeight} />}
         {artworks
           .filter((artwork) => artwork.wallId === currentWallId)
           .map((artwork) => (
             <Artwork
               key={artwork.id}
               artwork={artwork}
-              onArtworkClick={handleArtworkClick}
-              onDragStart={handleDragStart}
               onHandleResize={handleResize}
               setHoveredArtworkId={setHoveredArtworkId}
+              wallRef={wallRef}
+              boundingData={boundingData}
+              scaleFactor={scaleFactor}
+              preventClick={preventClick}
             />
           ))}
+
+        {artworkGroupIds.length > 1 && (
+          <Group
+            wallRef={wallRef}
+            boundingData={boundingData}
+            scaleFactor={scaleFactor}
+            preventClick={preventClick}
+          />
+        )}
+        {selectionBox && <SelectionBox selectionBox={selectionBox} scaleFactor={scaleFactor} />}
         {alignedPairs?.map((pair, index) => {
           if (!isDragging) return null
           const from = artworks?.find((art) => art.id === pair.from)?.canvas || {}
@@ -207,4 +215,4 @@ export const Wall = () => {
   )
 }
 
-useGLTF.preload('/assets/one-space42.glb')
+useGLTF.preload('/assets/galleries/one-space42.glb')

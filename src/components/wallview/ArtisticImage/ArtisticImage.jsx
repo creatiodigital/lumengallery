@@ -1,21 +1,23 @@
 import c from 'classnames'
 import React, { useRef, useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import { FileInput } from '@/components/ui/FileInput'
 import { Icon } from '@/components/ui/Icon'
 import { editArtworkUrlImage } from '@/lib/features/artistSlice'
+import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 
 import styles from './ArtisticImage.module.scss'
 
-const ArtisticImage = ({ artwork, url, artworkId }) => {
-  //TODO: remove url and artworkId from props
+const ArtisticImage = ({ artwork }) => {
+  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+
   const fileInputRef = useRef(null)
   const dispatch = useDispatch()
   const [isDragOver, setIsDragOver] = useState(false)
   const allowedTypes = ['image/jpeg', 'image/png']
 
-  const { frameStyles, showFrame } = artwork
+  const { frameStyles, showFrame, url } = artwork
 
   const { frameColor, frameThickness } = frameStyles
 
@@ -45,6 +47,11 @@ const ArtisticImage = ({ artwork, url, artworkId }) => {
     event.preventDefault()
     setIsDragOver(false)
     const file = event.dataTransfer.files[0]
+
+    if (currentArtworkId !== artwork.id) {
+      dispatch(chooseCurrentArtworkId(artwork.id))
+    }
+
     if (file && validateFile(file)) {
       processFile(file)
     } else {
@@ -58,7 +65,7 @@ const ArtisticImage = ({ artwork, url, artworkId }) => {
 
   const processFile = (file) => {
     const fileUrl = URL.createObjectURL(file)
-    dispatch(editArtworkUrlImage({ currentArtworkId: artworkId, url: fileUrl }))
+    dispatch(editArtworkUrlImage({ currentArtworkId: artwork.id, url: fileUrl }))
   }
 
   return (
@@ -86,7 +93,7 @@ const ArtisticImage = ({ artwork, url, artworkId }) => {
         )}
         <FileInput
           ref={fileInputRef}
-          id={`file-upload-${artworkId}`}
+          id={`file-upload-${currentArtworkId}`}
           onInput={handleFileChange}
           style={{ display: 'none' }}
         />

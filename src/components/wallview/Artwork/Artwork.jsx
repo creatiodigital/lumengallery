@@ -1,24 +1,68 @@
 import React from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
 import { ArtisticImage } from '@/components/wallview/ArtisticImage'
 import { ArtisticText } from '@/components/wallview/ArtisticText'
+import { Handles } from '@/components/wallview/Handles'
+import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
+import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
+import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
+import { showWizard } from '@/lib/features/wizardSlice'
 
-import { Handles } from '../Handles'
 import styles from './Artwork.module.scss'
 
-const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHoveredArtworkId }) => {
+const Artwork = ({
+  artwork,
+  wallRef,
+  boundingData,
+  scaleFactor,
+  preventClick,
+  onHandleResize,
+  setHoveredArtworkId,
+}) => {
+  const { id, canvas, artworkType } = artwork
+  const { x, y, width, height } = canvas
+
+  const dispatch = useDispatch()
+
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const isShiftKeyDown = useSelector((state) => state.wallView.isShiftKeyDown)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
 
-  const { canvas, id, url, artworkType } = artwork
-  const { y, x, width, height } = canvas
+  const { handleArtworkDragStart, handleArtworkDragMove, handleArtworkDragEnd } = useMoveArtwork(
+    wallRef,
+    boundingData,
+    scaleFactor,
+  )
 
-  const handleMouseEnter = () => {
-    setHoveredArtworkId(id)
+  const { handleAddArtworkToGroup } = useGroupArtwork(
+    wallRef,
+    boundingData,
+    scaleFactor,
+    preventClick,
+  )
+
+  const handleArtworkClick = (event) => {
+    event.stopPropagation()
+
+    if (isShiftKeyDown) {
+      handleAddArtworkToGroup(id)
+    } else {
+      dispatch(chooseCurrentArtworkId(id))
+
+      if (artworkGroupIds.length === 0) {
+        handleAddArtworkToGroup(id)
+      }
+    }
+
+    dispatch(showWizard())
   }
 
-  const handleMouseLeave = () => {
-    setHoveredArtworkId(null)
+  const handleMouseEnter = () => setHoveredArtworkId(id)
+  const handleMouseLeave = () => setHoveredArtworkId(null)
+
+  const handleMouseMove = (event) => {
+    handleArtworkDragMove(event)
   }
 
   return (
@@ -30,15 +74,20 @@ const Artwork = ({ artwork, onDragStart, onArtworkClick, onHandleResize, setHove
         width: `${width}px`,
         height: `${height}px`,
         zIndex: currentArtworkId === id ? 10 : 1,
+        cursor: 'grabbing',
       }}
-      onMouseDown={(event) => onDragStart(event, id)}
-      onClick={(event) => onArtworkClick(event, id)}
+      onMouseDown={(e) => handleArtworkDragStart(e, id)}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleArtworkDragEnd}
+      onClick={handleArtworkClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
+      {currentArtworkId === id && artworkGroupIds.length === 1 && (
+        <Handles artworkId={id} handleResize={onHandleResize} />
+      )}
       {artworkType === 'text' && <ArtisticText artworkId={id} />}
-      {artworkType === 'paint' && <ArtisticImage artwork={artwork} artworkId={id} url={url} />}
+      {artworkType === 'paint' && <ArtisticImage artwork={artwork} />}
     </div>
   )
 }

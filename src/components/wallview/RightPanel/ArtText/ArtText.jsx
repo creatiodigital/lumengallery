@@ -6,9 +6,9 @@ import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Select } from '@/components/ui/Select'
 import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArtworkDetails'
 import { useArtworkTextHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkTextHandlers'
+import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 
 import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } from './constants'
-import styles from '../RightPanel.module.scss'
 
 const ArtText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)

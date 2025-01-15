@@ -1,7 +1,7 @@
 import React from 'react'
 
-import { ArtText } from '../ArtText'
-import { Paint } from '../Paint'
+import { ArtText } from '@/components/scene/galleries/objects/ArtText'
+import { Paint } from '@/components/scene/galleries/objects/Paint'
 
 const Artwork = ({ artwork }) => {
   switch (artwork?.artworkType) {

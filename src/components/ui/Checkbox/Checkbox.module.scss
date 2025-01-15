@@ -6,18 +6,18 @@
   cursor: pointer;
   user-select: none;
 
-  .hiddenCheckbox {
+  .hidden {
     display: none;
   }
 
-  .customCheckbox {
+  .span {
     width: 14px;
     height: 14px;
     border: 1px solid var(--black);
     border-radius: 2px;
     display: inline-block;
     position: relative;
-    background-color: #fff;
+    background-color: var(--white);
     transition: all 0.2s ease;
 
     &::after {
@@ -34,16 +34,16 @@
     }
   }
 
-  .hiddenCheckbox:checked + .customCheckbox::after {
+  .hidden:checked + .span::after {
     transform: scale(1) translate(-50%, -50%);
   }
 
-  .hiddenCheckbox:checked + .customCheckbox {
-    background-color: #f0f0f0;
+  .hidden:checked + .span {
+    background-color: var(--grayLighter);
     border-color: var(--black);
   }
 
-  .labelText {
+  .label {
     @include tinySans();
     margin-left: 8px;
     color: var(--black);

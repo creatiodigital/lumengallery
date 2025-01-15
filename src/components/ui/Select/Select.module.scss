@@ -1,6 +1,6 @@
 @import '@/styles/mixins';
 
-.selectMenu {
+.select {
   position: relative;
   width: 100%;
 
@@ -11,7 +11,7 @@
   }
 }
 
-.selectInput {
+.input {
   @include tinySans();
   position: relative;
   padding: 4px;
@@ -23,7 +23,7 @@
     box-shadow 0.2s;
 }
 
-.selectDropdown {
+.dropdown {
   position: absolute;
   top: 26px;
   left: 0;
@@ -38,7 +38,7 @@
   overflow-y: auto;
 }
 
-.selectOption {
+.option {
   @include tinySans();
   padding: 4px;
   cursor: pointer;

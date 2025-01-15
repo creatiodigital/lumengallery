@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
+import { convert2DTo3D } from '@/components/wallview/utils'
 import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
 import {
   setAlignedPairs,
@@ -9,43 +10,7 @@ import {
   chooseCurrentArtworkId,
 } from '@/lib/features/wallViewSlice'
 
-import { convert2DTo3D } from '../utils'
-
-const tolerance = 3
-
-const areAligned = (artworkA, artworkB) => {
-  const directions = {
-    horizontal: null,
-    vertical: null,
-  }
-
-  if (Math.abs(artworkA.y - artworkB.y) <= tolerance) {
-    directions.horizontal = 'top'
-  }
-
-  if (Math.abs(artworkA.y + artworkA.height - (artworkB.y + artworkB.height)) <= tolerance) {
-    directions.horizontal = 'bottom'
-  }
-
-  if (
-    Math.abs(artworkA.y + artworkA.height / 2 - (artworkB.y + artworkB.height / 2)) <= tolerance
-  ) {
-    directions.horizontal = 'center-horizontal'
-  }
-
-  if (Math.abs(artworkA.x - artworkB.x) <= tolerance) {
-    directions.vertical = 'left'
-  }
-
-  if (Math.abs(artworkA.x + artworkA.width - (artworkB.x + artworkB.width)) <= tolerance) {
-    directions.vertical = 'right'
-  }
-  if (Math.abs(artworkA.x + artworkA.width / 2 - (artworkB.x + artworkB.width / 2)) <= tolerance) {
-    directions.vertical = 'center-vertical'
-  }
-
-  return directions
-}
+import { areAligned } from './helpers'
 
 export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
@@ -54,11 +19,16 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const artworks = useSelector((state) => state.artist.artworks)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
   const isDragging = useSelector((state) => state.wallView.isDragging)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const dispatch = useDispatch()
 
-  const handleDragStart = (event, artworkId) => {
-    if (isEditingArtwork || !wallRef.current) return
+  const isArtworkVisible = artworkGroupIds.length > 1
+
+  const handleArtworkDragStart = (event, artworkId) => {
+    if (isEditingArtwork || !wallRef.current || isArtworkVisible) return
+
+    event.stopPropagation()
 
     const rect = wallRef.current.getBoundingClientRect()
     const artwork = artworks?.find((art) => art.id === artworkId)
@@ -74,8 +44,10 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     dispatch(chooseCurrentArtworkId(artworkId))
   }
 
-  const handleDragMove = (event) => {
+  const handleArtworkDragMove = (event) => {
     if (!isDragging || !draggedArtworkId || !wallRef.current || !boundingData) return
+
+    event.stopPropagation()
 
     const rect = wallRef.current.getBoundingClientRect()
     const scaledMouseX = (event.clientX - rect.left) / scaleFactor
@@ -169,15 +141,15 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     )
   }
 
-  const handleDragEnd = () => {
+  const handleArtworkDragEnd = () => {
     dispatch(stopDragging())
     setDraggedArtworkId(null)
   }
 
   return {
     draggedArtworkId,
-    handleDragStart,
-    handleDragMove,
-    handleDragEnd,
+    handleArtworkDragStart,
+    handleArtworkDragMove,
+    handleArtworkDragEnd,
   }
 }

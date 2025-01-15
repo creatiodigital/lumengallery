@@ -14,6 +14,7 @@ export const Elements = ({ onPlaceholderClick, artworks }) => {
   return (
     <>
       <Lights />
+      {/* <Shadows /> */}
       <OneSpace
         wallRefs={wallRefs.current}
         onPlaceholderClick={onPlaceholderClick}

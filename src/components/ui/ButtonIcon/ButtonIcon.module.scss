@@ -5,20 +5,20 @@
   width: 100%;
   @include smallSans();
   padding: 3px 10px;
-  background: var(--grayDarkest);
+  background: var(--black);
   color: var(--white);
-  border: 1px solid var(--grayDarkest);
+  border: 1px solid var(--black);
   border-radius: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
 
   &:hover {
-    background: var(--black);
-    border: 1px solid var(--black);
+    background: var(--grayDarkest);
+    border: 1px solid var(--grayDarkest);
   }
 }
 
 .big {
-  padding: 20px;
+  padding: 16px;
 }

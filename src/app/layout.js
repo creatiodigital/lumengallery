@@ -1,12 +1,6 @@
 import { cabin, fraunces, roboto, lora } from '@/app/fonts'
-
-import StoreProvider from './storeProvider'
+import StoreProvider from '@/app/storeProvider'
 import '@/styles/globals.scss'
-
-export const metadata = {
-  title: 'Next.js project',
-  description: 'Boilerplate for Next.js projects',
-}
 
 export default function RootLayout({ children }) {
   return (

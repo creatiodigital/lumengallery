@@ -10,10 +10,14 @@ const wallViewSlice = createSlice({
     currentWallNormal: { x: 0, y: 0, z: 1 },
     scaleFactor: 1,
     panPosition: { x: -50, y: -50 },
-    isPersonVisible: false,
+    isHumanVisible: false,
     wallHeight: null,
     wallWidth: null,
     isDragging: false,
+    isDraggingGroup: false,
+    isShiftKeyDown: false,
+    artworkGroupIds: [],
+    artworkGroup: {},
   },
   reducers: {
     showWallView: (state, action) => {
@@ -24,11 +28,11 @@ const wallViewSlice = createSlice({
       state.isWallView = false
       state.currentWallId = null
     },
-    showPerson: (state) => {
-      state.isPersonVisible = true
+    showHuman: (state) => {
+      state.isHumanVisible = true
     },
-    hidePerson: (state) => {
-      state.isPersonVisible = false
+    hideHuman: (state) => {
+      state.isHumanVisible = false
     },
     chooseCurrentArtworkId: (state, action) => {
       state.currentArtworkId = action.payload
@@ -74,14 +78,40 @@ const wallViewSlice = createSlice({
     stopDragging: (state) => {
       state.isDragging = false
     },
+    startDraggingGroup: (state) => {
+      state.isDraggingGroup = true
+    },
+    stopDraggingGroup: (state) => {
+      state.isDraggingGroup = false
+    },
+    setShiftKeyDown: (state, action) => {
+      state.isShiftKeyDown = action.payload
+    },
+    addArtworkToGroup: (state, action) => {
+      state.artworkGroupIds.push(action.payload)
+    },
+    removeArtworkFromGroup: (state, action) => {
+      const filteredGroup = state.artworkGroupIds.filter((artwork) => artwork !== action.payload)
+      state.artworkGroupIds = filteredGroup
+    },
+    createArtworkGroup: (state, action) => {
+      state.artworkGroup = action.payload
+    },
+    editArtworkGroup: (state, action) => {
+      state.artworkGroup.groupX = action.payload.groupX
+      state.artworkGroup.groupY = action.payload.groupY
+    },
+    removeGroup: (state) => {
+      state.artworkGroupIds = []
+    },
   },
 })
 
 export const {
   showWallView,
   hideWallView,
-  showPerson,
-  hidePerson,
+  showHuman,
+  hideHuman,
   chooseCurrentArtworkId,
   resetWallView,
   increaseScaleFactor,
@@ -94,5 +124,13 @@ export const {
   clearAlignedPairs,
   startDragging,
   stopDragging,
+  startDraggingGroup,
+  stopDraggingGroup,
+  createArtworkGroup,
+  editArtworkGroup,
+  addArtworkToGroup,
+  removeArtworkFromGroup,
+  setShiftKeyDown,
+  removeGroup,
 } = wallViewSlice.actions
 export default wallViewSlice.reducer

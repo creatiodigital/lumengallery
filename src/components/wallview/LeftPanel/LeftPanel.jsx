@@ -7,7 +7,7 @@ import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { editWallName, editArtworkName } from '@/lib/features/artistSlice'
 import { showEditMode } from '@/lib/features/dashboardSlice'
-import { showPerson, hidePerson } from '@/lib/features/wallViewSlice'
+import { showHuman, hideHuman } from '@/lib/features/wallViewSlice'
 import {
   increaseScaleFactor,
   decreaseScaleFactor,
@@ -27,7 +27,7 @@ export const LeftPanel = () => {
   const walls = useSelector((state) => state.artist.walls)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
-  const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
+  const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
 
   const [isWallNameEditing, setisWallNameEditing] = useState(false)
   const [newWallName, setNewWallName] = useState('')
@@ -53,17 +53,17 @@ export const LeftPanel = () => {
   }
 
   const handleSaveWallView = () => {
-    dispatch(hidePerson())
+    dispatch(hideHuman())
     dispatch(hideWallView())
     dispatch(showEditMode())
     dispatch(chooseCurrentArtworkId(null))
   }
 
-  const handleTogglePerson = () => {
-    if (isPersonVisible) {
-      dispatch(hidePerson())
+  const handleToggleHuman = () => {
+    if (isHumanVisible) {
+      dispatch(hideHuman())
     } else {
-      dispatch(showPerson())
+      dispatch(showHuman())
     }
   }
 
@@ -150,7 +150,7 @@ export const LeftPanel = () => {
               <ButtonIcon icon="reset" onClick={handleResetView} />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="person" onClick={handleTogglePerson} />
+              <ButtonIcon icon="person" onClick={handleToggleHuman} />
             </div>
           </div>
         </div>
