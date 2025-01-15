@@ -10,7 +10,7 @@ const wallViewSlice = createSlice({
     currentWallNormal: { x: 0, y: 0, z: 1 },
     scaleFactor: 1,
     panPosition: { x: -50, y: -50 },
-    isPersonVisible: false,
+    isHumanVisible: false,
     wallHeight: null,
     wallWidth: null,
     isDragging: false,
@@ -28,11 +28,11 @@ const wallViewSlice = createSlice({
       state.isWallView = false
       state.currentWallId = null
     },
-    showPerson: (state) => {
-      state.isPersonVisible = true
+    showHuman: (state) => {
+      state.isHumanVisible = true
     },
-    hidePerson: (state) => {
-      state.isPersonVisible = false
+    hideHuman: (state) => {
+      state.isHumanVisible = false
     },
     chooseCurrentArtworkId: (state, action) => {
       state.currentArtworkId = action.payload
@@ -110,8 +110,8 @@ const wallViewSlice = createSlice({
 export const {
   showWallView,
   hideWallView,
-  showPerson,
-  hidePerson,
+  showHuman,
+  hideHuman,
   chooseCurrentArtworkId,
   resetWallView,
   increaseScaleFactor,

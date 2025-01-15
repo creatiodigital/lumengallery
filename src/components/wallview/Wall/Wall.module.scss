@@ -5,45 +5,10 @@
   position: relative;
 }
 
-.wallWidth {
-  @include largeSans();
-  position: absolute;
-  color: var(--black);
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.wallHeight {
-  @include largeSans();
-  position: absolute;
-  color: var(--black);
-  top: 50%;
-  left: -20px;
-  transform: translateY(-50%) rotate(-90deg);
-}
-
 .wall {
   color: var(--black);
   position: relative;
   outline: 1px solid var(--black);
   background: var(--white);
   box-sizing: border-box;
-}
-
-.person {
-  position: absolute;
-  bottom: -5px;
-  left: 5px;
-  opacity: 0.3;
-  pointer-events: none;
-  user-select: none;
-  z-index: 1;
-}
-
-.selectionBox {
-  position: absolute;
-  border: 2px dashed #007bff;
-  background-color: rgba(0, 123, 255, 0.2);
-  pointer-events: none;
 }

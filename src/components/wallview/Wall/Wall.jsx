@@ -1,13 +1,17 @@
 import { useGLTF } from '@react-three/drei'
-import Image from 'next/image'
+
 import React, { useRef, useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Artwork } from '@/components/wallview/Artwork'
 import { Group } from '@/components/wallview/Group'
+import { Human } from '@/components/wallview/Human'
+import { Measurements } from '../Measurements'
+import { SelectionBox } from '@/components/wallview/SelectionBox'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import { useDeselectArtwork } from '@/components/wallview/hooks/useDeselectArtwork'
+import { useSelectBox } from '@/components/wallview/hooks/useSelectBox'
 import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 import { useKeyboardEvents } from '@/components/wallview/hooks/useKeyboardEvents'
 import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
@@ -29,18 +33,16 @@ export const Wall = () => {
   const [wallWidth, setWallWidth] = useState('')
   const [wallHeight, setWallHeight] = useState('')
   const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
-  const [selectionBox, setSelectionBox] = useState(null)
-  const [isSelecting, setIsSelecting] = useState(false)
 
   const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
-  const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
+  const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
   const alignedPairs = useSelector((state) => state.wallView.alignedPairs)
   const dispatch = useDispatch()
   const scaling = 100
-  const personHeight = 180
-  const personWidth = 70
+  const humanHeight = 180
+  const humanWidth = 70
 
   const wallRef = useRef(null)
   const preventClick = useRef(false)
@@ -49,8 +51,15 @@ export const Wall = () => {
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
-  const { handleRemoveArtworkGroup, handleAddArtworkToGroup, handleCreateArtworkGroup } =
-    useGroupArtwork(wallRef, boundingData, scaleFactor, preventClick)
+  const { handleRemoveArtworkGroup, handleCreateArtworkGroup } = useGroupArtwork(
+    wallRef,
+    boundingData,
+    scaleFactor,
+    preventClick,
+  )
+
+  const { handleSelectMouseDown, handleSelectMouseMove, handleSelectMouseUp, selectionBox } =
+    useSelectBox(wallRef, scaleFactor, preventClick)
 
   const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
 
@@ -75,72 +84,6 @@ export const Wall = () => {
 
   const handleDragOver = (e) => {
     e.preventDefault()
-  }
-
-  const handleMouseDown = (e) => {
-    const rect = wallRef.current.getBoundingClientRect()
-    const startX = (e.clientX - rect.left) / scaleFactor
-    const startY = (e.clientY - rect.top) / scaleFactor
-
-    setSelectionBox({ startX, startY, endX: startX, endY: startY })
-    setIsSelecting(true) // Start selection
-  }
-
-  const handleMouseMove = (e) => {
-    if (!selectionBox) return
-
-    const rect = wallRef.current.getBoundingClientRect()
-    const endX = (e.clientX - rect.left) / scaleFactor
-    const endY = (e.clientY - rect.top) / scaleFactor
-
-    setSelectionBox((prev) => ({ ...prev, endX, endY }))
-  }
-
-  const handleMouseUp = () => {
-    if (!selectionBox) return
-
-    const { startX, startY, endX, endY } = selectionBox
-
-    // Calculate the selection area
-    const minX = Math.min(startX, endX)
-    const minY = Math.min(startY, endY)
-    const maxX = Math.max(startX, endX)
-    const maxY = Math.max(startY, endY)
-
-    // Determine which artworks are within the selection area
-    const selectedArtworks = artworks.filter((artwork) => {
-      const artX = artwork.canvas.x
-      const artY = artwork.canvas.y
-      const artWidth = artwork.canvas.width
-      const artHeight = artwork.canvas.height
-
-      return artX >= minX && artY >= minY && artX + artWidth <= maxX && artY + artHeight <= maxY
-    })
-
-    console.log('Selection Box Bounds:', { minX, maxX, minY, maxY })
-
-    // Add selected artworks to the group
-    selectedArtworks.forEach((artwork) => {
-      console.log('Artwork:', artwork.id, {
-        x: artwork.canvas.x,
-        y: artwork.canvas.y,
-        width: artwork.canvas.width,
-        height: artwork.canvas.height,
-      })
-
-      handleAddArtworkToGroup(artwork.id)
-    })
-
-    // Clear the selection box
-    setSelectionBox(null)
-    setIsSelecting(false)
-
-    preventClick.current = true
-
-    // Reset preventClick after a brief delay
-    setTimeout(() => {
-      preventClick.current = false
-    }, 0)
   }
 
   useEffect(() => {
@@ -171,7 +114,6 @@ export const Wall = () => {
   }, [boundingData, dispatch])
 
   useEffect(() => {
-    console.log('artworkGroupIds updated:', artworkGroupIds)
     if (artworkGroupIds.length > 1) {
       handleCreateArtworkGroup()
     }
@@ -204,8 +146,8 @@ export const Wall = () => {
 
   const handleClickOnWall = () => {
     if (preventClick.current) {
-      preventClick.current = false // Reset the flag
-      return // Ignore this click
+      preventClick.current = false
+      return
     }
 
     if (!isDraggingGroup) {
@@ -218,32 +160,18 @@ export const Wall = () => {
 
   return (
     <div className={styles.wrapper}>
-      {wallWidth && wallHeight && (
-        <>
-          <span className={styles.wallWidth}>{`${wallWidth} M`}</span>
-          <span className={styles.wallHeight}>{`${wallHeight} M`}</span>
-        </>
-      )}
+      {wallWidth && wallHeight && <Measurements width={wallWidth} height={wallHeight} />}
       <div
         ref={wallRef}
         className={styles.wall}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseDown={handleSelectMouseDown}
+        onMouseMove={handleSelectMouseMove}
+        onMouseUp={handleSelectMouseUp}
         onClick={handleClickOnWall}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {isPersonVisible && (
-          <div className={styles.person}>
-            <Image
-              src="/assets/person.png"
-              alt="person"
-              width={personWidth}
-              height={personHeight}
-            />
-          </div>
-        )}
+        {isHumanVisible && <Human humanWidth={humanWidth} humanHeight={humanHeight} />}
         {artworks
           .filter((artwork) => artwork.wallId === currentWallId)
           .map((artwork) => (
@@ -266,18 +194,7 @@ export const Wall = () => {
             preventClick={preventClick}
           />
         )}
-        {selectionBox && (
-          <div
-            className={styles.selectionBox}
-            style={{
-              left: `${Math.min(selectionBox.startX, selectionBox.endX) * scaleFactor}px`,
-              top: `${Math.min(selectionBox.startY, selectionBox.endY) * scaleFactor}px`,
-              width: `${Math.abs(selectionBox.endX - selectionBox.startX) * scaleFactor}px`,
-              height: `${Math.abs(selectionBox.endY - selectionBox.startY) * scaleFactor}px`,
-            }}
-          ></div>
-        )}
-
+        {selectionBox && <SelectionBox selectionBox={selectionBox} scaleFactor={scaleFactor} />}
         {alignedPairs?.map((pair, index) => {
           if (!isDragging) return null
           const from = artworks?.find((art) => art.id === pair.from)?.canvas || {}
