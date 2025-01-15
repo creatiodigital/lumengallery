@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useSelector } from 'react-redux'
 
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
@@ -7,14 +7,15 @@ import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 
-import { ArtText } from './ArtText'
+import { ArtisticImage } from './ArtisticImage'
+import { ArtisticText } from './ArtisticText'
 import { useArtworkDetails } from './hooks/useArtworkDetails'
 import { useArtworkHandlers } from './hooks/useArtworkHandlers'
-import { Paint } from './Paint'
 import styles from './RightPanel.module.scss'
 
 const RightPanel = () => {
-  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
+  const currentGallery = useSelector((state) => state.scene.currentGallery)
+  const { nodes } = useGLTF(currentGallery)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
@@ -36,6 +37,12 @@ const RightPanel = () => {
   const handleAlign = (alignment) => {
     handleAlignChange(alignment, wallWidth, wallHeight, boundingData)
   }
+
+  useEffect(() => {
+    if (currentGallery) {
+      useGLTF.preload(currentGallery)
+    }
+  }, [currentGallery])
 
   return (
     <div className={styles.panel}>
@@ -148,8 +155,8 @@ const RightPanel = () => {
                 </div>
               </div>
 
-              {artworkType === 'paint' && <Paint />}
-              {artworkType === 'text' && <ArtText />}
+              {artworkType === 'paint' && <ArtisticImage />}
+              {artworkType === 'text' && <ArtisticText />}
             </div>
           )}
         </div>
@@ -157,7 +164,5 @@ const RightPanel = () => {
     </div>
   )
 }
-
-useGLTF.preload('/assets/galleries/one-space42.glb')
 
 export default RightPanel

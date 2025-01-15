@@ -1,7 +1,7 @@
 import { Text } from '@react-three/drei'
 import React, { useState, useRef, useEffect } from 'react'
 
-const ArtText = ({ artwork }) => {
+const ArtisticText = ({ artwork }) => {
   const { id, position, quaternion, space, artisticText, artisticTextStyles } = artwork
 
   const textAlign = artisticTextStyles?.textAlign || 'left'
@@ -88,4 +88,4 @@ const ArtText = ({ artwork }) => {
   )
 }
 
-export default ArtText
+export default ArtisticText

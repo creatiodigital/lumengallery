@@ -7,7 +7,7 @@ import { Frame } from '@/components/scene/galleries/objects/Frame'
 import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
-const Paint = ({ artwork }) => {
+const ArtisticImage = ({ artwork }) => {
   const { position, quaternion, space, url, showFrame, showArtworkInformation, frameStyles } =
     artwork
   const { frameColor, frameThickness } = frameStyles
@@ -68,4 +68,4 @@ const Paint = ({ artwork }) => {
   )
 }
 
-export default Paint
+export default ArtisticImage

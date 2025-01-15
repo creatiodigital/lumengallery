@@ -8,7 +8,7 @@ import styles from './ArtworkPanel.module.scss'
 
 const ArtworkPanel = () => {
   const dispatch = useDispatch()
-  const panelRef = useRef(null) // Reference for the panel
+  const panelRef = useRef(null)
   const artworks = useSelector((state) => state.artist.artworks)
   const selectedSceneArtworkId = useSelector((state) => state.scene.currentArtworkId)
 
@@ -21,7 +21,7 @@ const ArtworkPanel = () => {
     selectedArtwork || {}
 
   return (
-    <div ref={panelRef} className={styles.artworkPanel}>
+    <div ref={panelRef} className={styles.panel}>
       <div className={styles.cta}>
         <Button type="outline" label="Close" onClick={() => dispatch(hideArtworkPanel())} />
       </div>

@@ -1,11 +1,11 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { useSelector } from 'react-redux'
 
 import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 
 import styles from './Group.module.scss'
 
-const Group = ({ wallRef, boundingData, scaleFactor, preventClick }) => {
+const Group = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
   const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
 
@@ -50,6 +50,8 @@ const Group = ({ wallRef, boundingData, scaleFactor, preventClick }) => {
       onMouseUp={handleMouseUp}
     />
   )
-}
+})
+
+Group.displayName = 'Group'
 
 export default Group

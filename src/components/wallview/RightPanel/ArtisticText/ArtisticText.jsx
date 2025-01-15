@@ -10,7 +10,7 @@ import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 
 import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } from './constants'
 
-const ArtText = () => {
+const ArtisticText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
   const {
@@ -106,4 +106,4 @@ const ArtText = () => {
   )
 }
 
-export default ArtText
+export default ArtisticText

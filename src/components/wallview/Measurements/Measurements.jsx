@@ -1,12 +1,14 @@
-import React from 'react'
+import React, { memo } from 'react'
 
 import styles from './Measurements.module.scss'
 
-const Measurements = ({ width, height }) => (
+const Measurements = memo(({ width, height }) => (
   <>
-    <span className={styles.width}>{`${width} M`}</span>
-    <span className={styles.height}>{`${height} M`}</span>
+    <span className={styles.width}>{`${width} m`}</span>
+    <span className={styles.height}>{`${height} m`}</span>
   </>
-)
+))
+
+Measurements.displayName = 'Measurements'
 
 export default Measurements

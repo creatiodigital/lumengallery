@@ -33,7 +33,7 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     const startX = (e.clientX - rect.left) / scaleFactor
     const startY = (e.clientY - rect.top) / scaleFactor
 
-    startPosition.current = { x: startX, y: startY } // Record the start position
+    startPosition.current = { x: startX, y: startY }
     setSelectionBox({ startX, startY, endX: startX, endY: startY })
   }
 
@@ -44,12 +44,11 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     const endX = (e.clientX - rect.left) / scaleFactor
     const endY = (e.clientY - rect.top) / scaleFactor
 
-    // Check if the mouse has moved beyond the threshold
     const deltaX = Math.abs(endX - startPosition.current.x)
     const deltaY = Math.abs(endY - startPosition.current.y)
 
     if (deltaX > dragThreshold || deltaY > dragThreshold) {
-      preventClick.current = true // Set preventClick to true only if it's a drag
+      preventClick.current = true
       setDraggingSelectBox(true)
       setSelectionBox((prev) => ({ ...prev, endX, endY }))
     }
@@ -57,7 +56,6 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
 
   const handleSelectMouseUp = () => {
     if (!selectionBox || !draggingSelectBox) {
-      // Reset if it wasn't a drag
       setSelectionBox(null)
       return
     }
@@ -83,7 +81,7 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     })
 
     setSelectionBox(null)
-    setDraggingSelectBox(false) // Reset dragging state
+    setDraggingSelectBox(false)
   }
 
   return {

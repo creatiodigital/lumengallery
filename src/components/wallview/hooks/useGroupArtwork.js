@@ -110,7 +110,6 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick
           }),
         )
 
-        // Optional: Update 3D coordinates if needed
         const new3DCoordinate = convert2DTo3D(
           {
             x: newArtworkCanvas.x,
