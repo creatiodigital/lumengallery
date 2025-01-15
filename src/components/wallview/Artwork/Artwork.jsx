@@ -4,10 +4,11 @@ import { useSelector, useDispatch } from 'react-redux'
 import { ArtisticImage } from '@/components/wallview/ArtisticImage'
 import { ArtisticText } from '@/components/wallview/ArtisticText'
 import { Handles } from '@/components/wallview/Handles'
+import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
-import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 import { showWizard } from '@/lib/features/wizardSlice'
+
 import styles from './Artwork.module.scss'
 
 const Artwork = ({

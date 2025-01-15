@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
+
 import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 
 export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) => {
