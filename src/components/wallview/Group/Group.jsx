@@ -1,5 +1,6 @@
 import React, { memo } from 'react'
 import { useSelector } from 'react-redux'
+
 import { useMoveGroupArtwork } from '@/components/wallview/hooks/useMoveGroupArtwork'
 
 import styles from './Group.module.scss'
