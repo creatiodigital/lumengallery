@@ -1,20 +1,14 @@
-import { Cabin, Fraunces } from 'next/font/google'
-
-import StoreProvider from './storeProvider'
+import { cabin, fraunces, roboto, lora } from '@/app/fonts'
+import StoreProvider from '@/app/storeProvider'
 import '@/styles/globals.scss'
-
-const cabin = Cabin({ subsets: ['latin'], variable: '--font-sans' })
-const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-serif' })
-
-export const metadata = {
-  title: 'Next.js project',
-  description: 'Boilerplate for Next.js projects',
-}
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${cabin.variable} ${fraunces.variable}`}>
+    <html
+      lang="en"
+      className={`${cabin.variable} ${fraunces.variable} ${roboto.variable} ${lora.variable}`}
+    >
+      <body>
         <StoreProvider>
           <header></header>
           {children}

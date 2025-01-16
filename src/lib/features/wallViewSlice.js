@@ -6,10 +6,18 @@ const wallViewSlice = createSlice({
     isWallView: false,
     currentArtworkId: null,
     currentWallId: null,
+    currentWallCoordinates: { x: 0, y: 0, z: 0 },
+    currentWallNormal: { x: 0, y: 0, z: 1 },
     scaleFactor: 1,
     panPosition: { x: -50, y: -50 },
-    isGridVisible: false,
-    isPersonVisible: false,
+    isHumanVisible: false,
+    wallHeight: null,
+    wallWidth: null,
+    isDragging: false,
+    isDraggingGroup: false,
+    isShiftKeyDown: false,
+    artworkGroupIds: [],
+    artworkGroup: {},
   },
   reducers: {
     showWallView: (state, action) => {
@@ -20,23 +28,17 @@ const wallViewSlice = createSlice({
       state.isWallView = false
       state.currentWallId = null
     },
-    showGrid: (state) => {
-      state.isGridVisible = true
+    showHuman: (state) => {
+      state.isHumanVisible = true
     },
-    hideGrid: (state) => {
-      state.isGridVisible = false
-    },
-    showPerson: (state) => {
-      state.isPersonVisible = true
-    },
-    hidePerson: (state) => {
-      state.isPersonVisible = false
+    hideHuman: (state) => {
+      state.isHumanVisible = false
     },
     chooseCurrentArtworkId: (state, action) => {
       state.currentArtworkId = action.payload
     },
     increaseScaleFactor: (state) => {
-      state.scaleFactor = Math.min(state.scaleFactor + 0.02, 1.5)
+      state.scaleFactor = Math.min(state.scaleFactor + 0.02, 2)
     },
     decreaseScaleFactor: (state) => {
       state.scaleFactor = Math.max(state.scaleFactor - 0.02, 0.64)
@@ -59,16 +61,57 @@ const wallViewSlice = createSlice({
       state.wallWidth = width
       state.wallHeight = height
     },
+    setWallCoordinates: (state, action) => {
+      const { coordinates, normal } = action.payload
+      state.currentWallCoordinates = coordinates
+      state.currentWallNormal = { x: normal.x, y: normal.y, z: normal.z }
+    },
+    setAlignedPairs: (state, action) => {
+      state.alignedPairs = action.payload
+    },
+    clearAlignedPairs: (state) => {
+      state.alignedPairs = []
+    },
+    startDragging: (state) => {
+      state.isDragging = true
+    },
+    stopDragging: (state) => {
+      state.isDragging = false
+    },
+    startDraggingGroup: (state) => {
+      state.isDraggingGroup = true
+    },
+    stopDraggingGroup: (state) => {
+      state.isDraggingGroup = false
+    },
+    setShiftKeyDown: (state, action) => {
+      state.isShiftKeyDown = action.payload
+    },
+    addArtworkToGroup: (state, action) => {
+      state.artworkGroupIds.push(action.payload)
+    },
+    removeArtworkFromGroup: (state, action) => {
+      const filteredGroup = state.artworkGroupIds.filter((artwork) => artwork !== action.payload)
+      state.artworkGroupIds = filteredGroup
+    },
+    createArtworkGroup: (state, action) => {
+      state.artworkGroup = action.payload
+    },
+    editArtworkGroup: (state, action) => {
+      state.artworkGroup.groupX = action.payload.groupX
+      state.artworkGroup.groupY = action.payload.groupY
+    },
+    removeGroup: (state) => {
+      state.artworkGroupIds = []
+    },
   },
 })
 
 export const {
   showWallView,
   hideWallView,
-  showGrid,
-  hideGrid,
-  showPerson,
-  hidePerson,
+  showHuman,
+  hideHuman,
   chooseCurrentArtworkId,
   resetWallView,
   increaseScaleFactor,
@@ -76,5 +119,18 @@ export const {
   setPanPosition,
   resetPan,
   setWallDimensions,
+  setWallCoordinates,
+  setAlignedPairs,
+  clearAlignedPairs,
+  startDragging,
+  stopDragging,
+  startDraggingGroup,
+  stopDraggingGroup,
+  createArtworkGroup,
+  editArtworkGroup,
+  addArtworkToGroup,
+  removeArtworkFromGroup,
+  setShiftKeyDown,
+  removeGroup,
 } = wallViewSlice.actions
 export default wallViewSlice.reducer

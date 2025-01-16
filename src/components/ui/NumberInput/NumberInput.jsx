@@ -14,7 +14,7 @@ function NumberInput({ type, value, onChange, icon, rotate, max, min }) {
         value={value}
         min={min}
         max={max}
-        step={0.05}
+        step={0.01}
         onChange={onChange}
       />
       <div className={c(styles.icon, { [styles[`rotate${rotate}`]]: !!rotate })}>

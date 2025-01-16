@@ -1,0 +1,18 @@
+@import '@/styles/mixins';
+
+.menu {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  position: fixed;
+  background-color: var(--black);
+  left: 20px;
+  top: 20px;
+  width: 40px;
+  z-index: 2;
+  gap: 3px;
+  padding: 2px;
+  border-radius: 3px;
+}

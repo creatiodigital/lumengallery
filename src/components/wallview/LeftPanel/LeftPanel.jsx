@@ -1,11 +1,13 @@
 import c from 'classnames'
-import { useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
+import { Input } from '@/components/ui/Input'
+import { editWallName, editArtworkName } from '@/lib/features/artistSlice'
 import { showEditMode } from '@/lib/features/dashboardSlice'
-import { showGrid, hideGrid, showPerson, hidePerson } from '@/lib/features/wallViewSlice'
+import { showHuman, hideHuman } from '@/lib/features/wallViewSlice'
 import {
   increaseScaleFactor,
   decreaseScaleFactor,
@@ -22,12 +24,24 @@ export const LeftPanel = () => {
 
   const artworks = useSelector((state) => state.artist.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
+  const walls = useSelector((state) => state.artist.walls)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
-  const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
-  const isPersonVisible = useSelector((state) => state.wallView.isPersonVisible)
+  const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
 
-  const wallArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId).reverse()
+  const [isWallNameEditing, setisWallNameEditing] = useState(false)
+  const [newWallName, setNewWallName] = useState('')
+
+  const [isEditingArtwork, setIsEditingArtwork] = useState(null) // Track editing artwork ID
+  const [newArtworkName, setNewArtworkName] = useState('')
+
+  const currentWall = walls.find((wall) => wall.id === currentWallId)
+  const currentWallName = currentWall ? currentWall.name : 'Select a wall'
+
+  const wallArtworks = useMemo(
+    () => artworks.filter((artwork) => artwork.wallId === currentWallId).reverse(),
+    [artworks, currentWallId],
+  )
 
   const handleZoomIn = () => {
     dispatch(increaseScaleFactor())
@@ -42,25 +56,17 @@ export const LeftPanel = () => {
   }
 
   const handleSaveWallView = () => {
-    dispatch(hideGrid())
-    dispatch(hidePerson())
+    dispatch(hideHuman())
     dispatch(hideWallView())
     dispatch(showEditMode())
+    dispatch(chooseCurrentArtworkId(null))
   }
 
-  const handleToggleGrid = () => {
-    if (isGridVisible) {
-      dispatch(hideGrid())
+  const handleToggleHuman = () => {
+    if (isHumanVisible) {
+      dispatch(hideHuman())
     } else {
-      dispatch(showGrid())
-    }
-  }
-
-  const handleTogglePerson = () => {
-    if (isPersonVisible) {
-      dispatch(hidePerson())
-    } else {
-      dispatch(showPerson())
+      dispatch(showHuman())
     }
   }
 
@@ -71,24 +77,55 @@ export const LeftPanel = () => {
     }
   }
 
-  useEffect(() => {
-    const handleWheelZoom = (event) => {
-      if (event.metaKey) {
-        event.preventDefault()
-        if (event.deltaY < 0) {
-          dispatch(increaseScaleFactor())
-        } else if (event.deltaY > 0) {
-          dispatch(decreaseScaleFactor())
-        }
-      }
+  const handleDoubleClick = () => {
+    if (currentWall) {
+      setNewWallName(currentWall.name)
+      setisWallNameEditing(true)
     }
+  }
 
-    window.addEventListener('wheel', handleWheelZoom)
+  const handleChange = (e) => {
+    setNewWallName(e.target.value)
+  }
 
-    return () => {
-      window.removeEventListener('wheel', handleWheelZoom)
+  const handleBlur = () => {
+    if (currentWall && newWallName.trim() !== '') {
+      dispatch(editWallName({ wallId: currentWallId, newName: newWallName.trim() }))
     }
-  }, [])
+    setisWallNameEditing(false)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleBlur()
+    } else if (e.key === 'Escape') {
+      setisWallNameEditing(false)
+    }
+  }
+
+  const handleDoubleClickArtwork = (artworkId, currentName) => {
+    setNewArtworkName(currentName)
+    setIsEditingArtwork(artworkId)
+  }
+
+  const handleChangeArtworkName = (e) => {
+    setNewArtworkName(e.target.value)
+  }
+
+  const handleBlurArtworkName = (artworkId) => {
+    if (newArtworkName.trim() !== '') {
+      dispatch(editArtworkName({ currentArtworkId: artworkId, name: newArtworkName.trim() }))
+    }
+    setIsEditingArtwork(null)
+  }
+
+  const handleKeyDownArtworkName = (e, artworkId) => {
+    if (e.key === 'Enter') {
+      handleBlurArtworkName(artworkId)
+    } else if (e.key === 'Escape') {
+      setIsEditingArtwork(null)
+    }
+  }
 
   return (
     <div className={styles.panel}>
@@ -102,7 +139,6 @@ export const LeftPanel = () => {
         </div>
       </div>
       <div className={styles.section}>
-        <h2 className={styles.title}>Helpers</h2>
         <div className={styles.subsection}>
           <div className={styles.row}>
             <div className={styles.item}>
@@ -117,18 +153,29 @@ export const LeftPanel = () => {
               <ButtonIcon icon="reset" onClick={handleResetView} />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="grid" onClick={handleToggleGrid} />
-            </div>
-          </div>
-          <div className={styles.row}>
-            <div className={styles.item}>
-              <ButtonIcon icon="person" onClick={handleTogglePerson} />
-            </div>
-            <div className={styles.item}>
-              <ButtonIcon icon="person" onClick={handleTogglePerson} />
+              <ButtonIcon icon="person" onClick={handleToggleHuman} />
             </div>
           </div>
         </div>
+      </div>
+      <div className={styles.section}>
+        {isWallNameEditing ? (
+          <Input
+            value={newWallName}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            autoFocus
+          />
+        ) : (
+          <h1
+            className={styles.wallTitle}
+            onDoubleClick={handleDoubleClick}
+            style={{ cursor: currentWall ? 'pointer' : 'default' }}
+          >
+            {currentWallName}
+          </h1>
+        )}
       </div>
       {wallArtworks.length > 0 && (
         <div className={styles.section}>
@@ -143,7 +190,22 @@ export const LeftPanel = () => {
                   })}
                   style={{ cursor: 'pointer' }}
                 >
-                  {artwork.name}
+                  {isEditingArtwork === artwork.id ? (
+                    <Input
+                      value={newArtworkName}
+                      onChange={handleChangeArtworkName}
+                      onBlur={() => handleBlurArtworkName(artwork.id)}
+                      onKeyDown={(e) => handleKeyDownArtworkName(e, artwork.id)}
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      onDoubleClick={() => handleDoubleClickArtwork(artwork.id, artwork.name)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {artwork.name}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

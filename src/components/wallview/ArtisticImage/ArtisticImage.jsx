@@ -1,18 +1,25 @@
 import c from 'classnames'
 import React, { useRef, useState } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import { FileInput } from '@/components/ui/FileInput'
 import { Icon } from '@/components/ui/Icon'
 import { editArtworkUrlImage } from '@/lib/features/artistSlice'
+import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 
 import styles from './ArtisticImage.module.scss'
 
-const ArtisticImage = ({ artworkId, url }) => {
+const ArtisticImage = ({ artwork }) => {
+  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+
   const fileInputRef = useRef(null)
   const dispatch = useDispatch()
   const [isDragOver, setIsDragOver] = useState(false)
   const allowedTypes = ['image/jpeg', 'image/png']
+
+  const { frameStyles, showFrame, url } = artwork
+
+  const { frameColor, frameThickness } = frameStyles
 
   const handleDoubleClick = () => {
     fileInputRef.current.click()
@@ -40,6 +47,11 @@ const ArtisticImage = ({ artworkId, url }) => {
     event.preventDefault()
     setIsDragOver(false)
     const file = event.dataTransfer.files[0]
+
+    if (currentArtworkId !== artwork.id) {
+      dispatch(chooseCurrentArtworkId(artwork.id))
+    }
+
     if (file && validateFile(file)) {
       processFile(file)
     } else {
@@ -53,14 +65,14 @@ const ArtisticImage = ({ artworkId, url }) => {
 
   const processFile = (file) => {
     const fileUrl = URL.createObjectURL(file)
-    dispatch(editArtworkUrlImage({ currentArtworkId: artworkId, url: fileUrl }))
+    dispatch(editArtworkUrlImage({ currentArtworkId: artwork.id, url: fileUrl }))
   }
 
   return (
     <div
-      className={`${styles.image} ${isDragOver ? styles.dragOver : ''}`}
+      className={`${styles.frame} ${isDragOver ? styles.dragOver : ''}`}
       style={{
-        backgroundImage: url ? `url(${url})` : 'none',
+        border: showFrame ? `${frameThickness}px solid ${frameColor}` : null,
       }}
       onDoubleClick={handleDoubleClick}
       onDragOver={handleDragOver}
@@ -68,18 +80,24 @@ const ArtisticImage = ({ artworkId, url }) => {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {!url && (
-        <div className={c([styles.empty, { [styles.over]: isDragOver }])}>
-          <Icon name="picture" size={40} color={isDragOver ? '#ffffff' : '#000000'} />
-          <span>Drop image</span>
-        </div>
-      )}
-      <FileInput
-        ref={fileInputRef}
-        id={`file-upload-${artworkId}`}
-        onInput={handleFileChange}
-        style={{ display: 'none' }}
-      />
+      <div
+        className={styles.image}
+        style={{
+          backgroundImage: url ? `url(${url})` : 'none',
+        }}
+      >
+        {!url && (
+          <div className={c([styles.empty, { [styles.over]: isDragOver }])}>
+            <Icon name="picture" size={40} color={isDragOver ? '#ffffff' : '#000000'} />
+          </div>
+        )}
+        <FileInput
+          ref={fileInputRef}
+          id={`file-upload-${currentArtworkId}`}
+          onInput={handleFileChange}
+          style={{ display: 'none' }}
+        />
+      </div>
     </div>
   )
 }

@@ -1,16 +1,17 @@
 .dashboard {
   position: relative;
+  width: 100vw;
+  height: 100vh;
 }
 
 .main {
-  padding: 20px;
   display: flex;
-}
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
 
-.left {
-  width: 140px;
-}
-
-.edit {
-  width: 100%;
+  button {
+    max-width: 150px;
+  }
 }

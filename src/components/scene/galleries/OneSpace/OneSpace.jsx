@@ -1,24 +1,43 @@
 import { useGLTF } from '@react-three/drei'
-import React from 'react'
-import { useSelector } from 'react-redux'
+import React, { useEffect, useMemo } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 
-import { Artworks } from '../objects/Artworks'
-import { Ceiling } from '../objects/Ceiling'
-import { Floor } from '../objects/Floor'
-import { Lamp } from '../objects/Lamp'
-import { Placeholder } from '../objects/Placeholder'
-import { RectLight } from '../objects/RectLight'
-import { Wall } from '../objects/Wall'
+import { Artworks } from '@/components/scene/galleries/objects/Artworks'
+import { Ceiling } from '@/components/scene/galleries/objects/Ceiling'
+import { Floor } from '@/components/scene/galleries/objects/Floor'
+import { Lamp } from '@/components/scene/galleries/objects/Lamp'
+import { Placeholder } from '@/components/scene/galleries/objects/Placeholder'
+import { RectLight } from '@/components/scene/galleries/objects/RectLight'
+import { Wall } from '@/components/scene/galleries/objects/Wall'
+import { addWall } from '@/lib/features/artistSlice'
 
 const OneSpace = ({ wallRefs, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/one-space40.glb')
+  const currentGallery = useSelector((state) => state.scene.currentGallery)
+
+  const { nodes, materials } = useGLTF(currentGallery)
+  const dispatch = useDispatch()
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
 
-  const wallsArray = Array.from({ length: 1 })
-  const placeholdersArray = Array.from({ length: 6 }) || []
-  const rectLightsArray = Array.from({ length: 5 })
-  const lampsArray = Array.from({ length: 27 })
+  const wallsArray = useMemo(() => Array.from({ length: 1 }), [])
+  const placeholdersArray = useMemo(() => Array.from({ length: 6 }), [])
+  const rectLightsArray = useMemo(() => Array.from({ length: 5 }), [])
+  const lampsArray = useMemo(() => Array.from({ length: 27 }), [])
+
+  useEffect(() => {
+    if (currentGallery) {
+      useGLTF.preload(currentGallery)
+    }
+  }, [currentGallery])
+
+  useEffect(() => {
+    placeholdersArray.forEach((_, i) => {
+      const wallNode = nodes[`placeholder${i}`]
+      if (wallNode) {
+        dispatch(addWall({ id: wallNode.uuid, name: `Wall ${i + 1}` }))
+      }
+    })
+  }, [nodes, dispatch, wallsArray, placeholdersArray])
 
   return (
     <group {...props} dispose={null}>
@@ -39,7 +58,5 @@ const OneSpace = ({ wallRefs, ...props }) => {
     </group>
   )
 }
-
-useGLTF.preload('/assets/one-space40.glb')
 
 export default OneSpace

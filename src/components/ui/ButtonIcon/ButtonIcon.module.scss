@@ -4,7 +4,7 @@
   cursor: pointer;
   width: 100%;
   @include smallSans();
-  padding: 5px 10px;
+  padding: 3px 10px;
   background: var(--black);
   color: var(--white);
   border: 1px solid var(--black);
@@ -12,8 +12,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
+  &:hover {
+    background: var(--grayDarkest);
+    border: 1px solid var(--grayDarkest);
+  }
 }
 
 .big {
-  padding: 20px;
+  padding: 16px;
 }

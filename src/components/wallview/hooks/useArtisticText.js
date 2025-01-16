@@ -11,6 +11,12 @@ export const useArtisticText = (artworkId) => {
 
   const artisticText = artwork?.artisticText || ''
   const textAlign = artwork?.artisticTextStyles?.textAlign || 'left'
+  const textColor = artwork?.artisticTextStyles?.color || '#000000'
+  const fontSize = artwork?.artisticTextStyles?.fontSize || 16
+  const lineHeight = artwork?.artisticTextStyles?.lineHeight || 1
+  const fontFamily = artwork?.artisticTextStyles?.fontFamily || 'Roboto'
+  const fontWeight = artwork?.artisticTextStyles?.fontWeight || 'Regular'
+  const letterSpacing = artwork?.artisticTextStyles?.letterSpacing || 1
 
   const handleArtisticTextChange = (updatedText) => {
     if (!artworkId) return
@@ -26,6 +32,12 @@ export const useArtisticText = (artworkId) => {
   return {
     artisticText,
     textAlign,
+    textColor,
+    fontSize,
+    lineHeight,
+    fontFamily,
+    fontWeight,
+    letterSpacing,
     handleArtisticTextChange,
   }
 }

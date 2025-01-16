@@ -12,14 +12,34 @@ const ArtisticText = ({ artworkId }) => {
   const [isEditing, setIsEditing] = useState(false)
   const dispatch = useDispatch()
 
-  const { artisticText, textAlign, handleArtisticTextChange } = useArtisticText(artworkId)
+  const {
+    artisticText,
+    textAlign,
+    handleArtisticTextChange,
+    textColor,
+    fontSize,
+    fontFamily,
+    fontWeight,
+    lineHeight,
+  } = useArtisticText(artworkId)
+
+  const fontFamilyVariable =
+    {
+      Roboto: 'var(--font-wall1)',
+      Lora: 'var(--font-wall2)',
+    }[fontFamily] || 'var(--font-wall1)'
+
+  const fontWeightVariable =
+    {
+      Regular: 400,
+      Bold: 600,
+    }[fontWeight] || 400
 
   const handleDoubleClick = () => {
     if (!isEditing) {
       setIsEditing(true)
       dispatch(setEditingArtwork(true))
 
-      // Programmatically focus only on the first transition to editing mode
       setTimeout(() => {
         if (contentRef.current) {
           contentRef.current.focus()
@@ -33,7 +53,7 @@ const ArtisticText = ({ artworkId }) => {
     dispatch(setEditingArtwork(false))
     if (contentRef.current) {
       const updatedText = contentRef.current.innerText.trim()
-      handleArtisticTextChange(updatedText) // Update the text
+      handleArtisticTextChange(updatedText)
     }
   }
 
@@ -45,14 +65,18 @@ const ArtisticText = ({ artworkId }) => {
       {!artisticText.trim() && !isEditing ? (
         <div className={styles.empty}>
           <Icon name="text" size={40} color={isEditing ? '#ffffff' : '#000000'} />
-          <span>Enter Text</span>
         </div>
       ) : (
         <div
           ref={contentRef}
           style={{
             textAlign,
-            color: 'black',
+            color: textColor,
+            fontFamily: fontFamilyVariable,
+            fontWeight: fontWeightVariable,
+            // letterSpacing: letterSpacing,
+            fontSize: fontSize,
+            lineHeight: lineHeight,
           }}
           className={`${styles.content} ${isEditing ? styles.editable : ''}`}
           contentEditable={isEditing}

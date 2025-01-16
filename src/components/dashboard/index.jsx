@@ -31,14 +31,7 @@ export const Dashboard = () => {
     <div className={styles.dashboard}>
       {!isEditMode && (
         <div className={styles.main}>
-          <div className={styles.left}>
-            <Button
-              className={styles.edit}
-              type="small"
-              onClick={handleEditGallery}
-              label="Edit Exhibition"
-            />
-          </div>
+          <Button type="small" onClick={handleEditGallery} label="Edit Exhibition" />
         </div>
       )}
       {isEditMode && <EditView />}

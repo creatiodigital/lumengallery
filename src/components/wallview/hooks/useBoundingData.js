@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { calculateAverageNormal, calculateDimensionsAndBasis } from '../utils'
+import { calculateAverageNormal, calculateDimensionsAndBasis } from '@/components/wallview/utils'
 
 export const useBoundingData = (nodes, currentWallId) => {
   const [boundingData, setBoundingData] = useState(null)

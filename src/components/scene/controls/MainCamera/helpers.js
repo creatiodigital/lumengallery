@@ -70,14 +70,13 @@ export const detachTouchHandlers = (handleTouchMove, mouseState) => () => {
 export const calculateMovementVector = (keysPressed, moveSpeed, camera) => {
   const moveVector = new THREE.Vector3()
 
-  if (keysPressed.current['w']) moveVector.z -= 1
-  if (keysPressed.current['s']) moveVector.z += 1
-  if (keysPressed.current['a']) moveVector.x -= 1
-  if (keysPressed.current['d']) moveVector.x += 1
+  if (keysPressed.current['w'] || keysPressed.current['arrowup']) moveVector.z -= 1
+  if (keysPressed.current['s'] || keysPressed.current['arrowdown']) moveVector.z += 1
+  if (keysPressed.current['a'] || keysPressed.current['arrowleft']) moveVector.x -= 1
+  if (keysPressed.current['d'] || keysPressed.current['arrowright']) moveVector.x += 1
 
   if (moveVector.lengthSq() > 0) {
     moveVector.normalize().multiplyScalar(moveSpeed)
-
     moveVector.applyQuaternion(camera.quaternion)
   }
 

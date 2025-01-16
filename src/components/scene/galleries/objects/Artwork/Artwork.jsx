@@ -1,14 +1,14 @@
 import React from 'react'
 
-import { ArtText } from '../ArtText'
-import { Paint } from '../Paint'
+import { ArtisticImage } from '@/components/scene/galleries/objects/ArtisticImage'
+import { ArtisticText } from '@/components/scene/galleries/objects/ArtisticText'
 
 const Artwork = ({ artwork }) => {
   switch (artwork?.artworkType) {
     case 'paint':
-      return <Paint artwork={artwork} />
+      return <ArtisticImage artwork={artwork} />
     case 'text':
-      return <ArtText artwork={artwork} />
+      return <ArtisticText artwork={artwork} />
     default:
       return <div>Unknown artwork type</div>
   }

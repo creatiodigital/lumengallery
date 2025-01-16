@@ -12,28 +12,28 @@
   line-height: $lineHeight;
 }
 
-@mixin largeSans($size: 22px, $weight: 500, $lineHeight: 26px) {
+@mixin largeSans($size: 24px, $weight: 500, $lineHeight: 28px) {
   font-family: var(--font-sans);
   font-size: $size;
   font-weight: $weight;
   line-height: $lineHeight;
 }
 
-@mixin largeSerif($size: 22px, $weight: 500, $lineHeight: 26px) {
+@mixin largeSerif($size: 24px, $weight: 500, $lineHeight: 28px) {
   font-family: var(--font-serif);
   font-size: $size;
   font-weight: $weight;
   line-height: $lineHeight;
 }
 
-@mixin mediumSans($size: 16px, $weight: 400, $lineHeight: 24px) {
+@mixin mediumSans($size: 15px, $weight: 400, $lineHeight: 24px) {
   font-family: var(--font-sans);
   font-size: $size;
   font-weight: $weight;
   line-height: $lineHeight;
 }
 
-@mixin mediumSerif($size: 16px, $weight: 400, $lineHeight: 24px) {
+@mixin mediumSerif($size: 15px, $weight: 400, $lineHeight: 24px) {
   font-family: var(--font-serif);
   font-size: $size;
   font-weight: $weight;
@@ -48,6 +48,13 @@
 }
 
 @mixin tinySans($size: 12px, $weight: 300, $lineHeight: 16px) {
+  font-family: var(--font-sans);
+  font-size: $size;
+  font-weight: $weight;
+  line-height: $lineHeight;
+}
+
+@mixin xtinySans($size: 10px, $weight: 300, $lineHeight: 12px) {
   font-family: var(--font-sans);
   font-size: $size;
   font-weight: $weight;

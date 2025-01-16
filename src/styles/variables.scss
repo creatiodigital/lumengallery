@@ -1,16 +1,21 @@
 :root {
-  --font-sans: 'Cabin', sans-serif;
-  --font-serif: 'Fraunces', serif;
-
   --black: #000000;
+  --blueLight: #c5e1ff;
+  --blue: #007aff;
   --white: #ffffff;
-  --grayDark: #666666;
   --grayLighter: #f5f5f5;
   --grayLight: #efefef;
   --grayMedium: #d3d3d3;
+  --grayDark: #666666;
+  --grayDarker: #b5b5b5;
+  --grayDarkest: #303030;
 
   --bgLighter: var(--grayLighter);
   --bgLight: var(--grayLight);
+  --bgMedium: var(--grayMedium);
+  --bgDarker: var(--grayDarker);
+  --borderBlue: var(--blue);
+  --borderBlueLight: var(--blueLight);
   --borderLight: var(--grayMedium);
   --text: var(--black);
 }

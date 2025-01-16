@@ -1,101 +1,174 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
+import { convert2DTo3D } from '@/components/wallview/utils'
 import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
+import {
+  setAlignedPairs,
+  startDragging,
+  stopDragging,
+  chooseCurrentArtworkId,
+} from '@/lib/features/wallViewSlice'
 
-import { convert2DTo3D } from '../utils'
+import { areAligned } from './helpers'
 
 export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
-  const [dragging, setDragging] = useState(false)
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
   const artworks = useSelector((state) => state.artist.artworks)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
-  const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
+  const isDragging = useSelector((state) => state.wallView.isDragging)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+  const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const dispatch = useDispatch()
 
-  const gridSize = 20
+  const isArtworkVisible = artworkGroupIds.length > 1
 
-  const handleDragStart = (event, artworkId) => {
-    if (isEditingArtwork || !wallRef.current) return
+  const handleArtworkDragStart = useCallback(
+    (event, artworkId) => {
+      if (isEditingArtwork || !wallRef.current || isArtworkVisible) return
 
-    const rect = wallRef.current.getBoundingClientRect()
-    const artwork = artworks.find((art) => art.id === artworkId)
-    if (!artwork) return
+      event.stopPropagation()
 
-    const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.canvas.x
-    const offsetY = (event.clientY - rect.top) / scaleFactor - artwork.canvas.y
-    setOffset({ x: offsetX, y: offsetY })
-
-    setDragging(true)
-    setDraggedArtworkId(artworkId)
-  }
-
-  const handleDragMove = (event) => {
-    if (!dragging || !draggedArtworkId || !wallRef.current || !boundingData) return
-
-    const rect = wallRef.current.getBoundingClientRect()
-    const scaledMouseX = (event.clientX - rect.left) / scaleFactor
-    const scaledMouseY = (event.clientY - rect.top) / scaleFactor
-
-    let x = scaledMouseX - offset.x
-    let y = scaledMouseY - offset.y
-
-    const artwork = artworks.find((art) => art.id === draggedArtworkId)
-    if (!artwork) return
-
-    const { width: artworkWidth, height: artworkHeight } = artwork.canvas
-
-    // Keep within bounds of the wall
-    x = Math.max(0, Math.min(x, boundingData.width * 100 - artworkWidth))
-    y = Math.max(0, Math.min(y, boundingData.height * 100 - artworkHeight))
-
-    // Snap to grid if grid is visible
-    if (isGridVisible && wallRef.current) {
       const rect = wallRef.current.getBoundingClientRect()
+      const artwork = artworks?.find((art) => art.id === artworkId)
+      if (!artwork) return
 
-      // Calculate the grid offset caused by centering
-      const gridOffsetX = (rect.width % gridSize) / 2
-      const gridOffsetY = (rect.height % gridSize) / 2
+      const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.canvas.x
+      const offsetY = (event.clientY - rect.top) / scaleFactor - artwork.canvas.y
+      setOffset({ x: offsetX, y: offsetY })
 
-      // Snap the top-left corner of the artwork to the nearest grid line
-      x = Math.round((x - gridOffsetX - 10) / gridSize) * gridSize + gridOffsetX + 10
-      y = Math.round((y - gridOffsetY - 10) / gridSize) * gridSize + gridOffsetY + 10
-    }
+      dispatch(startDragging())
+      setDraggedArtworkId(artworkId)
+      dispatch(chooseCurrentArtworkId(artworkId))
+    },
+    [isEditingArtwork, wallRef, isArtworkVisible, artworks, scaleFactor, dispatch],
+  )
 
-    const updatedCanvas = { ...artwork.canvas, x, y }
+  const handleArtworkDragMove = useCallback(
+    (event) => {
+      if (!isDragging || !draggedArtworkId || !wallRef.current || !boundingData) return
 
-    dispatch(
-      editArtwork({
-        currentArtworkId: draggedArtworkId,
-        newArtworkSizes: updatedCanvas,
-      }),
-    )
+      event.stopPropagation()
 
-    const new3DCoordinate = convert2DTo3D(
-      { x, y, size: { w: updatedCanvas.width, h: updatedCanvas.height } },
+      const rect = wallRef.current.getBoundingClientRect()
+      const scaledMouseX = (event.clientX - rect.left) / scaleFactor
+      const scaledMouseY = (event.clientY - rect.top) / scaleFactor
+
+      let x = scaledMouseX - offset.x
+      let y = scaledMouseY - offset.y
+
+      const artwork = artworks.find((art) => art.id === draggedArtworkId)
+      if (!artwork) return
+
+      const sameWallArtworks = artworks.filter(
+        (otherArtwork) =>
+          otherArtwork.wallId === currentWallId && otherArtwork.id !== draggedArtworkId,
+      )
+
+      let snapX = x
+      let snapY = y
+
+      const alignedPairs = []
+
+      sameWallArtworks.forEach((otherArtwork) => {
+        const alignment = areAligned(
+          { x: snapX, y: snapY, width: artwork.canvas.width, height: artwork.canvas.height },
+          {
+            x: otherArtwork.canvas.x,
+            y: otherArtwork.canvas.y,
+            width: otherArtwork.canvas.width,
+            height: otherArtwork.canvas.height,
+          },
+        )
+
+        if (alignment.horizontal) {
+          if (alignment.horizontal === 'top') {
+            snapY = otherArtwork.canvas.y
+          }
+          if (alignment.horizontal === 'bottom') {
+            snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height
+          }
+          if (alignment.horizontal === 'center-horizontal') {
+            snapY =
+              otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2
+          }
+
+          alignedPairs.push({
+            from: draggedArtworkId,
+            to: otherArtwork.id,
+            direction: alignment.horizontal,
+          })
+        }
+
+        if (alignment.vertical) {
+          if (alignment.vertical === 'left') {
+            snapX = otherArtwork.canvas.x
+          }
+          if (alignment.vertical === 'right') {
+            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width - artwork.canvas.width
+          }
+          if (alignment.vertical === 'center-vertical') {
+            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width / 2 - artwork.canvas.width / 2
+          }
+
+          alignedPairs.push({
+            from: draggedArtworkId,
+            to: otherArtwork.id,
+            direction: alignment.vertical,
+          })
+        }
+      })
+
+      dispatch(setAlignedPairs(alignedPairs))
+
+      const updatedCanvas = { ...artwork.canvas, x: snapX, y: snapY }
+
+      dispatch(
+        editArtwork({
+          currentArtworkId: draggedArtworkId,
+          newArtworkSizes: updatedCanvas,
+        }),
+      )
+
+      const new3DCoordinate = convert2DTo3D(
+        { x: snapX, y: snapY, size: { w: updatedCanvas.width, h: updatedCanvas.height } },
+        boundingData,
+      )
+
+      dispatch(
+        edit3DCoordinates({
+          currentArtworkId: draggedArtworkId,
+          serialized3DCoordinate: new3DCoordinate,
+        }),
+      )
+    },
+    [
+      isDragging,
+      draggedArtworkId,
+      wallRef,
       boundingData,
-    )
+      scaleFactor,
+      offset,
+      artworks,
+      currentWallId,
+      dispatch,
+    ],
+  )
 
-    dispatch(
-      edit3DCoordinates({
-        currentArtworkId: draggedArtworkId,
-        serialized3DCoordinate: new3DCoordinate,
-      }),
-    )
-  }
-
-  const handleDragEnd = () => {
-    setDragging(false)
+  const handleArtworkDragEnd = useCallback(() => {
+    dispatch(stopDragging())
     setDraggedArtworkId(null)
-  }
+  }, [dispatch])
 
-  return {
-    dragging,
-    draggedArtworkId,
-    handleDragStart,
-    handleDragMove,
-    handleDragEnd,
-  }
+  return useMemo(
+    () => ({
+      draggedArtworkId,
+      handleArtworkDragStart,
+      handleArtworkDragMove,
+      handleArtworkDragEnd,
+    }),
+    [draggedArtworkId, handleArtworkDragStart, handleArtworkDragMove, handleArtworkDragEnd],
+  )
 }

@@ -1,0 +1,9 @@
+@import '@/styles/mixins';
+
+.selectionBox {
+  position: absolute;
+  border: 1px dashed var(--borderBlue);
+  background-color: var(--borderBlueLight);
+  opacity: 0.8;
+  pointer-events: none;
+}

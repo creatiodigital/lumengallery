@@ -1,15 +1,16 @@
 @import '@/styles/mixins';
 
 .panel {
-  width: 300px;
-  max-width: 300px;
+  width: 250px;
+  max-width: 250px;
+  height: 100vh;
   background-color: var(--bgLight);
-  padding: 30px;
+  padding: 20px;
+  overflow: auto;
 }
 
 .section {
-  margin: 0 0 20px 0;
-  padding: 0 0 20px 0;
+  margin: 0 0 10px 0;
   border-bottom: 1px solid var(--borderLight);
 
   &:last-child {
@@ -18,17 +19,25 @@
 }
 
 .subsection {
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .title {
-  @include smallSans();
+  @include tinySans();
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .subtitle {
-  @include tinySans();
+  @include xtinySans();
+  color: var(--grayDark);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.label {
+  @include xtinySans();
+  color: var(--grayDark);
   font-weight: 600;
   margin-bottom: 2px;
 }
@@ -36,11 +45,15 @@
 .row {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 5px;
+  margin-bottom: 5px;
 }
 
 .item {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .cta {

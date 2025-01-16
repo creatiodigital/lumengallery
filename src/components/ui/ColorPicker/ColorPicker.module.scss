@@ -1,0 +1,36 @@
+@import '@/styles/mixins';
+
+.picker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+
+  input[type='color'] {
+    border: none;
+    border-radius: 3px;
+    padding: 0;
+    height: 14px;
+    width: 14px;
+    cursor: pointer;
+
+    &::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    &::-webkit-color-swatch {
+      border: 0;
+      border-radius: 3px;
+    }
+
+    &::-moz-color-swatch {
+      border: 0;
+      border-radius: 3px;
+    }
+  }
+}
+
+.label {
+  @include tinySans();
+  color: var(--black);
+}

@@ -1,21 +1,23 @@
+@import '@/styles/mixins';
+
 .checkbox {
   display: flex;
   align-items: center;
   cursor: pointer;
   user-select: none;
 
-  .hiddenCheckbox {
+  .hidden {
     display: none;
   }
 
-  .customCheckbox {
-    width: 16px;
-    height: 16px;
-    border: 1px solid #000;
+  .span {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--black);
     border-radius: 2px;
     display: inline-block;
     position: relative;
-    background-color: #fff;
+    background-color: var(--white);
     transition: all 0.2s ease;
 
     &::after {
@@ -25,25 +27,25 @@
       left: 50%;
       width: 8px;
       height: 8px;
-      background-color: #000;
+      background-color: var(--black);
       border-radius: 2px;
       transform: scale(0) translate(-50%, -50%);
       transition: all 0.2s ease;
     }
   }
 
-  .hiddenCheckbox:checked + .customCheckbox::after {
+  .hidden:checked + .span::after {
     transform: scale(1) translate(-50%, -50%);
   }
 
-  .hiddenCheckbox:checked + .customCheckbox {
-    background-color: #f0f0f0;
-    border-color: #000;
+  .hidden:checked + .span {
+    background-color: var(--grayLighter);
+    border-color: var(--black);
   }
 
-  .labelText {
+  .label {
+    @include tinySans();
     margin-left: 8px;
-    font-size: 14px;
-    color: #333;
+    color: var(--black);
   }
 }

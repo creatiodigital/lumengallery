@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { Handle } from '../Handle'
+import { Handle } from '@/components/wallview/Handle'
 
 const Handles = ({ artworkId, handleResize }) => (
   <>

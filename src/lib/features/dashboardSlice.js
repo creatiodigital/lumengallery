@@ -2,11 +2,10 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const dashboardSlice = createSlice({
   name: 'dashboard',
-  isPlaceholdersShown: false,
-  isArtworkPanelOpen: false,
-  isEditingArtwork: false,
   initialState: {
     isEditMode: false,
+    isArtworkPanelOpen: false,
+    isEditingArtwork: false,
   },
   reducers: {
     showEditMode: (state) => {
