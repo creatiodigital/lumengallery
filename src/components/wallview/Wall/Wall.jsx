@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Artwork } from '@/components/wallview/Artwork'
@@ -23,8 +23,10 @@ import { AlignedLine } from './AlignedLine'
 import styles from './Wall.module.scss'
 
 export const Wall = () => {
-  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
+  const currentGallery = useSelector((state) => state.scene.currentGallery)
+  const { nodes } = useGLTF(currentGallery)
   const artworks = useSelector((state) => state.artist.artworks)
+
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
@@ -45,16 +47,16 @@ export const Wall = () => {
   const wallRef = useRef(null)
   const preventClick = useRef(false)
 
-  const currentArtwork = artworks?.find((art) => art.id === currentArtworkId)
+  const currentArtwork = useMemo(
+    () => artworks?.find((art) => art.id === currentArtworkId),
+    [artworks, currentArtworkId],
+  )
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
-  const { handleRemoveArtworkGroup } = useGroupArtwork(
-    wallRef,
-    boundingData,
-    scaleFactor,
-    preventClick,
-  )
+  const groupArtworkHandlers = useGroupArtwork()
+
+  const { handleRemoveArtworkGroup } = groupArtworkHandlers
 
   const { handleSelectMouseDown, handleSelectMouseMove, handleSelectMouseUp, selectionBox } =
     useSelectBox(wallRef, boundingData, scaleFactor, preventClick)
@@ -62,27 +64,36 @@ export const Wall = () => {
   const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
 
   useEffect(() => {
+    if (currentGallery) {
+      useGLTF.preload(currentGallery)
+    }
+  }, [currentGallery])
+
+  useEffect(() => {
     return () => {
       dispatch(setShiftKeyDown(false))
     }
   }, [])
 
-  const handleDropArtworkOnWall = (e) => {
+  const handleDropArtworkOnWall = useCallback(
+    (e) => {
+      e.preventDefault()
+      const artworkType = e.dataTransfer.getData('artworkType')
+
+      if (artworkType && wallRef.current && boundingData) {
+        const rect = wallRef.current.getBoundingClientRect()
+        const x = ((e.clientX - rect.left) / rect.width) * boundingData.width * scaling
+        const y = ((e.clientY - rect.top) / rect.height) * boundingData.height * scaling
+
+        handleCreateArtworkDrag(artworkType, x, y)
+      }
+    },
+    [wallRef, boundingData, scaling, handleCreateArtworkDrag], // Include dependencies
+  )
+
+  const handleDragArtworkOverWall = useCallback((e) => {
     e.preventDefault()
-    const artworkType = e.dataTransfer.getData('artworkType')
-
-    if (artworkType && wallRef.current && boundingData) {
-      const rect = wallRef.current.getBoundingClientRect()
-      const x = ((e.clientX - rect.left) / rect.width) * boundingData.width * scaling
-      const y = ((e.clientY - rect.top) / rect.height) * boundingData.height * scaling
-
-      handleCreateArtworkDrag(artworkType, x, y)
-    }
-  }
-
-  const handleDragArtworkOverWall = (e) => {
-    e.preventDefault()
-  }
+  }, [])
 
   useEffect(() => {
     if (boundingData && wallRef.current) {
@@ -136,7 +147,7 @@ export const Wall = () => {
 
   const { handleDeselect } = useDeselectArtwork()
 
-  const handleClickOnWall = () => {
+  const handleClickOnWall = useCallback(() => {
     if (preventClick.current) return
 
     if (!preventClick.current) {
@@ -144,7 +155,7 @@ export const Wall = () => {
     }
 
     handleDeselect()
-  }
+  }, [preventClick, handleRemoveArtworkGroup, handleDeselect])
 
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
 
@@ -174,6 +185,7 @@ export const Wall = () => {
               boundingData={boundingData}
               scaleFactor={scaleFactor}
               preventClick={preventClick}
+              groupArtworkHandlers={groupArtworkHandlers}
             />
           ))}
 
@@ -214,5 +226,3 @@ export const Wall = () => {
     </div>
   )
 }
-
-useGLTF.preload('/assets/galleries/one-space42.glb')

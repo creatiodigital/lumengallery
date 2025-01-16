@@ -1,5 +1,5 @@
 import c from 'classnames'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
@@ -38,7 +38,10 @@ export const LeftPanel = () => {
   const currentWall = walls.find((wall) => wall.id === currentWallId)
   const currentWallName = currentWall ? currentWall.name : 'Select a wall'
 
-  const wallArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId).reverse()
+  const wallArtworks = useMemo(
+    () => artworks.filter((artwork) => artwork.wallId === currentWallId).reverse(),
+    [artworks, currentWallId],
+  )
 
   const handleZoomIn = () => {
     dispatch(increaseScaleFactor())

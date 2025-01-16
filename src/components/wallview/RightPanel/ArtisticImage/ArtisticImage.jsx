@@ -12,7 +12,7 @@ import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 
 import { frameThicknessOptions } from './constants'
 
-const Paint = () => {
+const ArtisticImage = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
   const {
@@ -127,4 +127,4 @@ const Paint = () => {
   )
 }
 
-export default Paint
+export default ArtisticImage
