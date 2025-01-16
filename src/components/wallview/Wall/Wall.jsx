@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Artwork } from '@/components/wallview/Artwork'
@@ -47,7 +47,10 @@ export const Wall = () => {
   const wallRef = useRef(null)
   const preventClick = useRef(false)
 
-  const currentArtwork = artworks?.find((art) => art.id === currentArtworkId)
+  const currentArtwork = useMemo(
+    () => artworks?.find((art) => art.id === currentArtworkId),
+    [artworks, currentArtworkId],
+  )
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
@@ -75,22 +78,25 @@ export const Wall = () => {
     }
   }, [])
 
-  const handleDropArtworkOnWall = (e) => {
+  const handleDropArtworkOnWall = useCallback(
+    (e) => {
+      e.preventDefault()
+      const artworkType = e.dataTransfer.getData('artworkType')
+
+      if (artworkType && wallRef.current && boundingData) {
+        const rect = wallRef.current.getBoundingClientRect()
+        const x = ((e.clientX - rect.left) / rect.width) * boundingData.width * scaling
+        const y = ((e.clientY - rect.top) / rect.height) * boundingData.height * scaling
+
+        handleCreateArtworkDrag(artworkType, x, y)
+      }
+    },
+    [wallRef, boundingData, scaling, handleCreateArtworkDrag], // Include dependencies
+  )
+
+  const handleDragArtworkOverWall = useCallback((e) => {
     e.preventDefault()
-    const artworkType = e.dataTransfer.getData('artworkType')
-
-    if (artworkType && wallRef.current && boundingData) {
-      const rect = wallRef.current.getBoundingClientRect()
-      const x = ((e.clientX - rect.left) / rect.width) * boundingData.width * scaling
-      const y = ((e.clientY - rect.top) / rect.height) * boundingData.height * scaling
-
-      handleCreateArtworkDrag(artworkType, x, y)
-    }
-  }
-
-  const handleDragArtworkOverWall = (e) => {
-    e.preventDefault()
-  }
+  }, [])
 
   useEffect(() => {
     if (boundingData && wallRef.current) {
@@ -144,7 +150,7 @@ export const Wall = () => {
 
   const { handleDeselect } = useDeselectArtwork()
 
-  const handleClickOnWall = () => {
+  const handleClickOnWall = useCallback(() => {
     if (preventClick.current) return
 
     if (!preventClick.current) {
@@ -152,7 +158,7 @@ export const Wall = () => {
     }
 
     handleDeselect()
-  }
+  }, [preventClick, handleRemoveArtworkGroup, handleDeselect])
 
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
 

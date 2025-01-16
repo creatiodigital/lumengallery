@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
@@ -20,13 +20,16 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick
   const artworks = useSelector((state) => state.artist.artworks)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
-  const handleAddArtworkToGroup = (artworkId) => {
-    if (!artworkGroupIds.includes(artworkId)) {
-      dispatch(addArtworkToGroup(artworkId))
-    }
-  }
+  const handleAddArtworkToGroup = useCallback(
+    (artworkId) => {
+      if (!artworkGroupIds.includes(artworkId)) {
+        dispatch(addArtworkToGroup(artworkId))
+      }
+    },
+    [artworkGroupIds, dispatch],
+  )
 
-  const handleCreateArtworkGroup = () => {
+  const handleCreateArtworkGroup = useCallback(() => {
     if (artworkGroupIds.length === 0) return
 
     const artworkGroupItems = artworks.filter((artwork) => artworkGroupIds.includes(artwork.id))
@@ -50,92 +53,98 @@ export const useGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick
     }
 
     dispatch(createArtworkGroup(groupProps))
-  }
+  }, [artworkGroupIds, artworks, dispatch])
 
-  const handleRemoveArtworkGroup = () => {
+  const handleRemoveArtworkGroup = useCallback(() => {
     dispatch(removeGroup())
-  }
+  }, [dispatch])
 
-  const handleGroupDragStart = (event) => {
-    if (!wallRef.current) return
+  const handleGroupDragStart = useCallback(
+    (event) => {
+      if (!wallRef.current) return
 
-    dispatch(chooseCurrentArtworkId(null))
+      dispatch(chooseCurrentArtworkId(null))
 
-    const rect = wallRef.current.getBoundingClientRect()
-    const offsetX = (event.clientX - rect.left) / scaleFactor - artworkGroup.groupX
-    const offsetY = (event.clientY - rect.top) / scaleFactor - artworkGroup.groupY
+      const rect = wallRef.current.getBoundingClientRect()
+      const offsetX = (event.clientX - rect.left) / scaleFactor - artworkGroup.groupX
+      const offsetY = (event.clientY - rect.top) / scaleFactor - artworkGroup.groupY
 
-    setOffset({ x: offsetX, y: offsetY })
+      setOffset({ x: offsetX, y: offsetY })
 
-    dispatch(startDraggingGroup())
+      dispatch(startDraggingGroup())
 
-    preventClick.current = true
-  }
+      preventClick.current = true
+    },
+    [wallRef, scaleFactor, artworkGroup, dispatch, preventClick],
+  )
 
-  const handleGroupDragMove = (event) => {
-    if (!wallRef.current || !boundingData) return
+  const handleGroupDragMove = useCallback(
+    (event) => {
+      if (!wallRef.current || !boundingData) return
 
-    const rect = wallRef.current.getBoundingClientRect()
-    const scaledMouseX = (event.clientX - rect.left) / scaleFactor
-    const scaledMouseY = (event.clientY - rect.top) / scaleFactor
+      const rect = wallRef.current.getBoundingClientRect()
+      const scaledMouseX = (event.clientX - rect.left) / scaleFactor
+      const scaledMouseY = (event.clientY - rect.top) / scaleFactor
 
-    let x = scaledMouseX - offset.x
-    let y = scaledMouseY - offset.y
+      let x = scaledMouseX - offset.x
+      let y = scaledMouseY - offset.y
 
-    const deltaX = x - artworkGroup.groupX // Change in X position
-    const deltaY = y - artworkGroup.groupY
+      const deltaX = x - artworkGroup.groupX // Change in X position
+      const deltaY = y - artworkGroup.groupY
 
-    const artworkGroupProps = {
-      groupX: x,
-      groupY: y,
-    }
-
-    dispatch(editArtworkGroup(artworkGroupProps))
-
-    artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
-
-      if (artwork) {
-        const newArtworkCanvas = {
-          x: artwork.canvas.x + deltaX,
-          y: artwork.canvas.y + deltaY,
-          width: artwork.canvas.width,
-          height: artwork.canvas.height,
-        }
-
-        dispatch(
-          editArtwork({
-            currentArtworkId: artworkId,
-            newArtworkSizes: newArtworkCanvas,
-          }),
-        )
-
-        const new3DCoordinate = convert2DTo3D(
-          {
-            x: newArtworkCanvas.x,
-            y: newArtworkCanvas.y,
-            size: { w: newArtworkCanvas.width, h: newArtworkCanvas.height },
-          },
-          boundingData,
-        )
-
-        dispatch(
-          edit3DCoordinates({
-            currentArtworkId: artworkId,
-            serialized3DCoordinate: new3DCoordinate,
-          }),
-        )
+      const artworkGroupProps = {
+        groupX: x,
+        groupY: y,
       }
-    })
-  }
 
-  const handleGroupDragEnd = () => {
+      dispatch(editArtworkGroup(artworkGroupProps))
+
+      artworkGroupIds.forEach((artworkId) => {
+        const artwork = artworks.find((art) => art.id === artworkId)
+
+        if (artwork) {
+          const newArtworkCanvas = {
+            x: artwork.canvas.x + deltaX,
+            y: artwork.canvas.y + deltaY,
+            width: artwork.canvas.width,
+            height: artwork.canvas.height,
+          }
+
+          dispatch(
+            editArtwork({
+              currentArtworkId: artworkId,
+              newArtworkSizes: newArtworkCanvas,
+            }),
+          )
+
+          const new3DCoordinate = convert2DTo3D(
+            {
+              x: newArtworkCanvas.x,
+              y: newArtworkCanvas.y,
+              size: { w: newArtworkCanvas.width, h: newArtworkCanvas.height },
+            },
+            boundingData,
+          )
+
+          dispatch(
+            edit3DCoordinates({
+              currentArtworkId: artworkId,
+              serialized3DCoordinate: new3DCoordinate,
+            }),
+          )
+        }
+      })
+    },
+    [wallRef, boundingData, scaleFactor, offset, artworkGroup, artworkGroupIds, artworks, dispatch],
+  )
+
+  const handleGroupDragEnd = useCallback(() => {
     dispatch(stopDraggingGroup())
 
     setTimeout(() => {
       preventClick.current = false
     }, 100)
-  }
+  }, [artworkGroupIds, handleCreateArtworkGroup])
 
   useEffect(() => {
     if (artworkGroupIds.length > 0) {

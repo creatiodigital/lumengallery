@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 
 import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
@@ -28,33 +28,39 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     }
   }, [draggingSelectBox])
 
-  const handleSelectMouseDown = (e) => {
-    const rect = wallRef.current.getBoundingClientRect()
-    const startX = (e.clientX - rect.left) / scaleFactor
-    const startY = (e.clientY - rect.top) / scaleFactor
+  const handleSelectMouseDown = useCallback(
+    (e) => {
+      const rect = wallRef.current.getBoundingClientRect()
+      const startX = (e.clientX - rect.left) / scaleFactor
+      const startY = (e.clientY - rect.top) / scaleFactor
 
-    startPosition.current = { x: startX, y: startY }
-    setSelectionBox({ startX, startY, endX: startX, endY: startY })
-  }
+      startPosition.current = { x: startX, y: startY }
+      setSelectionBox({ startX, startY, endX: startX, endY: startY })
+    },
+    [wallRef, scaleFactor],
+  )
 
-  const handleSelectMouseMove = (e) => {
-    if (!selectionBox) return
+  const handleSelectMouseMove = useCallback(
+    (e) => {
+      if (!selectionBox) return
 
-    const rect = wallRef.current.getBoundingClientRect()
-    const endX = (e.clientX - rect.left) / scaleFactor
-    const endY = (e.clientY - rect.top) / scaleFactor
+      const rect = wallRef.current.getBoundingClientRect()
+      const endX = (e.clientX - rect.left) / scaleFactor
+      const endY = (e.clientY - rect.top) / scaleFactor
 
-    const deltaX = Math.abs(endX - startPosition.current.x)
-    const deltaY = Math.abs(endY - startPosition.current.y)
+      const deltaX = Math.abs(endX - startPosition.current.x)
+      const deltaY = Math.abs(endY - startPosition.current.y)
 
-    if (deltaX > dragThreshold || deltaY > dragThreshold) {
-      preventClick.current = true
-      setDraggingSelectBox(true)
-      setSelectionBox((prev) => ({ ...prev, endX, endY }))
-    }
-  }
+      if (deltaX > dragThreshold || deltaY > dragThreshold) {
+        preventClick.current = true
+        setDraggingSelectBox(true)
+        setSelectionBox((prev) => ({ ...prev, endX, endY }))
+      }
+    },
+    [selectionBox, wallRef, scaleFactor, dragThreshold, preventClick],
+  )
 
-  const handleSelectMouseUp = () => {
+  const handleSelectMouseUp = useCallback(() => {
     if (!selectionBox || !draggingSelectBox) {
       setSelectionBox(null)
       return
@@ -82,12 +88,15 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
 
     setSelectionBox(null)
     setDraggingSelectBox(false)
-  }
+  }, [selectionBox, draggingSelectBox, artworks, handleAddArtworkToGroup])
 
-  return {
-    handleSelectMouseDown,
-    handleSelectMouseMove,
-    handleSelectMouseUp,
-    selectionBox,
-  }
+  return useMemo(
+    () => ({
+      handleSelectMouseDown,
+      handleSelectMouseMove,
+      handleSelectMouseUp,
+      selectionBox,
+    }),
+    [handleSelectMouseDown, handleSelectMouseMove, handleSelectMouseUp, selectionBox],
+  )
 }
