@@ -1,7 +1,6 @@
 import React, { memo } from 'react'
 import { useSelector } from 'react-redux'
-
-import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
+import { useMoveGroupArtwork } from '@/components/wallview/hooks/useMoveGroupArtwork'
 
 import styles from './Group.module.scss'
 
@@ -9,7 +8,7 @@ const Group = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
   const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
 
-  const { handleGroupDragStart, handleGroupDragMove, handleGroupDragEnd } = useGroupArtwork(
+  const { handleGroupDragStart, handleGroupDragMove, handleGroupDragEnd } = useMoveGroupArtwork(
     wallRef,
     boundingData,
     scaleFactor,

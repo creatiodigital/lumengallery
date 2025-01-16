@@ -41,7 +41,6 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
       dispatch(startDragging())
       setDraggedArtworkId(artworkId)
-
       dispatch(chooseCurrentArtworkId(artworkId))
     },
     [isEditingArtwork, wallRef, isArtworkVisible, artworks, scaleFactor, dispatch],
@@ -86,14 +85,14 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
         if (alignment.horizontal) {
           if (alignment.horizontal === 'top') {
-            snapY = otherArtwork.canvas.y // Align top
+            snapY = otherArtwork.canvas.y
           }
           if (alignment.horizontal === 'bottom') {
-            snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height // Align bottom
+            snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height
           }
           if (alignment.horizontal === 'center-horizontal') {
             snapY =
-              otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2 // Align horizontal centers
+              otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2
           }
 
           alignedPairs.push({

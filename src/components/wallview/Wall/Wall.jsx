@@ -54,12 +54,9 @@ export const Wall = () => {
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
-  const { handleRemoveArtworkGroup } = useGroupArtwork(
-    wallRef,
-    boundingData,
-    scaleFactor,
-    preventClick,
-  )
+  const groupArtworkHandlers = useGroupArtwork()
+
+  const { handleRemoveArtworkGroup } = groupArtworkHandlers
 
   const { handleSelectMouseDown, handleSelectMouseMove, handleSelectMouseUp, selectionBox } =
     useSelectBox(wallRef, boundingData, scaleFactor, preventClick)
@@ -188,6 +185,7 @@ export const Wall = () => {
               boundingData={boundingData}
               scaleFactor={scaleFactor}
               preventClick={preventClick}
+              groupArtworkHandlers={groupArtworkHandlers}
             />
           ))}
 

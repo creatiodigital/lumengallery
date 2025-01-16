@@ -4,7 +4,6 @@ import { useSelector, useDispatch } from 'react-redux'
 import { ArtisticImage } from '@/components/wallview/ArtisticImage'
 import { ArtisticText } from '@/components/wallview/ArtisticText'
 import { Handles } from '@/components/wallview/Handles'
-import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 import { showWizard } from '@/lib/features/wizardSlice'
@@ -17,9 +16,9 @@ const Artwork = memo(
     wallRef,
     boundingData,
     scaleFactor,
-    preventClick,
     onHandleResize,
     setHoveredArtworkId,
+    groupArtworkHandlers,
   }) => {
     const { id, canvas, artworkType } = artwork
     const { x, y, width, height } = canvas
@@ -36,12 +35,7 @@ const Artwork = memo(
       scaleFactor,
     )
 
-    const { handleAddArtworkToGroup } = useGroupArtwork(
-      wallRef,
-      boundingData,
-      scaleFactor,
-      preventClick,
-    )
+    const { handleAddArtworkToGroup } = groupArtworkHandlers
 
     const handleArtworkClick = (event) => {
       event.stopPropagation()
@@ -68,6 +62,7 @@ const Artwork = memo(
 
     return (
       <div
+        id={`artwork-${id}`}
         className={styles.artwork}
         style={{
           top: `${y}px`,
