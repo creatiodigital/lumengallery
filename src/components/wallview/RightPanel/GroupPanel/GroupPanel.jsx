@@ -25,7 +25,7 @@ const GroupPanel = () => {
   // const wallWidth = useSelector((state) => state.wallView.wallWidth)
   // const wallHeight = useSelector((state) => state.wallView.wallHeight)
 
-  const { handleMoveGroupXChange, handleMoveGroupYChange } = useGroupHandlers(
+  const { handleMoveGroupXChange, handleMoveGroupYChange, alignGroupToWall } = useGroupHandlers(
     artworkGroupIds,
     boundingData,
   )
@@ -33,12 +33,16 @@ const GroupPanel = () => {
   const { alignArtworksInGroup } = useAlignGroup(boundingData)
   const { distributeArtworksInGroup } = useDistributeGroup(boundingData)
 
-  const handleAlign = (alignment) => {
+  const handleAlignElements = (alignment) => {
     alignArtworksInGroup(alignment)
   }
 
-  const handleDistribute = (alignment) => {
+  const handleDistributeElements = (alignment) => {
     distributeArtworksInGroup(alignment)
+  }
+
+  const handleAlignGroup = (alignment) => {
+    alignGroupToWall(alignment)
   }
 
   useEffect(() => {
@@ -81,31 +85,86 @@ const GroupPanel = () => {
             </div>
           </div>
         </div>
-      </div>
-      <div className={styles.section}>
-        <h2 className={styles.title}>Elements Layout</h2>
         <div className={styles.subsection}>
-          <h3 className={styles.subtitle}>Alignment</h3>
+          <h3 className={styles.subtitle}>Group Alignment</h3>
           <div className={styles.row}>
             <div className={styles.item}>
-              <ButtonIcon icon="verticalTop" onClick={() => handleAlign('verticalTop')} />
+              <ButtonIcon icon="verticalTop" onClick={() => handleAlignGroup('verticalTop')} />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="verticalCenter" onClick={() => handleAlign('verticalCenter')} />
+              <ButtonIcon
+                icon="verticalCenter"
+                onClick={() => handleAlignGroup('verticalCenter')}
+              />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="verticalBottom" onClick={() => handleAlign('verticalBottom')} />
+              <ButtonIcon
+                icon="verticalBottom"
+                onClick={() => handleAlignGroup('verticalBottom')}
+              />
             </div>
           </div>
           <div className={styles.row}>
             <div className={styles.item}>
-              <ButtonIcon icon="horizontalLeft" onClick={() => handleAlign('horizontalLeft')} />
+              <ButtonIcon
+                icon="horizontalLeft"
+                onClick={() => handleAlignGroup('horizontalLeft')}
+              />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="horizontalCenter" onClick={() => handleAlign('horizontalCenter')} />
+              <ButtonIcon
+                icon="horizontalCenter"
+                onClick={() => handleAlignGroup('horizontalCenter')}
+              />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="horizontalRight" onClick={() => handleAlign('horizontalRight')} />
+              <ButtonIcon
+                icon="horizontalRight"
+                onClick={() => handleAlignGroup('horizontalRight')}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className={styles.section}>
+        <h2 className={styles.title}>Elements Position</h2>
+        <div className={styles.subsection}>
+          <h3 className={styles.subtitle}>Alignment</h3>
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <ButtonIcon icon="verticalTop" onClick={() => handleAlignElements('verticalTop')} />
+            </div>
+            <div className={styles.item}>
+              <ButtonIcon
+                icon="verticalCenter"
+                onClick={() => handleAlignElements('verticalCenter')}
+              />
+            </div>
+            <div className={styles.item}>
+              <ButtonIcon
+                icon="verticalBottom"
+                onClick={() => handleAlignElements('verticalBottom')}
+              />
+            </div>
+          </div>
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <ButtonIcon
+                icon="horizontalLeft"
+                onClick={() => handleAlignElements('horizontalLeft')}
+              />
+            </div>
+            <div className={styles.item}>
+              <ButtonIcon
+                icon="horizontalCenter"
+                onClick={() => handleAlignElements('horizontalCenter')}
+              />
+            </div>
+            <div className={styles.item}>
+              <ButtonIcon
+                icon="horizontalRight"
+                onClick={() => handleAlignElements('horizontalRight')}
+              />
             </div>
           </div>
         </div>
@@ -115,11 +174,14 @@ const GroupPanel = () => {
             <div className={styles.item}>
               <ButtonIcon
                 icon="distributeHorizontal"
-                onClick={() => handleDistribute('horizontal')}
+                onClick={() => handleDistributeElements('horizontal')}
               />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="distributeVertical" onClick={() => handleDistribute('vertical')} />
+              <ButtonIcon
+                icon="distributeVertical"
+                onClick={() => handleDistributeElements('vertical')}
+              />
             </div>
           </div>
         </div>

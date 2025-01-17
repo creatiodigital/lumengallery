@@ -7,6 +7,8 @@ import { editArtworkGroup } from '@/lib/features/wallViewSlice'
 export const useGroupHandlers = (artworkGroupIds, boundingData) => {
   const dispatch = useDispatch()
   const artworks = useSelector((state) => state.artist.artworks)
+  const wallHeight = useSelector((state) => state.wallView.wallHeight)
+  const wallWidth = useSelector((state) => state.wallView.wallWidth)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
 
   const handleMoveGroupXChange = (e) => {
@@ -89,8 +91,77 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     })
   }
 
+  const alignGroupToWall = (alignment) => {
+    console.log('aaa', alignment)
+    let newGroupX = artworkGroup.groupX
+    let newGroupY = artworkGroup.groupY
+
+    switch (alignment) {
+      case 'verticalTop':
+        newGroupY = 0
+        break
+      case 'verticalCenter':
+        newGroupY = (wallHeight * 100) / 2 - artworkGroup.groupHeight / 2
+        break
+      case 'verticalBottom':
+        newGroupY = wallHeight * 100 - artworkGroup.groupHeight
+        break
+      case 'horizontalLeft':
+        newGroupX = 0
+        break
+      case 'horizontalCenter':
+        newGroupX = (wallWidth * 100) / 2 - artworkGroup.groupWidth / 2
+        break
+      case 'horizontalRight':
+        newGroupX = wallWidth * 100 - artworkGroup.groupWidth
+        break
+      default:
+        console.warn('Invalid alignment type:', alignment)
+        return
+    }
+
+    dispatch(editArtworkGroup({ groupX: newGroupX, groupY: newGroupY }))
+
+    const deltaX = newGroupX - artworkGroup.groupX
+    const deltaY = newGroupY - artworkGroup.groupY
+
+    artworkGroupIds.forEach((artworkId) => {
+      const artwork = artworks.find((art) => art.id === artworkId)
+
+      if (artwork) {
+        const newArtworkCanvas = {
+          x: artwork.canvas.x + deltaX,
+          y: artwork.canvas.y + deltaY,
+          width: artwork.canvas.width,
+          height: artwork.canvas.height,
+        }
+
+        dispatch(editArtwork({ currentArtworkId: artworkId, newArtworkSizes: newArtworkCanvas }))
+
+        if (boundingData) {
+          const new3DCoordinate = convert2DTo3D(
+            {
+              x: newArtworkCanvas.x,
+              y: newArtworkCanvas.y,
+              size: { w: newArtworkCanvas.width, h: newArtworkCanvas.height },
+            },
+            boundingData,
+          )
+
+          dispatch(
+            edit3DCoordinates({
+              currentArtworkId: artworkId,
+              serialized3DCoordinate: new3DCoordinate,
+            }),
+          )
+        }
+      }
+    })
+  }
+
   return {
     handleMoveGroupXChange,
     handleMoveGroupYChange,
+    alignGroupToWall,
   }
 }

@@ -12,9 +12,8 @@ import { Wall } from '@/components/scene/galleries/objects/Wall'
 import { addWall } from '@/lib/features/artistSlice'
 
 const OneSpace = ({ wallRefs, ...props }) => {
-  const currentGallery = '/assets/galleries/one-space42.glb'
+  const { nodes, materials } = useGLTF('/assets/galleries/one-space42.glb')
 
-  const { nodes, materials } = useGLTF(currentGallery)
   const dispatch = useDispatch()
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
@@ -23,12 +22,6 @@ const OneSpace = ({ wallRefs, ...props }) => {
   const placeholdersArray = useMemo(() => Array.from({ length: 6 }), [])
   const rectLightsArray = useMemo(() => Array.from({ length: 5 }), [])
   const lampsArray = useMemo(() => Array.from({ length: 27 }), [])
-
-  useEffect(() => {
-    if (currentGallery) {
-      useGLTF.preload(currentGallery)
-    }
-  }, [currentGallery])
 
   useEffect(() => {
     placeholdersArray.forEach((_, i) => {
@@ -58,5 +51,7 @@ const OneSpace = ({ wallRefs, ...props }) => {
     </group>
   )
 }
+
+useGLTF.preload('/assets/galleries/one-space42.glb')
 
 export default OneSpace

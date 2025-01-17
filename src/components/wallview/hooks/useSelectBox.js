@@ -90,6 +90,21 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     setDraggingSelectBox(false)
   }, [selectionBox, draggingSelectBox, artworks, handleAddArtworkToGroup])
 
+  useEffect(() => {
+    if (draggingSelectBox) {
+      const moveHandler = (event) => handleSelectMouseMove(event)
+      const upHandler = () => handleSelectMouseUp()
+
+      document.addEventListener('mousemove', moveHandler)
+      document.addEventListener('mouseup', upHandler)
+
+      return () => {
+        document.removeEventListener('mousemove', moveHandler)
+        document.removeEventListener('mouseup', upHandler)
+      }
+    }
+  }, [draggingSelectBox, handleSelectMouseMove, handleSelectMouseUp])
+
   return useMemo(
     () => ({
       handleSelectMouseDown,

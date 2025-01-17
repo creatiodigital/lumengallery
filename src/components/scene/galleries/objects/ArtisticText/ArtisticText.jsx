@@ -1,5 +1,6 @@
 import { Text } from '@react-three/drei'
 import React, { useState, useRef, useEffect } from 'react'
+import { DoubleSide } from 'three'
 
 const ArtisticText = ({ artwork }) => {
   const { id, position, quaternion, space, artisticText, artisticTextStyles } = artwork
@@ -48,6 +49,9 @@ const ArtisticText = ({ artwork }) => {
     }
   }, [artisticText])
 
+  const planeWidth = space.width || 1
+  const planeHeight = space.height || 1
+
   const getAnchorX = (textAlign, planeWidth) => {
     switch (textAlign) {
       case 'left':
@@ -66,25 +70,35 @@ const ArtisticText = ({ artwork }) => {
   }
 
   return (
-    <mesh key={id} position={position} quaternion={quaternion} renderOrder={2}>
-      <Text
-        ref={textRef}
-        fontSize={fontSize * fontSizeFactor}
-        lineHeight={lineHeight}
-        // letterSpacing={letterSpacing * letterSpacingFactor}
-        color={textColor}
-        font={fontUrl}
-        anchorX={getAnchorX(textAlign, space.width)}
-        anchorY={getAnchorY(space.height)}
-        maxWidth={space.width}
-        textAlign={textAlign}
-        whiteSpace="normal"
-        overflowWrap="break-word"
-        onSync={calculateTextWidth}
-      >
-        {artisticText}
-      </Text>
-    </mesh>
+    <group position={position} quaternion={quaternion}>
+      {!artisticText && (
+        <mesh renderOrder={1}>
+          <planeGeometry args={[planeWidth, planeHeight]} />
+          <meshBasicMaterial color="white" side={DoubleSide} />
+        </mesh>
+      )}
+
+      {artisticText && (
+        <mesh key={id} renderOrder={2}>
+          <Text
+            ref={textRef}
+            fontSize={fontSize * fontSizeFactor}
+            lineHeight={lineHeight}
+            color={textColor}
+            font={fontUrl}
+            anchorX={getAnchorX(textAlign, space.width)}
+            anchorY={getAnchorY(space.height)}
+            maxWidth={space.width}
+            textAlign={textAlign}
+            whiteSpace="normal"
+            overflowWrap="break-word"
+            onSync={calculateTextWidth}
+          >
+            {artisticText}
+          </Text>
+        </mesh>
+      )}
+    </group>
   )
 }
 
