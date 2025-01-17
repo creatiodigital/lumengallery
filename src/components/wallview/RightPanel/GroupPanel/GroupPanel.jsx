@@ -22,9 +22,6 @@ const GroupPanel = () => {
 
   const { groupX, groupY } = useGroupDetails()
 
-  // const wallWidth = useSelector((state) => state.wallView.wallWidth)
-  // const wallHeight = useSelector((state) => state.wallView.wallHeight)
-
   const { handleMoveGroupXChange, handleMoveGroupYChange, alignGroupToWall } = useGroupHandlers(
     artworkGroupIds,
     boundingData,
@@ -60,7 +57,7 @@ const GroupPanel = () => {
         </div>
       </div>
       <div className={styles.section}>
-        <h2 className={styles.title}>Group Position</h2>
+        <h2 className={styles.title}>Group</h2>
         <div className={styles.subsection}>
           <h3 className={styles.subtitle}>Position (meters)</h3>
           <div className={styles.row}>
@@ -86,7 +83,7 @@ const GroupPanel = () => {
           </div>
         </div>
         <div className={styles.subsection}>
-          <h3 className={styles.subtitle}>Group Alignment</h3>
+          <h3 className={styles.subtitle}>Alignment</h3>
           <div className={styles.row}>
             <div className={styles.item}>
               <ButtonIcon icon="verticalTop" onClick={() => handleAlignGroup('verticalTop')} />
@@ -127,7 +124,7 @@ const GroupPanel = () => {
         </div>
       </div>
       <div className={styles.section}>
-        <h2 className={styles.title}>Elements Position</h2>
+        <h2 className={styles.title}>Elements</h2>
         <div className={styles.subsection}>
           <h3 className={styles.subtitle}>Alignment</h3>
           <div className={styles.row}>

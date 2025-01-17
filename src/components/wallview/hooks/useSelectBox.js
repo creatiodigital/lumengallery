@@ -79,7 +79,10 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
       const artWidth = artwork.canvas.width
       const artHeight = artwork.canvas.height
 
-      return artX >= minX && artY >= minY && artX + artWidth <= maxX && artY + artHeight <= maxY
+      const intersects =
+        minX < artX + artWidth && maxX > artX && minY < artY + artHeight && maxY > artY
+
+      return intersects
     })
 
     selectedArtworks.forEach((artwork) => {
