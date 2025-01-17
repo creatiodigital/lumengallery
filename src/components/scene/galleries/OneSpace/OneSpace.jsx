@@ -12,7 +12,7 @@ import { Wall } from '@/components/scene/galleries/objects/Wall'
 import { addWall } from '@/lib/features/artistSlice'
 
 const OneSpace = ({ wallRefs, ...props }) => {
-  const currentGallery = useSelector((state) => state.scene.currentGallery)
+  const currentGallery = '/assets/galleries/one-space42.glb'
 
   const { nodes, materials } = useGLTF(currentGallery)
   const dispatch = useDispatch()

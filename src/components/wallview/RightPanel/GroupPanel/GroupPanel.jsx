@@ -6,6 +6,8 @@ import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 
+import { useAlignGroup } from '../hooks/useAlignGroup'
+import { useDistributeGroup } from '../hooks/useDistributeGroup'
 import { useGroupDetails } from '../hooks/useGroupDetails'
 import { useGroupHandlers } from '../hooks/useGroupHandlers'
 import styles from '../RightPanel.module.scss'
@@ -28,8 +30,15 @@ const GroupPanel = () => {
     boundingData,
   )
 
+  const { alignArtworksInGroup } = useAlignGroup(boundingData)
+  const { distributeArtworksInGroup } = useDistributeGroup(boundingData)
+
   const handleAlign = (alignment) => {
-    console.log('aligning', alignment)
+    alignArtworksInGroup(alignment)
+  }
+
+  const handleDistribute = (alignment) => {
+    distributeArtworksInGroup(alignment)
   }
 
   useEffect(() => {
@@ -74,7 +83,7 @@ const GroupPanel = () => {
         </div>
       </div>
       <div className={styles.section}>
-        <h2 className={styles.title}>Elements Alignment</h2>
+        <h2 className={styles.title}>Elements Layout</h2>
         <div className={styles.subsection}>
           <h3 className={styles.subtitle}>Alignment</h3>
           <div className={styles.row}>
@@ -97,6 +106,20 @@ const GroupPanel = () => {
             </div>
             <div className={styles.item}>
               <ButtonIcon icon="horizontalRight" onClick={() => handleAlign('horizontalRight')} />
+            </div>
+          </div>
+        </div>
+        <div className={styles.subsection}>
+          <h3 className={styles.subtitle}>Distribution</h3>
+          <div className={styles.row}>
+            <div className={styles.item}>
+              <ButtonIcon
+                icon="distributeHorizontal"
+                onClick={() => handleDistribute('horizontal')}
+              />
+            </div>
+            <div className={styles.item}>
+              <ButtonIcon icon="distributeVertical" onClick={() => handleDistribute('vertical')} />
             </div>
           </div>
         </div>

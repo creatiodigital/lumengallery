@@ -1,5 +1,7 @@
 import ChevronDown from '@/icons/chevron-down.svg'
 import Close from '@/icons/close.svg'
+import DistributeHorizontal from '@/icons/distribute-horizontal.svg'
+import DistributeVertical from '@/icons/distribute-vertical.svg'
 import Drop from '@/icons/drop.svg'
 import Expand from '@/icons/expand.svg'
 import Grid from '@/icons/grid.svg'
@@ -27,6 +29,8 @@ import ZoomOut from '@/icons/zoom-out.svg'
 const icons = {
   chevronDown: ChevronDown,
   close: Close,
+  distributeHorizontal: DistributeHorizontal,
+  distributeVertical: DistributeVertical,
   drop: Drop,
   grid: Grid,
   horizontalLeft: HorizontalLeft,
