@@ -79,7 +79,10 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
       const artWidth = artwork.canvas.width
       const artHeight = artwork.canvas.height
 
-      return artX >= minX && artY >= minY && artX + artWidth <= maxX && artY + artHeight <= maxY
+      const intersects =
+        minX < artX + artWidth && maxX > artX && minY < artY + artHeight && maxY > artY
+
+      return intersects
     })
 
     selectedArtworks.forEach((artwork) => {
@@ -89,6 +92,21 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     setSelectionBox(null)
     setDraggingSelectBox(false)
   }, [selectionBox, draggingSelectBox, artworks, handleAddArtworkToGroup])
+
+  useEffect(() => {
+    if (draggingSelectBox) {
+      const moveHandler = (event) => handleSelectMouseMove(event)
+      const upHandler = () => handleSelectMouseUp()
+
+      document.addEventListener('mousemove', moveHandler)
+      document.addEventListener('mouseup', upHandler)
+
+      return () => {
+        document.removeEventListener('mousemove', moveHandler)
+        document.removeEventListener('mouseup', upHandler)
+      }
+    }
+  }, [draggingSelectBox, handleSelectMouseMove, handleSelectMouseUp])
 
   return useMemo(
     () => ({

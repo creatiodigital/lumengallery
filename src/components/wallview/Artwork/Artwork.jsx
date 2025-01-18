@@ -72,7 +72,7 @@ const Artwork = memo(
           zIndex: currentArtworkId === id ? 10 : 1,
           cursor: 'grabbing',
         }}
-        onMouseDown={(e) => handleArtworkDragStart(e, id)}
+        onMouseDown={(event) => handleArtworkDragStart(event, id)}
         onMouseMove={handleMouseMove}
         onMouseUp={handleArtworkDragEnd}
         onClick={handleArtworkClick}

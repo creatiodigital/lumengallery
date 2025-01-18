@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
@@ -48,8 +48,9 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
   const handleArtworkDragMove = useCallback(
     (event) => {
-      if (!isDragging || !draggedArtworkId || !wallRef.current || !boundingData) return
+      if (!isDragging || !draggedArtworkId || !boundingData) return
 
+      event.preventDefault()
       event.stopPropagation()
 
       const rect = wallRef.current.getBoundingClientRect()
@@ -85,14 +86,14 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
         if (alignment.horizontal) {
           if (alignment.horizontal === 'top') {
-            snapY = otherArtwork.canvas.y
+            snapY = otherArtwork.canvas.y // Align top
           }
           if (alignment.horizontal === 'bottom') {
-            snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height
+            snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height // Align bottom
           }
           if (alignment.horizontal === 'center-horizontal') {
             snapY =
-              otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2
+              otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2 // Align horizontal centers
           }
 
           alignedPairs.push({
@@ -125,12 +126,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
       const updatedCanvas = { ...artwork.canvas, x: snapX, y: snapY }
 
-      dispatch(
-        editArtwork({
-          currentArtworkId: draggedArtworkId,
-          newArtworkSizes: updatedCanvas,
-        }),
-      )
+      dispatch(editArtwork({ currentArtworkId: draggedArtworkId, newArtworkSizes: updatedCanvas }))
 
       const new3DCoordinate = convert2DTo3D(
         { x: snapX, y: snapY, size: { w: updatedCanvas.width, h: updatedCanvas.height } },
@@ -161,6 +157,21 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
     dispatch(stopDragging())
     setDraggedArtworkId(null)
   }, [dispatch])
+
+  useEffect(() => {
+    if (isDragging) {
+      const moveHandler = (event) => handleArtworkDragMove(event)
+      const upHandler = () => handleArtworkDragEnd()
+
+      document.addEventListener('mousemove', moveHandler)
+      document.addEventListener('mouseup', upHandler)
+
+      return () => {
+        document.removeEventListener('mousemove', moveHandler)
+        document.removeEventListener('mouseup', upHandler)
+      }
+    }
+  }, [isDragging, handleArtworkDragMove, handleArtworkDragEnd])
 
   return useMemo(
     () => ({
