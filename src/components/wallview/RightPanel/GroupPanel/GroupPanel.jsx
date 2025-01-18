@@ -86,17 +86,17 @@ const GroupPanel = () => {
           <h3 className={styles.subtitle}>Alignment</h3>
           <div className={styles.row}>
             <div className={styles.item}>
-              <ButtonIcon icon="verticalTop" onClick={() => handleAlignGroup('verticalTop')} />
+              <ButtonIcon icon="alignTopGroup" onClick={() => handleAlignGroup('verticalTop')} />
             </div>
             <div className={styles.item}>
               <ButtonIcon
-                icon="verticalCenter"
+                icon="alignCenterVGroup"
                 onClick={() => handleAlignGroup('verticalCenter')}
               />
             </div>
             <div className={styles.item}>
               <ButtonIcon
-                icon="verticalBottom"
+                icon="alignBottomGroup"
                 onClick={() => handleAlignGroup('verticalBottom')}
               />
             </div>
@@ -104,19 +104,19 @@ const GroupPanel = () => {
           <div className={styles.row}>
             <div className={styles.item}>
               <ButtonIcon
-                icon="horizontalLeft"
+                icon="alignLeftGroup"
                 onClick={() => handleAlignGroup('horizontalLeft')}
               />
             </div>
             <div className={styles.item}>
               <ButtonIcon
-                icon="horizontalCenter"
+                icon="alignCenterHGroup"
                 onClick={() => handleAlignGroup('horizontalCenter')}
               />
             </div>
             <div className={styles.item}>
               <ButtonIcon
-                icon="horizontalRight"
+                icon="alignRightGroup"
                 onClick={() => handleAlignGroup('horizontalRight')}
               />
             </div>
