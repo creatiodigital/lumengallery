@@ -92,7 +92,6 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
   }
 
   const alignGroupToWall = (alignment) => {
-    console.log('aaa', alignment)
     let newGroupX = artworkGroup.groupX
     let newGroupY = artworkGroup.groupY
 

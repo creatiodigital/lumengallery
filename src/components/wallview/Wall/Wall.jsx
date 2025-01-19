@@ -157,7 +157,11 @@ export const Wall = () => {
     handleDeselect()
   }, [preventClick, handleRemoveArtworkGroup, handleDeselect])
 
-  useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
+  useKeyboardEvents(
+    currentArtworkId,
+    hoveredArtworkId === currentArtworkId,
+    artworkGroupIds.length > 0,
+  )
 
   return (
     <div className={styles.wrapper}>

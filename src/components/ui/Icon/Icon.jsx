@@ -1,9 +1,3 @@
-import AlignLeftGroup from '@/icons/align-left-group.svg'
-import AlignTopGroup from '@/icons/align-top-group.svg'
-import AlignBottomGroup from '@/icons/align-bottom-group.svg'
-import AlignCenterVGroup from '@/icons/align-center-v-group.svg'
-import AlignCenterHGroup from '@/icons/align-center-h-group.svg'
-import AlignRightGroup from '@/icons/align-right-group.svg'
 import ChevronDown from '@/icons/chevron-down.svg'
 import Close from '@/icons/close.svg'
 import DistributeHorizontal from '@/icons/distribute-horizontal.svg'
@@ -20,6 +14,12 @@ import Painting from '@/icons/painting.svg'
 import Person from '@/icons/person.svg'
 import Picture from '@/icons/picture.svg'
 import Placeholder from '@/icons/placeholder.svg'
+import PositionBottom from '@/icons/position-bottom.svg'
+import PositionCenterH from '@/icons/position-center-h.svg'
+import PositionCenterV from '@/icons/position-center-v.svg'
+import PositionLeft from '@/icons/position-left.svg'
+import PositionRight from '@/icons/position-right.svg'
+import PositionTop from '@/icons/position-top.svg'
 import Preview from '@/icons/preview.svg'
 import Reset from '@/icons/reset.svg'
 import TextCenter from '@/icons/text-center.svg'
@@ -33,12 +33,6 @@ import ZoomIn from '@/icons/zoom-in.svg'
 import ZoomOut from '@/icons/zoom-out.svg'
 
 const icons = {
-  alignLeftGroup: AlignLeftGroup,
-  alignTopGroup: AlignTopGroup,
-  alignBottomGroup: AlignBottomGroup,
-  alignCenterVGroup: AlignCenterVGroup,
-  alignCenterHGroup: AlignCenterHGroup,
-  alignRightGroup: AlignRightGroup,
   chevronDown: ChevronDown,
   close: Close,
   distributeHorizontal: DistributeHorizontal,
@@ -53,6 +47,12 @@ const icons = {
   move: Move,
   painting: Painting,
   person: Person,
+  positionLeft: PositionLeft,
+  positionTop: PositionTop,
+  positionBottom: PositionBottom,
+  positionCenterV: PositionCenterV,
+  positionCenterH: PositionCenterH,
+  positionRight: PositionRight,
   preview: Preview,
   picture: Picture,
   placeholder: Placeholder,

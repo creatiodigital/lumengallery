@@ -8,15 +8,15 @@
 
   left: 50%;
   transform: translateX(-50%);
-  background-color: var(--white);
-  color: var(--black);
+  background-color: var(--grayDarkest);
+  color: var(--white);
   padding: 5px 10px;
   border-radius: 4px;
   font-size: 12px;
   white-space: nowrap;
   z-index: 10;
   pointer-events: none;
-  border: 1px solid var(--grayMedium);
+  border: 1px solid var(--grayDarkest);
 }
 
 .content::before {
@@ -26,7 +26,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 7px solid transparent;
-  border-top-color: var(--grayMedium);
+  border-top-color: var(--grayDarkest);
 }
 
 .content::after {
@@ -36,5 +36,5 @@
   left: 50%;
   transform: translateX(-50%);
   border: 8px solid transparent;
-  border-top-color: white;
+  border-top-color: var(--grayDarkest);
 }
