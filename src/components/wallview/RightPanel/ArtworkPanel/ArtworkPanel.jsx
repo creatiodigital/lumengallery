@@ -12,8 +12,7 @@ import { useArtworkHandlers } from '../hooks/useArtworkHandlers'
 import styles from '../RightPanel.module.scss'
 
 const ArtworkPanel = () => {
-  const currentGallery = useSelector((state) => state.scene.currentGallery)
-  const { nodes } = useGLTF(currentGallery)
+  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
@@ -35,11 +34,6 @@ const ArtworkPanel = () => {
     handleAlignChange(alignment, wallWidth, wallHeight, boundingData)
   }
 
-  useEffect(() => {
-    if (currentGallery) {
-      useGLTF.preload(currentGallery)
-    }
-  }, [currentGallery])
   return (
     <>
       <div className={styles.section}>
@@ -134,5 +128,7 @@ const ArtworkPanel = () => {
     </>
   )
 }
+
+useGLTF.preload('/assets/galleries/one-space42.glb')
 
 export default ArtworkPanel

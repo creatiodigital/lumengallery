@@ -7,7 +7,7 @@ import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { editWallName, editArtworkName } from '@/lib/features/artistSlice'
 import { showEditMode } from '@/lib/features/dashboardSlice'
-import { showHuman, hideHuman } from '@/lib/features/wallViewSlice'
+import { showHuman, hideHuman, removeGroup } from '@/lib/features/wallViewSlice'
 import {
   increaseScaleFactor,
   decreaseScaleFactor,
@@ -60,6 +60,7 @@ export const LeftPanel = () => {
     dispatch(hideWallView())
     dispatch(showEditMode())
     dispatch(chooseCurrentArtworkId(null))
+    dispatch(removeGroup())
   }
 
   const handleToggleHuman = () => {

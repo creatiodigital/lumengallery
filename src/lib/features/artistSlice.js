@@ -8,7 +8,6 @@ const artistSlice = createSlice({
     lastName: 'Plaza',
     handler: 'eduardo-plaza',
     artworks: [],
-
     artworkCounters: {
       paint: 0,
       text: 0,
@@ -47,7 +46,7 @@ const artistSlice = createSlice({
         state.artworkCounters[artworkType] = 1
       }
 
-      const artworkName = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)}${state.artworkCounters[artworkType]}`
+      const artworkName = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)} ${state.artworkCounters[artworkType]}`
 
       const newArtwork = {
         id,
@@ -57,10 +56,15 @@ const artistSlice = createSlice({
         canvas,
         space: [],
         showFrame: false,
+        url: '',
         showArtworkInformation: false,
         frameStyles: {
           frameColor: '#000000',
           frameThickness: 1,
+        },
+        passepartoutStyles: {
+          passepartoutColor: '#ffffff',
+          passepartoutThickness: 0,
         },
         artisticTextStyles: {
           fontFamily: 'Roboto',
@@ -243,18 +247,39 @@ const artistSlice = createSlice({
         artwork.showFrame = showFrame
       }
     },
+    showArtworkPassepartout: (state, action) => {
+      const { currentArtworkId, showPassepartout } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.showPassepartout = showPassepartout
+      }
+    },
     editArtworkFrameColor: (state, action) => {
       const { currentArtworkId, frameColor } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (frameColor) {
+      if (artwork) {
         artwork.frameStyles.frameColor = frameColor
+      }
+    },
+    editArtworkPassepartoutColor: (state, action) => {
+      const { currentArtworkId, passepartoutColor } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork.passepartoutStyles.passepartoutColor = passepartoutColor
       }
     },
     editArtworkFrameThickness: (state, action) => {
       const { currentArtworkId, frameThickness } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (frameThickness) {
+      if (artwork) {
         artwork.frameStyles.frameThickness = frameThickness
+      }
+    },
+    editArtworkPassepartoutThickness: (state, action) => {
+      const { currentArtworkId, passepartoutThickness } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (passepartoutThickness) {
+        artwork.passepartoutStyles.passepartoutThickness = passepartoutThickness
       }
     },
   },
@@ -287,8 +312,11 @@ export const {
   editArtworkTextLetterSpacing,
   editArtworkTextFontFamily,
   showArtworkFrame,
+  showArtworkPassepartout,
   showArtworkInformation,
   editArtworkFrameColor,
+  editArtworkPassepartoutColor,
   editArtworkFrameThickness,
+  editArtworkPassepartoutThickness,
 } = artistSlice.actions
 export default artistSlice.reducer

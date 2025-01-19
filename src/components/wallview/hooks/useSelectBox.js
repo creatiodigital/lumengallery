@@ -5,6 +5,7 @@ import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 
 export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) => {
   const artworks = useSelector((state) => state.artist.artworks)
+  const currentWallId = useSelector((state) => state.wallView.currentWallId)
 
   const { handleAddArtworkToGroup } = useGroupArtwork(
     wallRef,
@@ -73,7 +74,9 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     const maxX = Math.max(startX, endX)
     const maxY = Math.max(startY, endY)
 
-    const selectedArtworks = artworks.filter((artwork) => {
+    const filteredArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId)
+
+    const selectedArtworks = filteredArtworks.filter((artwork) => {
       const artX = artwork.canvas.x
       const artY = artwork.canvas.y
       const artWidth = artwork.canvas.width
