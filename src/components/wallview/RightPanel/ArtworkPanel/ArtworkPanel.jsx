@@ -55,27 +55,27 @@ const ArtworkPanel = () => {
       <div className={styles.section}>
         <h2 className={styles.title}>Position</h2>
         <div className={styles.subsection}>
-          <h3 className={styles.subtitle}>Alignment</h3>
+          <h3 className={styles.subtitle}>Position in wall</h3>
           <div className={styles.row}>
             <div className={styles.item}>
-              <ButtonIcon icon="verticalTop" onClick={() => handleAlign('verticalTop')} />
+              <ButtonIcon icon="positionTop" onClick={() => handleAlign('verticalTop')} />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="verticalCenter" onClick={() => handleAlign('verticalCenter')} />
+              <ButtonIcon icon="positionCenterV" onClick={() => handleAlign('verticalCenter')} />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="verticalBottom" onClick={() => handleAlign('verticalBottom')} />
+              <ButtonIcon icon="positionBottom" onClick={() => handleAlign('verticalBottom')} />
             </div>
           </div>
           <div className={styles.row}>
             <div className={styles.item}>
-              <ButtonIcon icon="horizontalLeft" onClick={() => handleAlign('horizontalLeft')} />
+              <ButtonIcon icon="positionLeft" onClick={() => handleAlign('horizontalLeft')} />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="horizontalCenter" onClick={() => handleAlign('horizontalCenter')} />
+              <ButtonIcon icon="positionCenterH" onClick={() => handleAlign('horizontalCenter')} />
             </div>
             <div className={styles.item}>
-              <ButtonIcon icon="horizontalRight" onClick={() => handleAlign('horizontalRight')} />
+              <ButtonIcon icon="positionRight" onClick={() => handleAlign('horizontalRight')} />
             </div>
           </div>
         </div>

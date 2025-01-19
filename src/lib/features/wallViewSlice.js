@@ -18,6 +18,7 @@ const wallViewSlice = createSlice({
     isShiftKeyDown: false,
     artworkGroupIds: [],
     artworkGroup: {},
+    isGroupHovered: false,
   },
   reducers: {
     showWallView: (state, action) => {
@@ -104,6 +105,12 @@ const wallViewSlice = createSlice({
     removeGroup: (state) => {
       state.artworkGroupIds = []
     },
+    setGroupHovered: (state) => {
+      state.isGroupHovered = true
+    },
+    setGroupNotHovered: (state) => {
+      state.isGroupHovered = false
+    },
   },
 })
 
@@ -132,5 +139,7 @@ export const {
   removeArtworkFromGroup,
   setShiftKeyDown,
   removeGroup,
+  setGroupHovered,
+  setGroupNotHovered,
 } = wallViewSlice.actions
 export default wallViewSlice.reducer

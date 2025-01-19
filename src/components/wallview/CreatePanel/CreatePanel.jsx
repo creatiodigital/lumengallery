@@ -23,7 +23,7 @@ export const CreatePanel = () => {
   return (
     <div className={styles.panel}>
       <div className={styles.options}>
-        <Tooltip label="Click or drag to create an image" top={-40}>
+        <Tooltip label="Click or drag to wall to create an artistic image" top={-40}>
           <ButtonIcon
             size="big"
             icon="picture"
@@ -33,7 +33,7 @@ export const CreatePanel = () => {
             onDragStart={(e) => handleArtworkDragStart(e, 'paint')}
           />
         </Tooltip>
-        <Tooltip label="Click or drag to create a text" top={-40}>
+        <Tooltip label="Click or drag to wall to create an artistic text" top={-40}>
           <ButtonIcon
             size="big"
             icon="text"
