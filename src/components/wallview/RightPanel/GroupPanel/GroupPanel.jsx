@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useSelector } from 'react-redux'
 
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
@@ -13,10 +13,9 @@ import { useGroupHandlers } from '../hooks/useGroupHandlers'
 import styles from '../RightPanel.module.scss'
 
 const GroupPanel = () => {
-  const currentGallery = useSelector((state) => state.scene.currentGallery)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
 
-  const { nodes } = useGLTF(currentGallery)
+  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes, currentWallId)
 
@@ -42,11 +41,6 @@ const GroupPanel = () => {
     alignGroupToWall(alignment)
   }
 
-  useEffect(() => {
-    if (currentGallery) {
-      useGLTF.preload(currentGallery)
-    }
-  }, [currentGallery])
   return (
     <>
       <div className={styles.section}>
@@ -183,5 +177,7 @@ const GroupPanel = () => {
     </>
   )
 }
+
+useGLTF.preload('/assets/galleries/one-space42.glb')
 
 export default GroupPanel

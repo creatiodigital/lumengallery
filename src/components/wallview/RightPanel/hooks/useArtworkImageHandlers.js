@@ -7,9 +7,12 @@ import {
   editArtworkTitle,
   editArtworkDescription,
   showArtworkFrame,
+  showArtworkPassepartout,
   showArtworkInformation,
   editArtworkFrameColor,
+  editArtworkPassepartoutColor,
   editArtworkFrameThickness,
+  editArtworkPassepartoutThickness,
 } from '@/lib/features/artistSlice'
 
 export const useArtworkImageHandlers = (currentArtworkId) => {
@@ -58,6 +61,18 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     )
   }
 
+  const handleShowPassepartout = (showPassepartout) => {
+    const currentEdited = artworks?.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      showArtworkPassepartout({
+        currentArtworkId,
+        showPassepartout,
+      }),
+    )
+  }
+
   const handleShowInformation = (showInformation) => {
     const currentEdited = artworks?.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -82,6 +97,18 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     )
   }
 
+  const handlePassepartoutColorSelect = (passepartoutColor) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      editArtworkPassepartoutColor({
+        currentArtworkId,
+        passepartoutColor,
+      }),
+    )
+  }
+
   const handleFrameThicknessSelect = (frameThickness) => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
@@ -94,6 +121,18 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     )
   }
 
+  const handlePassepartoutThicknessSelect = (passepartoutThickness) => {
+    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    if (!currentEdited) return
+
+    dispatch(
+      editArtworkPassepartoutThickness({
+        currentArtworkId,
+        passepartoutThickness,
+      }),
+    )
+  }
+
   return {
     handleAuthorChange,
     handleArtworkTitleChange,
@@ -101,8 +140,11 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     handleDescriptionChange,
     handleArtworkDimensionsChange,
     handleShowFrame,
+    handleShowPassepartout,
     handleShowInformation,
     handleFrameColorSelect,
+    handlePassepartoutColorSelect,
     handleFrameThicknessSelect,
+    handlePassepartoutThicknessSelect,
   }
 }

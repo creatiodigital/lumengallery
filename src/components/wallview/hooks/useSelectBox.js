@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
 import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
+import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 
 export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) => {
   const artworks = useSelector((state) => state.artist.artworks)
+  const currentWallId = useSelector((state) => state.wallView.currentWallId)
+  const dispatch = useDispatch()
 
   const { handleAddArtworkToGroup } = useGroupArtwork(
     wallRef,
@@ -73,7 +76,9 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     const maxX = Math.max(startX, endX)
     const maxY = Math.max(startY, endY)
 
-    const selectedArtworks = artworks.filter((artwork) => {
+    const filteredArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId)
+
+    const selectedArtworks = filteredArtworks.filter((artwork) => {
       const artX = artwork.canvas.x
       const artY = artwork.canvas.y
       const artWidth = artwork.canvas.width
@@ -84,6 +89,10 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
 
       return intersects
     })
+
+    if (selectedArtworks.length === 1) {
+      dispatch(chooseCurrentArtworkId(selectedArtworks[0].id))
+    }
 
     selectedArtworks.forEach((artwork) => {
       handleAddArtworkToGroup(artwork.id)

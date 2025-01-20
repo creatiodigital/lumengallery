@@ -17,9 +17,10 @@ const ArtisticImage = ({ artwork }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const allowedTypes = ['image/jpeg', 'image/png']
 
-  const { frameStyles, showFrame, url } = artwork
+  const { frameStyles, showFrame, passepartoutStyles, showPassepartout, url } = artwork
 
   const { frameColor, frameThickness } = frameStyles
+  const { passepartoutColor, passepartoutThickness } = passepartoutStyles
 
   const handleDoubleClick = () => {
     fileInputRef.current.click()
@@ -72,7 +73,7 @@ const ArtisticImage = ({ artwork }) => {
     <div
       className={`${styles.frame} ${isDragOver ? styles.dragOver : ''}`}
       style={{
-        border: showFrame ? `${frameThickness}px solid ${frameColor}` : null,
+        border: showFrame && url ? `${frameThickness}px solid ${frameColor}` : null,
       }}
       onDoubleClick={handleDoubleClick}
       onDragOver={handleDragOver}
@@ -81,22 +82,32 @@ const ArtisticImage = ({ artwork }) => {
       onDrop={handleDrop}
     >
       <div
-        className={styles.image}
+        className={styles.passepartout}
         style={{
-          backgroundImage: url ? `url(${url})` : 'none',
+          border:
+            showPassepartout && url
+              ? `${passepartoutThickness}px solid ${passepartoutColor}`
+              : null,
         }}
       >
-        {!url && (
-          <div className={c([styles.empty, { [styles.over]: isDragOver }])}>
-            <Icon name="picture" size={40} color={isDragOver ? '#ffffff' : '#000000'} />
-          </div>
-        )}
-        <FileInput
-          ref={fileInputRef}
-          id={`file-upload-${currentArtworkId}`}
-          onInput={handleFileChange}
-          style={{ display: 'none' }}
-        />
+        <div
+          className={styles.image}
+          style={{
+            backgroundImage: url ? `url(${url})` : 'none',
+          }}
+        >
+          {!url && (
+            <div className={c([styles.empty, { [styles.over]: isDragOver }])}>
+              <Icon name="picture" size={40} color={isDragOver ? '#ffffff' : '#000000'} />
+            </div>
+          )}
+          <FileInput
+            ref={fileInputRef}
+            id={`file-upload-${currentArtworkId}`}
+            onInput={handleFileChange}
+            style={{ display: 'none' }}
+          />
+        </div>
       </div>
     </div>
   )

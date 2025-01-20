@@ -23,8 +23,7 @@ import { AlignedLine } from './AlignedLine'
 import styles from './Wall.module.scss'
 
 export const Wall = () => {
-  const currentGallery = useSelector((state) => state.scene.currentGallery)
-  const { nodes } = useGLTF(currentGallery)
+  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
   const artworks = useSelector((state) => state.artist.artworks)
 
   const isDragging = useSelector((state) => state.wallView.isDragging)
@@ -62,12 +61,6 @@ export const Wall = () => {
     useSelectBox(wallRef, boundingData, scaleFactor, preventClick)
 
   const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
-
-  useEffect(() => {
-    if (currentGallery) {
-      useGLTF.preload(currentGallery)
-    }
-  }, [currentGallery])
 
   useEffect(() => {
     return () => {
@@ -149,11 +142,9 @@ export const Wall = () => {
 
   const handleClickOnWall = useCallback(() => {
     if (preventClick.current) return
-
     if (!preventClick.current) {
       handleRemoveArtworkGroup()
     }
-
     handleDeselect()
   }, [preventClick, handleRemoveArtworkGroup, handleDeselect])
 
@@ -231,3 +222,5 @@ export const Wall = () => {
     </div>
   )
 }
+
+useGLTF.preload('/assets/galleries/one-space42.glb')

@@ -4,13 +4,24 @@ import { useDispatch, useSelector } from 'react-redux'
 import { DoubleSide, MeshStandardMaterial } from 'three'
 
 import { Frame } from '@/components/scene/galleries/objects/Frame'
+import { Passepartout } from '@/components/scene/galleries/objects/Passepartout'
 import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const ArtisticImage = ({ artwork }) => {
-  const { position, quaternion, space, url, showFrame, showArtworkInformation, frameStyles } =
-    artwork
+  const {
+    position,
+    quaternion,
+    space,
+    url,
+    showFrame,
+    showPassepartout,
+    showArtworkInformation,
+    frameStyles,
+    passepartoutStyles,
+  } = artwork
   const { frameColor, frameThickness } = frameStyles
+  const { passepartoutColor, passepartoutThickness } = passepartoutStyles
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
@@ -31,8 +42,16 @@ const ArtisticImage = ({ artwork }) => {
     metalness: 0.1,
   })
 
-  const innerWidth = planeWidth - frameThickness / 50
-  const innerHeight = planeHeight - frameThickness / 50
+  const passepartoutMaterial = new MeshStandardMaterial({
+    color: passepartoutColor,
+    roughness: 1,
+  })
+
+  const frameT = showFrame ? frameThickness : 0
+  const passepartoutT = showPassepartout ? passepartoutThickness : 0
+
+  const innerWidth = planeWidth - (frameT + passepartoutT) / 50
+  const innerHeight = planeHeight - (frameT + passepartoutT) / 50
 
   return (
     <group position={position} quaternion={quaternion} onDoubleClick={handleClick}>
@@ -62,6 +81,14 @@ const ArtisticImage = ({ artwork }) => {
           height={planeHeight}
           thickness={frameThickness / 100}
           material={frameMaterial}
+        />
+      )}
+      {showPassepartout && passepartoutThickness > 0 && (
+        <Passepartout
+          width={planeWidth - frameThickness / 50}
+          height={planeHeight - frameThickness / 50}
+          thickness={passepartoutThickness / 100}
+          material={passepartoutMaterial}
         />
       )}
     </group>

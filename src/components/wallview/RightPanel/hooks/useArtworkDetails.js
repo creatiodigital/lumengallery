@@ -18,11 +18,14 @@ export const useArtworkDetails = (currentArtworkId) => {
       artworkDimensions: '',
       description: '',
       artisticText: '',
+      url: '',
       artisticTextStyles: {},
       artworkType: '',
       showFrame: false,
+      showPassepartout: false,
       showArtworkInformation: false,
       frameStyles: {},
+      passepartoutStyles: {},
     }
 
   const { width, height, x, y } = artwork.canvas
@@ -30,6 +33,7 @@ export const useArtworkDetails = (currentArtworkId) => {
     name,
     artworkTitle,
     author,
+    url,
     artworkYear,
     artworkDimensions,
     description,
@@ -38,6 +42,8 @@ export const useArtworkDetails = (currentArtworkId) => {
     showFrame,
     showArtworkInformation,
     frameStyles,
+    showPassepartout,
+    passepartoutStyles,
     artisticTextStyles,
   } = artwork
 
@@ -49,6 +55,7 @@ export const useArtworkDetails = (currentArtworkId) => {
     name,
     artworkTitle,
     author,
+    url,
     artworkYear,
     artworkDimensions,
     description,
@@ -58,5 +65,7 @@ export const useArtworkDetails = (currentArtworkId) => {
     showFrame,
     showArtworkInformation,
     frameStyles,
+    showPassepartout,
+    passepartoutStyles,
   }
 }

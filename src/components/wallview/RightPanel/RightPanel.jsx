@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useSelector } from 'react-redux'
 
 import { ArtisticImagePanel } from './ArtisticImagePanel'
@@ -10,7 +10,6 @@ import { useArtworkDetails } from './hooks/useArtworkDetails'
 import styles from './RightPanel.module.scss'
 
 const RightPanel = () => {
-  const currentGallery = useSelector((state) => state.scene.currentGallery)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
@@ -18,12 +17,6 @@ const RightPanel = () => {
   const { artworkType } = useArtworkDetails(currentArtworkId)
 
   const isGroupCreated = artworkGroupIds.length > 1
-
-  useEffect(() => {
-    if (currentGallery) {
-      useGLTF.preload(currentGallery)
-    }
-  }, [currentGallery])
 
   return (
     <div className={styles.panel}>
@@ -40,5 +33,7 @@ const RightPanel = () => {
     </div>
   )
 }
+
+useGLTF.preload('/assets/galleries/one-space42.glb')
 
 export default RightPanel
