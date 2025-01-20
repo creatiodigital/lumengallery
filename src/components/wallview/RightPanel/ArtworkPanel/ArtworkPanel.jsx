@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useSelector } from 'react-redux'
 
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
