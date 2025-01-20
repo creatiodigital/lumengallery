@@ -142,11 +142,9 @@ export const Wall = () => {
 
   const handleClickOnWall = useCallback(() => {
     if (preventClick.current) return
-
     if (!preventClick.current) {
       handleRemoveArtworkGroup()
     }
-
     handleDeselect()
   }, [preventClick, handleRemoveArtworkGroup, handleDeselect])
 

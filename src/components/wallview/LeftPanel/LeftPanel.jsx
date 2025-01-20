@@ -72,7 +72,9 @@ export const LeftPanel = () => {
   }
 
   const handleSelectArtwork = (artworkId) => {
-    dispatch(chooseCurrentArtworkId(artworkId))
+    if (currentArtworkId !== artworkId) {
+      dispatch(chooseCurrentArtworkId(artworkId))
+    }
     if (!isWizardOpen) {
       dispatch(showWizard())
     }
