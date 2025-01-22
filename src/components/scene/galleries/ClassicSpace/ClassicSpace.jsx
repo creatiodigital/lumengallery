@@ -5,13 +5,14 @@ import { useSelector, useDispatch } from 'react-redux'
 import { Artworks } from '@/components/scene/galleries/objects/Artworks'
 import { Ceiling } from '@/components/scene/galleries/objects/Ceiling'
 import { Floor } from '@/components/scene/galleries/objects/Floor'
-import { Window } from '@/components/scene/galleries/objects/Window'
 import { Lamp } from '@/components/scene/galleries/objects/Lamp'
-import { Placeholder } from '@/components/scene/galleries/objects/Placeholder'
 import { Line } from '@/components/scene/galleries/objects/Line'
+import { Placeholder } from '@/components/scene/galleries/objects/Placeholder'
 import { Reel } from '@/components/scene/galleries/objects/Reel'
 import { Wall } from '@/components/scene/galleries/objects/Wall'
+import { Window } from '@/components/scene/galleries/objects/Window'
 import { addWall } from '@/lib/features/artistSlice'
+
 import { windowMaterial, lineMaterial, reelMaterial, lampMaterial, bulbMaterial } from './materials'
 
 const ClassicSpace = ({ wallRefs, ...props }) => {
