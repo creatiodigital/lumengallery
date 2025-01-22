@@ -23,7 +23,7 @@ import { AlignedLine } from './AlignedLine'
 import styles from './Wall.module.scss'
 
 export const Wall = () => {
-  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
+  const { nodes } = useGLTF('/assets/galleries/classic1.glb')
   const artworks = useSelector((state) => state.artist.artworks)
 
   const isDragging = useSelector((state) => state.wallView.isDragging)
@@ -223,4 +223,4 @@ export const Wall = () => {
   )
 }
 
-useGLTF.preload('/assets/galleries/one-space42.glb')
+useGLTF.preload('/assets/galleries/classic1.glb')

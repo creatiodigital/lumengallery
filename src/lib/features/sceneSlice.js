@@ -6,7 +6,7 @@ const sceneSlice = createSlice({
     isArtworkPanelOpen: false,
     isPlaceholdersShown: true,
     currentArtworkId: null,
-    currentGallery: '/assets/galleries/one-space42.glb',
+    currentGallery: '/assets/galleries/classic1.glb',
   },
   reducers: {
     setCurrentArtwork: (state, action) => {

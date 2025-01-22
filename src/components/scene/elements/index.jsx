@@ -1,6 +1,7 @@
 import React, { useContext, useMemo } from 'react'
 
-import OneSpace from '@/components/scene/galleries/OneSpace/OneSpace'
+// import OneSpace from '@/components/scene/galleries/OneSpace/OneSpace'
+import ClassicSpace from '@/components/scene/galleries/ClassicSpace/ClassicSpace'
 import SceneContext from '@/contexts/SceneContext'
 
 import { Lights } from './lights'
@@ -15,7 +16,12 @@ export const Elements = ({ onPlaceholderClick, artworks }) => {
     <>
       <Lights />
       {/* <Shadows /> */}
-      <OneSpace
+      {/* <OneSpace
+        wallRefs={wallRefs.current}
+        onPlaceholderClick={onPlaceholderClick}
+        artworks={artworks}
+      /> */}
+      <ClassicSpace
         wallRefs={wallRefs.current}
         onPlaceholderClick={onPlaceholderClick}
         artworks={artworks}

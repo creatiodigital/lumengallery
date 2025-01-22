@@ -34,6 +34,6 @@ const RightPanel = () => {
   )
 }
 
-useGLTF.preload('/assets/galleries/one-space42.glb')
+useGLTF.preload('/assets/galleries/classic1.glb')
 
 export default RightPanel
