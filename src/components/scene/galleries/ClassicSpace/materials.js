@@ -7,6 +7,13 @@ export const windowMaterial = new MeshStandardMaterial({
   envMapIntensity: 1,
 })
 
+export const glassMaterial = new MeshStandardMaterial({
+  color: '#ffffff',
+  transparent: true,
+  opacity: 0,
+  depthWrite: false,
+})
+
 export const lineMaterial = new MeshStandardMaterial({
   color: '#ffffff',
 })
@@ -27,5 +34,5 @@ export const lampMaterial = new MeshStandardMaterial({
 export const bulbMaterial = new MeshStandardMaterial({
   color: '#ffffff',
   emissive: '#ffffff',
-  emissiveIntensity: 10,
+  emissiveIntensity: 20,
 })

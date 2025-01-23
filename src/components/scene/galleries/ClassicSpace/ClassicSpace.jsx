@@ -13,9 +13,16 @@ import { Wall } from '@/components/scene/galleries/objects/Wall'
 import { Window } from '@/components/scene/galleries/objects/Window'
 import { addWall } from '@/lib/features/artistSlice'
 
-import { windowMaterial, lineMaterial, reelMaterial, lampMaterial, bulbMaterial } from './materials'
+import {
+  windowMaterial,
+  glassMaterial,
+  lineMaterial,
+  reelMaterial,
+  lampMaterial,
+  bulbMaterial,
+} from './materials'
 
-const ClassicSpace = ({ wallRefs, ...props }) => {
+const ClassicSpace = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
   const { nodes, materials } = useGLTF('/assets/galleries/classic1.glb')
 
   const dispatch = useDispatch()
@@ -38,6 +45,11 @@ const ClassicSpace = ({ wallRefs, ...props }) => {
     })
   }, [nodes, dispatch, wallsArray, placeholdersArray])
 
+  useEffect(() => {
+    console.log('windowRefs:', windowRefs.current)
+    console.log('glassRefs:', glassRefs.current)
+  }, [])
+
   return (
     <group {...props} dispose={null}>
       <Floor nodes={nodes} materials={materials} />
@@ -46,7 +58,15 @@ const ClassicSpace = ({ wallRefs, ...props }) => {
         <Wall key={i} i={i} wallRef={wallRefs[i]} nodes={nodes} materials={materials} />
       ))}
       {windowsArray.map((_, i) => (
-        <Window key={i} i={i} nodes={nodes} windowMaterial={windowMaterial} />
+        <Window
+          key={i}
+          windowRef={windowRefs[i]}
+          glassRef={glassRefs[i]}
+          i={i}
+          nodes={nodes}
+          windowMaterial={windowMaterial}
+          glassMaterial={glassMaterial}
+        />
       ))}
       {isPlaceholdersShown &&
         placeholdersArray.map((_, i) => <Placeholder key={i} i={i} nodes={nodes} />)}

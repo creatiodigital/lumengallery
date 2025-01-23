@@ -20,7 +20,7 @@ import {
 
 const MainCamera = () => {
   const [, setTick] = useState(0)
-  const { wallRefs } = useContext(SceneContext)
+  const { wallRefs, windowRefs, glassRefs } = useContext(SceneContext)
   const keysPressed = useRef({})
   const mouseState = useRef(createMouseState())
   const initialPositionSet = useRef(false)
@@ -29,7 +29,7 @@ const MainCamera = () => {
   const collitionDistance = 1
 
   const moveSpeed = 0.04
-  const cameraElevation = 1.4
+  const cameraElevation = 1.2
 
   const onMouseMove = useCallback(
     (event) => handleMouseMove(mouseState, setTick)(event),
@@ -86,7 +86,6 @@ const MainCamera = () => {
 
   useFrame(({ camera }) => {
     if (!initialPositionSet.current) {
-      // Initialize camera position and orientation based on wallCoordinates and wallNormal
       if (wallCoordinates && wallNormal) {
         const lookAt = new Vector3(wallCoordinates.x, cameraElevation, wallCoordinates.z)
         const offsetDistance = 5
@@ -112,7 +111,7 @@ const MainCamera = () => {
 
     const moveVector = calculateMovementVector(keysPressed, moveSpeed, camera)
 
-    if (!detectCollisions(camera, moveVector, wallRefs, collitionDistance)) {
+    if (!detectCollisions(camera, moveVector, wallRefs, windowRefs, glassRefs, collitionDistance)) {
       camera.position.add(moveVector)
     }
 
