@@ -3,7 +3,12 @@ import React from 'react'
 
 const HDRI = () => {
   return (
-    <Environment background={false} files="/assets/hdri/interior.hdr" environmentIntensity={0.6} />
+    <Environment
+      background={true}
+      files="/assets/hdri/soil.hdr"
+      environmentIntensity={0.5}
+      backgroundRotation={[0, Math.PI / 1.4, 0]}
+    />
   )
 }
 

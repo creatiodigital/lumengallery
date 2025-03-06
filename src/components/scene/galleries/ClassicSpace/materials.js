@@ -12,6 +12,8 @@ export const glassMaterial = new MeshStandardMaterial({
   transparent: true,
   opacity: 0,
   depthWrite: false,
+  // emissive: '#ffffff',
+  // emissiveIntensity: 1,
 })
 
 export const lineMaterial = new MeshStandardMaterial({
@@ -20,8 +22,8 @@ export const lineMaterial = new MeshStandardMaterial({
 
 export const reelMaterial = new MeshStandardMaterial({
   color: '#ffffff',
-  roughness: 0.8,
-  metalness: 0.2,
+  roughness: 0.4,
+  metalness: 0.1,
 })
 
 export const lampMaterial = new MeshStandardMaterial({
@@ -34,5 +36,5 @@ export const lampMaterial = new MeshStandardMaterial({
 export const bulbMaterial = new MeshStandardMaterial({
   color: '#ffffff',
   emissive: '#ffffff',
-  emissiveIntensity: 20,
+  emissiveIntensity: 30,
 })

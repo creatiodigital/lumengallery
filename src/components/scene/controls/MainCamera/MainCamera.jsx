@@ -30,6 +30,7 @@ const MainCamera = () => {
 
   const moveSpeed = 0.04
   const cameraElevation = 1.2
+  const fov = useRef(79)
 
   const onMouseMove = useCallback(
     (event) => handleMouseMove(mouseState, setTick)(event),
@@ -85,6 +86,9 @@ const MainCamera = () => {
   }, [onKeyDown, onKeyUp, onMouseDown, onMouseUp, onTouchStart, onTouchEnd])
 
   useFrame(({ camera }) => {
+    camera.fov = fov.current
+    camera.updateProjectionMatrix()
+
     if (!initialPositionSet.current) {
       if (wallCoordinates && wallNormal) {
         const lookAt = new Vector3(wallCoordinates.x, cameraElevation, wallCoordinates.z)

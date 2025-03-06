@@ -25,7 +25,7 @@ export const Scene = () => {
           shadows
           gl={{
             toneMapping: ACESFilmicToneMapping,
-            toneMappingExposure: 0.9,
+            toneMappingExposure: 1,
           }}
         >
           <Suspense fallback={<Loader />}>

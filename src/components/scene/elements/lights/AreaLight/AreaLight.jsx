@@ -23,7 +23,7 @@ const AreaLight = () => {
       ref={rectAreaLightRef}
       width={3}
       height={10}
-      intensity={3}
+      intensity={4}
       color="#ffffff"
       position={[-5.5, 6, -6.5]}
     />
