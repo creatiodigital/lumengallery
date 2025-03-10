@@ -60,16 +60,16 @@ const artistSlice = createSlice({
         showArtworkInformation: false,
         frameStyles: {
           frameColor: '#000000',
-          frameThickness: 1,
+          frameThickness: { label: '1', value: 1 },
         },
         passepartoutStyles: {
           passepartoutColor: '#ffffff',
-          passepartoutThickness: 0,
+          passepartoutThickness: { label: '0', value: 0 },
         },
         artisticTextStyles: {
           fontFamily: 'Roboto',
           fontSize: 16,
-          lineHeight: 1,
+          lineHeight: { label: '1', value: 1 },
           color: '#000000',
         },
       }

@@ -7,6 +7,7 @@ const Ceiling = ({ nodes, materials }) => {
       materials.ceilingMaterial.map.colorSpace = SRGBColorSpace
     }
   }, [materials])
+
   return (
     <mesh
       name="ceiling"

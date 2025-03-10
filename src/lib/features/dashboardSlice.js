@@ -6,6 +6,7 @@ const dashboardSlice = createSlice({
     isEditMode: false,
     isArtworkPanelOpen: false,
     isEditingArtwork: false,
+    selectedSpace: { label: 'Classic', value: 'classic1' },
   },
   reducers: {
     showEditMode: (state) => {
@@ -23,9 +24,21 @@ const dashboardSlice = createSlice({
     setEditingArtwork: (state, action) => {
       state.isEditingArtwork = action.payload
     },
+    selectSpace: (state, action) => {
+      const space = action.payload
+      if (space) {
+        state.selectedSpace = space
+      }
+    },
   },
 })
 
-export const { showEditMode, hideEditMode, showArtworkPanel, hideArtworkPanel, setEditingArtwork } =
-  dashboardSlice.actions
+export const {
+  showEditMode,
+  hideEditMode,
+  showArtworkPanel,
+  hideArtworkPanel,
+  setEditingArtwork,
+  selectSpace,
+} = dashboardSlice.actions
 export default dashboardSlice.reducer

@@ -1,28 +1,15 @@
-import React, { useMemo } from 'react'
-import { MeshStandardMaterial } from 'three'
+import React from 'react'
 
-const Lamp = ({ i, nodes }) => {
-  const lampMaterial = useMemo(() => {
-    return new MeshStandardMaterial({
-      color: '#ffffff',
-      roughness: 0.4,
-      metalness: 0.1,
-      envMapIntensity: 1,
-    })
-  }, [])
-
-  const bulbMaterial = useMemo(
-    () =>
-      new MeshStandardMaterial({
-        color: '#ffffff',
-        emissive: '#ffffff',
-        emissiveIntensity: 10,
-      }),
-    [],
-  )
-
+const Lamp = ({ i, nodes, lampMaterial, bulbMaterial }) => {
   return (
     <>
+      <mesh
+        name={`top${i}`}
+        castShadow
+        receiveShadow
+        geometry={nodes[`top${i}`].geometry}
+        material={lampMaterial}
+      />
       <mesh
         name={`base${i}`}
         castShadow

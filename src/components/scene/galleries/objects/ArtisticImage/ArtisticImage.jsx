@@ -68,7 +68,7 @@ const ArtisticImage = ({ artwork }) => {
       )}
 
       {url && (
-        <mesh renderOrder={2}>
+        <mesh castShadow receiveShadow renderOrder={2}>
           <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
             <planeGeometry args={[innerWidth, innerHeight]} />
           </Image>

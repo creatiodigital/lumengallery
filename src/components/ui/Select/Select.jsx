@@ -1,10 +1,11 @@
+import c from 'classnames'
 import React, { useState, useRef, useEffect } from 'react'
 
 import { Icon } from '@/components/ui/Icon'
 
 import styles from './Select.module.scss'
 
-const Select = ({ options, selectedLabel, onSelect }) => {
+const Select = ({ options, selectedLabel, onSelect, size }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [currentLabel, setCurrentLabel] = useState(selectedLabel)
 
@@ -38,17 +39,17 @@ const Select = ({ options, selectedLabel, onSelect }) => {
   }, [])
 
   return (
-    <div className={styles.select} ref={selectRef}>
+    <div className={c(styles.select, styles[size])} ref={selectRef}>
       <div className={styles.input} onClick={() => setIsOpen(!isOpen)}>
-        {currentLabel}
-        <Icon name="chevronDown" size={16} color="#333333" />
+        {currentLabel.label}
+        <Icon name="chevronDown" size={size === 'medium' ? 20 : 16} color="#333333" />
       </div>
 
       {isOpen && (
         <ul className={styles.dropdown}>
-          {options.map((option, i) => (
-            <li key={i} className={styles.option} onClick={() => handleSelect(option)}>
-              {option}
+          {options.map((option) => (
+            <li key={option.value} className={styles.option} onClick={() => handleSelect(option)}>
+              {option.label}
             </li>
           ))}
         </ul>

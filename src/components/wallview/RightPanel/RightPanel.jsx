@@ -1,4 +1,3 @@
-import { useGLTF } from '@react-three/drei'
 import React from 'react'
 import { useSelector } from 'react-redux'
 
@@ -33,7 +32,5 @@ const RightPanel = () => {
     </div>
   )
 }
-
-useGLTF.preload('/assets/galleries/one-space42.glb')
 
 export default RightPanel

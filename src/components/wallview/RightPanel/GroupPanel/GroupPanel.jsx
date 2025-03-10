@@ -15,7 +15,8 @@ import styles from '../RightPanel.module.scss'
 const GroupPanel = () => {
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
 
-  const { nodes } = useGLTF('/assets/galleries/one-space42.glb')
+  const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
+  const { nodes } = useGLTF(`/assets/galleries/${selectedSpace.value}.glb`)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes, currentWallId)
 
@@ -177,7 +178,5 @@ const GroupPanel = () => {
     </>
   )
 }
-
-useGLTF.preload('/assets/galleries/one-space42.glb')
 
 export default GroupPanel
