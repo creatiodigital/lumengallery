@@ -28,9 +28,9 @@ const MainCamera = () => {
   const dampingFactor = 0.6
   const collitionDistance = 1
 
-  const moveSpeed = 0.04
-  const cameraElevation = 1.2
-  const fov = useRef(79)
+  const moveSpeed = 0.03
+  const cameraElevation = 1.1
+  const fov = useRef(70)
 
   const onMouseMove = useCallback(
     (event) => handleMouseMove(mouseState, setTick)(event),

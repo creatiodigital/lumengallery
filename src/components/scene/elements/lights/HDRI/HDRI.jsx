@@ -6,7 +6,7 @@ const HDRI = () => {
     <Environment
       background={true}
       files="/assets/hdri/soil.hdr"
-      environmentIntensity={0.5}
+      environmentIntensity={0.55}
       backgroundRotation={[0, Math.PI / 1.4, 0]}
     />
   )

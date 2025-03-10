@@ -3,17 +3,18 @@ import { SRGBColorSpace } from 'three'
 
 const Wall = ({ i, wallRef, nodes, materials }) => {
   useMemo(() => {
-    if (materials.floorMaterial?.map) {
-      materials.floorMaterial.map.colorSpace = SRGBColorSpace
+    if (materials.wallMaterial?.map) {
+      materials.wallMaterial.map.colorSpace = SRGBColorSpace
     }
   }, [materials])
+
   return (
     <mesh
-      name={`wall${i}`}
+      name={`walls${i}`}
       ref={wallRef}
       castShadow
       receiveShadow
-      geometry={nodes[`wall${i}`]?.geometry}
+      geometry={nodes[`walls${i}`]?.geometry}
       material={materials?.wallMaterial}
     />
   )

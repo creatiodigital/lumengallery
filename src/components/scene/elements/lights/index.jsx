@@ -9,7 +9,7 @@ export const Lights = () => {
     <>
       <AmbientLight />
       <HDRI />
-      <AreaLight />
+      {/* <AreaLight /> */}
     </>
   )
 }
