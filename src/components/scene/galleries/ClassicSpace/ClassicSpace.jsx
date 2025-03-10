@@ -13,6 +13,7 @@ import { Wall } from '@/components/scene/galleries/objects/Wall'
 import { Window } from '@/components/scene/galleries/objects/Window'
 import { addWall } from '@/lib/features/artistSlice'
 
+import { Lights } from './lights'
 import {
   windowMaterial,
   glassMaterial,
@@ -45,13 +46,9 @@ const ClassicSpace = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
     })
   }, [nodes, dispatch, wallsArray, placeholdersArray])
 
-  useEffect(() => {
-    console.log('windowRefs:', windowRefs.current)
-    console.log('glassRefs:', glassRefs.current)
-  }, [])
-
   return (
     <group {...props} dispose={null}>
+      <Lights />
       <Floor nodes={nodes} materials={materials} />
       <Ceiling nodes={nodes} materials={materials} />
       {wallsArray.map((_, i) => (

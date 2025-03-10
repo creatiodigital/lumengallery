@@ -49,3 +49,10 @@
     color: var(--white);
   }
 }
+
+.medium {
+  .option,
+  .input {
+    @include mediumSans();
+  }
+}

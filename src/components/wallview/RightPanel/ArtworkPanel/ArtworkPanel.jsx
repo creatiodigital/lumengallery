@@ -12,7 +12,8 @@ import { useArtworkHandlers } from '../hooks/useArtworkHandlers'
 import styles from '../RightPanel.module.scss'
 
 const ArtworkPanel = () => {
-  const { nodes } = useGLTF('/assets/galleries/perrotin1.glb')
+  const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
+  const { nodes } = useGLTF(`/assets/galleries/${selectedSpace.value}.glb`)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
@@ -128,7 +129,5 @@ const ArtworkPanel = () => {
     </>
   )
 }
-
-useGLTF.preload('/assets/galleries/perrotin1')
 
 export default ArtworkPanel

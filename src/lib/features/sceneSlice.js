@@ -6,7 +6,6 @@ const sceneSlice = createSlice({
     isArtworkPanelOpen: false,
     isPlaceholdersShown: true,
     currentArtworkId: null,
-    currentGallery: '/assets/galleries/perrotin1.glb',
   },
   reducers: {
     setCurrentArtwork: (state, action) => {

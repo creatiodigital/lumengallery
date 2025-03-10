@@ -6,15 +6,16 @@ import { Artworks } from '@/components/scene/galleries/objects/Artworks'
 import { Ceiling } from '@/components/scene/galleries/objects/Ceiling'
 import { CeilingGlass } from '@/components/scene/galleries/objects/CeilingGlass'
 import { Floor } from '@/components/scene/galleries/objects/Floor'
-import { RectLamp } from '@/components/scene/galleries/objects/RectLamp'
 import { Placeholder } from '@/components/scene/galleries/objects/Placeholder'
+import { RectLamp } from '@/components/scene/galleries/objects/RectLamp'
 import { Reel } from '@/components/scene/galleries/objects/Reel'
 import { Wall } from '@/components/scene/galleries/objects/Wall'
 import { addWall } from '@/lib/features/artistSlice'
 
+import { Lights } from './lights'
 import { reelMaterial, topMaterial, rectLampMaterial } from './materials'
 
-const PerrotinSpace = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
+const PerrotinSpace = ({ wallRefs, ...props }) => {
   const { nodes, materials } = useGLTF('/assets/galleries/perrotin1.glb')
 
   const dispatch = useDispatch()
@@ -39,6 +40,7 @@ const PerrotinSpace = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
 
   return (
     <group {...props} dispose={null}>
+      <Lights />
       <Floor nodes={nodes} materials={materials} />
       <Ceiling nodes={nodes} materials={materials} />
       <CeilingGlass nodes={nodes} topMaterial={topMaterial} />
@@ -46,6 +48,7 @@ const PerrotinSpace = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
         <Wall key={i} i={i} wallRef={wallRefs[i]} nodes={nodes} materials={materials} />
       ))}
       {isPlaceholdersShown &&
+        !!placeholdersArray.length &&
         placeholdersArray.map((_, i) => <Placeholder key={i} i={i} nodes={nodes} />)}
       {rectLampsArray.map((_, i) => (
         <RectLamp key={i} i={i} nodes={nodes} rectLampMaterial={rectLampMaterial} />

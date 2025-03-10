@@ -10,11 +10,11 @@ const Wall = ({ i, wallRef, nodes, materials }) => {
 
   return (
     <mesh
-      name={`walls${i}`}
+      name={`wall${i}`}
       ref={wallRef}
       castShadow
       receiveShadow
-      geometry={nodes[`walls${i}`]?.geometry}
+      geometry={nodes[`wall${i}`]?.geometry}
       material={materials?.wallMaterial}
     />
   )
