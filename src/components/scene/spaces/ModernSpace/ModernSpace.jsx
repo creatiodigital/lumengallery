@@ -11,8 +11,8 @@ import { RectLamp } from '@/components/scene/spaces/objects/RectLamp'
 import { Reel } from '@/components/scene/spaces/objects/Reel'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { addWall } from '@/lib/features/artistSlice'
-import { Lights } from './lights'
 
+import { Lights } from './lights'
 import { reelMaterial, topMaterial, rectLampMaterial } from './materials'
 
 const ModernSpace = ({ wallRefs, ...props }) => {

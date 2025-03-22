@@ -8,8 +8,8 @@ import { Loader } from '@/components/ui/Loader'
 import SceneContext from '@/contexts/SceneContext'
 
 import Controls from './controls'
-import { Space } from './Space'
 import styles from './Scene.module.scss'
+import { Space } from './Space'
 
 export const Scene = () => {
   const wallRefs = useRef([])

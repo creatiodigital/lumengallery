@@ -2,6 +2,7 @@ import React, { useContext, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 
 import SceneContext from '@/contexts/SceneContext'
+
 import { spaceComponents, spaceRefsConfig } from './constants'
 
 export const Space = ({ onPlaceholderClick, artworks }) => {
