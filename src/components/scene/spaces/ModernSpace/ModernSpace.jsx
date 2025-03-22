@@ -36,7 +36,7 @@ const ModernSpace = ({ wallRefs, ...props }) => {
     })
   }, [nodes, dispatch, wallsArray, placeholdersArray])
 
-  console.log('nodes', nodes)
+  // console.log('nodes', nodes)
 
   return (
     <group {...props} dispose={null}>
