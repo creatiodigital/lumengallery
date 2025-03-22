@@ -1,7 +1,7 @@
 import React from 'react'
 
-import { ArtisticImage } from '@/components/scene/galleries/objects/ArtisticImage'
-import { ArtisticText } from '@/components/scene/galleries/objects/ArtisticText'
+import { ArtisticImage } from '@/components/scene/spaces/objects/ArtisticImage'
+import { ArtisticText } from '@/components/scene/spaces/objects/ArtisticText'
 
 const Artwork = ({ artwork }) => {
   switch (artwork?.artworkType) {

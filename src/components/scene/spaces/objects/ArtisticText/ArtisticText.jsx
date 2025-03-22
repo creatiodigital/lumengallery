@@ -16,11 +16,11 @@ const ArtisticText = ({ artwork }) => {
 
   const fontMap = {
     Roboto: {
-      Regular: '/fonts/roboto.ttf',
+      Regular: '/fonts/roboto-regular.ttf',
       Bold: '/fonts/roboto-bold.ttf',
     },
     Lora: {
-      Regular: '/fonts/lora.ttf',
+      Regular: '/fonts/lora-regular.ttf',
       Bold: '/fonts/lora-bold.ttf',
     },
   }

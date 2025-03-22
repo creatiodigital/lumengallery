@@ -2,21 +2,21 @@ import { useGLTF } from '@react-three/drei'
 import React, { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Artworks } from '@/components/scene/galleries/objects/Artworks'
-import { Ceiling } from '@/components/scene/galleries/objects/Ceiling'
-import { CeilingGlass } from '@/components/scene/galleries/objects/CeilingGlass'
-import { Floor } from '@/components/scene/galleries/objects/Floor'
-import { Placeholder } from '@/components/scene/galleries/objects/Placeholder'
-import { RectLamp } from '@/components/scene/galleries/objects/RectLamp'
-import { Reel } from '@/components/scene/galleries/objects/Reel'
-import { Wall } from '@/components/scene/galleries/objects/Wall'
+import { Artworks } from '@/components/scene/spaces/objects/Artworks'
+import { Ceiling } from '@/components/scene/spaces/objects/Ceiling'
+import { CeilingGlass } from '@/components/scene/spaces/objects/CeilingGlass'
+import { Floor } from '@/components/scene/spaces/objects/Floor'
+import { Placeholder } from '@/components/scene/spaces/objects/Placeholder'
+import { RectLamp } from '@/components/scene/spaces/objects/RectLamp'
+import { Reel } from '@/components/scene/spaces/objects/Reel'
+import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { addWall } from '@/lib/features/artistSlice'
-
 import { Lights } from './lights'
+
 import { reelMaterial, topMaterial, rectLampMaterial } from './materials'
 
-const PerrotinSpace = ({ wallRefs, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/galleries/perrotin1.glb')
+const ModernSpace = ({ wallRefs, ...props }) => {
+  const { nodes, materials } = useGLTF('/assets/spaces/modern.glb')
 
   const dispatch = useDispatch()
 
@@ -61,6 +61,6 @@ const PerrotinSpace = ({ wallRefs, ...props }) => {
   )
 }
 
-useGLTF.preload('/assets/galleries/perrotin1.glb')
+useGLTF.preload('/assets/spaces/modern.glb')
 
-export default PerrotinSpace
+export default ModernSpace

@@ -6,7 +6,7 @@ const dashboardSlice = createSlice({
     isEditMode: false,
     isArtworkPanelOpen: false,
     isEditingArtwork: false,
-    selectedSpace: { label: 'Classic', value: 'classic1' },
+    selectedSpace: { label: 'Classic', value: 'classic' },
   },
   reducers: {
     showEditMode: (state) => {

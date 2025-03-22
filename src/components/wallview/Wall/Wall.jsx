@@ -24,7 +24,7 @@ import styles from './Wall.module.scss'
 
 export const Wall = () => {
   const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
-  const { nodes } = useGLTF(`/assets/galleries/${selectedSpace.value}.glb`)
+  const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
   const artworks = useSelector((state) => state.artist.artworks)
 
   const isDragging = useSelector((state) => state.wallView.isDragging)
