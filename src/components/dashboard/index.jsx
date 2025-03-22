@@ -48,7 +48,7 @@ export const Dashboard = () => {
             />
           </div>
           <div>
-            <Button type="small" onClick={handleEditGallery} label="Edit Exhibition" />
+            <Button type="small" onClick={handleEditGallery} label="Create Exhibition" />
           </div>
         </div>
       )}

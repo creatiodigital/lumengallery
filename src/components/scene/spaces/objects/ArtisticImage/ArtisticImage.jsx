@@ -3,8 +3,8 @@ import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { DoubleSide, MeshStandardMaterial } from 'three'
 
-import { Frame } from '@/components/scene/galleries/objects/Frame'
-import { Passepartout } from '@/components/scene/galleries/objects/Passepartout'
+import { Frame } from '@/components/scene/spaces/objects/Frame'
+import { Passepartout } from '@/components/scene/spaces/objects/Passepartout'
 import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 

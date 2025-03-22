@@ -1,4 +1,4 @@
 export const spaceOptions = [
-  { label: 'Modern', value: 'perrotin1' },
-  { label: 'Classic', value: 'classic1' },
+  { label: 'Modern', value: 'modern' },
+  { label: 'Classic', value: 'classic' },
 ]

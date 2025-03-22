@@ -13,7 +13,7 @@ import styles from '../RightPanel.module.scss'
 
 const ArtworkPanel = () => {
   const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
-  const { nodes } = useGLTF(`/assets/galleries/${selectedSpace.value}.glb`)
+  const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)

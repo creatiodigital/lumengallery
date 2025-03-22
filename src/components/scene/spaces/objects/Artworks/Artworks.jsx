@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Vector3, Quaternion } from 'three'
 
-import { Artwork } from '@/components/scene/galleries/objects/Artwork'
+import { Artwork } from '@/components/scene/spaces/objects/Artwork'
 
 const Artworks = () => {
   const artworks = useSelector((state) => state.artist.artworks)
