@@ -2,7 +2,7 @@ import { useSelector } from 'react-redux'
 
 export const useArtworkDetails = (currentArtworkId) => {
   const artwork = useSelector((state) =>
-    state?.artist?.artworks?.find((art) => art.id === currentArtworkId),
+    state?.artworks?.artworks?.find((art) => art.id === currentArtworkId),
   )
 
   if (!artwork)

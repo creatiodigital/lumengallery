@@ -25,14 +25,14 @@ const ArtisticText = ({ artworkId }) => {
 
   const fontFamilyVariable =
     {
-      Roboto: 'var(--font-wall1)',
-      Lora: 'var(--font-wall2)',
+      roboto: 'var(--font-wall1)',
+      lora: 'var(--font-wall2)',
     }[fontFamily] || 'var(--font-wall1)'
 
   const fontWeightVariable =
     {
-      Regular: 400,
-      Bold: 600,
+      regular: 400,
+      bold: 600,
     }[fontWeight] || 400
 
   const handleDoubleClick = () => {

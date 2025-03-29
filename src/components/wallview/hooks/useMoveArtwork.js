@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
+import { edit3DCoordinates, editArtwork } from '@/lib/features/artworksSlice'
 import {
   setAlignedPairs,
   startDragging,
@@ -16,7 +16,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)

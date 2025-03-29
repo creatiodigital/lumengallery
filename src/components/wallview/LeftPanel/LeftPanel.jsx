@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '@/components/ui/Button'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
-import { editWallName, editArtworkName } from '@/lib/features/artistSlice'
+import { editWallName, editArtworkName } from '@/lib/features/artworksSlice'
 import { showEditMode } from '@/lib/features/dashboardSlice'
 import { showHuman, hideHuman, removeGroup } from '@/lib/features/wallViewSlice'
 import {
@@ -22,7 +22,7 @@ import styles from './LeftPanel.module.scss'
 export const LeftPanel = () => {
   const dispatch = useDispatch()
 
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const walls = useSelector((state) => state.artist.walls)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)

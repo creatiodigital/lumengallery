@@ -5,7 +5,7 @@ import { Vector3, Quaternion } from 'three'
 import { Artwork } from '@/components/scene/spaces/objects/Artwork'
 
 const Artworks = () => {
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
 
   const precomputedArtworks = useMemo(() => {
     return artworks?.map((artwork) => {

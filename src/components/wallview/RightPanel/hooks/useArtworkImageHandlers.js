@@ -13,11 +13,11 @@ import {
   editArtworkPassepartoutColor,
   editArtworkFrameThickness,
   editArtworkPassepartoutThickness,
-} from '@/lib/features/artistSlice'
+} from '@/lib/features/artworksSlice'
 
 export const useArtworkImageHandlers = (currentArtworkId) => {
   const dispatch = useDispatch()
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
 
   const handleAuthorChange = (e) => {
     const newAuthor = e.target.value

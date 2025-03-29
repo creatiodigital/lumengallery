@@ -14,7 +14,7 @@ import { useSelectBox } from '@/components/wallview/hooks/useSelectBox'
 import { Human } from '@/components/wallview/Human'
 import { SelectionBox } from '@/components/wallview/SelectionBox'
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates } from '@/lib/features/artistSlice'
+import { edit3DCoordinates } from '@/lib/features/artworksSlice'
 import { setShiftKeyDown } from '@/lib/features/wallViewSlice'
 import { setWallCoordinates, setWallDimensions } from '@/lib/features/wallViewSlice'
 
@@ -25,7 +25,7 @@ import styles from './Wall.module.scss'
 export const Wall = () => {
   const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
 
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)

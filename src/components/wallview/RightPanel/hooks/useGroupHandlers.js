@@ -1,12 +1,12 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
+import { edit3DCoordinates, editArtwork } from '@/lib/features/artworksSlice'
 import { editArtworkGroup } from '@/lib/features/wallViewSlice'
 
 export const useGroupHandlers = (artworkGroupIds, boundingData) => {
   const dispatch = useDispatch()
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
   const wallHeight = useSelector((state) => state.wallView.wallHeight)
   const wallWidth = useSelector((state) => state.wallView.wallWidth)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)

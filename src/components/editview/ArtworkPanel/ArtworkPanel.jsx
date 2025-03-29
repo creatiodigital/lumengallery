@@ -9,7 +9,7 @@ import styles from './ArtworkPanel.module.scss'
 const ArtworkPanel = () => {
   const dispatch = useDispatch()
   const panelRef = useRef(null)
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
   const selectedSceneArtworkId = useSelector((state) => state.scene.currentArtworkId)
 
   const selectedArtwork = useMemo(

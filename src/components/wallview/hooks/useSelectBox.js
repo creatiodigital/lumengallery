@@ -5,7 +5,7 @@ import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 
 export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) => {
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const dispatch = useDispatch()
 

@@ -6,7 +6,7 @@ import { addArtworkToGroup, removeGroup, createArtworkGroup } from '@/lib/featur
 export const useGroupArtwork = () => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
 
   const handleAddArtworkToGroup = useCallback(
     (artworkId) => {

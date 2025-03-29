@@ -6,26 +6,26 @@ const ArtisticText = ({ artwork }) => {
   const { id, position, quaternion, space, artisticText, artisticTextStyles } = artwork
 
   const textAlign = artisticTextStyles?.textAlign || 'left'
-  const textColor = artisticTextStyles?.color || '#000000'
-  const fontSize = Number(artisticTextStyles?.fontSize) || 16
-  const lineHeight = Number(artisticTextStyles?.lineHeight) || 1
-  const fontWeight = artisticTextStyles?.fontWeight || 'Regular'
-  const fontFamily = artisticTextStyles?.fontFamily || 'Roboto'
+  const textColor = artisticTextStyles?.color.value || '#000000'
+  const fontSize = artisticTextStyles?.fontSize.value || 16
+  const lineHeight = artisticTextStyles?.lineHeight.value || 1
+  const fontWeight = artisticTextStyles?.fontWeight.value || 'regular'
+  const fontFamily = artisticTextStyles?.fontFamily.value || 'roboto'
 
   const fontSizeFactor = 0.01
 
   const fontMap = {
-    Roboto: {
-      Regular: '/fonts/roboto-regular.ttf',
-      Bold: '/fonts/roboto-bold.ttf',
+    roboto: {
+      regular: '/fonts/roboto-regular.ttf',
+      bold: '/fonts/roboto-bold.ttf',
     },
-    Lora: {
-      Regular: '/fonts/lora-regular.ttf',
-      Bold: '/fonts/lora-bold.ttf',
+    lora: {
+      regular: '/fonts/lora-regular.ttf',
+      bold: '/fonts/lora-bold.ttf',
     },
   }
 
-  const fontUrl = fontMap[fontFamily]?.[fontWeight] || fontMap['Roboto']['Regular']
+  const fontUrl = fontMap[fontFamily]?.[fontWeight] || fontMap['roboto']['regular']
 
   const textRef = useRef()
   const [textWidth, setTextWidth] = useState(0)

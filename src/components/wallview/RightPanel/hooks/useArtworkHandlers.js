@@ -6,11 +6,11 @@ import {
   editArtwork,
   editAlignArtwork,
   editArtworkName,
-} from '@/lib/features/artistSlice'
+} from '@/lib/features/artworksSlice'
 
 export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const dispatch = useDispatch()
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
 
   const sanitizeNumberInput = (value) => {
     const normalizedValue = value * 100

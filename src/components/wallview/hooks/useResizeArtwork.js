@@ -2,10 +2,10 @@ import { useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
+import { edit3DCoordinates, editArtwork } from '@/lib/features/artworksSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
   const dispatch = useDispatch()
   const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const gridSize = 20

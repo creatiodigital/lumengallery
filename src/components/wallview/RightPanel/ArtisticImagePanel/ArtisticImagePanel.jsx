@@ -61,6 +61,7 @@ const ArtisticImage = () => {
               </div>
             </div>
           </div>
+
           {showArtworkInformation && (
             <>
               <div className={styles.section}>

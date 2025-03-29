@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { deleteArtwork } from '@/lib/features/artistSlice'
+import { deleteArtwork } from '@/lib/features/artworksSlice'
 import { removeGroup, setShiftKeyDown } from '@/lib/features/wallViewSlice'
 
 export const useKeyboardEvents = (currentArtworkId, isMouseOver) => {

@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { editArtwork, edit3DCoordinates } from '@/lib/features/artistSlice'
+import { editArtwork, edit3DCoordinates } from '@/lib/features/artworksSlice'
 import {
   editArtworkGroup,
   startDraggingGroup,
@@ -13,7 +13,7 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworks = useSelector((state) => state.artworks.artworks)
   const [isDraggingGroup, setIsDraggingGroup] = useState(false)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 

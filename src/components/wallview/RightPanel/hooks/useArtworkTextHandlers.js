@@ -9,7 +9,8 @@ import {
   editArtworkTextFontWeight,
   editArtworkTextLetterSpacing,
   editArtworkTextFontFamily,
-} from '@/lib/features/artistSlice'
+  editArtworkText,
+} from '@/lib/features/artworksSlice'
 
 export const useArtworkTextHandlers = (currentArtworkId) => {
   const dispatch = useDispatch()
@@ -28,34 +29,14 @@ export const useArtworkTextHandlers = (currentArtworkId) => {
     dispatch(editArtworkTextColor({ currentArtworkId, color }))
   }
 
-  const handleTextFontSizeSelect = (fontSize) => {
-    dispatch(editArtworkTextFontSize({ currentArtworkId, fontSize }))
-  }
-
-  const handleTextLineHeightSelect = (lineHeight) => {
-    dispatch(editArtworkTextLineHeight({ currentArtworkId, lineHeight }))
-  }
-
-  const handleTextFontWeightSelect = (fontWeight) => {
-    dispatch(editArtworkTextFontWeight({ currentArtworkId, fontWeight }))
-  }
-
-  const handleTextFontFamilySelect = (fontFamily) => {
-    dispatch(editArtworkTextFontFamily({ currentArtworkId, fontFamily }))
-  }
-
-  const handleTextLetterSpacingSelect = (letterSpacing) => {
-    dispatch(editArtworkTextLetterSpacing({ currentArtworkId, letterSpacing }))
+  const handleEditArtworkText = (property, value) => {
+    dispatch(editArtworkText({ currentArtworkId, property, value }))
   }
 
   return {
     handleArtisticTextChange,
     handleTextAlign,
-    handleTextFontSizeSelect,
-    handleTextLineHeightSelect,
-    handleTextFontWeightSelect,
-    handleTextLetterSpacingSelect,
-    handleTextFontFamilySelect,
     handleTextColorSelect,
+    handleEditArtworkText,
   }
 }
