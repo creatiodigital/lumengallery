@@ -40,10 +40,10 @@ const ArtisticImage = () => {
     handleShowFrame,
     handleShowPassepartout,
     handleShowInformation,
-    handleFrameColorSelect,
-    handleFrameThicknessSelect,
     handlePassepartoutColorSelect,
     handlePassepartoutThicknessSelect,
+    handleArtworkFrame,
+    handleArtworkPassepartout,
   } = useArtworkImageHandlers(currentArtworkId)
 
   return (
@@ -116,13 +116,16 @@ const ArtisticImage = () => {
                 <div className={styles.row}>
                   <div className={styles.item}>
                     <span className={styles.label}>Color</span>
-                    <ColorPicker textColor={frameColor} onColorSelect={handleFrameColorSelect} />
+                    <ColorPicker
+                      textColor={frameColor}
+                      onColorSelect={(value) => handleArtworkFrame('frameColor', value)}
+                    />
                   </div>
                   <div className={styles.item}>
                     <span className={styles.label}>Thickness</span>
                     <Select
                       options={frameThicknessOptions}
-                      onSelect={handleFrameThicknessSelect}
+                      onSelect={(value) => handleArtworkFrame('frameThickness', value)}
                       selectedLabel={frameThickness}
                     />
                   </div>
@@ -146,14 +149,18 @@ const ArtisticImage = () => {
                       <span className={styles.label}>Color</span>
                       <ColorPicker
                         textColor={passepartoutColor}
-                        onColorSelect={handlePassepartoutColorSelect}
+                        onColorSelect={(value) =>
+                          handleArtworkPassepartout('passepartoutColor', value)
+                        }
                       />
                     </div>
                     <div className={styles.item}>
                       <span className={styles.label}>Thickness</span>
                       <Select
                         options={passepartoutThicknessOptions}
-                        onSelect={handlePassepartoutThicknessSelect}
+                        onSelect={(value) =>
+                          handleArtworkPassepartout('passepartoutThickness', value)
+                        }
                         selectedLabel={passepartoutThickness}
                       />
                     </div>

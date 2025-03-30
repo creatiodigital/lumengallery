@@ -6,7 +6,7 @@ const ArtisticText = ({ artwork }) => {
   const { id, position, quaternion, space, artisticText, artisticTextStyles } = artwork
 
   const textAlign = artisticTextStyles?.textAlign || 'left'
-  const textColor = artisticTextStyles?.color.value || '#000000'
+  const textColor = artisticTextStyles?.textColor.value || '#000000'
   const fontSize = artisticTextStyles?.fontSize.value || 16
   const lineHeight = artisticTextStyles?.lineHeight.value || 1
   const fontWeight = artisticTextStyles?.fontWeight.value || 'regular'

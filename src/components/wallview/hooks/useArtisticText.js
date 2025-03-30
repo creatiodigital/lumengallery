@@ -11,12 +11,12 @@ export const useArtisticText = (artworkId) => {
 
   const artisticText = artwork?.artisticText || ''
   const textAlign = artwork?.artisticTextStyles?.textAlign || 'left'
-  const textColor = artwork?.artisticTextStyles?.color || '#000000'
-  const fontSize = artwork?.artisticTextStyles?.fontSize.value || 16
-  const lineHeight = artwork?.artisticTextStyles?.lineHeight.value || 1
-  const fontFamily = artwork?.artisticTextStyles?.fontFamily.value || 'Roboto'
-  const fontWeight = artwork?.artisticTextStyles?.fontWeight.value || 'Regular'
-  const letterSpacing = artwork?.artisticTextStyles?.letterSpacing.value || 1
+  const textColor = artwork?.artisticTextStyles?.textColor
+  const fontSize = artwork?.artisticTextStyles?.fontSize.value
+  const lineHeight = artwork?.artisticTextStyles?.lineHeight.value
+  const fontFamily = artwork?.artisticTextStyles?.fontFamily.value
+  const fontWeight = artwork?.artisticTextStyles?.fontWeight.value
+  const letterSpacing = artwork?.artisticTextStyles?.letterSpacing.value
 
   const handleArtisticTextChange = (updatedText) => {
     if (!artworkId) return

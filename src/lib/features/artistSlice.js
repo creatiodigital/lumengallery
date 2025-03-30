@@ -180,16 +180,6 @@ const artistSlice = createSlice({
         artwork.artisticTextStyles.textAlign = textAlign
       }
     },
-    editArtworkTextColor: (state, action) => {
-      const { currentArtworkId, color } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        if (!artwork.artisticTextStyles) {
-          artwork.artisticTextStyles = {}
-        }
-        artwork.artisticTextStyles.color = color
-      }
-    },
     editArtworkTextFontSize: (state, action) => {
       const { currentArtworkId, fontSize } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -305,7 +295,6 @@ export const {
   editArtworkAuthor,
   editArtworkTitle,
   editArtworkTextAlign,
-  editArtworkTextColor,
   editArtworkTextFontSize,
   editArtworkTextLineHeight,
   editArtworkTextFontWeight,

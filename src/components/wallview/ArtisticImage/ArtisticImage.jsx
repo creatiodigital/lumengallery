@@ -17,6 +17,8 @@ const ArtisticImage = ({ artwork }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const allowedTypes = ['image/jpeg', 'image/png']
 
+  console.log('artwork', artwork)
+
   const { frameStyles, showFrame, passepartoutStyles, showPassepartout, url } = artwork
 
   const { frameColor, frameThickness } = frameStyles
@@ -73,7 +75,7 @@ const ArtisticImage = ({ artwork }) => {
     <div
       className={`${styles.frame} ${isDragOver ? styles.dragOver : ''}`}
       style={{
-        border: showFrame && url ? `${frameThickness}px solid ${frameColor}` : null,
+        border: showFrame && url ? `${frameThickness.value}px solid ${frameColor}` : null,
       }}
       onDoubleClick={handleDoubleClick}
       onDragOver={handleDragOver}
@@ -86,7 +88,7 @@ const ArtisticImage = ({ artwork }) => {
         style={{
           border:
             showPassepartout && url
-              ? `${passepartoutThickness}px solid ${passepartoutColor}`
+              ? `${passepartoutThickness.value}px solid ${passepartoutColor}`
               : null,
         }}
       >

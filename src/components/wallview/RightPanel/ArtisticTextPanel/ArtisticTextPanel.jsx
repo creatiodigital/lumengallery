@@ -17,7 +17,7 @@ const ArtisticText = () => {
 
   const { artisticTextStyles } = useArtworkDetails(currentArtworkId)
 
-  const color = artisticTextStyles?.color ?? '#000000'
+  const textColor = artisticTextStyles?.textColor ?? '#000000'
 
   return (
     <div className={styles.section}>
@@ -91,8 +91,8 @@ const ArtisticText = () => {
           <div className={styles.item}>
             <span className={styles.label}>Color</span>
             <ColorPicker
-              textColor={color}
-              onColorSelect={(value) => handleEditArtworkText('color', value)}
+              textColor={textColor}
+              onColorSelect={(value) => handleEditArtworkText('textColor', value)}
             />
           </div>
         </div>

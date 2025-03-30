@@ -3,12 +3,6 @@ import { useDispatch } from 'react-redux'
 import {
   editArtworkArtisticText,
   editArtworkTextAlign,
-  editArtworkTextColor,
-  editArtworkTextFontSize,
-  editArtworkTextLineHeight,
-  editArtworkTextFontWeight,
-  editArtworkTextLetterSpacing,
-  editArtworkTextFontFamily,
   editArtworkText,
 } from '@/lib/features/artworksSlice'
 
@@ -25,10 +19,6 @@ export const useArtworkTextHandlers = (currentArtworkId) => {
     dispatch(editArtworkTextAlign({ currentArtworkId, textAlign }))
   }
 
-  const handleTextColorSelect = (color) => {
-    dispatch(editArtworkTextColor({ currentArtworkId, color }))
-  }
-
   const handleEditArtworkText = (property, value) => {
     dispatch(editArtworkText({ currentArtworkId, property, value }))
   }
@@ -36,7 +26,6 @@ export const useArtworkTextHandlers = (currentArtworkId) => {
   return {
     handleArtisticTextChange,
     handleTextAlign,
-    handleTextColorSelect,
     handleEditArtworkText,
   }
 }

@@ -9,10 +9,8 @@ import {
   showArtworkFrame,
   showArtworkPassepartout,
   showArtworkInformation,
-  editArtworkFrameColor,
-  editArtworkPassepartoutColor,
-  editArtworkFrameThickness,
-  editArtworkPassepartoutThickness,
+  editArtworkPassepartout,
+  editArtworkFrame,
 } from '@/lib/features/artworksSlice'
 
 export const useArtworkImageHandlers = (currentArtworkId) => {
@@ -85,50 +83,28 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     )
   }
 
-  const handleFrameColorSelect = (frameColor) => {
+  const handleArtworkFrame = (property, value) => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
     dispatch(
-      editArtworkFrameColor({
+      editArtworkFrame({
         currentArtworkId,
-        frameColor,
+        property,
+        value,
       }),
     )
   }
 
-  const handlePassepartoutColorSelect = (passepartoutColor) => {
+  const handleArtworkPassepartout = (property, value) => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
     dispatch(
-      editArtworkPassepartoutColor({
+      editArtworkPassepartout({
         currentArtworkId,
-        passepartoutColor,
-      }),
-    )
-  }
-
-  const handleFrameThicknessSelect = (frameThickness) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    dispatch(
-      editArtworkFrameThickness({
-        currentArtworkId,
-        frameThickness,
-      }),
-    )
-  }
-
-  const handlePassepartoutThicknessSelect = (passepartoutThickness) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    dispatch(
-      editArtworkPassepartoutThickness({
-        currentArtworkId,
-        passepartoutThickness,
+        property,
+        value,
       }),
     )
   }
@@ -142,9 +118,9 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     handleShowFrame,
     handleShowPassepartout,
     handleShowInformation,
-    handleFrameColorSelect,
     handlePassepartoutColorSelect,
-    handleFrameThicknessSelect,
     handlePassepartoutThicknessSelect,
+    handleArtworkFrame,
+    handleArtworkPassepartout,
   }
 }

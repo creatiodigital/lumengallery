@@ -42,13 +42,14 @@ const artworksSlice = createSlice({
           passepartoutColor: '#ffffff',
           passepartoutThickness: { label: '0', value: 0 },
         },
+        artisticText: '',
         artisticTextStyles: {
           fontFamily: { label: 'Roboto', value: 'roboto' },
           fontSize: { label: '16', value: 16 },
           fontWeight: { label: 'Regular', value: 'regular' },
           letterSpacing: { label: '1', value: 1 },
           lineHeight: { label: '1', value: 1 },
-          color: '#000000',
+          textColor: '#000000',
         },
       }
 
@@ -158,16 +159,6 @@ const artworksSlice = createSlice({
         artwork.artisticTextStyles.textAlign = textAlign
       }
     },
-    editArtworkTextColor: (state, action) => {
-      const { currentArtworkId, color } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        if (!artwork.artisticTextStyles) {
-          artwork.artisticTextStyles = {}
-        }
-        artwork.artisticTextStyles.color = color
-      }
-    },
     showArtworkFrame: (state, action) => {
       const { currentArtworkId, showFrame } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -182,34 +173,7 @@ const artworksSlice = createSlice({
         artwork.showPassepartout = showPassepartout
       }
     },
-    editArtworkFrameColor: (state, action) => {
-      const { currentArtworkId, frameColor } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.frameStyles.frameColor = frameColor
-      }
-    },
-    editArtworkPassepartoutColor: (state, action) => {
-      const { currentArtworkId, passepartoutColor } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.passepartoutStyles.passepartoutColor = passepartoutColor
-      }
-    },
-    editArtworkFrameThickness: (state, action) => {
-      const { currentArtworkId, frameThickness } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.frameStyles.frameThickness = frameThickness
-      }
-    },
-    editArtworkPassepartoutThickness: (state, action) => {
-      const { currentArtworkId, passepartoutThickness } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (passepartoutThickness) {
-        artwork.passepartoutStyles.passepartoutThickness = passepartoutThickness
-      }
-    },
+
     editArtworkText: (state, action) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -218,6 +182,26 @@ const artworksSlice = createSlice({
           artwork.artisticTextStyles = {}
         }
         artwork.artisticTextStyles[property] = value
+      }
+    },
+    editArtworkFrame: (state, action) => {
+      const { currentArtworkId, property, value } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.frameStyles) {
+          artwork.frameStyles = {}
+        }
+        artwork.frameStyles[property] = value
+      }
+    },
+    editArtworkPassepartout: (state, action) => {
+      const { currentArtworkId, property, value } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        if (!artwork.passepartoutStyles) {
+          artwork.passepartoutStyles = {}
+        }
+        artwork.passepartoutStyles[property] = value
       }
     },
   },
@@ -238,14 +222,11 @@ export const {
   editArtworkAuthor,
   editArtworkTitle,
   editArtworkTextAlign,
-  editArtworkTextColor,
   showArtworkFrame,
   showArtworkPassepartout,
   showArtworkInformation,
-  editArtworkFrameColor,
-  editArtworkPassepartoutColor,
-  editArtworkFrameThickness,
-  editArtworkPassepartoutThickness,
+  editArtworkFrame,
+  editArtworkPassepartout,
   editArtworkText,
 } = artworksSlice.actions
 export default artworksSlice.reducer

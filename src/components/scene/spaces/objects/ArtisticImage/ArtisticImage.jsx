@@ -47,8 +47,8 @@ const ArtisticImage = ({ artwork }) => {
     roughness: 1,
   })
 
-  const frameT = showFrame ? frameThickness : 0
-  const passepartoutT = showPassepartout ? passepartoutThickness : 0
+  const frameT = showFrame ? frameThickness.value : 0
+  const passepartoutT = showPassepartout ? passepartoutThickness.value : 0
 
   const innerWidth = planeWidth - (frameT + passepartoutT) / 50
   const innerHeight = planeHeight - (frameT + passepartoutT) / 50
@@ -79,15 +79,15 @@ const ArtisticImage = ({ artwork }) => {
         <Frame
           width={planeWidth}
           height={planeHeight}
-          thickness={frameThickness / 100}
+          thickness={frameThickness.value / 100}
           material={frameMaterial}
         />
       )}
-      {showPassepartout && passepartoutThickness > 0 && (
+      {showPassepartout && passepartoutThickness.value > 0 && (
         <Passepartout
-          width={planeWidth - frameThickness / 50}
-          height={planeHeight - frameThickness / 50}
-          thickness={passepartoutThickness / 100}
+          width={planeWidth - frameThickness.value / 50}
+          height={planeHeight - frameThickness.value / 50}
+          thickness={passepartoutThickness.value / 100}
           material={passepartoutMaterial}
         />
       )}
