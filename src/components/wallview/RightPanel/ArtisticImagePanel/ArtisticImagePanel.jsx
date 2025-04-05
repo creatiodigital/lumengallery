@@ -35,14 +35,7 @@ const ArtisticImage = () => {
     frameThickness,
   } = artisticImageProperties
 
-  const {
-    handleAuthorChange,
-    handleArtworkTitleChange,
-    handleArtworkYearChange,
-    handleDescriptionChange,
-    handleArtworkDimensionsChange,
-    handleEditArtisticImage,
-  } = useArtworkImageHandlers(currentArtworkId)
+  const { handleEditArtworkx, handleEditArtisticImage } = useArtworkImageHandlers(currentArtworkId)
 
   return (
     <>
@@ -69,31 +62,46 @@ const ArtisticImage = () => {
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Author</span>
-                      <Input value={author} onChange={handleAuthorChange} />
+                      <Input
+                        value={author}
+                        onChange={(e) => handleEditArtworkx('author', e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Title</span>
-                      <Input value={artworkTitle} onChange={handleArtworkTitleChange} />
+                      <Input
+                        value={artworkTitle}
+                        onChange={(e) => handleEditArtworkx('authorTitle', e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Year</span>
-                      <Input value={artworkYear} onChange={handleArtworkYearChange} />
+                      <Input
+                        value={artworkYear}
+                        onChange={(e) => handleEditArtworkx('artworkYear', e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Description</span>
-                      <Textarea value={description} onChange={handleDescriptionChange} />
+                      <Textarea
+                        value={description}
+                        onChange={(e) => handleEditArtworkx('description', e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Dimensions</span>
-                      <Input value={artworkDimensions} onChange={handleArtworkDimensionsChange} />
+                      <Input
+                        value={artworkDimensions}
+                        onChange={(e) => handleEditArtworkx('artworkDimensions', e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>

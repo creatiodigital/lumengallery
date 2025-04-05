@@ -30,6 +30,7 @@ const artworksSlice = createSlice({
         artworkType,
         wallId,
         canvas,
+        author: '',
         space: [],
         artisticImageProperties: {
           imageUrl: '',
@@ -66,6 +67,13 @@ const artworksSlice = createSlice({
         }
       }
     },
+    editArtworkx: (state, action) => {
+      const { currentArtworkId, property, value } = action.payload
+      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      if (artwork) {
+        artwork[property] = value
+      }
+    },
     deleteArtwork: (state, action) => {
       const { artworkId } = action.payload
       state.artworks = state.artworks.filter((artwork) => artwork.id !== artworkId)
@@ -92,41 +100,6 @@ const artworksSlice = createSlice({
         artwork.name = name
       }
     },
-    editArtworkAuthor: (state, action) => {
-      const { currentArtworkId, author } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.author = author
-      }
-    },
-    editArtworkTitle: (state, action) => {
-      const { currentArtworkId, artworkTitle } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.artworkTitle = artworkTitle
-      }
-    },
-    editArtworkYear: (state, action) => {
-      const { currentArtworkId, artworkYear } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.artworkYear = artworkYear
-      }
-    },
-    editArtworkDescription: (state, action) => {
-      const { currentArtworkId, description } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.description = description
-      }
-    },
-    editArtworkDimensions: (state, action) => {
-      const { currentArtworkId, artworkDimensions } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.artworkDimensions = artworkDimensions
-      }
-    },
     editArtworkTextAlign: (state, action) => {
       const { currentArtworkId, textAlign } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -144,7 +117,6 @@ const artworksSlice = createSlice({
         if (!artwork.artisticImageProperties) {
           artwork.artisticImageProperties = {}
         }
-
         artwork.artisticImageProperties[property] = value
       }
     },
@@ -164,15 +136,11 @@ const artworksSlice = createSlice({
 export const {
   createArtwork,
   editArtwork,
+  editArtworkx,
+  editArtworkName,
   editAlignArtwork,
   edit3DCoordinates,
   deleteArtwork,
-  editArtworkName,
-  editArtworkYear,
-  editArtworkDimensions,
-  editArtworkDescription,
-  editArtworkAuthor,
-  editArtworkTitle,
   editArtworkTextAlign,
   editArtisticImage,
   editArtisticText,
