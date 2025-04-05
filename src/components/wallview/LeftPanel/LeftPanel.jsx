@@ -24,7 +24,7 @@ export const LeftPanel = () => {
 
   const artworks = useSelector((state) => state.artworks.artworks)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
-  const walls = useSelector((state) => state.artist.walls)
+  const walls = useSelector((state) => state.scene.walls)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)

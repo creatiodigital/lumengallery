@@ -6,11 +6,7 @@ import {
   editArtworkAuthor,
   editArtworkTitle,
   editArtworkDescription,
-  showArtworkFrame,
-  showArtworkPassepartout,
-  showArtworkInformation,
-  editArtworkPassepartout,
-  editArtworkFrame,
+  editArtisticImage,
 } from '@/lib/features/artworksSlice'
 
 export const useArtworkImageHandlers = (currentArtworkId) => {
@@ -47,61 +43,14 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     dispatch(editArtworkDimensions({ currentArtworkId, artworkDimensions: newDimensions }))
   }
 
-  const handleShowFrame = (showFrame) => {
-    const currentEdited = artworks?.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    dispatch(
-      showArtworkFrame({
-        currentArtworkId,
-        showFrame,
-      }),
-    )
-  }
-
-  const handleShowPassepartout = (showPassepartout) => {
-    const currentEdited = artworks?.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    dispatch(
-      showArtworkPassepartout({
-        currentArtworkId,
-        showPassepartout,
-      }),
-    )
-  }
-
-  const handleShowInformation = (showInformation) => {
-    const currentEdited = artworks?.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
-
-    dispatch(
-      showArtworkInformation({
-        currentArtworkId,
-        showInformation,
-      }),
-    )
-  }
-
-  const handleArtworkFrame = (property, value) => {
+  const handleEditArtisticImage = (property, value) => {
     const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
     if (!currentEdited) return
 
-    dispatch(
-      editArtworkFrame({
-        currentArtworkId,
-        property,
-        value,
-      }),
-    )
-  }
-
-  const handleArtworkPassepartout = (property, value) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
-    if (!currentEdited) return
+    console.log('handleEditArtisticImage', property, value)
 
     dispatch(
-      editArtworkPassepartout({
+      editArtisticImage({
         currentArtworkId,
         property,
         value,
@@ -115,12 +64,6 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     handleArtworkYearChange,
     handleDescriptionChange,
     handleArtworkDimensionsChange,
-    handleShowFrame,
-    handleShowPassepartout,
-    handleShowInformation,
-    handlePassepartoutColorSelect,
-    handlePassepartoutThicknessSelect,
-    handleArtworkFrame,
-    handleArtworkPassepartout,
+    handleEditArtisticImage,
   }
 }

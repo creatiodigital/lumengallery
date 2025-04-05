@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 
 import { FileInput } from '@/components/ui/FileInput'
 import { Icon } from '@/components/ui/Icon'
-import { editArtworkUrlImage } from '@/lib/features/artworksSlice'
+import { editArtisticImage } from '@/lib/features/artworksSlice'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 
 import styles from './ArtisticImage.module.scss'
@@ -17,12 +17,17 @@ const ArtisticImage = ({ artwork }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const allowedTypes = ['image/jpeg', 'image/png']
 
-  console.log('artwork', artwork)
+  const { artisticImageProperties } = artwork
 
-  const { frameStyles, showFrame, passepartoutStyles, showPassepartout, url } = artwork
-
-  const { frameColor, frameThickness } = frameStyles
-  const { passepartoutColor, passepartoutThickness } = passepartoutStyles
+  const {
+    showFrame,
+    frameColor,
+    frameThickness,
+    imageUrl,
+    showPassepartout,
+    passepartoutColor,
+    passepartoutThickness,
+  } = artisticImageProperties
 
   const handleDoubleClick = () => {
     fileInputRef.current.click()
@@ -68,14 +73,16 @@ const ArtisticImage = ({ artwork }) => {
 
   const processFile = (file) => {
     const fileUrl = URL.createObjectURL(file)
-    dispatch(editArtworkUrlImage({ currentArtworkId: artwork.id, url: fileUrl }))
+    dispatch(
+      editArtisticImage({ currentArtworkId: artwork.id, property: 'imageUrl', value: fileUrl }),
+    )
   }
 
   return (
     <div
       className={`${styles.frame} ${isDragOver ? styles.dragOver : ''}`}
       style={{
-        border: showFrame && url ? `${frameThickness.value}px solid ${frameColor}` : null,
+        border: showFrame && imageUrl ? `${frameThickness.value}px solid ${frameColor}` : null,
       }}
       onDoubleClick={handleDoubleClick}
       onDragOver={handleDragOver}
@@ -87,7 +94,7 @@ const ArtisticImage = ({ artwork }) => {
         className={styles.passepartout}
         style={{
           border:
-            showPassepartout && url
+            showPassepartout && imageUrl
               ? `${passepartoutThickness.value}px solid ${passepartoutColor}`
               : null,
         }}
@@ -95,10 +102,10 @@ const ArtisticImage = ({ artwork }) => {
         <div
           className={styles.image}
           style={{
-            backgroundImage: url ? `url(${url})` : 'none',
+            backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
           }}
         >
-          {!url && (
+          {!imageUrl && (
             <div className={c([styles.empty, { [styles.over]: isDragOver }])}>
               <Icon name="picture" size={40} color={isDragOver ? '#ffffff' : '#000000'} />
             </div>

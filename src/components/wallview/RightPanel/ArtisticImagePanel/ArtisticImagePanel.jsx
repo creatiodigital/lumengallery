@@ -21,15 +21,19 @@ const ArtisticImage = () => {
     author,
     artworkYear,
     artworkDimensions,
-    showArtworkInformation,
-    showFrame,
-    url,
-    showPassepartout,
-    passepartoutStyles,
-    frameStyles,
+    artisticImageProperties,
   } = useArtworkDetails(currentArtworkId)
-  const { frameColor, frameThickness } = frameStyles
-  const { passepartoutColor, passepartoutThickness } = passepartoutStyles
+
+  const {
+    showFrame,
+    showArtworkInformation,
+    imageUrl,
+    showPassepartout,
+    passepartoutColor,
+    passepartoutThickness,
+    frameColor,
+    frameThickness,
+  } = artisticImageProperties
 
   const {
     handleAuthorChange,
@@ -37,25 +41,21 @@ const ArtisticImage = () => {
     handleArtworkYearChange,
     handleDescriptionChange,
     handleArtworkDimensionsChange,
-    handleShowFrame,
-    handleShowPassepartout,
-    handleShowInformation,
-    handlePassepartoutColorSelect,
-    handlePassepartoutThicknessSelect,
-    handleArtworkFrame,
-    handleArtworkPassepartout,
+    handleEditArtisticImage,
   } = useArtworkImageHandlers(currentArtworkId)
 
   return (
     <>
-      {url && (
+      {imageUrl && (
         <>
           <div className={styles.subsection}>
             <div className={styles.row}>
               <div className={styles.item}>
                 <Checkbox
                   checked={showArtworkInformation}
-                  onChange={(e) => handleShowInformation(e.target.checked)}
+                  onChange={(e) =>
+                    handleEditArtisticImage('showArtworkInformation', e.target.checked)
+                  }
                   label="Display Information"
                 />
               </div>
@@ -107,7 +107,7 @@ const ArtisticImage = () => {
                 <div className={styles.item}>
                   <Checkbox
                     checked={showFrame}
-                    onChange={(e) => handleShowFrame(e.target.checked)}
+                    onChange={(e) => handleEditArtisticImage('showFrame', e.target.checked)}
                     label="Add Frame"
                   />
                 </div>
@@ -118,14 +118,14 @@ const ArtisticImage = () => {
                     <span className={styles.label}>Color</span>
                     <ColorPicker
                       textColor={frameColor}
-                      onColorSelect={(value) => handleArtworkFrame('frameColor', value)}
+                      onColorSelect={(value) => handleEditArtisticImage('frameColor', value)}
                     />
                   </div>
                   <div className={styles.item}>
                     <span className={styles.label}>Thickness</span>
                     <Select
                       options={frameThicknessOptions}
-                      onSelect={(value) => handleArtworkFrame('frameThickness', value)}
+                      onSelect={(value) => handleEditArtisticImage('frameThickness', value)}
                       selectedLabel={frameThickness}
                     />
                   </div>
@@ -137,7 +137,7 @@ const ArtisticImage = () => {
                 <div className={styles.item}>
                   <Checkbox
                     checked={showPassepartout}
-                    onChange={(e) => handleShowPassepartout(e.target.checked)}
+                    onChange={(e) => handleEditArtisticImage('showPassepartout', e.target.checked)}
                     label="Add Passepartout"
                   />
                 </div>
@@ -150,7 +150,7 @@ const ArtisticImage = () => {
                       <ColorPicker
                         textColor={passepartoutColor}
                         onColorSelect={(value) =>
-                          handleArtworkPassepartout('passepartoutColor', value)
+                          handleEditArtisticImage('passepartoutColor', value)
                         }
                       />
                     </div>
@@ -159,7 +159,7 @@ const ArtisticImage = () => {
                       <Select
                         options={passepartoutThicknessOptions}
                         onSelect={(value) =>
-                          handleArtworkPassepartout('passepartoutThickness', value)
+                          handleEditArtisticImage('passepartoutThickness', value)
                         }
                         selectedLabel={passepartoutThickness}
                       />

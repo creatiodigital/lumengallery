@@ -9,19 +9,18 @@ import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const ArtisticImage = ({ artwork }) => {
+  const { position, quaternion, space, artisticImageProperties } = artwork
+
   const {
-    position,
-    quaternion,
-    space,
-    url,
-    showFrame,
-    showPassepartout,
     showArtworkInformation,
-    frameStyles,
-    passepartoutStyles,
-  } = artwork
-  const { frameColor, frameThickness } = frameStyles
-  const { passepartoutColor, passepartoutThickness } = passepartoutStyles
+    imageUrl,
+    showFrame,
+    frameColor,
+    frameThickness,
+    showPassepartout,
+    passepartoutColor,
+    passepartoutThickness,
+  } = artisticImageProperties
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
@@ -60,16 +59,16 @@ const ArtisticImage = ({ artwork }) => {
         <meshBasicMaterial visible={false} />
       </mesh>
 
-      {!url && (
+      {!imageUrl && (
         <mesh renderOrder={2}>
           <planeGeometry args={[innerWidth, innerHeight]} />
           <meshBasicMaterial color="white" side={DoubleSide} />
         </mesh>
       )}
 
-      {url && (
+      {imageUrl && (
         <mesh castShadow receiveShadow renderOrder={2}>
-          <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
+          <Image url={imageUrl} alt="paint" side={DoubleSide} transparent toneMapped={false}>
             <planeGeometry args={[innerWidth, innerHeight]} />
           </Image>
         </mesh>

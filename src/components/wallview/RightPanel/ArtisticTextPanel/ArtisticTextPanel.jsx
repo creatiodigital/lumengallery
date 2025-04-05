@@ -15,9 +15,9 @@ const ArtisticText = () => {
 
   const { handleTextAlign, handleEditArtworkText } = useArtworkTextHandlers(currentArtworkId)
 
-  const { artisticTextStyles } = useArtworkDetails(currentArtworkId)
+  const { artisticTextProperties } = useArtworkDetails(currentArtworkId)
 
-  const textColor = artisticTextStyles?.textColor ?? '#000000'
+  const textColor = artisticTextProperties?.textColor ?? '#000000'
 
   return (
     <div className={styles.section}>
@@ -44,7 +44,7 @@ const ArtisticText = () => {
             <Select
               options={fontSizes}
               onSelect={(value) => handleEditArtworkText('fontSize', value)}
-              selectedLabel={artisticTextStyles?.fontSize}
+              selectedLabel={artisticTextProperties?.fontSize}
             />
           </div>
 
@@ -53,7 +53,7 @@ const ArtisticText = () => {
             <Select
               options={lineHeights}
               onSelect={(value) => handleEditArtworkText('lineHeight', value)}
-              selectedLabel={artisticTextStyles?.lineHeight}
+              selectedLabel={artisticTextProperties?.lineHeight}
             />
           </div>
         </div>
@@ -63,7 +63,7 @@ const ArtisticText = () => {
             <Select
               options={fontWeights}
               onSelect={(value) => handleEditArtworkText('fontWeight', value)}
-              selectedLabel={artisticTextStyles?.fontWeight}
+              selectedLabel={artisticTextProperties?.fontWeight}
             />
           </div>
           <div className={styles.item}>
@@ -71,7 +71,7 @@ const ArtisticText = () => {
             <Select
               options={letterSpacings}
               onSelect={(value) => handleEditArtworkText('letterSpacing', value)}
-              selectedLabel={artisticTextStyles?.letterSpacing}
+              selectedLabel={artisticTextProperties?.letterSpacing}
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ const ArtisticText = () => {
             <Select
               options={fontFamilies}
               onSelect={(value) => handleEditArtworkText('fontFamily', value)}
-              selectedLabel={artisticTextStyles?.fontFamily}
+              selectedLabel={artisticTextProperties?.fontFamily}
             />
           </div>
         </div>

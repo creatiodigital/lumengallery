@@ -3,16 +3,16 @@ import { useDispatch } from 'react-redux'
 import {
   editArtworkArtisticText,
   editArtworkTextAlign,
-  editArtworkText,
+  editArtisticText,
 } from '@/lib/features/artworksSlice'
 
 export const useArtworkTextHandlers = (currentArtworkId) => {
   const dispatch = useDispatch()
 
   const handleArtisticTextChange = (e) => {
-    const newArtisticText = e.target.value
+    const newTextContent = e.target.value
 
-    dispatch(editArtworkArtisticText({ currentArtworkId, artisticText: newArtisticText }))
+    dispatch(editArtworkArtisticText({ currentArtworkId, textContent: newTextContent }))
   }
 
   const handleTextAlign = (textAlign) => {
@@ -20,7 +20,7 @@ export const useArtworkTextHandlers = (currentArtworkId) => {
   }
 
   const handleEditArtworkText = (property, value) => {
-    dispatch(editArtworkText({ currentArtworkId, property, value }))
+    dispatch(editArtisticText({ currentArtworkId, property, value }))
   }
 
   return {
