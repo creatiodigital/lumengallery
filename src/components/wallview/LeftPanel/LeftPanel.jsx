@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '@/components/ui/Button'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
-import { editWallName, editArtworkName } from '@/lib/features/artworksSlice'
+import { editWallName, editArtworkx } from '@/lib/features/artworksSlice'
 import { showEditMode } from '@/lib/features/dashboardSlice'
 import { showHuman, hideHuman, removeGroup } from '@/lib/features/wallViewSlice'
 import {
@@ -117,7 +117,13 @@ export const LeftPanel = () => {
 
   const handleBlurArtworkName = (artworkId) => {
     if (newArtworkName.trim() !== '') {
-      dispatch(editArtworkName({ currentArtworkId: artworkId, name: newArtworkName.trim() }))
+      dispatch(
+        editArtworkx({
+          currentArtworkId: artworkId,
+          property: 'name',
+          value: newArtworkName.trim(),
+        }),
+      )
     }
     setIsEditingArtwork(null)
   }

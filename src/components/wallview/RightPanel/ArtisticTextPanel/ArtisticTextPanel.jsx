@@ -13,7 +13,7 @@ import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } fro
 const ArtisticText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const { handleTextAlign, handleEditArtworkText } = useArtworkTextHandlers(currentArtworkId)
+  const { handleEditArtworkText } = useArtworkTextHandlers(currentArtworkId)
 
   const { artisticTextProperties } = useArtworkDetails(currentArtworkId)
 
@@ -26,13 +26,22 @@ const ArtisticText = () => {
         <h3 className={styles.subtitle}>Alignment</h3>
         <div className={styles.row}>
           <div className={styles.item}>
-            <ButtonIcon icon="textLeft" onClick={() => handleTextAlign('left')} />
+            <ButtonIcon
+              icon="textLeft"
+              onClick={() => handleEditArtworkText('textAlign', 'left')}
+            />
           </div>
           <div className={styles.item}>
-            <ButtonIcon icon="textCenter" onClick={() => handleTextAlign('center')} />
+            <ButtonIcon
+              icon="textCenter"
+              onClick={() => handleEditArtworkText('textAlign', 'center')}
+            />
           </div>
           <div className={styles.item}>
-            <ButtonIcon icon="textRight" onClick={() => handleTextAlign('right')} />
+            <ButtonIcon
+              icon="textRight"
+              onClick={() => handleEditArtworkText('textAlign', 'right')}
+            />
           </div>
         </div>
       </div>

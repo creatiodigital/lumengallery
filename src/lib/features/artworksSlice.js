@@ -30,8 +30,12 @@ const artworksSlice = createSlice({
         artworkType,
         wallId,
         canvas,
-        author: '',
         space: [],
+        author: '',
+        title: '',
+        year: '',
+        description: '',
+        dimensions: '',
         artisticImageProperties: {
           imageUrl: '',
           showArtworkInformation: false,
@@ -50,6 +54,7 @@ const artworksSlice = createSlice({
           letterSpacing: { label: '1', value: 1 },
           lineHeight: { label: '1', value: 1 },
           textColor: '#000000',
+          textAlign: 'left',
         },
       }
 
@@ -93,23 +98,6 @@ const artworksSlice = createSlice({
         artwork.space = serialized3DCoordinate
       }
     },
-    editArtworkName: (state, action) => {
-      const { currentArtworkId, name } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.name = name
-      }
-    },
-    editArtworkTextAlign: (state, action) => {
-      const { currentArtworkId, textAlign } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        if (!artwork.artisticTextProperties) {
-          artwork.artisticTextProperties = {}
-        }
-        artwork.artisticTextProperties.textAlign = textAlign
-      }
-    },
     editArtisticImage: (state, action) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -137,11 +125,9 @@ export const {
   createArtwork,
   editArtwork,
   editArtworkx,
-  editArtworkName,
   editAlignArtwork,
   edit3DCoordinates,
   deleteArtwork,
-  editArtworkTextAlign,
   editArtisticImage,
   editArtisticText,
 } = artworksSlice.actions

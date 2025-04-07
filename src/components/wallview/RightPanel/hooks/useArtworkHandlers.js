@@ -5,7 +5,7 @@ import {
   edit3DCoordinates,
   editArtwork,
   editAlignArtwork,
-  editArtworkName,
+  editArtworkx,
 } from '@/lib/features/artworksSlice'
 
 export const useArtworkHandlers = (currentArtworkId, boundingData) => {
@@ -18,9 +18,13 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   }
 
   const handleNameChange = (e) => {
-    const newName = e.target.value
-
-    dispatch(editArtworkName({ currentArtworkId, name: newName }))
+    dispatch(
+      editArtworkx({
+        currentArtworkId,
+        property: 'name',
+        value: e.target.value,
+      }),
+    )
   }
 
   const handleAlignChange = (alignment, wallWidth, wallHeight) => {
