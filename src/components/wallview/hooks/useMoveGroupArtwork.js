@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { editArtwork, edit3DCoordinates } from '@/lib/features/artworksSlice'
+import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 import {
   editArtworkGroup,
   startDraggingGroup,
@@ -65,9 +65,9 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
           }
 
           dispatch(
-            editArtwork({
+            editArtworkCanvas({
               currentArtworkId: artworkId,
-              newArtworkSizes: updatedCanvas,
+              canvasUpdates: updatedCanvas,
             }),
           )
 
@@ -81,9 +81,9 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
           )
 
           dispatch(
-            edit3DCoordinates({
+            editArtworkSpace({
               currentArtworkId: artworkId,
-              serialized3DCoordinate: new3DCoordinate,
+              spaceUpdates: new3DCoordinate,
             }),
           )
         }

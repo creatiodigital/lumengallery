@@ -14,7 +14,7 @@ import { useSelectBox } from '@/components/wallview/hooks/useSelectBox'
 import { Human } from '@/components/wallview/Human'
 import { SelectionBox } from '@/components/wallview/SelectionBox'
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates } from '@/lib/features/artworksSlice'
+import { editArtworkSpace } from '@/lib/features/artworksSlice'
 import { setShiftKeyDown } from '@/lib/features/wallViewSlice'
 import { setWallCoordinates, setWallDimensions } from '@/lib/features/wallViewSlice'
 
@@ -131,9 +131,9 @@ export const Wall = () => {
       )
 
       dispatch(
-        edit3DCoordinates({
+        editArtworkSpace({
           currentArtworkId,
-          serialized3DCoordinate: new3DCoordinate,
+          spaceUpdates: new3DCoordinate,
         }),
       )
     }

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { createArtwork, edit3DCoordinates } from '@/lib/features/artworksSlice'
+import { createArtwork, editArtworkSpace } from '@/lib/features/artworksSlice'
 import {
   chooseCurrentArtworkId,
   addArtworkToGroup,
@@ -60,9 +60,9 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
       dispatch(addArtworkToGroup(artworkId))
 
       dispatch(
-        edit3DCoordinates({
+        editArtworkSpace({
           currentArtworkId: artworkId,
-          serialized3DCoordinate: new3DCoordinate,
+          spaceUpdates: new3DCoordinate,
         }),
       )
     },
@@ -112,9 +112,9 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
       )
 
       dispatch(
-        edit3DCoordinates({
+        editArtworkSpace({
           currentArtworkId: artworkId,
-          serialized3DCoordinate: new3DCoordinate,
+          spaceUpdates: new3DCoordinate,
         }),
       )
     },

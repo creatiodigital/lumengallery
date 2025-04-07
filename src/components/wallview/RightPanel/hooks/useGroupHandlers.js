@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates, editArtwork } from '@/lib/features/artworksSlice'
+import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 import { editArtworkGroup } from '@/lib/features/wallViewSlice'
 
 export const useGroupHandlers = (artworkGroupIds, boundingData) => {
@@ -28,7 +28,9 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
           height: artwork.canvas.height,
         }
 
-        dispatch(editArtwork({ currentArtworkId: artworkId, newArtworkSizes: newArtworkCanvas }))
+        dispatch(
+          editArtworkCanvas({ currentArtworkId: artworkId, canvasUpdates: newArtworkCanvas }),
+        )
 
         if (boundingData) {
           const new3DCoordinate = convert2DTo3D(
@@ -41,9 +43,9 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
           )
 
           dispatch(
-            edit3DCoordinates({
+            editArtworkSpace({
               currentArtworkId: artworkId,
-              serialized3DCoordinate: new3DCoordinate,
+              spaceUpdates: new3DCoordinate,
             }),
           )
         }
@@ -68,7 +70,9 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
           height: artwork.canvas.height,
         }
 
-        dispatch(editArtwork({ currentArtworkId: artworkId, newArtworkSizes: newArtworkCanvas }))
+        dispatch(
+          editArtworkCanvas({ currentArtworkId: artworkId, canvasUpdates: newArtworkCanvas }),
+        )
 
         if (boundingData) {
           const new3DCoordinate = convert2DTo3D(
@@ -81,9 +85,9 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
           )
 
           dispatch(
-            edit3DCoordinates({
+            editArtworkSpace({
               currentArtworkId: artworkId,
-              serialized3DCoordinate: new3DCoordinate,
+              spaceUpdates: new3DCoordinate,
             }),
           )
         }
@@ -135,7 +139,9 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
           height: artwork.canvas.height,
         }
 
-        dispatch(editArtwork({ currentArtworkId: artworkId, newArtworkSizes: newArtworkCanvas }))
+        dispatch(
+          editArtworkCanvas({ currentArtworkId: artworkId, canvasUpdates: newArtworkCanvas }),
+        )
 
         if (boundingData) {
           const new3DCoordinate = convert2DTo3D(
@@ -148,9 +154,9 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
           )
 
           dispatch(
-            edit3DCoordinates({
+            editArtworkSpace({
               currentArtworkId: artworkId,
-              serialized3DCoordinate: new3DCoordinate,
+              spaceUpdates: new3DCoordinate,
             }),
           )
         }

@@ -4,13 +4,11 @@ const artworksSlice = createSlice({
   name: 'artworks',
   initialState: {
     id: '123456',
-    name: 'Eduardo',
     artworks: [],
     artworkCounters: {
       paint: 0,
       text: 0,
     },
-    walls: [],
   },
   reducers: {
     createArtwork: (state, action) => {
@@ -60,44 +58,37 @@ const artworksSlice = createSlice({
 
       state.artworks.push(newArtwork)
     },
+
     editArtwork: (state, action) => {
-      const { currentArtworkId, newArtworkSizes } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
-      if (artwork) {
-        artwork.canvas = {
-          x: newArtworkSizes.x,
-          y: newArtworkSizes.y,
-          width: newArtworkSizes.width,
-          height: newArtworkSizes.height,
-        }
-      }
-    },
-    editArtworkx: (state, action) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
         artwork[property] = value
       }
     },
-    deleteArtwork: (state, action) => {
-      const { artworkId } = action.payload
-      state.artworks = state.artworks.filter((artwork) => artwork.id !== artworkId)
-    },
-    editAlignArtwork: (state, action) => {
-      const { currentArtworkId, artworkPosition } = action.payload
+
+    editArtworkCanvas: (state, action) => {
+      const { currentArtworkId, canvasUpdates } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
-        artwork.canvas.x = artworkPosition.x
-        artwork.canvas.y = artworkPosition.y
+        artwork.canvas = {
+          ...artwork.canvas,
+          ...canvasUpdates,
+        }
       }
     },
-    edit3DCoordinates: (state, action) => {
-      const { currentArtworkId, serialized3DCoordinate } = action.payload
+
+    editArtworkSpace: (state, action) => {
+      const { currentArtworkId, spaceUpdates } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
       if (artwork) {
-        artwork.space = serialized3DCoordinate
+        artwork.space = {
+          ...artwork.space,
+          ...spaceUpdates,
+        }
       }
     },
+
     editArtisticImage: (state, action) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -108,6 +99,7 @@ const artworksSlice = createSlice({
         artwork.artisticImageProperties[property] = value
       }
     },
+
     editArtisticText: (state, action) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
@@ -118,17 +110,21 @@ const artworksSlice = createSlice({
         artwork.artisticTextProperties[property] = value
       }
     },
+
+    deleteArtwork: (state, action) => {
+      const { artworkId } = action.payload
+      state.artworks = state.artworks.filter((artwork) => artwork.id !== artworkId)
+    },
   },
 })
 
 export const {
   createArtwork,
   editArtwork,
-  editArtworkx,
-  editAlignArtwork,
-  edit3DCoordinates,
-  deleteArtwork,
+  editArtworkCanvas,
+  editArtworkSpace,
   editArtisticImage,
   editArtisticText,
+  deleteArtwork,
 } = artworksSlice.actions
 export default artworksSlice.reducer

@@ -1,12 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import {
-  edit3DCoordinates,
-  editArtwork,
-  editAlignArtwork,
-  editArtworkx,
-} from '@/lib/features/artworksSlice'
+import { editArtworkSpace, editArtworkCanvas, editArtwork } from '@/lib/features/artworksSlice'
 
 export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const dispatch = useDispatch()
@@ -19,7 +14,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
 
   const handleNameChange = (e) => {
     dispatch(
-      editArtworkx({
+      editArtwork({
         currentArtworkId,
         property: 'name',
         value: e.target.value,
@@ -65,10 +60,17 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
 
     const artworkPosition = { x: newX, y: newY }
 
+    // dispatch(
+    //   editAlignArtwork({
+    //     currentArtworkId,
+    //     artworkPosition,
+    //   }),
+    // )
+
     dispatch(
-      editAlignArtwork({
+      editArtworkCanvas({
         currentArtworkId,
-        artworkPosition,
+        canvasUpdates: artworkPosition,
       }),
     )
 
@@ -86,9 +88,9 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
       )
 
       dispatch(
-        edit3DCoordinates({
+        editArtworkSpace({
           currentArtworkId,
-          serialized3DCoordinate: new3DCoordinate,
+          spaceUpdates: new3DCoordinate,
         }),
       )
     }
@@ -105,9 +107,9 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     const artworkY = currentEdited.canvas.y
 
     dispatch(
-      editArtwork({
+      editArtworkCanvas({
         currentArtworkId,
-        newArtworkSizes: { ...currentEdited.canvas, x: newX },
+        canvasUpdates: { ...currentEdited.canvas, x: newX },
       }),
     )
 
@@ -125,9 +127,9 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
       )
 
       dispatch(
-        edit3DCoordinates({
+        editArtworkSpace({
           currentArtworkId,
-          serialized3DCoordinate: new3DCoordinate,
+          spaceUpdates: new3DCoordinate,
         }),
       )
     }
@@ -144,9 +146,9 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     const artworkX = currentEdited.canvas.x
 
     dispatch(
-      editArtwork({
+      editArtworkCanvas({
         currentArtworkId,
-        newArtworkSizes: { ...currentEdited.canvas, y: newY },
+        canvasUpdates: { ...currentEdited.canvas, y: newY },
       }),
     )
 
@@ -164,9 +166,9 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
       )
 
       dispatch(
-        edit3DCoordinates({
+        editArtworkSpace({
           currentArtworkId,
-          serialized3DCoordinate: new3DCoordinate,
+          spaceUpdates: new3DCoordinate,
         }),
       )
     }
@@ -182,9 +184,9 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     const newX = x + (currentWidth - newWidth) / 2
 
     dispatch(
-      editArtwork({
+      editArtworkCanvas({
         currentArtworkId,
-        newArtworkSizes: { ...currentEdited.canvas, width: newWidth, x: newX },
+        canvasUpdates: { ...currentEdited.canvas, width: newWidth, x: newX },
       }),
     )
   }
@@ -199,9 +201,9 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     const newY = y + (currentHeight - newHeight) / 2
 
     dispatch(
-      editArtwork({
+      editArtworkCanvas({
         currentArtworkId,
-        newArtworkSizes: { ...currentEdited.canvas, height: newHeight, y: newY },
+        canvasUpdates: { ...currentEdited.canvas, height: newHeight, y: newY },
       }),
     )
   }

@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates, editArtwork } from '@/lib/features/artworksSlice'
+import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 import {
   setAlignedPairs,
   startDragging,
@@ -126,7 +126,9 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
       const updatedCanvas = { ...artwork.canvas, x: snapX, y: snapY }
 
-      dispatch(editArtwork({ currentArtworkId: draggedArtworkId, newArtworkSizes: updatedCanvas }))
+      dispatch(
+        editArtworkCanvas({ currentArtworkId: draggedArtworkId, canvasUpdates: updatedCanvas }),
+      )
 
       const new3DCoordinate = convert2DTo3D(
         { x: snapX, y: snapY, size: { w: updatedCanvas.width, h: updatedCanvas.height } },
@@ -134,9 +136,9 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       )
 
       dispatch(
-        edit3DCoordinates({
+        editArtworkSpace({
           currentArtworkId: draggedArtworkId,
-          serialized3DCoordinate: new3DCoordinate,
+          spaceUpdates: new3DCoordinate,
         }),
       )
     },

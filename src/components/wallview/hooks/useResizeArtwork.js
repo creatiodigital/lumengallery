@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates, editArtwork } from '@/lib/features/artworksSlice'
+import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
   const artworks = useSelector((state) => state.artworks.artworks)
@@ -91,9 +91,9 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
         }
 
         dispatch(
-          editArtwork({
+          editArtworkCanvas({
             currentArtworkId: artworkId,
-            newArtworkSizes: updatedCanvas,
+            canvasUpdates: updatedCanvas,
           }),
         )
 
@@ -111,9 +111,9 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
           )
 
           dispatch(
-            edit3DCoordinates({
+            editArtworkSpace({
               currentArtworkId: artworkId,
-              serialized3DCoordinate: new3DCoordinate,
+              spaceUpdates: new3DCoordinate,
             }),
           )
         }

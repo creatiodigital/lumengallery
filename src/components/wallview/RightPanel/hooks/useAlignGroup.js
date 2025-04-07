@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { editArtwork, edit3DCoordinates } from '@/lib/features/artworksSlice'
+import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 
 export const useAlignGroup = (boundingData) => {
   const dispatch = useDispatch()
@@ -54,7 +54,9 @@ export const useAlignGroup = (boundingData) => {
           height: artwork.canvas.height,
         }
 
-        dispatch(editArtwork({ currentArtworkId: artwork.id, newArtworkSizes }))
+        dispatch(
+          editArtworkCanvas({ currentArtworkId: artwork.id, canvasUpdates: newArtworkSizes }),
+        )
 
         const new3DCoordinate = convert2DTo3D(
           {
@@ -66,9 +68,9 @@ export const useAlignGroup = (boundingData) => {
         )
 
         dispatch(
-          edit3DCoordinates({
+          editArtworkSpace({
             currentArtworkId: artworkId,
-            serialized3DCoordinate: new3DCoordinate,
+            spaceUpdates: new3DCoordinate,
           }),
         )
       }
