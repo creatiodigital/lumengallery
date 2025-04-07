@@ -16,7 +16,8 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const artworksById = useSelector((state) => state.artworks.byId)
+  const allIds = useSelector((state) => state.artworks.allIds)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
@@ -32,7 +33,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       event.stopPropagation()
 
       const rect = wallRef.current.getBoundingClientRect()
-      const artwork = artworks?.find((art) => art.id === artworkId)
+      const artwork = artworksById[artworkId]
       if (!artwork) return
 
       const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.canvas.x
@@ -43,7 +44,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       setDraggedArtworkId(artworkId)
       dispatch(chooseCurrentArtworkId(artworkId))
     },
-    [isEditingArtwork, wallRef, isArtworkVisible, artworks, scaleFactor, dispatch],
+    [isEditingArtwork, wallRef, isArtworkVisible, artworksById, scaleFactor, dispatch],
   )
 
   const handleArtworkDragMove = useCallback(
@@ -60,13 +61,12 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       let x = scaledMouseX - offset.x
       let y = scaledMouseY - offset.y
 
-      const artwork = artworks.find((art) => art.id === draggedArtworkId)
+      const artwork = artworksById[draggedArtworkId]
       if (!artwork) return
 
-      const sameWallArtworks = artworks.filter(
-        (otherArtwork) =>
-          otherArtwork.wallId === currentWallId && otherArtwork.id !== draggedArtworkId,
-      )
+      const sameWallArtworks = allIds
+        .map((id) => artworksById[id])
+        .filter((artwork) => artwork.wallId === currentWallId && artwork.id !== draggedArtworkId)
 
       let snapX = x
       let snapY = y
@@ -149,7 +149,6 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       boundingData,
       scaleFactor,
       offset,
-      artworks,
       currentWallId,
       dispatch,
     ],

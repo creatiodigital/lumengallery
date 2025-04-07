@@ -15,6 +15,8 @@ const RightPanel = () => {
 
   const { artworkType } = useArtworkDetails(currentArtworkId)
 
+  console.log('artworkType', artworkType)
+
   const isGroupCreated = artworkGroupIds.length > 1
 
   return (

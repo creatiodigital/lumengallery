@@ -9,12 +9,12 @@ import styles from './ArtworkPanel.module.scss'
 const ArtworkPanel = () => {
   const dispatch = useDispatch()
   const panelRef = useRef(null)
-  const artworks = useSelector((state) => state.artworks.artworks)
   const selectedSceneArtworkId = useSelector((state) => state.scene.currentArtworkId)
+  const byId = useSelector((state) => state.artworks.byId)
 
   const selectedArtwork = useMemo(
-    () => artworks?.find((artwork) => artwork.id === selectedSceneArtworkId),
-    [artworks, selectedSceneArtworkId],
+    () => byId[selectedSceneArtworkId],
+    [byId, selectedSceneArtworkId],
   )
 
   const { name, artworkTitle, author, artworkYear, description, artworkDimensions } =

@@ -35,7 +35,7 @@ const ArtisticImage = () => {
     frameThickness,
   } = artisticImageProperties
 
-  const { handleEditArtworkx, handleEditArtisticImage } = useArtworkImageHandlers(currentArtworkId)
+  const { handleEditArtwork, handleEditArtisticImage } = useArtworkImageHandlers(currentArtworkId)
 
   return (
     <>
@@ -64,7 +64,7 @@ const ArtisticImage = () => {
                       <span className={styles.label}>Author</span>
                       <Input
                         value={author}
-                        onChange={(e) => handleEditArtworkx('author', e.target.value)}
+                        onChange={(e) => handleEditArtwork('author', e.target.value)}
                       />
                     </div>
                   </div>
@@ -73,7 +73,7 @@ const ArtisticImage = () => {
                       <span className={styles.label}>Title</span>
                       <Input
                         value={artworkTitle}
-                        onChange={(e) => handleEditArtworkx('authorTitle', e.target.value)}
+                        onChange={(e) => handleEditArtwork('authorTitle', e.target.value)}
                       />
                     </div>
                   </div>
@@ -82,7 +82,7 @@ const ArtisticImage = () => {
                       <span className={styles.label}>Year</span>
                       <Input
                         value={artworkYear}
-                        onChange={(e) => handleEditArtworkx('artworkYear', e.target.value)}
+                        onChange={(e) => handleEditArtwork('artworkYear', e.target.value)}
                       />
                     </div>
                   </div>
@@ -91,7 +91,7 @@ const ArtisticImage = () => {
                       <span className={styles.label}>Description</span>
                       <Textarea
                         value={description}
-                        onChange={(e) => handleEditArtworkx('description', e.target.value)}
+                        onChange={(e) => handleEditArtwork('description', e.target.value)}
                       />
                     </div>
                   </div>
@@ -100,7 +100,7 @@ const ArtisticImage = () => {
                       <span className={styles.label}>Dimensions</span>
                       <Input
                         value={artworkDimensions}
-                        onChange={(e) => handleEditArtworkx('artworkDimensions', e.target.value)}
+                        onChange={(e) => handleEditArtwork('artworkDimensions', e.target.value)}
                       />
                     </div>
                   </div>

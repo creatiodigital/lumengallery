@@ -7,13 +7,13 @@ export const useAlignGroup = (boundingData) => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const artworksById = useSelector((state) => state.artworks.byId)
 
   const alignArtworksInGroup = (alignment) => {
     const { groupX, groupY, groupWidth, groupHeight } = artworkGroup
 
     artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
+      const artwork = artworksById[artworkId]
 
       if (artwork) {
         const artworkWidth = artwork.canvas.width

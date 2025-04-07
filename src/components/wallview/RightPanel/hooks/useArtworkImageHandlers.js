@@ -4,10 +4,10 @@ import { editArtwork, editArtisticImage } from '@/lib/features/artworksSlice'
 
 export const useArtworkImageHandlers = (currentArtworkId) => {
   const dispatch = useDispatch()
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const artworksById = useSelector((state) => state.artworks.byId)
 
-  const handleEditArtworkx = (property, value) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+  const handleEditArtwork = (property, value) => {
+    const currentEdited = artworksById[currentArtworkId]
     if (!currentEdited) return
 
     dispatch(
@@ -20,7 +20,7 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
   }
 
   const handleEditArtisticImage = (property, value) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    const currentEdited = artworksById[currentArtworkId]
     if (!currentEdited) return
 
     dispatch(
@@ -33,7 +33,7 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
   }
 
   return {
-    handleEditArtworkx,
+    handleEditArtwork,
     handleEditArtisticImage,
   }
 }

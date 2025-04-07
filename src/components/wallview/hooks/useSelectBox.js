@@ -5,7 +5,8 @@ import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 
 export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) => {
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const artworksById = useSelector((state) => state.artworks.byId)
+  const allIds = useSelector((state) => state.artworks.allIds)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const dispatch = useDispatch()
 
@@ -76,7 +77,9 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     const maxX = Math.max(startX, endX)
     const maxY = Math.max(startY, endY)
 
-    const filteredArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId)
+    const filteredArtworks = allIds
+      .map((id) => artworksById[id])
+      .filter((artwork) => artwork.wallId === currentWallId)
 
     const selectedArtworks = filteredArtworks.filter((artwork) => {
       const artX = artwork.canvas.x
@@ -100,7 +103,7 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
 
     setSelectionBox(null)
     setDraggingSelectBox(false)
-  }, [selectionBox, draggingSelectBox, artworks, handleAddArtworkToGroup])
+  }, [selectionBox, draggingSelectBox, allIds, artworksById, handleAddArtworkToGroup])
 
   useEffect(() => {
     if (draggingSelectBox) {

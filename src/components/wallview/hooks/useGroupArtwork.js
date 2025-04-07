@@ -6,7 +6,7 @@ import { addArtworkToGroup, removeGroup, createArtworkGroup } from '@/lib/featur
 export const useGroupArtwork = () => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const byId = useSelector((state) => state.artworks.byId)
 
   const handleAddArtworkToGroup = useCallback(
     (artworkId) => {
@@ -19,8 +19,7 @@ export const useGroupArtwork = () => {
 
   const handleCreateArtworkGroup = useCallback(() => {
     if (artworkGroupIds.length === 0) return
-
-    const artworkGroupItems = artworks.filter((artwork) => artworkGroupIds.includes(artwork.id))
+    const artworkGroupItems = artworkGroupIds.map((id) => byId[id])
     const xValues = artworkGroupItems.map((artwork) => artwork.canvas.x)
     const xEdgeValues = artworkGroupItems.map((artwork) => artwork.canvas.x + artwork.canvas.width)
     const yValues = artworkGroupItems.map((artwork) => artwork.canvas.y)
@@ -41,7 +40,7 @@ export const useGroupArtwork = () => {
     }
 
     dispatch(createArtworkGroup(groupProps))
-  }, [artworkGroupIds, artworks, dispatch])
+  }, [artworkGroupIds, dispatch])
 
   const handleRemoveArtworkGroup = useCallback(() => {
     dispatch(removeGroup())

@@ -36,6 +36,7 @@ const wallViewSlice = createSlice({
       state.isHumanVisible = false
     },
     chooseCurrentArtworkId: (state, action) => {
+      console.log('chooseCurrentArtworkId', action.payload)
       state.currentArtworkId = action.payload
     },
     increaseScaleFactor: (state) => {

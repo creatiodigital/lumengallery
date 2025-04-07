@@ -5,7 +5,7 @@ import { convert2DTo3D } from '@/components/wallview/utils'
 import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const artworksById = useSelector((state) => state.artworks.byId)
   const dispatch = useDispatch()
   const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const gridSize = 20
@@ -14,7 +14,7 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
     (event, artworkId, direction) => {
       event.stopPropagation()
 
-      const artwork = artworks?.find((art) => art.id === artworkId)
+      const artwork = artworksById[artworkId]
       if (!artwork || !wallRef.current) return
 
       const rect = wallRef.current.getBoundingClientRect()
@@ -127,7 +127,7 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
     },
-    [artworks, wallRef, gridSize, scaleFactor, isGridVisible, boundingData, dispatch],
+    [artworksById, wallRef, gridSize, scaleFactor, isGridVisible, boundingData, dispatch],
   )
 
   return useMemo(

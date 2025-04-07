@@ -5,7 +5,8 @@ import { editArtworkSpace, editArtworkCanvas, editArtwork } from '@/lib/features
 
 export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const dispatch = useDispatch()
-  const artworks = useSelector((state) => state.artworks.artworks)
+
+  const artworksById = useSelector((state) => state.artworks.byId)
 
   const sanitizeNumberInput = (value) => {
     const normalizedValue = value * 100
@@ -23,7 +24,8 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   }
 
   const handleAlignChange = (alignment, wallWidth, wallHeight) => {
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    const currentEdited = artworksById[currentArtworkId]
+
     if (!currentEdited) return
 
     const artworkWidth = currentEdited.canvas.width
@@ -60,13 +62,6 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
 
     const artworkPosition = { x: newX, y: newY }
 
-    // dispatch(
-    //   editAlignArtwork({
-    //     currentArtworkId,
-    //     artworkPosition,
-    //   }),
-    // )
-
     dispatch(
       editArtworkCanvas({
         currentArtworkId,
@@ -99,7 +94,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleMoveXChange = (e) => {
     const newX = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    const currentEdited = artworksById[currentArtworkId]
     if (!currentEdited) return
 
     const artworkWidth = currentEdited.canvas.width
@@ -138,7 +133,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleMoveYChange = (e) => {
     const newY = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    const currentEdited = artworksById[currentArtworkId]
     if (!currentEdited) return
 
     const artworkWidth = currentEdited.canvas.width
@@ -177,7 +172,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleWidthChange = (e) => {
     const newWidth = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    const currentEdited = artworksById[currentArtworkId]
     if (!currentEdited) return
 
     const { x, width: currentWidth } = currentEdited.canvas
@@ -194,7 +189,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleHeightChange = (e) => {
     const newHeight = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = artworks.find((artwork) => artwork.id === currentArtworkId)
+    const currentEdited = artworksById[currentArtworkId]
     if (!currentEdited) return
 
     const { y, height: currentHeight } = currentEdited.canvas

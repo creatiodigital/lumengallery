@@ -5,10 +5,12 @@ import { Vector3, Quaternion } from 'three'
 import { Artwork } from '@/components/scene/spaces/objects/Artwork'
 
 const Artworks = () => {
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const allIds = useSelector((state) => state.artworks.allIds)
+  const byId = useSelector((state) => state.artworks.byId)
 
   const precomputedArtworks = useMemo(() => {
-    return artworks?.map((artwork) => {
+    return allIds?.map((id) => {
+      const artwork = byId[id]
       if (!artwork.space) return null
 
       const position = new Vector3(
@@ -38,7 +40,7 @@ const Artworks = () => {
         },
       }
     })
-  }, [artworks])
+  }, [allIds, byId])
 
   return (
     <>

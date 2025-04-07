@@ -1,10 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit'
+import { createNewArtwork } from './mocks'
 
 const artworksSlice = createSlice({
   name: 'artworks',
   initialState: {
     id: '123456',
-    artworks: [],
+    byId: {},
+    allIds: [],
     artworkCounters: {
       paint: 0,
       text: 0,
@@ -20,48 +22,17 @@ const artworksSlice = createSlice({
         state.artworkCounters[artworkType] = 1
       }
 
-      const artworkName = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)} ${state.artworkCounters[artworkType]}`
+      const newArtwork = createNewArtwork({ id, wallId, canvas, artworkType })
 
-      const newArtwork = {
-        id,
-        name: artworkName,
-        artworkType,
-        wallId,
-        canvas,
-        space: [],
-        author: '',
-        title: '',
-        year: '',
-        description: '',
-        dimensions: '',
-        artisticImageProperties: {
-          imageUrl: '',
-          showArtworkInformation: false,
-          showFrame: false,
-          frameColor: '#000000',
-          frameThickness: { label: '1', value: 1 },
-          showPassepartout: false,
-          passepartoutColor: '#ffffff',
-          passepartoutThickness: { label: '0', value: 0 },
-        },
-        artisticTextProperties: {
-          textContent: '',
-          fontFamily: { label: 'Roboto', value: 'roboto' },
-          fontSize: { label: '16', value: 16 },
-          fontWeight: { label: 'Regular', value: 'regular' },
-          letterSpacing: { label: '1', value: 1 },
-          lineHeight: { label: '1', value: 1 },
-          textColor: '#000000',
-          textAlign: 'left',
-        },
-      }
+      newArtwork.name = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)} ${state.artworkCounters[artworkType]}`
 
-      state.artworks.push(newArtwork)
+      state.byId[id] = newArtwork
+      state.allIds.push(id)
     },
 
     editArtwork: (state, action) => {
       const { currentArtworkId, property, value } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      const artwork = state.byId[currentArtworkId]
       if (artwork) {
         artwork[property] = value
       }
@@ -69,7 +40,7 @@ const artworksSlice = createSlice({
 
     editArtworkCanvas: (state, action) => {
       const { currentArtworkId, canvasUpdates } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      const artwork = state.byId[currentArtworkId]
       if (artwork) {
         artwork.canvas = {
           ...artwork.canvas,
@@ -80,7 +51,7 @@ const artworksSlice = createSlice({
 
     editArtworkSpace: (state, action) => {
       const { currentArtworkId, spaceUpdates } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      const artwork = state.byId[currentArtworkId]
       if (artwork) {
         artwork.space = {
           ...artwork.space,
@@ -91,7 +62,7 @@ const artworksSlice = createSlice({
 
     editArtisticImage: (state, action) => {
       const { currentArtworkId, property, value } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      const artwork = state.byId[currentArtworkId]
       if (artwork) {
         if (!artwork.artisticImageProperties) {
           artwork.artisticImageProperties = {}
@@ -102,7 +73,7 @@ const artworksSlice = createSlice({
 
     editArtisticText: (state, action) => {
       const { currentArtworkId, property, value } = action.payload
-      const artwork = state.artworks.find((artwork) => artwork.id === currentArtworkId)
+      const artwork = state.byId[currentArtworkId]
       if (artwork) {
         if (!artwork.artisticTextProperties) {
           artwork.artisticTextProperties = {}
@@ -113,7 +84,8 @@ const artworksSlice = createSlice({
 
     deleteArtwork: (state, action) => {
       const { artworkId } = action.payload
-      state.artworks = state.artworks.filter((artwork) => artwork.id !== artworkId)
+      delete state.byId[artworkId]
+      state.allIds = state.allIds.filter((id) => id !== artworkId)
     },
   },
 })

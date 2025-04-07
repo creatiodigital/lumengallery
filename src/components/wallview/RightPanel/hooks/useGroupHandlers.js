@@ -6,7 +6,8 @@ import { editArtworkGroup } from '@/lib/features/wallViewSlice'
 
 export const useGroupHandlers = (artworkGroupIds, boundingData) => {
   const dispatch = useDispatch()
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const artworksById = useSelector((state) => state.artworks.byId)
+
   const wallHeight = useSelector((state) => state.wallView.wallHeight)
   const wallWidth = useSelector((state) => state.wallView.wallWidth)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
@@ -18,7 +19,7 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     dispatch(editArtworkGroup({ groupX: newGroupX, groupY: artworkGroup.groupY }))
 
     artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
+      const artwork = artworksById[artworkId]
 
       if (artwork) {
         const newArtworkCanvas = {
@@ -60,7 +61,7 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     dispatch(editArtworkGroup({ groupX: artworkGroup.groupX, groupY: newGroupY }))
 
     artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
+      const artwork = artworksById[artworkId]
 
       if (artwork) {
         const newArtworkCanvas = {
@@ -129,7 +130,7 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     const deltaY = newGroupY - artworkGroup.groupY
 
     artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
+      const artwork = artworksById[artworkId]
 
       if (artwork) {
         const newArtworkCanvas = {

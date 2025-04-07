@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei'
-import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Artwork } from '@/components/wallview/Artwork'
@@ -25,7 +25,8 @@ import styles from './Wall.module.scss'
 export const Wall = () => {
   const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const allIds = useSelector((state) => state.artworks.allIds)
+  const artworksById = useSelector((state) => state.artworks.byId)
 
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
@@ -47,10 +48,8 @@ export const Wall = () => {
   const wallRef = useRef(null)
   const preventClick = useRef(false)
 
-  const currentArtwork = useMemo(
-    () => artworks?.find((art) => art.id === currentArtworkId),
-    [artworks, currentArtworkId],
-  )
+  const currentArtwork = artworksById[currentArtworkId]
+
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
@@ -169,7 +168,8 @@ export const Wall = () => {
         onDrop={handleDropArtworkOnWall}
       >
         {isHumanVisible && <Human humanWidth={humanWidth} humanHeight={humanHeight} />}
-        {artworks
+        {allIds
+          .map((id) => artworksById[id])
           .filter((artwork) => artwork.wallId === currentWallId)
           .map((artwork) => (
             <Artwork
@@ -197,8 +197,8 @@ export const Wall = () => {
         {selectionBox && <SelectionBox selectionBox={selectionBox} scaleFactor={scaleFactor} />}
         {alignedPairs?.map((pair, index) => {
           if (!isDragging) return null
-          const from = artworks?.find((art) => art.id === pair.from)?.canvas || {}
-          const to = artworks?.find((art) => art.id === pair.to)?.canvas || {}
+          const from = artworksById[pair.from]?.canvas || {}
+          const to = artworksById[pair.to]?.canvas || {}
 
           return (
             <AlignedLine

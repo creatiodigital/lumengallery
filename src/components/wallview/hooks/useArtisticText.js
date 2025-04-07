@@ -5,9 +5,8 @@ import { editArtisticText } from '@/lib/features/artworksSlice'
 export const useArtisticText = (artworkId) => {
   const dispatch = useDispatch()
 
-  const artwork = useSelector((state) =>
-    state.artworks.artworks.find((artwork) => artwork.id === artworkId),
-  )
+  const byId = useSelector((state) => state.artworks.byId)
+  const artwork = byId[artworkId]
 
   const textContent = artwork?.artisticTextProperties?.textContent
   const textAlign = artwork?.artisticTextProperties?.textAlign || 'left'

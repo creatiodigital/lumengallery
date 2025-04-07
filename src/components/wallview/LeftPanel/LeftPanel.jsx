@@ -22,7 +22,8 @@ import styles from './LeftPanel.module.scss'
 export const LeftPanel = () => {
   const dispatch = useDispatch()
 
-  const artworks = useSelector((state) => state.artworks.artworks)
+  const artworksById = useSelector((state) => state.artworks.byId)
+  const allIds = useSelector((state) => state.artworks.allIds)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const walls = useSelector((state) => state.scene.walls)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
@@ -39,8 +40,12 @@ export const LeftPanel = () => {
   const currentWallName = currentWall ? currentWall.name : 'Select a wall'
 
   const wallArtworks = useMemo(
-    () => artworks.filter((artwork) => artwork.wallId === currentWallId).reverse(),
-    [artworks, currentWallId],
+    () =>
+      allIds
+        .map((id) => artworksById[id])
+        .filter((artwork) => artwork.wallId === currentWallId)
+        .reverse(),
+    [allIds, artworksById, currentWallId],
   )
 
   const handleZoomIn = () => {

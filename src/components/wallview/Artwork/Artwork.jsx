@@ -38,6 +38,7 @@ const Artwork = memo(
     const { handleAddArtworkToGroup } = groupArtworkHandlers
 
     const handleArtworkClick = (event) => {
+      console.log('handleArtworkClick', handleArtworkClick)
       event.stopPropagation()
 
       if (isShiftKeyDown) {
