@@ -4,7 +4,6 @@ import { createNewArtwork } from './mocks'
 const artworksSlice = createSlice({
   name: 'artworks',
   initialState: {
-    id: '123456',
     byId: {},
     allIds: [],
     artworkCounters: {

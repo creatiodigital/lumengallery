@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { createArtwork, editArtworkSpace } from '@/lib/features/artworksSlice'
+import { createArtworkPosition } from '@/lib/features/exhibitionSlice'
 import {
   chooseCurrentArtworkId,
   addArtworkToGroup,
@@ -24,6 +25,10 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
 
       const x = (wallWidth * 100) / 2 - initialSize / 2
       const y = (wallHeight * 100) / 2 - initialSize / 2
+
+      const posX2D = (wallWidth * 100) / 2 - initialSize / 2
+      const posY2D = (wallHeight * 100) / 2 - initialSize / 2
+
       const artworkId = uuidv4()
 
       dispatch(showWizard())
@@ -41,6 +46,20 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
             height: 100,
           },
           imageURL: null,
+        }),
+      )
+
+      const artworkPosition = {
+        posX2D,
+        posY2D,
+        width: 100,
+        height: 100,
+      }
+
+      dispatch(
+        createArtworkPosition({
+          artworkId,
+          artworkPosition,
         }),
       )
 
