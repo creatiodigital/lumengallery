@@ -9,7 +9,7 @@ import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const ArtisticImage = ({ artwork }) => {
-  const { position, quaternion, space, artisticImageProperties } = artwork
+  const { position, quaternion, width, height, artisticImageProperties } = artwork
 
   const {
     showArtworkInformation,
@@ -32,8 +32,8 @@ const ArtisticImage = ({ artwork }) => {
     }
   }
 
-  const planeWidth = space.width || 1
-  const planeHeight = space.height || 1
+  const planeWidth = width || 1
+  const planeHeight = height || 1
 
   const frameMaterial = new MeshStandardMaterial({
     color: frameColor,

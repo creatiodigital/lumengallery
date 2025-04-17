@@ -2,8 +2,10 @@ import { useSelector } from 'react-redux'
 
 export const useArtworkDetails = (currentArtworkId) => {
   const artworksById = useSelector((state) => state.artworks.byId)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
 
   const artwork = artworksById[currentArtworkId]
+  const artworkPosition = positionsById[currentArtworkId]
 
   if (!artwork)
     return {
@@ -23,7 +25,7 @@ export const useArtworkDetails = (currentArtworkId) => {
       artworkType: '',
     }
 
-  const { width, height, x, y } = artwork.canvas
+  const { width2d, height3d, posX2d, posY2d } = artworkPosition
   const {
     name,
     artworkTitle,
@@ -38,10 +40,10 @@ export const useArtworkDetails = (currentArtworkId) => {
   } = artwork
 
   return {
-    width: Math.round(width),
-    height: Math.round(height),
-    x: Math.round(x),
-    y: Math.round(y),
+    width: Math.round(width2d),
+    height: Math.round(height3d),
+    x: Math.round(posX2d),
+    y: Math.round(posY2d),
     name,
     artworkTitle,
     author,

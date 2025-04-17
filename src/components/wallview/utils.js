@@ -69,3 +69,41 @@ export const convert2DTo3D = ({ x, y, size }, boundingData) => {
     height: adjustedHeight,
   }
 }
+export const convert2DTo3DE = ({ x, y, size }, boundingData) => {
+  const { boundingBox, normal, u, v, width, height } = boundingData
+  const { w, h } = size
+
+  const xRatio = 0.5 - x / (width * 100)
+  const yRatio = y / (height * 100) - 0.5
+
+  const center3D = boundingBox.getCenter(new Vector3())
+
+  let posX3d = center3D.x + u.x * xRatio * width + v.x * yRatio * height
+  let posY3d = center3D.y + u.y * xRatio * width + v.y * yRatio * height
+  let posZ3d = center3D.z + u.z * xRatio * width + v.z * yRatio * height
+
+  const adjustedWidth = (w / (width * 100)) * width
+  const adjustedHeight = (h / (height * 100)) * height
+
+  posX3d -= u.x * (adjustedWidth / 2)
+  posY3d -= u.y * (adjustedWidth / 2)
+  posZ3d -= u.z * (adjustedWidth / 2)
+
+  posX3d += v.x * (adjustedHeight / 2)
+  posY3d += v.y * (adjustedHeight / 2)
+  posZ3d += v.z * (adjustedHeight / 2)
+
+  const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), normal)
+
+  return {
+    posX3d,
+    posY3d,
+    posZ3d,
+    quaternionX: quaternion.x,
+    quaternionY: quaternion.y,
+    quaternionZ: quaternion.z,
+    quaternionW: quaternion.w,
+    width3d: adjustedWidth,
+    height3d: adjustedHeight,
+  }
+}

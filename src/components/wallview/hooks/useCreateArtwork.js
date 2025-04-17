@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
 
-import { convert2DTo3D } from '@/components/wallview/utils'
+import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
 import { createArtwork, editArtworkSpace } from '@/lib/features/artworksSlice'
 import { createArtworkPosition } from '@/lib/features/exhibitionSlice'
 import {
@@ -26,8 +26,8 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
       const x = (wallWidth * 100) / 2 - initialSize / 2
       const y = (wallHeight * 100) / 2 - initialSize / 2
 
-      const posX2D = (wallWidth * 100) / 2 - initialSize / 2
-      const posY2D = (wallHeight * 100) / 2 - initialSize / 2
+      const posX2d = (wallWidth * 100) / 2 - initialSize / 2
+      const posY2d = (wallHeight * 100) / 2 - initialSize / 2
 
       const artworkId = uuidv4()
 
@@ -49,20 +49,6 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
         }),
       )
 
-      const artworkPosition = {
-        posX2D,
-        posY2D,
-        width: 100,
-        height: 100,
-      }
-
-      dispatch(
-        createArtworkPosition({
-          artworkId,
-          artworkPosition,
-        }),
-      )
-
       const new3DCoordinate = convert2DTo3D(
         {
           x,
@@ -78,6 +64,32 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
       dispatch(removeGroup())
       dispatch(addArtworkToGroup(artworkId))
 
+      const artworkPositionE = {
+        posX2d,
+        posY2d,
+        width2d: 100,
+        height2d: 100,
+      }
+
+      const new3DCoordinateE = convert2DTo3DE(
+        {
+          x,
+          y,
+          size: {
+            w: 100,
+            h: 100,
+          },
+        },
+        boundingData,
+      )
+
+      dispatch(
+        createArtworkPosition({
+          artworkId,
+          artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
+        }),
+      )
+
       dispatch(
         editArtworkSpace({
           currentArtworkId: artworkId,
@@ -92,6 +104,8 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
     (artworkType, x, y) => {
       if (!boundingData) return
 
+      console.log('here')
+
       const adjustedX = x - initialSize / 2
       const adjustedY = y - initialSize / 2
 
@@ -105,12 +119,6 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
           id: artworkId,
           artworkType,
           wallId: currentWallId,
-          canvas: {
-            x: adjustedX,
-            y: adjustedY,
-            width: initialSize,
-            height: initialSize,
-          },
           imageURL: null,
         }),
       )
@@ -118,7 +126,14 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
       dispatch(removeGroup())
       dispatch(addArtworkToGroup(artworkId))
 
-      const new3DCoordinate = convert2DTo3D(
+      const artworkPositionE = {
+        posX2d: adjustedX,
+        posY2d: adjustedY,
+        width2d: initialSize,
+        height2d: initialSize,
+      }
+
+      const new3DCoordinateE = convert2DTo3DE(
         {
           x: adjustedX,
           y: adjustedY,
@@ -131,9 +146,9 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
       )
 
       dispatch(
-        editArtworkSpace({
-          currentArtworkId: artworkId,
-          spaceUpdates: new3DCoordinate,
+        createArtworkPosition({
+          artworkId,
+          artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
         }),
       )
     },

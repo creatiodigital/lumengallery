@@ -1,13 +1,15 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D } from '@/components/wallview/utils'
+import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
 import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 import {
   editArtworkGroup,
   startDraggingGroup,
   stopDraggingGroup,
 } from '@/lib/features/wallViewSlice'
+
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick) => {
   const dispatch = useDispatch()
@@ -84,6 +86,31 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
             editArtworkSpace({
               currentArtworkId: artworkId,
               spaceUpdates: new3DCoordinate,
+            }),
+          )
+
+          //NEW WAY
+          const artworkPositionE = {
+            posX2d: artwork.canvas.x + deltaX,
+            posY2d: artwork.canvas.y + deltaY,
+            width2d: artwork.canvas.width,
+            height2d: artwork.canvas.height,
+          }
+
+          const new3DCoordinateE = convert2DTo3DE(
+            {
+              x: updatedCanvas.x,
+              y: updatedCanvas.y,
+              size: { w: updatedCanvas.width, h: updatedCanvas.height },
+            },
+            boundingData,
+          )
+
+          // REFACTOR THIS SO WE SEND 2D and 3D at the same time
+          dispatch(
+            updateArtworkPosition({
+              artworkId,
+              artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
             }),
           )
         }

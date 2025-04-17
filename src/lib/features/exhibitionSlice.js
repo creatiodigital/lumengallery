@@ -3,38 +3,43 @@ import { createSlice } from '@reduxjs/toolkit'
 const exhibitionSlice = createSlice({
   name: 'exhibition',
   initialState: {
-    artworksById: {
+    positionsById: {
       test: {
         posX2d: '',
         posY2d: '',
-        posZ2d: '',
         posX3d: '',
         posY3d: '',
         posZ3d: '',
-        width: '',
-        height: '',
+        width2d: '',
+        height2d: '',
+        width3d: '',
+        height3d: '',
+        quaternionX: '',
+        quaternionZ: '',
+        quaternionY: '',
+        quaternionZ: '',
       },
     },
-    allArtworkIds: [],
+    allPositionIds: [],
   },
   reducers: {
     createArtworkPosition: (state, action) => {
       const { artworkId, artworkPosition } = action.payload
 
-      if (!state.artworksById[artworkId]) {
-        state.artworksById[artworkId] = artworkPosition
+      if (!state.positionsById[artworkId]) {
+        state.positionsById[artworkId] = artworkPosition
 
-        if (!state.allArtworkIds.includes(artworkId)) {
-          state.allArtworkIds.push(artworkId)
+        if (!state.allPositionIds.includes(artworkId)) {
+          state.allPositionIds.push(artworkId)
         }
       }
     },
     updateArtworkPosition: (state, action) => {
       const { artworkId, artworkPosition } = action.payload
 
-      if (state.artworksById[artworkId]) {
-        state.artworksById[artworkId] = {
-          ...state.artworksById[artworkId],
+      if (state.positionsById[artworkId]) {
+        state.positionsById[artworkId] = {
+          ...state.positionsById[artworkId],
           ...artworkPosition,
         }
       }

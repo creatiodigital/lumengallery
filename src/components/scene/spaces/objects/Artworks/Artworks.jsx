@@ -5,48 +5,43 @@ import { Vector3, Quaternion } from 'three'
 import { Artwork } from '@/components/scene/spaces/objects/Artwork'
 
 const Artworks = () => {
-  const allIds = useSelector((state) => state.artworks.allIds)
-  const byId = useSelector((state) => state.artworks.byId)
+  const allArtworkIds = useSelector((state) => state.artworks.allIds)
+  const artworksbyId = useSelector((state) => state.artworks.byId)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
 
-  const precomputedArtworks = useMemo(() => {
-    return allIds?.map((id) => {
-      const artwork = byId[id]
-      if (!artwork.space) return null
+  const artworksWithPosition = useMemo(() => {
+    return allArtworkIds?.map((id) => {
+      const artwork = artworksbyId[id]
+      const pos = positionsById[id]
+      if (!artwork || !artwork.space || !pos) return null
 
-      const position = new Vector3(
-        artwork.space.position.x,
-        artwork.space.position.y,
-        artwork.space.position.z,
-      )
+      const position = new Vector3(pos.posX3d, pos.posY3d, pos.posZ3d)
 
       const quaternion = new Quaternion(
-        artwork.space.quaternion.x,
-        artwork.space.quaternion.y,
-        artwork.space.quaternion.z,
-        artwork.space.quaternion.w,
+        pos.quaternionX,
+        pos.quaternionY,
+        pos.quaternionZ,
+        pos.quaternionW,
       )
 
-      const width = artwork.space.width || 1
-      const height = artwork.space.height || 1
+      const width = pos.width3d || 1
+      const height = pos.height3d || 1
 
       return {
         ...artwork,
         position,
         quaternion,
-        space: {
-          ...artwork.space,
-          width,
-          height,
-        },
+        width,
+        height,
       }
     })
-  }, [allIds, byId])
+  }, [allArtworkIds, artworksbyId, positionsById])
 
   return (
     <>
-      {precomputedArtworks?.map(
-        (artwork) => artwork && <Artwork key={artwork.id} artwork={artwork} />,
-      )}
+      {artworksWithPosition.map((artwork) => (
+        <Artwork key={artwork.id} artwork={artwork} />
+      ))}
     </>
   )
 }

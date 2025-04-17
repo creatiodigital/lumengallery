@@ -1,12 +1,14 @@
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D } from '@/components/wallview/utils'
+import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
 import { editArtworkSpace, editArtworkCanvas, editArtwork } from '@/lib/features/artworksSlice'
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const dispatch = useDispatch()
 
   const artworksById = useSelector((state) => state.artworks.byId)
+  const artworksByIdE = useSelector((state) => state.exhibition.artworksById)
 
   const sanitizeNumberInput = (value) => {
     const normalizedValue = value * 100
@@ -25,13 +27,16 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
 
   const handleAlignChange = (alignment, wallWidth, wallHeight) => {
     const currentEdited = artworksById[currentArtworkId]
+    const currentEditedE = artworksByIdE[currentArtworkId]
 
     if (!currentEdited) return
 
-    const artworkWidth = currentEdited.canvas.width
-    const artworkHeight = currentEdited.canvas.height
-    const artworkX = currentEdited.canvas.x
-    const artworkY = currentEdited.canvas.y
+    const artworkWidth = currentEdited.canvas.width || currentEditedE.width2d
+    const artworkHeight = currentEdited.canvas.height || currentEditedE.height2d
+    //REFACTOR LATER
+    const artworkX = currentEdited.canvas.x || currentEditedE.posX2d
+    const artworkY = currentEdited.canvas.y || currentEditedE.posY2d
+
     const factor = 100
 
     let newX = artworkX
@@ -62,6 +67,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
 
     const artworkPosition = { x: newX, y: newY }
 
+    //REMOVE LATER
     dispatch(
       editArtworkCanvas({
         currentArtworkId,
@@ -69,26 +75,49 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
       }),
     )
 
-    if (boundingData) {
-      const new3DCoordinate = convert2DTo3D(
-        {
-          x: newX,
-          y: newY,
-          size: {
-            w: artworkWidth,
-            h: artworkHeight,
-          },
+    const new3DCoordinate = convert2DTo3D(
+      {
+        x: newX,
+        y: newY,
+        size: {
+          w: artworkWidth,
+          h: artworkHeight,
         },
-        boundingData,
-      )
+      },
+      boundingData,
+    )
 
-      dispatch(
-        editArtworkSpace({
-          currentArtworkId,
-          spaceUpdates: new3DCoordinate,
-        }),
-      )
+    const artworkPositionE = {
+      posX2d: newX,
+      posY2d: newY,
     }
+
+    const new3DCoordinateE = convert2DTo3DE(
+      {
+        x: newX,
+        y: newY,
+        size: {
+          w: artworkWidth,
+          h: artworkHeight,
+        },
+      },
+      boundingData,
+    )
+
+    dispatch(
+      editArtworkSpace({
+        currentArtworkId,
+        spaceUpdates: new3DCoordinate,
+      }),
+    )
+
+    // REFACTOR THIS SO WE SEND 2D and 3D at the same time
+    dispatch(
+      updateArtworkPosition({
+        artworkId: currentArtworkId,
+        artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
+      }),
+    )
   }
 
   const handleMoveXChange = (e) => {
@@ -108,26 +137,24 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
       }),
     )
 
-    if (boundingData) {
-      const new3DCoordinate = convert2DTo3D(
-        {
-          x: newX,
-          y: artworkY,
-          size: {
-            w: artworkWidth,
-            h: artworkHeight,
-          },
+    const new3DCoordinate = convert2DTo3D(
+      {
+        x: newX,
+        y: artworkY,
+        size: {
+          w: artworkWidth,
+          h: artworkHeight,
         },
-        boundingData,
-      )
+      },
+      boundingData,
+    )
 
-      dispatch(
-        editArtworkSpace({
-          currentArtworkId,
-          spaceUpdates: new3DCoordinate,
-        }),
-      )
-    }
+    dispatch(
+      editArtworkSpace({
+        currentArtworkId,
+        spaceUpdates: new3DCoordinate,
+      }),
+    )
   }
 
   const handleMoveYChange = (e) => {

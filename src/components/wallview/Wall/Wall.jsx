@@ -13,10 +13,11 @@ import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
 import { useSelectBox } from '@/components/wallview/hooks/useSelectBox'
 import { Human } from '@/components/wallview/Human'
 import { SelectionBox } from '@/components/wallview/SelectionBox'
-import { convert2DTo3D } from '@/components/wallview/utils'
+import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
 import { editArtworkSpace } from '@/lib/features/artworksSlice'
 import { setShiftKeyDown } from '@/lib/features/wallViewSlice'
 import { setWallCoordinates, setWallDimensions } from '@/lib/features/wallViewSlice'
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 import { Measurements } from '../Measurements'
 import { AlignedLine } from './AlignedLine'
@@ -129,10 +130,29 @@ export const Wall = () => {
         boundingData,
       )
 
+      const new3DCoordinateE = convert2DTo3DE(
+        {
+          x: currentArtwork.canvas.x,
+          y: currentArtwork.canvas.y,
+          size: {
+            w: currentArtwork.canvas.width,
+            h: currentArtwork.canvas.height,
+          },
+        },
+        boundingData,
+      )
+
       dispatch(
         editArtworkSpace({
           currentArtworkId,
           spaceUpdates: new3DCoordinate,
+        }),
+      )
+
+      dispatch(
+        updateArtworkPosition({
+          artworkId: currentArtworkId,
+          artworkPosition: { new3DCoordinateE },
         }),
       )
     }

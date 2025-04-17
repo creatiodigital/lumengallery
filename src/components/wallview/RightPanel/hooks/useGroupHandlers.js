@@ -1,12 +1,15 @@
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D } from '@/components/wallview/utils'
+import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
 import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 import { editArtworkGroup } from '@/lib/features/wallViewSlice'
+
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useGroupHandlers = (artworkGroupIds, boundingData) => {
   const dispatch = useDispatch()
   const artworksById = useSelector((state) => state.artworks.byId)
+  const artworksByIdE = useSelector((state) => state.exhibition.artworksById)
 
   const wallHeight = useSelector((state) => state.wallView.wallHeight)
   const wallWidth = useSelector((state) => state.wallView.wallWidth)
@@ -20,6 +23,7 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
 
     artworkGroupIds.forEach((artworkId) => {
       const artwork = artworksById[artworkId]
+      const artworkE = artworksByIdE[artwrokId]
 
       if (artwork) {
         const newArtworkCanvas = {
@@ -27,6 +31,10 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
           y: artwork.canvas.y,
           width: artwork.canvas.width,
           height: artwork.canvas.height,
+          posX2d: artworkE.posX2d,
+          posY2d: artworkE.posY2d,
+          width2d: artworkE.width2d,
+          height2d: artworkE.height2d,
         }
 
         dispatch(
@@ -50,6 +58,31 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
             }),
           )
         }
+
+        //NEW WAY
+        const artworkPositionE = {
+          posX2d: artwork.canvas.x + deltaX,
+          posY2d: artwork.canvas.y,
+          width2D: artwork.canvas.width,
+          height3D: artwork.canvas.height,
+        }
+
+        const new3DCoordinateE = convert2DTo3DE(
+          {
+            x: newArtworkCanvas.x, //UPDATE THIS
+            y: newArtworkCanvas.y, //UPDATE THIS
+            size: { w: newArtworkCanvas.width, h: newArtworkCanvas.height },
+          },
+          boundingData,
+        )
+
+        // REFACTOR THIS SO WE SEND 2D and 3D at the same time
+        dispatch(
+          updateArtworkPosition({
+            artworkId: draggedArtworkId,
+            artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
+          }),
+        )
       }
     })
   }

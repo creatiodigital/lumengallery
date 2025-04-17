@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { DoubleSide } from 'three'
 
 const ArtisticText = ({ artwork }) => {
-  const { id, position, quaternion, space, artisticTextProperties } = artwork
+  const { id, position, quaternion, width, height, artisticTextProperties } = artwork
   const textContent = artisticTextProperties?.textContent || ''
   const textAlign = artisticTextProperties?.textAlign || 'left'
   const textColor = artisticTextProperties?.textColor.value || '#000000'
@@ -49,8 +49,8 @@ const ArtisticText = ({ artwork }) => {
     }
   }, [textContent])
 
-  const planeWidth = space.width || 1
-  const planeHeight = space.height || 1
+  const planeWidth = width || 1
+  const planeHeight = height || 1
 
   const getAnchorX = (textAlign, planeWidth) => {
     switch (textAlign) {
@@ -86,9 +86,9 @@ const ArtisticText = ({ artwork }) => {
             lineHeight={lineHeight}
             color={textColor}
             font={fontUrl}
-            anchorX={getAnchorX(textAlign, space.width)}
-            anchorY={getAnchorY(space.height)}
-            maxWidth={space.width}
+            anchorX={getAnchorX(textAlign, width)}
+            anchorY={getAnchorY(height)}
+            maxWidth={width}
             textAlign={textAlign}
             whiteSpace="normal"
             overflowWrap="break-word"

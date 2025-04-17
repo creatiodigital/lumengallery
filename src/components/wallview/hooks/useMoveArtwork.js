@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D } from '@/components/wallview/utils'
+import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
 import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
 import {
   setAlignedPairs,
@@ -9,6 +9,8 @@ import {
   stopDragging,
   chooseCurrentArtworkId,
 } from '@/lib/features/wallViewSlice'
+
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 import { areAligned } from './helpers'
 
@@ -139,6 +141,29 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
         editArtworkSpace({
           currentArtworkId: draggedArtworkId,
           spaceUpdates: new3DCoordinate,
+        }),
+      )
+
+      //NEW WAY
+      const artworkPositionE = {
+        posX2d: snapX,
+        posY2d: snapY,
+      }
+
+      const new3DCoordinateE = convert2DTo3DE(
+        {
+          x: snapX,
+          y: snapY,
+          size: { w: updatedCanvas.width, h: updatedCanvas.height },
+        },
+        boundingData,
+      )
+
+      // REFACTOR THIS SO WE SEND 2D and 3D at the same time
+      dispatch(
+        updateArtworkPosition({
+          artworkId: draggedArtworkId,
+          artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
         }),
       )
     },

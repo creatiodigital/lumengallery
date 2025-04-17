@@ -1,7 +1,8 @@
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D } from '@/components/wallview/utils'
+import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
 import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useDistributeGroup = (boundingData) => {
   const dispatch = useDispatch()
@@ -101,6 +102,29 @@ export const useDistributeGroup = (boundingData) => {
           editArtworkSpace({
             currentArtworkId: artwork.id,
             spaceUpdates: new3DCoordinate,
+          }),
+        )
+
+        //NEW WAY
+        const artworkPositionE = {
+          posX2d: newX,
+          posY2d: newY,
+        }
+
+        const new3DCoordinateE = convert2DTo3DE(
+          {
+            x: newX,
+            y: newY,
+            size: { w: artwork.canvas.width, h: artwork.canvas.height },
+          },
+          boundingData,
+        )
+
+        // REFACTOR THIS SO WE SEND 2D and 3D at the same time
+        dispatch(
+          updateArtworkPosition({
+            artworkId: artwork.id,
+            artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
           }),
         )
       }

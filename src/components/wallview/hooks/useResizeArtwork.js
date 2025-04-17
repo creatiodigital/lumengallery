@@ -1,8 +1,9 @@
 import { useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D } from '@/components/wallview/utils'
+import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
 import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
   const artworksById = useSelector((state) => state.artworks.byId)
@@ -114,6 +115,34 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
             editArtworkSpace({
               currentArtworkId: artworkId,
               spaceUpdates: new3DCoordinate,
+            }),
+          )
+
+          //NEW WAY
+          const artworkPositionE = {
+            posX2d: newX,
+            posY2d: newY,
+            width2d: newWidth,
+            height2d: newHeight,
+          }
+
+          const new3DCoordinateE = convert2DTo3DE(
+            {
+              x: newX,
+              y: newY,
+              size: {
+                w: newWidth,
+                h: newHeight,
+              },
+            },
+            boundingData,
+          )
+
+          // REFACTOR THIS SO WE SEND 2D and 3D at the same time
+          dispatch(
+            updateArtworkPosition({
+              artworkId,
+              artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
             }),
           )
         }
