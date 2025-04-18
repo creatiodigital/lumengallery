@@ -9,19 +9,18 @@ import { showArtworkPanel } from '@/lib/features/dashboardSlice'
 import { setCurrentArtwork } from '@/lib/features/sceneSlice'
 
 const ArtisticImage = ({ artwork }) => {
+  const { position, quaternion, width, height, artisticImageProperties } = artwork
+
   const {
-    position,
-    quaternion,
-    space,
-    url,
-    showFrame,
-    showPassepartout,
     showArtworkInformation,
-    frameStyles,
-    passepartoutStyles,
-  } = artwork
-  const { frameColor, frameThickness } = frameStyles
-  const { passepartoutColor, passepartoutThickness } = passepartoutStyles
+    imageUrl,
+    showFrame,
+    frameColor,
+    frameThickness,
+    showPassepartout,
+    passepartoutColor,
+    passepartoutThickness,
+  } = artisticImageProperties
 
   const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
@@ -33,8 +32,8 @@ const ArtisticImage = ({ artwork }) => {
     }
   }
 
-  const planeWidth = space.width || 1
-  const planeHeight = space.height || 1
+  const planeWidth = width || 1
+  const planeHeight = height || 1
 
   const frameMaterial = new MeshStandardMaterial({
     color: frameColor,
@@ -47,8 +46,8 @@ const ArtisticImage = ({ artwork }) => {
     roughness: 1,
   })
 
-  const frameT = showFrame ? frameThickness : 0
-  const passepartoutT = showPassepartout ? passepartoutThickness : 0
+  const frameT = showFrame ? frameThickness.value : 0
+  const passepartoutT = showPassepartout ? passepartoutThickness.value : 0
 
   const innerWidth = planeWidth - (frameT + passepartoutT) / 50
   const innerHeight = planeHeight - (frameT + passepartoutT) / 50
@@ -60,16 +59,16 @@ const ArtisticImage = ({ artwork }) => {
         <meshBasicMaterial visible={false} />
       </mesh>
 
-      {!url && (
+      {!imageUrl && (
         <mesh renderOrder={2}>
           <planeGeometry args={[innerWidth, innerHeight]} />
           <meshBasicMaterial color="white" side={DoubleSide} />
         </mesh>
       )}
 
-      {url && (
+      {imageUrl && (
         <mesh castShadow receiveShadow renderOrder={2}>
-          <Image url={url} alt="paint" side={DoubleSide} transparent toneMapped={false}>
+          <Image url={imageUrl} alt="paint" side={DoubleSide} transparent toneMapped={false}>
             <planeGeometry args={[innerWidth, innerHeight]} />
           </Image>
         </mesh>
@@ -79,15 +78,15 @@ const ArtisticImage = ({ artwork }) => {
         <Frame
           width={planeWidth}
           height={planeHeight}
-          thickness={frameThickness / 100}
+          thickness={frameThickness.value / 100}
           material={frameMaterial}
         />
       )}
-      {showPassepartout && passepartoutThickness > 0 && (
+      {showPassepartout && passepartoutThickness.value > 0 && (
         <Passepartout
-          width={planeWidth - frameThickness / 50}
-          height={planeHeight - frameThickness / 50}
-          thickness={passepartoutThickness / 100}
+          width={planeWidth - frameThickness.value / 50}
+          height={planeHeight - frameThickness.value / 50}
+          thickness={passepartoutThickness.value / 100}
           material={passepartoutMaterial}
         />
       )}

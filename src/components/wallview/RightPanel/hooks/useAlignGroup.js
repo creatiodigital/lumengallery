@@ -1,74 +1,65 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { editArtwork, edit3DCoordinates } from '@/lib/features/artistSlice'
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useAlignGroup = (boundingData) => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const artworks = useSelector((state) => state.artist.artworks)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
 
   const alignArtworksInGroup = (alignment) => {
     const { groupX, groupY, groupWidth, groupHeight } = artworkGroup
 
     artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
+      const artwork = positionsById[artworkId]
 
       if (artwork) {
-        const artworkWidth = artwork.canvas.width
-        const artworkHeight = artwork.canvas.height
-        const artworkX = artwork.canvas.x
-        const artworkY = artwork.canvas.y
+        const posX2d = artwork.posX2d
+        const posY2d = artwork.posY2d
+        const width2d = artwork.width2d
+        const height2d = artwork.height2d
 
-        let newX = artworkX
-        let newY = artworkY
+        let newX = posX2d
+        let newY = posY2d
 
         switch (alignment) {
           case 'verticalTop':
             newY = groupY
             break
           case 'verticalCenter':
-            newY = groupY + groupHeight / 2 - artwork.canvas.height / 2
+            newY = groupY + groupHeight / 2 - height2d / 2
             break
           case 'verticalBottom':
-            newY = groupY + groupHeight - artwork.canvas.height
+            newY = groupY + groupHeight - height2d
             break
           case 'horizontalLeft':
             newX = groupX
             break
           case 'horizontalCenter':
-            newX = groupX + groupWidth / 2 - artwork.canvas.width / 2
+            newX = groupX + groupWidth / 2 - width2d / 2
             break
           case 'horizontalRight':
-            newX = groupX + groupWidth - artwork.canvas.width
+            newX = groupX + groupWidth - width2d
             break
           default:
             break
         }
 
-        const newArtworkSizes = {
-          x: newX,
-          y: newY,
-          width: artwork.canvas.width,
-          height: artwork.canvas.height,
+        const artworkPosition = {
+          posX2d: newX,
+          posY2d: newY,
+          width2d,
+          height2d,
         }
 
-        dispatch(editArtwork({ currentArtworkId: artwork.id, newArtworkSizes }))
-
-        const new3DCoordinate = convert2DTo3D(
-          {
-            x: newX,
-            y: newY,
-            size: { w: artworkWidth, h: artworkHeight },
-          },
-          boundingData,
-        )
+        const new3DCoordinate = convert2DTo3D(newX, newY, width2d, height2d, boundingData)
 
         dispatch(
-          edit3DCoordinates({
-            currentArtworkId: artworkId,
-            serialized3DCoordinate: new3DCoordinate,
+          updateArtworkPosition({
+            artworkId,
+            artworkPosition: { ...artworkPosition, ...new3DCoordinate },
           }),
         )
       }

@@ -13,19 +13,11 @@ import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } fro
 const ArtisticText = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
-  const {
-    handleTextAlign,
-    handleTextColorSelect,
-    handleTextFontSizeSelect,
-    handleTextLineHeightSelect,
-    handleTextFontWeightSelect,
-    handleTextFontFamilySelect,
-    handleTextLetterSpacingSelect,
-  } = useArtworkTextHandlers(currentArtworkId)
+  const { handleEditArtworkText } = useArtworkTextHandlers(currentArtworkId)
 
-  const { artisticTextStyles } = useArtworkDetails(currentArtworkId)
+  const { artisticTextProperties } = useArtworkDetails(currentArtworkId)
 
-  const color = artisticTextStyles?.color ?? '#000000'
+  const textColor = artisticTextProperties?.textColor ?? '#000000'
 
   return (
     <div className={styles.section}>
@@ -34,13 +26,22 @@ const ArtisticText = () => {
         <h3 className={styles.subtitle}>Alignment</h3>
         <div className={styles.row}>
           <div className={styles.item}>
-            <ButtonIcon icon="textLeft" onClick={() => handleTextAlign('left')} />
+            <ButtonIcon
+              icon="textLeft"
+              onClick={() => handleEditArtworkText('textAlign', 'left')}
+            />
           </div>
           <div className={styles.item}>
-            <ButtonIcon icon="textCenter" onClick={() => handleTextAlign('center')} />
+            <ButtonIcon
+              icon="textCenter"
+              onClick={() => handleEditArtworkText('textAlign', 'center')}
+            />
           </div>
           <div className={styles.item}>
-            <ButtonIcon icon="textRight" onClick={() => handleTextAlign('right')} />
+            <ButtonIcon
+              icon="textRight"
+              onClick={() => handleEditArtworkText('textAlign', 'right')}
+            />
           </div>
         </div>
       </div>
@@ -51,8 +52,8 @@ const ArtisticText = () => {
             <span className={styles.label}>Font size</span>
             <Select
               options={fontSizes}
-              onSelect={handleTextFontSizeSelect}
-              selectedLabel={artisticTextStyles?.fontSize || 16}
+              onSelect={(value) => handleEditArtworkText('fontSize', value)}
+              selectedLabel={artisticTextProperties?.fontSize}
             />
           </div>
 
@@ -60,8 +61,8 @@ const ArtisticText = () => {
             <span className={styles.label}>Line height</span>
             <Select
               options={lineHeights}
-              onSelect={handleTextLineHeightSelect}
-              selectedLabel={artisticTextStyles?.lineHeight || 1}
+              onSelect={(value) => handleEditArtworkText('lineHeight', value)}
+              selectedLabel={artisticTextProperties?.lineHeight}
             />
           </div>
         </div>
@@ -70,16 +71,16 @@ const ArtisticText = () => {
             <span className={styles.label}>Font Weight</span>
             <Select
               options={fontWeights}
-              onSelect={handleTextFontWeightSelect}
-              selectedLabel={artisticTextStyles?.fontWeight || 'Regular'}
+              onSelect={(value) => handleEditArtworkText('fontWeight', value)}
+              selectedLabel={artisticTextProperties?.fontWeight}
             />
           </div>
           <div className={styles.item}>
             <span className={styles.label}>Letter Spacing</span>
             <Select
               options={letterSpacings}
-              onSelect={handleTextLetterSpacingSelect}
-              selectedLabel={artisticTextStyles?.letterSpacing || 1}
+              onSelect={(value) => handleEditArtworkText('letterSpacing', value)}
+              selectedLabel={artisticTextProperties?.letterSpacing}
             />
           </div>
         </div>
@@ -88,8 +89,8 @@ const ArtisticText = () => {
             <span className={styles.label}>Font Family</span>
             <Select
               options={fontFamilies}
-              onSelect={handleTextFontFamilySelect}
-              selectedLabel={artisticTextStyles?.fontFamily || 'Roboto'}
+              onSelect={(value) => handleEditArtworkText('fontFamily', value)}
+              selectedLabel={artisticTextProperties?.fontFamily}
             />
           </div>
         </div>
@@ -98,7 +99,10 @@ const ArtisticText = () => {
         <div className={styles.row}>
           <div className={styles.item}>
             <span className={styles.label}>Color</span>
-            <ColorPicker textColor={color} onColorSelect={handleTextColorSelect} />
+            <ColorPicker
+              textColor={textColor}
+              onColorSelect={(value) => handleEditArtworkText('textColor', value)}
+            />
           </div>
         </div>
       </div>

@@ -1,36 +1,36 @@
 import { useDispatch, useSelector } from 'react-redux'
 
-import { editArtworkArtisticText } from '@/lib/features/artistSlice'
+import { editArtisticText } from '@/lib/features/artworksSlice'
 
 export const useArtisticText = (artworkId) => {
   const dispatch = useDispatch()
 
-  const artwork = useSelector((state) =>
-    state.artist.artworks.find((artwork) => artwork.id === artworkId),
-  )
+  const byId = useSelector((state) => state.artworks.byId)
+  const artwork = byId[artworkId]
 
-  const artisticText = artwork?.artisticText || ''
-  const textAlign = artwork?.artisticTextStyles?.textAlign || 'left'
-  const textColor = artwork?.artisticTextStyles?.color || '#000000'
-  const fontSize = artwork?.artisticTextStyles?.fontSize || 16
-  const lineHeight = artwork?.artisticTextStyles?.lineHeight || 1
-  const fontFamily = artwork?.artisticTextStyles?.fontFamily || 'Roboto'
-  const fontWeight = artwork?.artisticTextStyles?.fontWeight || 'Regular'
-  const letterSpacing = artwork?.artisticTextStyles?.letterSpacing || 1
+  const textContent = artwork?.artisticTextProperties?.textContent
+  const textAlign = artwork?.artisticTextProperties?.textAlign || 'left'
+  const textColor = artwork?.artisticTextProperties?.textColor
+  const fontSize = artwork?.artisticTextProperties?.fontSize.value
+  const lineHeight = artwork?.artisticTextProperties?.lineHeight.value
+  const fontFamily = artwork?.artisticTextProperties?.fontFamily.value
+  const fontWeight = artwork?.artisticTextProperties?.fontWeight.value
+  const letterSpacing = artwork?.artisticTextProperties?.letterSpacing.value
 
   const handleArtisticTextChange = (updatedText) => {
     if (!artworkId) return
 
     dispatch(
-      editArtworkArtisticText({
+      editArtisticText({
         currentArtworkId: artworkId,
-        artisticText: updatedText,
+        property: 'textContent',
+        value: updatedText,
       }),
     )
   }
 
   return {
-    artisticText,
+    textContent,
     textAlign,
     textColor,
     fontSize,

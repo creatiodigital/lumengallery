@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { deleteArtwork } from '@/lib/features/artistSlice'
+import { deleteArtwork } from '@/lib/features/artworksSlice'
+import { deleteArtworkPosition } from '@/lib/features/exhibitionSlice'
 import { removeGroup, setShiftKeyDown } from '@/lib/features/wallViewSlice'
 
 export const useKeyboardEvents = (currentArtworkId, isMouseOver) => {
@@ -19,12 +20,14 @@ export const useKeyboardEvents = (currentArtworkId, isMouseOver) => {
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (currentArtworkId && isMouseOver) {
           dispatch(deleteArtwork({ artworkId: currentArtworkId }))
+          dispatch(deleteArtworkPosition({ artworkId: currentArtworkId }))
           dispatch(removeGroup())
         }
 
         if (isGroupHovered && artworkGroupIds.length > 0) {
           artworkGroupIds.forEach((artworkId) => {
             dispatch(deleteArtwork({ artworkId }))
+            dispatch(deleteArtworkPosition({ artworkId }))
           })
           dispatch(removeGroup())
         }

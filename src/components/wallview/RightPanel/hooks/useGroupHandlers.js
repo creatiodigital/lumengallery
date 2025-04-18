@@ -1,12 +1,13 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { edit3DCoordinates, editArtwork } from '@/lib/features/artistSlice'
+import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 import { editArtworkGroup } from '@/lib/features/wallViewSlice'
 
 export const useGroupHandlers = (artworkGroupIds, boundingData) => {
   const dispatch = useDispatch()
-  const artworks = useSelector((state) => state.artist.artworks)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
+
   const wallHeight = useSelector((state) => state.wallView.wallHeight)
   const wallWidth = useSelector((state) => state.wallView.wallWidth)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
@@ -18,35 +19,29 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     dispatch(editArtworkGroup({ groupX: newGroupX, groupY: artworkGroup.groupY }))
 
     artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
+      const artwork = positionsById[artworkId]
 
       if (artwork) {
-        const newArtworkCanvas = {
-          x: artwork.canvas.x + deltaX,
-          y: artwork.canvas.y,
-          width: artwork.canvas.width,
-          height: artwork.canvas.height,
+        const posX2d = artwork.posX2d + deltaX
+        const posY2d = artwork.posY2d
+        const width2d = artwork.width2d
+        const height2d = artwork.height2d
+
+        const artworkPosition = {
+          posX2d,
+          posY2d,
+          width2d,
+          height2d,
         }
 
-        dispatch(editArtwork({ currentArtworkId: artworkId, newArtworkSizes: newArtworkCanvas }))
+        const new3DCoordinate = convert2DTo3D(posX2d, posY2d, width2d, height2d, boundingData)
 
-        if (boundingData) {
-          const new3DCoordinate = convert2DTo3D(
-            {
-              x: newArtworkCanvas.x,
-              y: newArtworkCanvas.y,
-              size: { w: newArtworkCanvas.width, h: newArtworkCanvas.height },
-            },
-            boundingData,
-          )
-
-          dispatch(
-            edit3DCoordinates({
-              currentArtworkId: artworkId,
-              serialized3DCoordinate: new3DCoordinate,
-            }),
-          )
-        }
+        dispatch(
+          updateArtworkPosition({
+            artworkId: artworkId,
+            artworkPosition: { ...artworkPosition, ...new3DCoordinate },
+          }),
+        )
       }
     })
   }
@@ -58,35 +53,29 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     dispatch(editArtworkGroup({ groupX: artworkGroup.groupX, groupY: newGroupY }))
 
     artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
+      const artwork = positionsById[artworkId]
 
       if (artwork) {
-        const newArtworkCanvas = {
-          x: artwork.canvas.x,
-          y: artwork.canvas.y + deltaY,
-          width: artwork.canvas.width,
-          height: artwork.canvas.height,
+        const posX2d = artwork.posX2d
+        const posY2d = artwork.posY2d + deltaY
+        const width2d = artwork.width2d
+        const height2d = artwork.height2d
+
+        const artworkPosition = {
+          posX2d,
+          posY2d,
+          width2d,
+          height2d,
         }
 
-        dispatch(editArtwork({ currentArtworkId: artworkId, newArtworkSizes: newArtworkCanvas }))
+        const new3DCoordinate = convert2DTo3D(posX2d, posY2d, width2d, height2d, boundingData)
 
-        if (boundingData) {
-          const new3DCoordinate = convert2DTo3D(
-            {
-              x: newArtworkCanvas.x,
-              y: newArtworkCanvas.y,
-              size: { w: newArtworkCanvas.width, h: newArtworkCanvas.height },
-            },
-            boundingData,
-          )
-
-          dispatch(
-            edit3DCoordinates({
-              currentArtworkId: artworkId,
-              serialized3DCoordinate: new3DCoordinate,
-            }),
-          )
-        }
+        dispatch(
+          updateArtworkPosition({
+            artworkId: artworkId,
+            artworkPosition: { ...artworkPosition, ...new3DCoordinate },
+          }),
+        )
       }
     })
   }
@@ -125,35 +114,29 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     const deltaY = newGroupY - artworkGroup.groupY
 
     artworkGroupIds.forEach((artworkId) => {
-      const artwork = artworks.find((art) => art.id === artworkId)
+      const artwork = positionsById[artworkId]
 
       if (artwork) {
-        const newArtworkCanvas = {
-          x: artwork.canvas.x + deltaX,
-          y: artwork.canvas.y + deltaY,
-          width: artwork.canvas.width,
-          height: artwork.canvas.height,
+        const posX2d = artwork.posX2d + deltaX
+        const posY2d = artwork.posY2d + deltaY
+        const width2d = artwork.width2d
+        const height2d = artwork.height2d
+
+        const artworkPosition = {
+          posX2d,
+          posY2d,
+          width2d,
+          height2d,
         }
 
-        dispatch(editArtwork({ currentArtworkId: artworkId, newArtworkSizes: newArtworkCanvas }))
+        const new3DCoordinate = convert2DTo3D(posX2d, posY2d, width2d, height2d, boundingData)
 
-        if (boundingData) {
-          const new3DCoordinate = convert2DTo3D(
-            {
-              x: newArtworkCanvas.x,
-              y: newArtworkCanvas.y,
-              size: { w: newArtworkCanvas.width, h: newArtworkCanvas.height },
-            },
-            boundingData,
-          )
-
-          dispatch(
-            edit3DCoordinates({
-              currentArtworkId: artworkId,
-              serialized3DCoordinate: new3DCoordinate,
-            }),
-          )
-        }
+        dispatch(
+          updateArtworkPosition({
+            artworkId: artworkId,
+            artworkPosition: { ...artworkPosition, ...new3DCoordinate },
+          }),
+        )
       }
     })
   }

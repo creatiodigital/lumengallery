@@ -21,46 +21,40 @@ const ArtisticImage = () => {
     author,
     artworkYear,
     artworkDimensions,
-    showArtworkInformation,
-    showFrame,
-    url,
-    showPassepartout,
-    passepartoutStyles,
-    frameStyles,
+    artisticImageProperties,
   } = useArtworkDetails(currentArtworkId)
-  const { frameColor, frameThickness } = frameStyles
-  const { passepartoutColor, passepartoutThickness } = passepartoutStyles
 
   const {
-    handleAuthorChange,
-    handleArtworkTitleChange,
-    handleArtworkYearChange,
-    handleDescriptionChange,
-    handleArtworkDimensionsChange,
-    handleShowFrame,
-    handleShowPassepartout,
-    handleShowInformation,
-    handleFrameColorSelect,
-    handleFrameThicknessSelect,
-    handlePassepartoutColorSelect,
-    handlePassepartoutThicknessSelect,
-  } = useArtworkImageHandlers(currentArtworkId)
+    showFrame,
+    showArtworkInformation,
+    imageUrl,
+    showPassepartout,
+    passepartoutColor,
+    passepartoutThickness,
+    frameColor,
+    frameThickness,
+  } = artisticImageProperties
+
+  const { handleEditArtwork, handleEditArtisticImage } = useArtworkImageHandlers(currentArtworkId)
 
   return (
     <>
-      {url && (
+      {imageUrl && (
         <>
           <div className={styles.subsection}>
             <div className={styles.row}>
               <div className={styles.item}>
                 <Checkbox
                   checked={showArtworkInformation}
-                  onChange={(e) => handleShowInformation(e.target.checked)}
+                  onChange={(e) =>
+                    handleEditArtisticImage('showArtworkInformation', e.target.checked)
+                  }
                   label="Display Information"
                 />
               </div>
             </div>
           </div>
+
           {showArtworkInformation && (
             <>
               <div className={styles.section}>
@@ -68,31 +62,46 @@ const ArtisticImage = () => {
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Author</span>
-                      <Input value={author} onChange={handleAuthorChange} />
+                      <Input
+                        value={author}
+                        onChange={(e) => handleEditArtwork('author', e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Title</span>
-                      <Input value={artworkTitle} onChange={handleArtworkTitleChange} />
+                      <Input
+                        value={artworkTitle}
+                        onChange={(e) => handleEditArtwork('authorTitle', e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Year</span>
-                      <Input value={artworkYear} onChange={handleArtworkYearChange} />
+                      <Input
+                        value={artworkYear}
+                        onChange={(e) => handleEditArtwork('artworkYear', e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Description</span>
-                      <Textarea value={description} onChange={handleDescriptionChange} />
+                      <Textarea
+                        value={description}
+                        onChange={(e) => handleEditArtwork('description', e.target.value)}
+                      />
                     </div>
                   </div>
                   <div className={styles.row}>
                     <div className={styles.item}>
                       <span className={styles.label}>Dimensions</span>
-                      <Input value={artworkDimensions} onChange={handleArtworkDimensionsChange} />
+                      <Input
+                        value={artworkDimensions}
+                        onChange={(e) => handleEditArtwork('artworkDimensions', e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
@@ -106,7 +115,7 @@ const ArtisticImage = () => {
                 <div className={styles.item}>
                   <Checkbox
                     checked={showFrame}
-                    onChange={(e) => handleShowFrame(e.target.checked)}
+                    onChange={(e) => handleEditArtisticImage('showFrame', e.target.checked)}
                     label="Add Frame"
                   />
                 </div>
@@ -115,13 +124,16 @@ const ArtisticImage = () => {
                 <div className={styles.row}>
                   <div className={styles.item}>
                     <span className={styles.label}>Color</span>
-                    <ColorPicker textColor={frameColor} onColorSelect={handleFrameColorSelect} />
+                    <ColorPicker
+                      textColor={frameColor}
+                      onColorSelect={(value) => handleEditArtisticImage('frameColor', value)}
+                    />
                   </div>
                   <div className={styles.item}>
                     <span className={styles.label}>Thickness</span>
                     <Select
                       options={frameThicknessOptions}
-                      onSelect={handleFrameThicknessSelect}
+                      onSelect={(value) => handleEditArtisticImage('frameThickness', value)}
                       selectedLabel={frameThickness}
                     />
                   </div>
@@ -133,7 +145,7 @@ const ArtisticImage = () => {
                 <div className={styles.item}>
                   <Checkbox
                     checked={showPassepartout}
-                    onChange={(e) => handleShowPassepartout(e.target.checked)}
+                    onChange={(e) => handleEditArtisticImage('showPassepartout', e.target.checked)}
                     label="Add Passepartout"
                   />
                 </div>
@@ -145,14 +157,18 @@ const ArtisticImage = () => {
                       <span className={styles.label}>Color</span>
                       <ColorPicker
                         textColor={passepartoutColor}
-                        onColorSelect={handlePassepartoutColorSelect}
+                        onColorSelect={(value) =>
+                          handleEditArtisticImage('passepartoutColor', value)
+                        }
                       />
                     </div>
                     <div className={styles.item}>
                       <span className={styles.label}>Thickness</span>
                       <Select
                         options={passepartoutThicknessOptions}
-                        onSelect={handlePassepartoutThicknessSelect}
+                        onSelect={(value) =>
+                          handleEditArtisticImage('passepartoutThickness', value)
+                        }
                         selectedLabel={passepartoutThickness}
                       />
                     </div>

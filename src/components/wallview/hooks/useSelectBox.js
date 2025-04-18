@@ -5,7 +5,10 @@ import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
 import { chooseCurrentArtworkId } from '@/lib/features/wallViewSlice'
 
 export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) => {
-  const artworks = useSelector((state) => state.artist.artworks)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
+
+  const allPositionIds = useSelector((state) => state.exhibition.allPositionIds)
+
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const dispatch = useDispatch()
 
@@ -76,13 +79,15 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     const maxX = Math.max(startX, endX)
     const maxY = Math.max(startY, endY)
 
-    const filteredArtworks = artworks.filter((artwork) => artwork.wallId === currentWallId)
+    const filteredArtworks = allPositionIds
+      .map((id) => positionsById[id])
+      .filter((artwork) => artwork.wallId === currentWallId)
 
     const selectedArtworks = filteredArtworks.filter((artwork) => {
-      const artX = artwork.canvas.x
-      const artY = artwork.canvas.y
-      const artWidth = artwork.canvas.width
-      const artHeight = artwork.canvas.height
+      const artX = artwork.posX2d
+      const artY = artwork.posY2d
+      const artWidth = artwork.width2d
+      const artHeight = artwork.height2d
 
       const intersects =
         minX < artX + artWidth && maxX > artX && minY < artY + artHeight && maxY > artY
@@ -95,12 +100,13 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     }
 
     selectedArtworks.forEach((artwork) => {
+      console.log('here', artwork)
       handleAddArtworkToGroup(artwork.id)
     })
 
     setSelectionBox(null)
     setDraggingSelectBox(false)
-  }, [selectionBox, draggingSelectBox, artworks, handleAddArtworkToGroup])
+  }, [selectionBox, draggingSelectBox, allPositionIds, positionsById, handleAddArtworkToGroup])
 
   useEffect(() => {
     if (draggingSelectBox) {
