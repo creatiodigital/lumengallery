@@ -1,5 +1,7 @@
 import ChevronDown from '@/icons/chevron-down.svg'
 import Close from '@/icons/close.svg'
+import DistributeHorizontal from '@/icons/distribute-horizontal.svg'
+import DistributeVertical from '@/icons/distribute-vertical.svg'
 import Drop from '@/icons/drop.svg'
 import Expand from '@/icons/expand.svg'
 import Grid from '@/icons/grid.svg'
@@ -12,6 +14,12 @@ import Painting from '@/icons/painting.svg'
 import Person from '@/icons/person.svg'
 import Picture from '@/icons/picture.svg'
 import Placeholder from '@/icons/placeholder.svg'
+import PositionBottom from '@/icons/position-bottom.svg'
+import PositionCenterH from '@/icons/position-center-h.svg'
+import PositionCenterV from '@/icons/position-center-v.svg'
+import PositionLeft from '@/icons/position-left.svg'
+import PositionRight from '@/icons/position-right.svg'
+import PositionTop from '@/icons/position-top.svg'
 import Preview from '@/icons/preview.svg'
 import Reset from '@/icons/reset.svg'
 import TextCenter from '@/icons/text-center.svg'
@@ -27,6 +35,8 @@ import ZoomOut from '@/icons/zoom-out.svg'
 const icons = {
   chevronDown: ChevronDown,
   close: Close,
+  distributeHorizontal: DistributeHorizontal,
+  distributeVertical: DistributeVertical,
   drop: Drop,
   grid: Grid,
   horizontalLeft: HorizontalLeft,
@@ -37,6 +47,12 @@ const icons = {
   move: Move,
   painting: Painting,
   person: Person,
+  positionLeft: PositionLeft,
+  positionTop: PositionTop,
+  positionBottom: PositionBottom,
+  positionCenterV: PositionCenterV,
+  positionCenterH: PositionCenterH,
+  positionRight: PositionRight,
   preview: Preview,
   picture: Picture,
   placeholder: Placeholder,

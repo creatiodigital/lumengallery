@@ -14,7 +14,7 @@
 .input {
   @include tinySans();
   position: relative;
-  padding: 4px;
+  padding: 2px 4px;
   border-radius: 4px;
   cursor: pointer;
   background-color: var(--white);
@@ -47,5 +47,12 @@
   &:hover {
     background-color: var(--black);
     color: var(--white);
+  }
+}
+
+.medium {
+  .option,
+  .input {
+    @include mediumSans();
   }
 }

@@ -1,12 +1,15 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { deleteArtwork } from '@/lib/features/artistSlice'
+import { deleteArtwork } from '@/lib/features/artworksSlice'
+import { deleteArtworkPosition } from '@/lib/features/exhibitionSlice'
 import { removeGroup, setShiftKeyDown } from '@/lib/features/wallViewSlice'
 
 export const useKeyboardEvents = (currentArtworkId, isMouseOver) => {
   const dispatch = useDispatch()
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+  const isGroupHovered = useSelector((state) => state.wallView.isGroupHovered)
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -14,9 +17,20 @@ export const useKeyboardEvents = (currentArtworkId, isMouseOver) => {
         return
       }
 
-      if ((e.key === 'Delete' || e.key === 'Backspace') && currentArtworkId && isMouseOver) {
-        dispatch(deleteArtwork({ artworkId: currentArtworkId }))
-        dispatch(removeGroup())
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (currentArtworkId && isMouseOver) {
+          dispatch(deleteArtwork({ artworkId: currentArtworkId }))
+          dispatch(deleteArtworkPosition({ artworkId: currentArtworkId }))
+          dispatch(removeGroup())
+        }
+
+        if (isGroupHovered && artworkGroupIds.length > 0) {
+          artworkGroupIds.forEach((artworkId) => {
+            dispatch(deleteArtwork({ artworkId }))
+            dispatch(deleteArtworkPosition({ artworkId }))
+          })
+          dispatch(removeGroup())
+        }
       }
 
       if (e.key === 'Shift') {
@@ -37,5 +51,5 @@ export const useKeyboardEvents = (currentArtworkId, isMouseOver) => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [currentArtworkId, isMouseOver, isEditingArtwork, dispatch])
+  }, [currentArtworkId, isMouseOver, isEditingArtwork, dispatch, isGroupHovered])
 }

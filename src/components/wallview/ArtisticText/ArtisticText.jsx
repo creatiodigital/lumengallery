@@ -13,7 +13,7 @@ const ArtisticText = ({ artworkId }) => {
   const dispatch = useDispatch()
 
   const {
-    artisticText,
+    textContent,
     textAlign,
     handleArtisticTextChange,
     textColor,
@@ -25,14 +25,14 @@ const ArtisticText = ({ artworkId }) => {
 
   const fontFamilyVariable =
     {
-      Roboto: 'var(--font-wall1)',
-      Lora: 'var(--font-wall2)',
+      roboto: 'var(--font-wall1)',
+      lora: 'var(--font-wall2)',
     }[fontFamily] || 'var(--font-wall1)'
 
   const fontWeightVariable =
     {
-      Regular: 400,
-      Bold: 600,
+      regular: 400,
+      bold: 600,
     }[fontWeight] || 400
 
   const handleDoubleClick = () => {
@@ -62,7 +62,7 @@ const ArtisticText = ({ artworkId }) => {
       className={`${styles.text} ${isEditing ? styles.editing : ''}`}
       onDoubleClick={handleDoubleClick}
     >
-      {!artisticText.trim() && !isEditing ? (
+      {!textContent.trim() && !isEditing ? (
         <div className={styles.empty}>
           <Icon name="text" size={40} color={isEditing ? '#ffffff' : '#000000'} />
         </div>
@@ -83,7 +83,7 @@ const ArtisticText = ({ artworkId }) => {
           suppressContentEditableWarning={true}
           onBlur={handleBlur}
         >
-          {artisticText}
+          {textContent}
         </div>
       )}
     </div>

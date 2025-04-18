@@ -1,6 +1,6 @@
 import { useDispatch } from 'react-redux'
 
-import { editArtworkUrlImage } from '@/lib/features/artistSlice'
+import { editArtisticImage } from '@/lib/features/artworksSlice'
 import { setArtworkUploadedTrue } from '@/lib/features/wizardSlice'
 
 export const useFileUpload = (currentArtworkId) => {
@@ -9,8 +9,8 @@ export const useFileUpload = (currentArtworkId) => {
   const handleFileChange = (event) => {
     const file = event.target.files[0]
     if (file && currentArtworkId) {
-      const url = URL.createObjectURL(file)
-      dispatch(editArtworkUrlImage({ currentArtworkId, url }))
+      const imageUrl = URL.createObjectURL(file)
+      dispatch(editArtisticImage({ currentArtworkId, property: 'imageUrl', value: imageUrl }))
     }
   }
 

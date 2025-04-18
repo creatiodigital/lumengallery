@@ -6,7 +6,7 @@ const sceneSlice = createSlice({
     isArtworkPanelOpen: false,
     isPlaceholdersShown: true,
     currentArtworkId: null,
-    currentGallery: '/assets/galleries/one-space42.glb',
+    walls: [],
   },
   reducers: {
     setCurrentArtwork: (state, action) => {
@@ -18,8 +18,22 @@ const sceneSlice = createSlice({
     hidePlaceholders: (state) => {
       state.isPlaceholdersShown = false
     },
+    addWall: (state, action) => {
+      const wallId = action.payload
+      const wallIndex = state.walls.length + 1
+      const readableName = `Wall ${wallIndex}`
+      state.walls.push({ id: wallId.id, name: readableName })
+    },
+    editWallName: (state, action) => {
+      const { wallId, newName } = action.payload
+      const wall = state.walls.find((wall) => wall.id === wallId)
+      if (wall) {
+        wall.name = newName
+      }
+    },
   },
 })
 
-export const { setCurrentArtwork, showPlaceholders, hidePlaceholders } = sceneSlice.actions
+export const { setCurrentArtwork, showPlaceholders, hidePlaceholders, addWall, editWallName } =
+  sceneSlice.actions
 export default sceneSlice.reducer

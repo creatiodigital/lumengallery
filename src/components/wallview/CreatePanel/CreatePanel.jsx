@@ -9,8 +9,8 @@ import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import styles from './CreatePanel.module.scss'
 
 export const CreatePanel = () => {
-  const currentGallery = useSelector((state) => state.scene.currentGallery)
-  const { nodes } = useGLTF(currentGallery)
+  const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
+  const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes, currentWallId)
 
@@ -23,7 +23,7 @@ export const CreatePanel = () => {
   return (
     <div className={styles.panel}>
       <div className={styles.options}>
-        <Tooltip label="Click or drag to create an image" top={-40}>
+        <Tooltip label="Click or drag to wall to create an artistic image" top={-40}>
           <ButtonIcon
             size="big"
             icon="picture"
@@ -33,7 +33,7 @@ export const CreatePanel = () => {
             onDragStart={(e) => handleArtworkDragStart(e, 'paint')}
           />
         </Tooltip>
-        <Tooltip label="Click or drag to create a text" top={-40}>
+        <Tooltip label="Click or drag to wall to create an artistic text" top={-40}>
           <ButtonIcon
             size="big"
             icon="text"

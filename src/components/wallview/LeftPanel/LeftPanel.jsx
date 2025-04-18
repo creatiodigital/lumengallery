@@ -5,9 +5,9 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '@/components/ui/Button'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
-import { editWallName, editArtworkName } from '@/lib/features/artistSlice'
+import { editWallName, editArtwork } from '@/lib/features/artworksSlice'
 import { showEditMode } from '@/lib/features/dashboardSlice'
-import { showHuman, hideHuman } from '@/lib/features/wallViewSlice'
+import { showHuman, hideHuman, removeGroup } from '@/lib/features/wallViewSlice'
 import {
   increaseScaleFactor,
   decreaseScaleFactor,
@@ -22,9 +22,10 @@ import styles from './LeftPanel.module.scss'
 export const LeftPanel = () => {
   const dispatch = useDispatch()
 
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworksById = useSelector((state) => state.artworks.byId)
+  const allIds = useSelector((state) => state.artworks.allIds)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
-  const walls = useSelector((state) => state.artist.walls)
+  const walls = useSelector((state) => state.scene.walls)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
@@ -39,8 +40,12 @@ export const LeftPanel = () => {
   const currentWallName = currentWall ? currentWall.name : 'Select a wall'
 
   const wallArtworks = useMemo(
-    () => artworks.filter((artwork) => artwork.wallId === currentWallId).reverse(),
-    [artworks, currentWallId],
+    () =>
+      allIds
+        .map((id) => artworksById[id])
+        .filter((artwork) => artwork.wallId === currentWallId)
+        .reverse(),
+    [allIds, artworksById, currentWallId],
   )
 
   const handleZoomIn = () => {
@@ -60,6 +65,7 @@ export const LeftPanel = () => {
     dispatch(hideWallView())
     dispatch(showEditMode())
     dispatch(chooseCurrentArtworkId(null))
+    dispatch(removeGroup())
   }
 
   const handleToggleHuman = () => {
@@ -71,7 +77,9 @@ export const LeftPanel = () => {
   }
 
   const handleSelectArtwork = (artworkId) => {
-    dispatch(chooseCurrentArtworkId(artworkId))
+    if (currentArtworkId !== artworkId) {
+      dispatch(chooseCurrentArtworkId(artworkId))
+    }
     if (!isWizardOpen) {
       dispatch(showWizard())
     }
@@ -114,7 +122,13 @@ export const LeftPanel = () => {
 
   const handleBlurArtworkName = (artworkId) => {
     if (newArtworkName.trim() !== '') {
-      dispatch(editArtworkName({ currentArtworkId: artworkId, name: newArtworkName.trim() }))
+      dispatch(
+        editArtwork({
+          currentArtworkId: artworkId,
+          property: 'name',
+          value: newArtworkName.trim(),
+        }),
+      )
     }
     setIsEditingArtwork(null)
   }

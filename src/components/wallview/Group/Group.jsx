@@ -1,13 +1,16 @@
 import React, { memo } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
 import { useMoveGroupArtwork } from '@/components/wallview/hooks/useMoveGroupArtwork'
+import { setGroupHovered, setGroupNotHovered } from '@/lib/features/wallViewSlice'
 
 import styles from './Group.module.scss'
 
 const Group = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
   const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
+
+  const dispatch = useDispatch()
 
   const { handleGroupDragStart, handleGroupDragMove, handleGroupDragEnd } = useMoveGroupArtwork(
     wallRef,
@@ -36,6 +39,14 @@ const Group = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
     }
   }
 
+  const handleMouseEnter = () => {
+    dispatch(setGroupHovered())
+  }
+
+  const handleMouseLeave = () => {
+    dispatch(setGroupNotHovered())
+  }
+
   return (
     <div
       className={styles.group}
@@ -48,6 +59,8 @@ const Group = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     />
   )
 })

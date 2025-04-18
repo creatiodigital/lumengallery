@@ -1,166 +1,34 @@
-import { useGLTF } from '@react-three/drei'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useSelector } from 'react-redux'
 
-import { ButtonIcon } from '@/components/ui/ButtonIcon'
-import { Input } from '@/components/ui/Input'
-import { NumberInput } from '@/components/ui/NumberInput'
-import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
-
-import { ArtisticImage } from './ArtisticImage'
-import { ArtisticText } from './ArtisticText'
+import { ArtisticImagePanel } from './ArtisticImagePanel'
+import { ArtisticTextPanel } from './ArtisticTextPanel'
+import { ArtworkPanel } from './ArtworkPanel'
+import { GroupPanel } from './GroupPanel'
 import { useArtworkDetails } from './hooks/useArtworkDetails'
-import { useArtworkHandlers } from './hooks/useArtworkHandlers'
 import styles from './RightPanel.module.scss'
 
 const RightPanel = () => {
-  const currentGallery = useSelector((state) => state.scene.currentGallery)
-  const { nodes } = useGLTF(currentGallery)
-  const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
-  const boundingData = useBoundingData(nodes, currentWallId)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
 
-  const { width, height, x, y, name, artworkType } = useArtworkDetails(currentArtworkId)
-  const wallWidth = useSelector((state) => state.wallView.wallWidth)
-  const wallHeight = useSelector((state) => state.wallView.wallHeight)
+  const { artworkType } = useArtworkDetails(currentArtworkId)
 
-  const {
-    handleNameChange,
-    handleAlignChange,
-    handleMoveXChange,
-    handleMoveYChange,
-    handleWidthChange,
-    handleHeightChange,
-  } = useArtworkHandlers(currentArtworkId, boundingData)
-
-  const handleAlign = (alignment) => {
-    handleAlignChange(alignment, wallWidth, wallHeight, boundingData)
-  }
-
-  useEffect(() => {
-    if (currentGallery) {
-      useGLTF.preload(currentGallery)
-    }
-  }, [currentGallery])
+  const isGroupCreated = artworkGroupIds.length > 1
 
   return (
     <div className={styles.panel}>
-      {isWizardOpen && (
-        <div>
-          {artworkType !== '' && (
-            <div className={styles.properties}>
-              <div className={styles.section}>
-                <div className={styles.subsection}>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Name</span>
-                      <Input value={name} onChange={handleNameChange} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className={styles.section}>
-                <h2 className={styles.title}>Position</h2>
-                <div className={styles.subsection}>
-                  <h3 className={styles.subtitle}>Alignment</h3>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <ButtonIcon icon="verticalTop" onClick={() => handleAlign('verticalTop')} />
-                    </div>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="verticalCenter"
-                        onClick={() => handleAlign('verticalCenter')}
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="verticalBottom"
-                        onClick={() => handleAlign('verticalBottom')}
-                      />
-                    </div>
-                  </div>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="horizontalLeft"
-                        onClick={() => handleAlign('horizontalLeft')}
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="horizontalCenter"
-                        onClick={() => handleAlign('horizontalCenter')}
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <ButtonIcon
-                        icon="horizontalRight"
-                        onClick={() => handleAlign('horizontalRight')}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className={styles.subsection}>
-                  <h3 className={styles.subtitle}>Position (meters)</h3>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <NumberInput
-                        value={x / 100}
-                        icon="move"
-                        rotate={90}
-                        min={0}
-                        max={30}
-                        onChange={handleMoveXChange}
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <NumberInput
-                        value={y / 100}
-                        icon="move"
-                        min={0}
-                        max={30}
-                        onChange={handleMoveYChange}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className={styles.section}>
-                <h2 className={styles.title}>Layout</h2>
-                <div className={styles.subsection}>
-                  <h3 className={styles.subtitle}>Size (meters)</h3>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <NumberInput
-                        value={width / 100}
-                        icon="expand"
-                        rotate={90}
-                        min={0.1}
-                        max={10}
-                        onChange={handleWidthChange}
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <NumberInput
-                        value={height / 100}
-                        icon="expand"
-                        min={0.1}
-                        max={10}
-                        onChange={handleHeightChange}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {artworkType === 'paint' && <ArtisticImage />}
-              {artworkType === 'text' && <ArtisticText />}
-            </div>
-          )}
-        </div>
-      )}
+      <div className={styles.properties}>
+        {isGroupCreated && <GroupPanel />}
+        {!isGroupCreated && isWizardOpen && (
+          <>
+            <ArtworkPanel />
+            {artworkType === 'paint' && <ArtisticImagePanel />}
+            {artworkType === 'text' && <ArtisticTextPanel />}
+          </>
+        )}
+      </div>
     </div>
   )
 }

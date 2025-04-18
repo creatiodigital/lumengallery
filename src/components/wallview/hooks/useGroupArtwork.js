@@ -5,8 +5,8 @@ import { addArtworkToGroup, removeGroup, createArtworkGroup } from '@/lib/featur
 
 export const useGroupArtwork = () => {
   const dispatch = useDispatch()
-  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
-  const artworks = useSelector((state) => state.artist.artworks)
+  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
 
   const handleAddArtworkToGroup = useCallback(
     (artworkId) => {
@@ -19,12 +19,11 @@ export const useGroupArtwork = () => {
 
   const handleCreateArtworkGroup = useCallback(() => {
     if (artworkGroupIds.length === 0) return
-
-    const artworkGroupItems = artworks.filter((artwork) => artworkGroupIds.includes(artwork.id))
-    const xValues = artworkGroupItems.map((artwork) => artwork.canvas.x)
-    const xEdgeValues = artworkGroupItems.map((artwork) => artwork.canvas.x + artwork.canvas.width)
-    const yValues = artworkGroupItems.map((artwork) => artwork.canvas.y)
-    const yEdgeValues = artworkGroupItems.map((artwork) => artwork.canvas.y + artwork.canvas.height)
+    const artworkGroupItems = artworkGroupIds.map((id) => positionsById[id]) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
+    const xValues = artworkGroupItems.map((artwork) => artwork.posX2d)
+    const xEdgeValues = artworkGroupItems.map((artwork) => artwork.posX2d + artwork.width2d)
+    const yValues = artworkGroupItems.map((artwork) => artwork.posY2d)
+    const yEdgeValues = artworkGroupItems.map((artwork) => artwork.posY2d + artwork.height2d)
 
     const groupX = Math.min(...xValues)
     const maxGroupX = Math.max(...xEdgeValues)
@@ -41,7 +40,7 @@ export const useGroupArtwork = () => {
     }
 
     dispatch(createArtworkGroup(groupProps))
-  }, [artworkGroupIds, artworks, dispatch])
+  }, [artworkGroupIds, dispatch])
 
   const handleRemoveArtworkGroup = useCallback(() => {
     dispatch(removeGroup())

@@ -1,31 +1,32 @@
 import { useSelector } from 'react-redux'
 
 export const useArtworkDetails = (currentArtworkId) => {
-  const artwork = useSelector((state) =>
-    state?.artist?.artworks?.find((art) => art.id === currentArtworkId),
-  )
+  const artworksById = useSelector((state) => state.artworks.byId)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
 
-  if (!artwork)
+  const artwork = artworksById[currentArtworkId]
+  const artworkPosition = positionsById[currentArtworkId]
+
+  if (!artwork || !artworkPosition) {
     return {
-      width: '',
-      height: '',
-      x: '',
-      y: '',
       name: '',
       artworkTitle: '',
       author: '',
       artworkYear: '',
       artworkDimensions: '',
       description: '',
-      artisticText: '',
-      artisticTextStyles: {},
+      textContent: '',
+      artisticTextProperties: {},
+      artisticImageProperties: {},
       artworkType: '',
-      showFrame: false,
-      showArtworkInformation: false,
-      frameStyles: {},
+      width: 0,
+      height: 0,
+      x: 0,
+      y: 0,
     }
+  }
 
-  const { width, height, x, y } = artwork.canvas
+  const { width2d, height3d, posX2d, posY2d } = artworkPosition
   const {
     name,
     artworkTitle,
@@ -33,30 +34,26 @@ export const useArtworkDetails = (currentArtworkId) => {
     artworkYear,
     artworkDimensions,
     description,
-    artisticText,
+    textContent,
     artworkType,
-    showFrame,
-    showArtworkInformation,
-    frameStyles,
-    artisticTextStyles,
+    artisticTextProperties,
+    artisticImageProperties,
   } = artwork
 
   return {
-    width: Math.round(width),
-    height: Math.round(height),
-    x: Math.round(x),
-    y: Math.round(y),
+    width: Math.round(width2d),
+    height: Math.round(height3d),
+    x: Math.round(posX2d),
+    y: Math.round(posY2d),
     name,
     artworkTitle,
     author,
     artworkYear,
     artworkDimensions,
     description,
-    artisticText,
-    artisticTextStyles,
+    textContent,
+    artisticTextProperties,
+    artisticImageProperties,
     artworkType,
-    showFrame,
-    showArtworkInformation,
-    frameStyles,
   }
 }
