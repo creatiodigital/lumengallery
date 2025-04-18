@@ -1,9 +1,8 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { editArtworkGroup } from '@/lib/features/wallViewSlice'
-
 import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
+import { editArtworkGroup } from '@/lib/features/wallViewSlice'
 
 export const useGroupHandlers = (artworkGroupIds, boundingData) => {
   const dispatch = useDispatch()
