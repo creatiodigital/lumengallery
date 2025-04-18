@@ -1,14 +1,13 @@
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
-import { editArtworkSpace, editArtworkCanvas, editArtwork } from '@/lib/features/artworksSlice'
+import { convert2DTo3D } from '@/components/wallview/utils'
+import { editArtwork } from '@/lib/features/artworksSlice'
 import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const dispatch = useDispatch()
 
-  const artworksById = useSelector((state) => state.artworks.byId)
-  const artworksByIdE = useSelector((state) => state.exhibition.artworksById)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
 
   const sanitizeNumberInput = (value) => {
     const normalizedValue = value * 100
@@ -26,16 +25,14 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   }
 
   const handleAlignChange = (alignment, wallWidth, wallHeight) => {
-    const currentEdited = artworksById[currentArtworkId]
-    const currentEditedE = artworksByIdE[currentArtworkId]
+    const currentEdited = positionsById[currentArtworkId]
 
     if (!currentEdited) return
 
-    const artworkWidth = currentEdited.canvas.width || currentEditedE.width2d
-    const artworkHeight = currentEdited.canvas.height || currentEditedE.height2d
-    //REFACTOR LATER
-    const artworkX = currentEdited.canvas.x || currentEditedE.posX2d
-    const artworkY = currentEdited.canvas.y || currentEditedE.posY2d
+    const artworkWidth = currentEdited.width2d
+    const artworkHeight = currentEdited.height2d
+    const artworkX = currentEdited.posX2d
+    const artworkY = currentEdited.posY2d
 
     const factor = 100
 
@@ -65,57 +62,17 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
         break
     }
 
-    const artworkPosition = { x: newX, y: newY }
-
-    //REMOVE LATER
-    dispatch(
-      editArtworkCanvas({
-        currentArtworkId,
-        canvasUpdates: artworkPosition,
-      }),
-    )
-
-    const new3DCoordinate = convert2DTo3D(
-      {
-        x: newX,
-        y: newY,
-        size: {
-          w: artworkWidth,
-          h: artworkHeight,
-        },
-      },
-      boundingData,
-    )
-
-    const artworkPositionE = {
+    const artworkPosition = {
       posX2d: newX,
       posY2d: newY,
     }
 
-    const new3DCoordinateE = convert2DTo3DE(
-      {
-        x: newX,
-        y: newY,
-        size: {
-          w: artworkWidth,
-          h: artworkHeight,
-        },
-      },
-      boundingData,
-    )
+    const new3DCoordinate = convert2DTo3D(newX, newY, artworkWidth, artworkHeight, boundingData)
 
-    dispatch(
-      editArtworkSpace({
-        currentArtworkId,
-        spaceUpdates: new3DCoordinate,
-      }),
-    )
-
-    // REFACTOR THIS SO WE SEND 2D and 3D at the same time
     dispatch(
       updateArtworkPosition({
         artworkId: currentArtworkId,
-        artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
+        artworkPosition: { ...artworkPosition, ...new3DCoordinate },
       }),
     )
   }
@@ -123,36 +80,27 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleMoveXChange = (e) => {
     const newX = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = artworksById[currentArtworkId]
+    const currentEdited = positionsById[currentArtworkId]
     if (!currentEdited) return
 
-    const artworkWidth = currentEdited.canvas.width
-    const artworkHeight = currentEdited.canvas.height
-    const artworkY = currentEdited.canvas.y
-
-    dispatch(
-      editArtworkCanvas({
-        currentArtworkId,
-        canvasUpdates: { ...currentEdited.canvas, x: newX },
-      }),
-    )
+    const artworkWidth = currentEdited.width2d
+    const artworkHeight = currentEdited.height2d
+    const artworkY = currentEdited.posY2d
 
     const new3DCoordinate = convert2DTo3D(
-      {
-        x: newX,
-        y: artworkY,
-        size: {
-          w: artworkWidth,
-          h: artworkHeight,
-        },
-      },
+      newX,
+      artworkY,
+
+      artworkWidth,
+      artworkHeight,
+
       boundingData,
     )
 
     dispatch(
-      editArtworkSpace({
-        currentArtworkId,
-        spaceUpdates: new3DCoordinate,
+      updateArtworkPosition({
+        artworkId: currentArtworkId,
+        artworkPosition: { posX2d: newX, ...new3DCoordinate },
       }),
     )
   }
@@ -160,55 +108,38 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleMoveYChange = (e) => {
     const newY = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = artworksById[currentArtworkId]
+    const currentEdited = positionsById[currentArtworkId]
     if (!currentEdited) return
 
-    const artworkWidth = currentEdited.canvas.width
-    const artworkHeight = currentEdited.canvas.height
-    const artworkX = currentEdited.canvas.x
+    const artworkWidth = currentEdited.width2d
+    const artworkHeight = currentEdited.height2d
+    const artworkX = currentEdited.posX2d
+
+    const new3DCoordinate = convert2DTo3D(artworkX, newY, artworkWidth, artworkHeight, boundingData)
 
     dispatch(
-      editArtworkCanvas({
-        currentArtworkId,
-        canvasUpdates: { ...currentEdited.canvas, y: newY },
+      updateArtworkPosition({
+        artworkId: currentArtworkId,
+        artworkPosition: { posY2d: newY, ...new3DCoordinate },
       }),
     )
-
-    if (boundingData) {
-      const new3DCoordinate = convert2DTo3D(
-        {
-          x: artworkX,
-          y: newY,
-          size: {
-            w: artworkWidth,
-            h: artworkHeight,
-          },
-        },
-        boundingData,
-      )
-
-      dispatch(
-        editArtworkSpace({
-          currentArtworkId,
-          spaceUpdates: new3DCoordinate,
-        }),
-      )
-    }
   }
 
   const handleWidthChange = (e) => {
     const newWidth = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = artworksById[currentArtworkId]
+    const currentEdited = positionsById[currentArtworkId]
     if (!currentEdited) return
 
-    const { x, width: currentWidth } = currentEdited.canvas
+    const x = currentEdited.artworkX
+    const currentWidth = currentEdited.width2d
+
     const newX = x + (currentWidth - newWidth) / 2
 
     dispatch(
-      editArtworkCanvas({
-        currentArtworkId,
-        canvasUpdates: { ...currentEdited.canvas, width: newWidth, x: newX },
+      updateArtworkPosition({
+        artworkId: currentArtworkId,
+        artworkPosition: { width2d: newWidth, posX2d: newX },
       }),
     )
   }
@@ -216,16 +147,17 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleHeightChange = (e) => {
     const newHeight = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = artworksById[currentArtworkId]
+    const currentEdited = positionsById[currentArtworkId]
     if (!currentEdited) return
 
-    const { y, height: currentHeight } = currentEdited.canvas
+    const y = currentEdited.artworkY
+    const currentHeight = currentEdited.height2d
     const newY = y + (currentHeight - newHeight) / 2
 
     dispatch(
-      editArtworkCanvas({
-        currentArtworkId,
-        canvasUpdates: { ...currentEdited.canvas, height: newHeight, y: newY },
+      updateArtworkPosition({
+        artworkId: currentArtworkId,
+        artworkPosition: { height2d: newHeight, posY2d: newY },
       }),
     )
   }

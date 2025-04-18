@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
-import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
+import { convert2DTo3D } from '@/components/wallview/utils'
 import {
   editArtworkGroup,
   startDraggingGroup,
@@ -14,8 +13,10 @@ import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick) => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const byId = useSelector((state) => state.artworks.byId)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
+
   const [isDraggingGroup, setIsDraggingGroup] = useState(false)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
@@ -57,60 +58,26 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
       )
 
       artworkGroupIds.forEach((artworkId) => {
-        const artwork = byId[artworkId]
+        const artwork = positionsById[artworkId]
         if (artwork) {
-          const updatedCanvas = {
-            x: artwork.canvas.x + deltaX,
-            y: artwork.canvas.y + deltaY,
-            width: artwork.canvas.width,
-            height: artwork.canvas.height,
+          const posX2d = artwork.posX2d + deltaX
+          const posY2d = artwork.posY2d + deltaY
+          const width2d = artwork.width2d
+          const height2d = artwork.height2d
+
+          const artworkPosition = {
+            posX2d,
+            posY2d,
+            width2d,
+            height2d,
           }
 
-          dispatch(
-            editArtworkCanvas({
-              currentArtworkId: artworkId,
-              canvasUpdates: updatedCanvas,
-            }),
-          )
+          const new3DCoordinate = convert2DTo3D(posX2d, posY2d, width2d, height2d, boundingData)
 
-          const new3DCoordinate = convert2DTo3D(
-            {
-              x: updatedCanvas.x,
-              y: updatedCanvas.y,
-              size: { w: updatedCanvas.width, h: updatedCanvas.height },
-            },
-            boundingData,
-          )
-
-          dispatch(
-            editArtworkSpace({
-              currentArtworkId: artworkId,
-              spaceUpdates: new3DCoordinate,
-            }),
-          )
-
-          //NEW WAY
-          const artworkPositionE = {
-            posX2d: artwork.canvas.x + deltaX,
-            posY2d: artwork.canvas.y + deltaY,
-            width2d: artwork.canvas.width,
-            height2d: artwork.canvas.height,
-          }
-
-          const new3DCoordinateE = convert2DTo3DE(
-            {
-              x: updatedCanvas.x,
-              y: updatedCanvas.y,
-              size: { w: updatedCanvas.width, h: updatedCanvas.height },
-            },
-            boundingData,
-          )
-
-          // REFACTOR THIS SO WE SEND 2D and 3D at the same time
           dispatch(
             updateArtworkPosition({
               artworkId,
-              artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
+              artworkPosition: { ...artworkPosition, ...new3DCoordinate },
             }),
           )
         }
@@ -124,7 +91,7 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
       offset,
       artworkGroup,
       artworkGroupIds,
-      byId,
+      positionsById,
       dispatch,
     ],
   )

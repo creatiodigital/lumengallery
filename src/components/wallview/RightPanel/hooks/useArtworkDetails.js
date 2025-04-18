@@ -7,12 +7,8 @@ export const useArtworkDetails = (currentArtworkId) => {
   const artwork = artworksById[currentArtworkId]
   const artworkPosition = positionsById[currentArtworkId]
 
-  if (!artwork)
+  if (!artwork || !artworkPosition) {
     return {
-      width: '',
-      height: '',
-      x: '',
-      y: '',
       name: '',
       artworkTitle: '',
       author: '',
@@ -23,7 +19,12 @@ export const useArtworkDetails = (currentArtworkId) => {
       artisticTextProperties: {},
       artisticImageProperties: {},
       artworkType: '',
+      width: 0,
+      height: 0,
+      x: 0,
+      y: 0,
     }
+  }
 
   const { width2d, height3d, posX2d, posY2d } = artworkPosition
   const {

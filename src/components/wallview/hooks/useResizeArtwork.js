@@ -1,12 +1,13 @@
 import { useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
-import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
+import { convert2DTo3D } from '@/components/wallview/utils'
 import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
   const artworksById = useSelector((state) => state.artworks.byId)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
+
   const dispatch = useDispatch()
   const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
   const gridSize = 20
@@ -15,7 +16,7 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
     (event, artworkId, direction) => {
       event.stopPropagation()
 
-      const artwork = artworksById[artworkId]
+      const artwork = positionsById[artworkId]
       if (!artwork || !wallRef.current) return
 
       const rect = wallRef.current.getBoundingClientRect()
@@ -26,10 +27,10 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
 
       const startX = event.clientX
       const startY = event.clientY
-      const initialWidth = artwork.canvas.width
-      const initialHeight = artwork.canvas.height
-      const initialX = artwork.canvas.x
-      const initialY = artwork.canvas.y
+      const initialWidth = artwork.width2d
+      const initialHeight = artwork.height2d
+      const initialX = artwork.posX2d
+      const initialY = artwork.posY2d
 
       const handleMouseMove = (moveEvent) => {
         const deltaX = (moveEvent.clientX - startX) / scaleFactor
@@ -84,65 +85,20 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
           }
         }
 
-        const updatedCanvas = {
-          x: newX,
-          y: newY,
-          width: newWidth,
-          height: newHeight,
-        }
-
-        dispatch(
-          editArtworkCanvas({
-            currentArtworkId: artworkId,
-            canvasUpdates: updatedCanvas,
-          }),
-        )
-
         if (boundingData) {
-          const new3DCoordinate = convert2DTo3D(
-            {
-              x: newX,
-              y: newY,
-              size: {
-                w: newWidth,
-                h: newHeight,
-              },
-            },
-            boundingData,
-          )
-
-          dispatch(
-            editArtworkSpace({
-              currentArtworkId: artworkId,
-              spaceUpdates: new3DCoordinate,
-            }),
-          )
-
-          //NEW WAY
-          const artworkPositionE = {
+          const artworkPosition = {
             posX2d: newX,
             posY2d: newY,
             width2d: newWidth,
             height2d: newHeight,
           }
 
-          const new3DCoordinateE = convert2DTo3DE(
-            {
-              x: newX,
-              y: newY,
-              size: {
-                w: newWidth,
-                h: newHeight,
-              },
-            },
-            boundingData,
-          )
+          const new3DCoordinate = convert2DTo3D(newX, newY, newWidth, newHeight, boundingData)
 
-          // REFACTOR THIS SO WE SEND 2D and 3D at the same time
           dispatch(
             updateArtworkPosition({
               artworkId,
-              artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
+              artworkPosition: { ...artworkPosition, ...new3DCoordinate },
             }),
           )
         }

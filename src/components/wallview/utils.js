@@ -27,54 +27,11 @@ export const calculateDimensionsAndBasis = (boundingBox, normal) => {
   return { width, height, u, v }
 }
 
-export const convert2DTo3D = ({ x, y, size }, boundingData) => {
+export const convert2DTo3D = (posX2d, posY2d, width2d, height2d, boundingData) => {
   const { boundingBox, normal, u, v, width, height } = boundingData
-  const { w, h } = size
 
-  const xRatio = 0.5 - x / (width * 100)
-  const yRatio = y / (height * 100) - 0.5
-
-  const center3D = boundingBox.getCenter(new Vector3())
-
-  let x3D = center3D.x + u.x * xRatio * width + v.x * yRatio * height
-  let y3D = center3D.y + u.y * xRatio * width + v.y * yRatio * height
-  let z3D = center3D.z + u.z * xRatio * width + v.z * yRatio * height
-
-  const adjustedWidth = (w / (width * 100)) * width
-  const adjustedHeight = (h / (height * 100)) * height
-
-  x3D -= u.x * (adjustedWidth / 2)
-  y3D -= u.y * (adjustedWidth / 2)
-  z3D -= u.z * (adjustedWidth / 2)
-
-  x3D += v.x * (adjustedHeight / 2)
-  y3D += v.y * (adjustedHeight / 2)
-  z3D += v.z * (adjustedHeight / 2)
-
-  const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), normal)
-
-  return {
-    position: {
-      x: x3D,
-      y: y3D,
-      z: z3D,
-    },
-    quaternion: {
-      x: quaternion.x,
-      y: quaternion.y,
-      z: quaternion.z,
-      w: quaternion.w,
-    },
-    width: adjustedWidth,
-    height: adjustedHeight,
-  }
-}
-export const convert2DTo3DE = ({ x, y, size }, boundingData) => {
-  const { boundingBox, normal, u, v, width, height } = boundingData
-  const { w, h } = size
-
-  const xRatio = 0.5 - x / (width * 100)
-  const yRatio = y / (height * 100) - 0.5
+  const xRatio = 0.5 - posX2d / (width * 100)
+  const yRatio = posY2d / (height * 100) - 0.5
 
   const center3D = boundingBox.getCenter(new Vector3())
 
@@ -82,8 +39,8 @@ export const convert2DTo3DE = ({ x, y, size }, boundingData) => {
   let posY3d = center3D.y + u.y * xRatio * width + v.y * yRatio * height
   let posZ3d = center3D.z + u.z * xRatio * width + v.z * yRatio * height
 
-  const adjustedWidth = (w / (width * 100)) * width
-  const adjustedHeight = (h / (height * 100)) * height
+  const adjustedWidth = (width2d / (width * 100)) * width
+  const adjustedHeight = (height2d / (height * 100)) * height
 
   posX3d -= u.x * (adjustedWidth / 2)
   posY3d -= u.y * (adjustedWidth / 2)

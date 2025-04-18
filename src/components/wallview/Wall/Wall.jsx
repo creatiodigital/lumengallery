@@ -3,6 +3,8 @@ import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Artwork } from '@/components/wallview/Artwork'
+import { convert2DTo3D } from '@/components/wallview/utils'
+
 import { Group } from '@/components/wallview/Group'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
@@ -13,8 +15,6 @@ import { useResizeArtwork } from '@/components/wallview/hooks/useResizeArtwork'
 import { useSelectBox } from '@/components/wallview/hooks/useSelectBox'
 import { Human } from '@/components/wallview/Human'
 import { SelectionBox } from '@/components/wallview/SelectionBox'
-import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
-import { editArtworkSpace } from '@/lib/features/artworksSlice'
 import { setShiftKeyDown } from '@/lib/features/wallViewSlice'
 import { setWallCoordinates, setWallDimensions } from '@/lib/features/wallViewSlice'
 import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
@@ -28,6 +28,7 @@ export const Wall = () => {
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
   const allIds = useSelector((state) => state.artworks.allIds)
   const artworksById = useSelector((state) => state.artworks.byId)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
 
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
@@ -40,6 +41,7 @@ export const Wall = () => {
   const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
   const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+
   const alignedPairs = useSelector((state) => state.wallView.alignedPairs)
   const dispatch = useDispatch()
   const scaling = 100
@@ -49,7 +51,7 @@ export const Wall = () => {
   const wallRef = useRef(null)
   const preventClick = useRef(false)
 
-  const currentArtwork = artworksById[currentArtworkId]
+  const currentArtwork = positionsById[currentArtworkId]
 
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
@@ -119,40 +121,17 @@ export const Wall = () => {
   useEffect(() => {
     if (boundingData) {
       const new3DCoordinate = convert2DTo3D(
-        {
-          x: currentArtwork.canvas.x,
-          y: currentArtwork.canvas.y,
-          size: {
-            w: currentArtwork.canvas.width,
-            h: currentArtwork.canvas.height,
-          },
-        },
+        currentArtwork.posX2d,
+        currentArtwork.posY2d,
+        currentArtwork.width2d,
+        currentArtwork.height2d,
         boundingData,
-      )
-
-      const new3DCoordinateE = convert2DTo3DE(
-        {
-          x: currentArtwork.canvas.x,
-          y: currentArtwork.canvas.y,
-          size: {
-            w: currentArtwork.canvas.width,
-            h: currentArtwork.canvas.height,
-          },
-        },
-        boundingData,
-      )
-
-      dispatch(
-        editArtworkSpace({
-          currentArtworkId,
-          spaceUpdates: new3DCoordinate,
-        }),
       )
 
       dispatch(
         updateArtworkPosition({
           artworkId: currentArtworkId,
-          artworkPosition: { new3DCoordinateE },
+          artworkPosition: { new3DCoordinate },
         }),
       )
     }
@@ -217,23 +196,24 @@ export const Wall = () => {
         {selectionBox && <SelectionBox selectionBox={selectionBox} scaleFactor={scaleFactor} />}
         {alignedPairs?.map((pair, index) => {
           if (!isDragging) return null
-          const from = artworksById[pair.from]?.canvas || {}
-          const to = artworksById[pair.to]?.canvas || {}
+
+          const from = positionsById[pair.from] || {}
+          const to = positionsById[pair.to] || {}
 
           return (
             <AlignedLine
               key={index}
               start={{
-                x: from.x,
-                y: from.y,
-                width: from.width,
-                height: from.height,
+                x: parseFloat(from.posX2d),
+                y: parseFloat(from.posY2d),
+                width: parseFloat(from.width2d),
+                height: parseFloat(from.height2d),
               }}
               end={{
-                x: to.x,
-                y: to.y,
-                width: to.width,
-                height: to.height,
+                x: parseFloat(to.posX2d),
+                y: parseFloat(to.posY2d),
+                width: parseFloat(to.width2d),
+                height: parseFloat(to.height2d),
               }}
               direction={pair.direction}
             />

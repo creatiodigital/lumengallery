@@ -18,6 +18,8 @@ const exhibitionSlice = createSlice({
         quaternionZ: '',
         quaternionY: '',
         quaternionZ: '',
+        wallId: '',
+        id: '',
       },
     },
     allPositionIds: [],
@@ -44,8 +46,14 @@ const exhibitionSlice = createSlice({
         }
       }
     },
+    deleteArtworkPosition: (state, action) => {
+      const { artworkId } = action.payload
+      delete state.positionsById[artworkId]
+      state.allPositionIds = state.allPositionIds.filter((id) => id !== artworkId)
+    },
   },
 })
 
-export const { createArtworkPosition, updateArtworkPosition } = exhibitionSlice.actions
+export const { createArtworkPosition, updateArtworkPosition, deleteArtworkPosition } =
+  exhibitionSlice.actions
 export default exhibitionSlice.reducer

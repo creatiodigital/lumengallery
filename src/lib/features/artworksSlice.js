@@ -13,7 +13,7 @@ const artworksSlice = createSlice({
   },
   reducers: {
     createArtwork: (state, action) => {
-      const { wallId, id, canvas, artworkType } = action.payload
+      const { wallId, id, artworkType } = action.payload
 
       if (artworkType in state.artworkCounters) {
         state.artworkCounters[artworkType] += 1
@@ -21,7 +21,7 @@ const artworksSlice = createSlice({
         state.artworkCounters[artworkType] = 1
       }
 
-      const newArtwork = createNewArtwork({ id, wallId, canvas, artworkType })
+      const newArtwork = createNewArtwork({ id, wallId, artworkType })
 
       newArtwork.name = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)} ${state.artworkCounters[artworkType]}`
 
@@ -34,28 +34,6 @@ const artworksSlice = createSlice({
       const artwork = state.byId[currentArtworkId]
       if (artwork) {
         artwork[property] = value
-      }
-    },
-
-    editArtworkCanvas: (state, action) => {
-      const { currentArtworkId, canvasUpdates } = action.payload
-      const artwork = state.byId[currentArtworkId]
-      if (artwork) {
-        artwork.canvas = {
-          ...artwork.canvas,
-          ...canvasUpdates,
-        }
-      }
-    },
-
-    editArtworkSpace: (state, action) => {
-      const { currentArtworkId, spaceUpdates } = action.payload
-      const artwork = state.byId[currentArtworkId]
-      if (artwork) {
-        artwork.space = {
-          ...artwork.space,
-          ...spaceUpdates,
-        }
       }
     },
 
@@ -89,13 +67,6 @@ const artworksSlice = createSlice({
   },
 })
 
-export const {
-  createArtwork,
-  editArtwork,
-  editArtworkCanvas,
-  editArtworkSpace,
-  editArtisticImage,
-  editArtisticText,
-  deleteArtwork,
-} = artworksSlice.actions
+export const { createArtwork, editArtwork, editArtisticImage, editArtisticText, deleteArtwork } =
+  artworksSlice.actions
 export default artworksSlice.reducer

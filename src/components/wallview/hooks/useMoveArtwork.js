@@ -1,8 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { convert2DTo3D, convert2DTo3DE } from '@/components/wallview/utils'
-import { editArtworkSpace, editArtworkCanvas } from '@/lib/features/artworksSlice'
+import { convert2DTo3D } from '@/components/wallview/utils'
 import {
   setAlignedPairs,
   startDragging,
@@ -18,8 +17,8 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
-  const artworksById = useSelector((state) => state.artworks.byId)
-  const allIds = useSelector((state) => state.artworks.allIds)
+  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const allPositionIds = useSelector((state) => state.exhibition.allPositionIds)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
@@ -35,18 +34,18 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       event.stopPropagation()
 
       const rect = wallRef.current.getBoundingClientRect()
-      const artwork = artworksById[artworkId]
+      const artwork = positionsById[artworkId]
       if (!artwork) return
 
-      const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.canvas.x
-      const offsetY = (event.clientY - rect.top) / scaleFactor - artwork.canvas.y
+      const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.posX2d
+      const offsetY = (event.clientY - rect.top) / scaleFactor - artwork.posY2d
       setOffset({ x: offsetX, y: offsetY })
 
       dispatch(startDragging())
       setDraggedArtworkId(artworkId)
       dispatch(chooseCurrentArtworkId(artworkId))
     },
-    [isEditingArtwork, wallRef, isArtworkVisible, artworksById, scaleFactor, dispatch],
+    [isEditingArtwork, wallRef, isArtworkVisible, positionsById, scaleFactor, dispatch],
   )
 
   const handleArtworkDragMove = useCallback(
@@ -63,12 +62,12 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       let x = scaledMouseX - offset.x
       let y = scaledMouseY - offset.y
 
-      const artwork = artworksById[draggedArtworkId]
+      const artwork = positionsById[draggedArtworkId]
       if (!artwork) return
 
-      const sameWallArtworks = allIds
-        .map((id) => artworksById[id])
-        .filter((artwork) => artwork.wallId === currentWallId && artwork.id !== draggedArtworkId)
+      const sameWallArtworks = allPositionIds
+        .filter((id) => id !== draggedArtworkId && positionsById[id].wallId === currentWallId)
+        .map((id) => positionsById[id])
 
       let snapX = x
       let snapY = y
@@ -77,25 +76,24 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
       sameWallArtworks.forEach((otherArtwork) => {
         const alignment = areAligned(
-          { x: snapX, y: snapY, width: artwork.canvas.width, height: artwork.canvas.height },
+          { x: snapX, y: snapY, width: artwork.width2d, height: artwork.height2d },
           {
-            x: otherArtwork.canvas.x,
-            y: otherArtwork.canvas.y,
-            width: otherArtwork.canvas.width,
-            height: otherArtwork.canvas.height,
+            x: otherArtwork.posX2d,
+            y: otherArtwork.posY2d,
+            width: otherArtwork.width2d,
+            height: otherArtwork.height2d,
           },
         )
 
         if (alignment.horizontal) {
           if (alignment.horizontal === 'top') {
-            snapY = otherArtwork.canvas.y // Align top
+            snapY = otherArtwork.posY2d // Align top
           }
           if (alignment.horizontal === 'bottom') {
-            snapY = otherArtwork.canvas.y + otherArtwork.canvas.height - artwork.canvas.height // Align bottom
+            snapY = otherArtwork.posY2d + otherArtwork.height2d - artwork.height2d // Align bottom
           }
           if (alignment.horizontal === 'center-horizontal') {
-            snapY =
-              otherArtwork.canvas.y + otherArtwork.canvas.height / 2 - artwork.canvas.height / 2 // Align horizontal centers
+            snapY = otherArtwork.posY2d + otherArtwork.height2d / 2 - artwork.height2d / 2 // Align horizontal centers
           }
 
           alignedPairs.push({
@@ -107,13 +105,13 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
         if (alignment.vertical) {
           if (alignment.vertical === 'left') {
-            snapX = otherArtwork.canvas.x
+            snapX = otherArtwork.posX2d
           }
           if (alignment.vertical === 'right') {
-            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width - artwork.canvas.width
+            snapX = otherArtwork.posX2d + otherArtwork.width2d - artwork.width2d
           }
           if (alignment.vertical === 'center-vertical') {
-            snapX = otherArtwork.canvas.x + otherArtwork.canvas.width / 2 - artwork.canvas.width / 2
+            snapX = otherArtwork.posX2d + otherArtwork.width2d / 2 - artwork.width2d / 2
           }
 
           alignedPairs.push({
@@ -126,44 +124,23 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
       dispatch(setAlignedPairs(alignedPairs))
 
-      const updatedCanvas = { ...artwork.canvas, x: snapX, y: snapY }
-
-      dispatch(
-        editArtworkCanvas({ currentArtworkId: draggedArtworkId, canvasUpdates: updatedCanvas }),
-      )
-
-      const new3DCoordinate = convert2DTo3D(
-        { x: snapX, y: snapY, size: { w: updatedCanvas.width, h: updatedCanvas.height } },
-        boundingData,
-      )
-
-      dispatch(
-        editArtworkSpace({
-          currentArtworkId: draggedArtworkId,
-          spaceUpdates: new3DCoordinate,
-        }),
-      )
-
-      //NEW WAY
-      const artworkPositionE = {
+      const artworkPosition = {
         posX2d: snapX,
         posY2d: snapY,
       }
 
-      const new3DCoordinateE = convert2DTo3DE(
-        {
-          x: snapX,
-          y: snapY,
-          size: { w: updatedCanvas.width, h: updatedCanvas.height },
-        },
+      const new3DCoordinate = convert2DTo3D(
+        snapX,
+        snapY,
+        artwork.width2d,
+        artwork.height2d,
         boundingData,
       )
 
-      // REFACTOR THIS SO WE SEND 2D and 3D at the same time
       dispatch(
         updateArtworkPosition({
           artworkId: draggedArtworkId,
-          artworkPosition: { ...artworkPositionE, ...new3DCoordinateE },
+          artworkPosition: { ...artworkPosition, ...new3DCoordinate },
         }),
       )
     },
