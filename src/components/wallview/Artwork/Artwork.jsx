@@ -26,9 +26,9 @@ const Artwork = memo(
     const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
     const isShiftKeyDown = useSelector((state) => state.wallView.isShiftKeyDown)
     const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
-    const positionsById = useSelector((state) => state.exhibition.positionsById)
+    const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
-    const artworkPositions = positionsById[id]
+    const artworkPositions = exhibitionArtworksById[id]
     const { posX2d, posY2d, height2d, width2d } = artworkPositions
 
     const { handleArtworkDragStart, handleArtworkDragMove, handleArtworkDragEnd } = useMoveArtwork(

@@ -7,7 +7,7 @@ import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const dispatch = useDispatch()
 
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const sanitizeNumberInput = (value) => {
     const normalizedValue = value * 100
@@ -25,7 +25,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   }
 
   const handleAlignChange = (alignment, wallWidth, wallHeight) => {
-    const currentEdited = positionsById[currentArtworkId]
+    const currentEdited = exhibitionArtworksById[currentArtworkId]
 
     if (!currentEdited) return
 
@@ -80,7 +80,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleMoveXChange = (e) => {
     const newX = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = positionsById[currentArtworkId]
+    const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
     const artworkWidth = currentEdited.width2d
@@ -108,7 +108,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleMoveYChange = (e) => {
     const newY = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = positionsById[currentArtworkId]
+    const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
     const artworkWidth = currentEdited.width2d
@@ -128,7 +128,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleWidthChange = (e) => {
     const newWidth = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = positionsById[currentArtworkId]
+    const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
     const x = currentEdited.artworkX
@@ -147,7 +147,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
   const handleHeightChange = (e) => {
     const newHeight = sanitizeNumberInput(e.target.value)
 
-    const currentEdited = positionsById[currentArtworkId]
+    const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
     const y = currentEdited.artworkY

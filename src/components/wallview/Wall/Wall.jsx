@@ -27,7 +27,7 @@ export const Wall = () => {
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
   const allIds = useSelector((state) => state.artworks.allIds)
   const artworksById = useSelector((state) => state.artworks.byId)
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const currentWallId = useSelector((state) => state.wallView.currentWallId)
@@ -50,7 +50,7 @@ export const Wall = () => {
   const wallRef = useRef(null)
   const preventClick = useRef(false)
 
-  const currentArtwork = positionsById[currentArtworkId]
+  const currentArtwork = exhibitionArtworksById[currentArtworkId]
 
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
@@ -196,8 +196,8 @@ export const Wall = () => {
         {alignedPairs?.map((pair, index) => {
           if (!isDragging) return null
 
-          const from = positionsById[pair.from] || {}
-          const to = positionsById[pair.to] || {}
+          const from = exhibitionArtworksById[pair.from] || {}
+          const to = exhibitionArtworksById[pair.to] || {}
 
           return (
             <AlignedLine
