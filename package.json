@@ -11,6 +11,9 @@
     "format": "prettier --write .",
     "check-format": "prettier --check ."
   },
+  "engines": {
+    "pnpm": ">=8.0.0"
+  },
   "dependencies": {
     "@react-three/drei": "^9.102.6",
     "@react-three/fiber": "^8.16.1",
