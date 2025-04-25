@@ -16,8 +16,8 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   const [draggedArtworkId, setDraggedArtworkId] = useState(null)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
-  const allPositionIds = useSelector((state) => state.exhibition.allPositionIds)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+  const allExhibitionArtworkIds = useSelector((state) => state.exhibition.allExhibitionArtworkIds)
   const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
   const isDragging = useSelector((state) => state.wallView.isDragging)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
@@ -33,7 +33,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       event.stopPropagation()
 
       const rect = wallRef.current.getBoundingClientRect()
-      const artwork = positionsById[artworkId]
+      const artwork = exhibitionArtworksById[artworkId]
       if (!artwork) return
 
       const offsetX = (event.clientX - rect.left) / scaleFactor - artwork.posX2d
@@ -44,7 +44,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       setDraggedArtworkId(artworkId)
       dispatch(chooseCurrentArtworkId(artworkId))
     },
-    [isEditingArtwork, wallRef, isArtworkVisible, positionsById, scaleFactor, dispatch],
+    [isEditingArtwork, wallRef, isArtworkVisible, exhibitionArtworksById, scaleFactor, dispatch],
   )
 
   const handleArtworkDragMove = useCallback(
@@ -61,12 +61,14 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       let x = scaledMouseX - offset.x
       let y = scaledMouseY - offset.y
 
-      const artwork = positionsById[draggedArtworkId]
+      const artwork = exhibitionArtworksById[draggedArtworkId]
       if (!artwork) return
 
-      const sameWallArtworks = allPositionIds
-        .filter((id) => id !== draggedArtworkId && positionsById[id].wallId === currentWallId)
-        .map((id) => positionsById[id])
+      const sameWallArtworks = allExhibitionArtworkIds
+        .filter(
+          (id) => id !== draggedArtworkId && exhibitionArtworksById[id].wallId === currentWallId,
+        )
+        .map((id) => exhibitionArtworksById[id])
 
       let snapX = x
       let snapY = y

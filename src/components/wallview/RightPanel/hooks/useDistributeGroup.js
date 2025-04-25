@@ -7,13 +7,13 @@ export const useDistributeGroup = (boundingData) => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const distributeArtworksInGroup = (alignment) => {
     const { groupX, groupY, groupWidth, groupHeight } = artworkGroup
 
     // Filter artworks in the group, maintaining the visual order
-    let groupedArtworks = artworkGroupIds.map((id) => positionsById[id]).filter(Boolean)
+    let groupedArtworks = artworkGroupIds.map((id) => exhibitionArtworksById[id]).filter(Boolean)
 
     // Sort artworks visually based on the alignment
     if (alignment === 'horizontal') {

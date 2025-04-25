@@ -6,7 +6,7 @@ import { addArtworkToGroup, removeGroup, createArtworkGroup } from '@/lib/featur
 export const useGroupArtwork = () => {
   const dispatch = useDispatch()
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const handleAddArtworkToGroup = useCallback(
     (artworkId) => {
@@ -19,7 +19,7 @@ export const useGroupArtwork = () => {
 
   const handleCreateArtworkGroup = useCallback(() => {
     if (artworkGroupIds.length === 0) return
-    const artworkGroupItems = artworkGroupIds.map((id) => positionsById[id]) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
+    const artworkGroupItems = artworkGroupIds.map((id) => exhibitionArtworksById[id]) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
     const xValues = artworkGroupItems.map((artwork) => artwork.posX2d)
     const xEdgeValues = artworkGroupItems.map((artwork) => artwork.posX2d + artwork.width2d)
     const yValues = artworkGroupItems.map((artwork) => artwork.posY2d)

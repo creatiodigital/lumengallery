@@ -7,12 +7,12 @@ import { Artwork } from '@/components/scene/spaces/objects/Artwork'
 const Artworks = () => {
   const allArtworkIds = useSelector((state) => state.artworks.allIds)
   const artworksbyId = useSelector((state) => state.artworks.byId)
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const artworksWithPosition = useMemo(() => {
     return allArtworkIds?.map((id) => {
       const artwork = artworksbyId[id]
-      const pos = positionsById[id]
+      const pos = exhibitionArtworksById[id]
       if (!artwork || !artwork.space || !pos) return null
 
       const position = new Vector3(pos.posX3d, pos.posY3d, pos.posZ3d)
@@ -35,7 +35,7 @@ const Artworks = () => {
         height,
       }
     })
-  }, [allArtworkIds, artworksbyId, positionsById])
+  }, [allArtworkIds, artworksbyId, exhibitionArtworksById])
 
   return (
     <>
