@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { EditView } from '@/components/editview'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
-import { setHandler } from '@/lib/features/artistSlice'
+import { setHandler, fetchArtist } from '@/lib/features/artistSlice'
 import { showEditMode, selectSpace } from '@/lib/features/dashboardSlice'
 
 import { spaceOptions } from './constants'
@@ -19,10 +19,12 @@ export const Dashboard = () => {
   const handler = pathname?.split('/')[1]
   const isEditMode = useSelector((state) => state.dashboard.isEditMode)
   const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
+  const { name, lastName } = useSelector((s) => s.artist)
 
   useEffect(() => {
     if (handler) {
       dispatch(setHandler(handler))
+      dispatch(fetchArtist(handler))
     }
   }, [handler, dispatch])
 
@@ -36,6 +38,7 @@ export const Dashboard = () => {
 
   return (
     <div className={styles.dashboard}>
+      <h2>Hello {`${name} ${lastName}`}</h2>
       {!isEditMode && (
         <div className={styles.main}>
           <div className={styles.spaces}>
