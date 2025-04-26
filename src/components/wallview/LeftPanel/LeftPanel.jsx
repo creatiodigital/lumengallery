@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/Button'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { editArtwork } from '@/lib/features/artworksSlice'
-import { editWallName } from '@/lib/features/sceneSlice'
 import { showEditMode } from '@/lib/features/dashboardSlice'
+import { editWallName } from '@/lib/features/sceneSlice'
 import { showHuman, hideHuman, removeGroup } from '@/lib/features/wallViewSlice'
 import {
   increaseScaleFactor,
