@@ -21,6 +21,4 @@ model Artist {
   lastName  String
   handler   String   @unique
   biography String
-
-  @@map("Artists")
 }
