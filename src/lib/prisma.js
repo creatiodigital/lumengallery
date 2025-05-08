@@ -1,13 +1,13 @@
-import { PrismaClient } from '../generated/prisma'
+import { PrismaClient } from '../generated/prisma/index.js'
+import { withAccelerate } from '@prisma/extension-accelerate'
 
 let prisma
 
-// In dev, reuse the client across hot reloads
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient()
+  prisma = new PrismaClient().$extends(withAccelerate())
 } else {
   if (!global.__prisma) {
-    global.__prisma = new PrismaClient()
+    global.__prisma = new PrismaClient().$extends(withAccelerate())
   }
   prisma = global.__prisma
 }

@@ -14,7 +14,7 @@ const nextConfig = {
                   name: 'preset-default',
                   params: {
                     overrides: {
-                      removeViewBox: false, // Prevent removing viewBox for responsive SVGs
+                      removeViewBox: false,
                     },
                   },
                 },
