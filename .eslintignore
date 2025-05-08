@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+public
+build
+.vercel
+coverage
+.prisma
+src/generated

@@ -14,7 +14,7 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
 
   const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const [isDraggingGroup, setIsDraggingGroup] = useState(false)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
@@ -57,7 +57,7 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
       )
 
       artworkGroupIds.forEach((artworkId) => {
-        const artwork = positionsById[artworkId]
+        const artwork = exhibitionArtworksById[artworkId]
         if (artwork) {
           const posX2d = artwork.posX2d + deltaX
           const posY2d = artwork.posY2d + deltaY
@@ -90,7 +90,7 @@ export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventC
       offset,
       artworkGroup,
       artworkGroupIds,
-      positionsById,
+      exhibitionArtworksById,
       dispatch,
     ],
   )

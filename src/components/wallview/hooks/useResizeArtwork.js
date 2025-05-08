@@ -6,7 +6,7 @@ import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
   const artworksById = useSelector((state) => state.artworks.byId)
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const dispatch = useDispatch()
   const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
@@ -16,7 +16,7 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
     (event, artworkId, direction) => {
       event.stopPropagation()
 
-      const artwork = positionsById[artworkId]
+      const artwork = exhibitionArtworksById[artworkId]
       if (!artwork || !wallRef.current) return
 
       const rect = wallRef.current.getBoundingClientRect()

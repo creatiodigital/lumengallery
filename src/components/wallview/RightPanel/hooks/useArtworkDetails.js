@@ -2,10 +2,10 @@ import { useSelector } from 'react-redux'
 
 export const useArtworkDetails = (currentArtworkId) => {
   const artworksById = useSelector((state) => state.artworks.byId)
-  const positionsById = useSelector((state) => state.exhibition.positionsById)
+  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const artwork = artworksById[currentArtworkId]
-  const artworkPosition = positionsById[currentArtworkId]
+  const artworkPosition = exhibitionArtworksById[currentArtworkId]
 
   if (!artwork || !artworkPosition) {
     return {
