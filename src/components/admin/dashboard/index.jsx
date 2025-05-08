@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+
 import { useArtists } from '@/hooks/useArtists'
 import { useUpdateArtist } from '@/hooks/useUpdateArtist'
 
