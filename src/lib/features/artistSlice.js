@@ -50,18 +50,6 @@ const artistSlice = createSlice({
         s.status = 'failed'
         s.error = a.error.message
       })
-      // create
-      .addCase(createArtist.pending, (s) => {
-        s.status = 'loading'
-      })
-      .addCase(createArtist.fulfilled, (s, a) => {
-        s.status = 'succeeded'
-        Object.assign(s, a.payload)
-      })
-      .addCase(createArtist.rejected, (s, a) => {
-        s.status = 'failed'
-        s.error = a.error.message
-      })
   },
 })
 

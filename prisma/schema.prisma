@@ -14,12 +14,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-model Artist {
+model User {
   id        String   @id @default(uuid())
   name      String
   lastName  String
+  userType  String   @default("general")
   handler   String   @unique
   biography String
-  email     String?   @unique
+  email     String?  @unique
 }
