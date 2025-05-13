@@ -1,21 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 
-// Thunks
-export const fetchArtist = createAsyncThunk('artist/fetchArtist', async (handler) => {
-  const res = await fetch(`/api/artist?handler=${handler}`)
+export const fetchArtist = createAsyncThunk('artist/fetchArtist', async (id) => {
+  const res = await fetch(`/api/artists/${id}`)
   if (!res.ok) throw new Error('Fetch failed')
   return res.json()
 })
 
-export const createArtist = createAsyncThunk(
-  'artist/createArtist',
-  async ({ name, lastName, handler, biography }) => {
-    const res = await fetch('/api/artist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, lastName, handler, biography }),
+export const fetchExhibitionsByArtist = createAsyncThunk(
+  'artist/fetchExhibitionsByArtist',
+  async (userId) => {
+    const res = await fetch(`/api/exhibitions?userId=${userId}`, {
+      cache: 'no-store',
     })
-    if (!res.ok) throw new Error('Create failed')
+    if (!res.ok) throw new Error('Failed to fetch exhibitions')
     return res.json()
   },
 )
@@ -30,18 +27,24 @@ const artistSlice = createSlice({
     biography: '',
     status: 'idle',
     error: null,
+    exhibitionsById: {},
+    allExhibitionIds: [],
   },
   reducers: {
-    setHandler: (s, a) => {
-      s.handler = a.payload
+    addExhibition: (state, action) => {
+      const exhibition = action.payload
+      const id = exhibition.id
+      state.exhibitionsById[id] = exhibition
+
+      if (!state.allExhibitionIds.includes(id)) {
+        state.allExhibitionIds.push(id)
+      }
     },
   },
   extraReducers: (b) => {
-    b
-      // fetch
-      .addCase(fetchArtist.pending, (s) => {
-        s.status = 'loading'
-      })
+    b.addCase(fetchArtist.pending, (s) => {
+      s.status = 'loading'
+    })
       .addCase(fetchArtist.fulfilled, (s, a) => {
         s.status = 'succeeded'
         Object.assign(s, a.payload)
@@ -50,8 +53,19 @@ const artistSlice = createSlice({
         s.status = 'failed'
         s.error = a.error.message
       })
+      .addCase(fetchExhibitionsByArtist.fulfilled, (state, action) => {
+        const exhibitions = action.payload
+        state.exhibitionsById = {}
+        state.allExhibitionIds = []
+
+        for (const ex of exhibitions) {
+          state.exhibitionsById[ex.id] = ex
+          state.allExhibitionIds.push(ex.id)
+        }
+      })
   },
 })
 
-export const { setHandler } = artistSlice.actions
+export const { addExhibition } = artistSlice.actions
+
 export default artistSlice.reducer

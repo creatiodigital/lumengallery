@@ -1,9 +1,30 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
-export async function PUT(request, context) {
+export async function GET(_, { params }) {
+  const { id } = params
+
+  console.log('id', id)
+
   try {
-    const { id } = context.params
+    const artist = await prisma.user.findUnique({
+      where: { id },
+    })
+
+    if (!artist || artist.userType !== 'artist') {
+      return NextResponse.json({ error: 'Artist not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(artist)
+  } catch (error) {
+    console.error('[GET /api/artists/[id]] error:', error)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
+
+export async function PUT(request, { params }) {
+  try {
+    const { id } = params
     const body = await request.json()
     const { name, lastName, biography, handler, userType, email } = body
 
