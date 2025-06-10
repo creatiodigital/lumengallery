@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
+
 import prisma from '@/lib/prisma'
 
 export async function POST(request) {
   try {
     const body = await request.json()
-    const { mainTitle, visibility, userId, handler, url, spaceId } = body
+    const { visibility, userId, handler, url, spaceId } = body
 
     console.log('[POST /api/exhibitions] payload:', body)
 

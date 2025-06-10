@@ -7,10 +7,10 @@ import { EditView } from '@/components/editview'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
-import { fetchArtist } from '@/lib/features/artistSlice'
-import { showEditMode, selectSpace } from '@/lib/features/dashboardSlice'
-import { addExhibition, fetchExhibitionsByArtist } from '@/lib/features/artistSlice'
 import { useCreateExhibition } from '@/hooks/useCreateExhibition'
+import { fetchArtist } from '@/lib/features/artistSlice'
+import { addExhibition, fetchExhibitionsByArtist } from '@/lib/features/artistSlice'
+import { showEditMode, selectSpace } from '@/lib/features/dashboardSlice'
 
 import { spaceOptions } from './constants'
 import styles from './Dashboard.module.scss'
@@ -78,7 +78,7 @@ export const Dashboard = () => {
             <div className={styles.list}>
               <h3 className={styles.subtitle}>My exhibitions</h3>
               {exhibitions.length === 0 ? (
-                <p>You don't have any exhibitions yet.</p>
+                <p>You do not have any exhibitions yet.</p>
               ) : (
                 <ul className={styles.exhibitionList}>
                   {exhibitions.map((ex) => (
