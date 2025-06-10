@@ -5,14 +5,14 @@ import { useState } from 'react'
 export function useUpdateArtist() {
   const [statusById, setStatusById] = useState({})
 
-  const updateArtist = async ({ id, name, lastName, biography, handler, email }) => {
+  const updateArtist = async ({ id, name, lastName, biography, userType, handler, email }) => {
     setStatusById((prev) => ({ ...prev, [id]: 'saving' }))
 
     try {
-      const res = await fetch('/api/artist/update', {
-        method: 'POST',
+      const res = await fetch(`/api/artists/${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, name, lastName, biography, handler, email }),
+        body: JSON.stringify({ name, lastName, biography, userType, handler, email }),
       })
 
       if (!res.ok) throw new Error('Failed to update artist')

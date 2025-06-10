@@ -10,6 +10,8 @@ export const DashboardAdmin = () => {
   const { updateArtist, statusById } = useUpdateArtist()
   const [editingArtists, setEditingArtists] = useState({}) // key = artist.id
 
+  console.log('artists', artists)
+
   const handleChange = (id, field, value) => {
     setEditingArtists((prev) => ({
       ...prev,

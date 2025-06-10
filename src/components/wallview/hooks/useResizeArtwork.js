@@ -5,7 +5,6 @@ import { convert2DTo3D } from '@/components/wallview/utils'
 import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
-  const artworksById = useSelector((state) => state.artworks.byId)
   const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
 
   const dispatch = useDispatch()
@@ -17,6 +16,7 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
       event.stopPropagation()
 
       const artwork = exhibitionArtworksById[artworkId]
+
       if (!artwork || !wallRef.current) return
 
       const rect = wallRef.current.getBoundingClientRect()
@@ -112,7 +112,7 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
     },
-    [artworksById, wallRef, gridSize, scaleFactor, isGridVisible, boundingData, dispatch],
+    [exhibitionArtworksById, wallRef, gridSize, scaleFactor, isGridVisible, boundingData, dispatch],
   )
 
   return useMemo(
