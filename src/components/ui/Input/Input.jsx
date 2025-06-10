@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/Icon'
 
 import styles from './Input.module.scss'
 
-function Input({ type, value, onChange, icon, rotate, onBlur, onKeyDown, autoFocus = false }) {
+const Input = ({ type, value, onChange, icon, rotate, onBlur, onKeyDown, autoFocus = false }) => {
   return (
     <div className={styles.wrapper}>
       <input

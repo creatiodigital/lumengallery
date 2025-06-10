@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/Icon'
 
 import styles from './NumberInput.module.scss'
 
-function NumberInput({ type, value, onChange, icon, rotate, max, min }) {
+const NumberInput = ({ type, value, onChange, icon, rotate, max, min }) => {
   return (
     <div className={styles.wrapper}>
       <input

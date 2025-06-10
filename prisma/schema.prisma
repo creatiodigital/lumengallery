@@ -14,12 +14,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id          String       @id @default(uuid())
+  name        String
+  lastName    String
+  userType    String       @default("general")
+  handler     String       @unique
+  biography   String
+  email       String?      @unique
+  exhibitions Exhibition[]
+}
 
-model Artist {
-  id        String   @id @default(uuid())
-  name      String
-  lastName  String
-  handler   String   @unique
-  biography String
-  email     String?   @unique
+model Exhibition {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  handler      String // used in URL: /{user.handler}/{exhibition.handler}
+  mainTitle    String
+  url          String    @unique
+  thumbnailUrl String?
+  bannerUrl    String?
+  spaceId      String
+  startDate    DateTime?
+  endDate      DateTime?
+  status       String
+  visibility   String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
