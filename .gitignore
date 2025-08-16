@@ -50,3 +50,7 @@ src/generated/
 # Seeds
 scripts/seed.js
 
+# Avoid committing these files accidentally
+package-lock.json
+
+
