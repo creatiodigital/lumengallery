@@ -2,12 +2,12 @@ import { useState, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
+import { updateArtworkPosition } from '@/app/redux/slices/exhibitionSlice'
 import {
   editArtworkGroup,
   startDraggingGroup,
   stopDraggingGroup,
-} from '@/lib/features/wallViewSlice'
+} from '@/app/redux/slices/wallViewSlice'
 
 export const useMoveGroupArtwork = (wallRef, boundingData, scaleFactor, preventClick) => {
   const dispatch = useDispatch()

@@ -3,14 +3,14 @@ import { useDispatch, useSelector } from 'react-redux'
 import { v4 as uuidv4 } from 'uuid'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { createArtwork } from '@/lib/features/artworksSlice'
-import { createArtworkPosition } from '@/lib/features/exhibitionSlice'
+import { createArtwork } from '@/app/redux/slices/artworksSlice'
+import { createArtworkPosition } from '@/app/redux/slices/exhibitionSlice'
 import {
   chooseCurrentArtworkId,
   addArtworkToGroup,
   removeGroup,
-} from '@/lib/features/wallViewSlice'
-import { showWizard } from '@/lib/features/wizardSlice'
+} from '@/app/redux/slices/wallViewSlice'
+import { showWizard } from '@/app/redux/slices/wizardSlice'
 
 export const useCreateArtwork = (boundingData, currentWallId) => {
   const dispatch = useDispatch()

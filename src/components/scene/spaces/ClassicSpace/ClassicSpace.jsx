@@ -2,7 +2,7 @@ import { useGLTF } from '@react-three/drei'
 import React, { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Artworks } from '@/components/scene/spaces/objects/Artworks'
+import { Artworks3D } from '@/components/scene/spaces/objects/Artworks3D'
 import { Ceiling } from '@/components/scene/spaces/objects/Ceiling'
 import { Floor } from '@/components/scene/spaces/objects/Floor'
 import { Lamp } from '@/components/scene/spaces/objects/Lamp'
@@ -11,7 +11,7 @@ import { Placeholder } from '@/components/scene/spaces/objects/Placeholder'
 import { Reel } from '@/components/scene/spaces/objects/Reel'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { Window } from '@/components/scene/spaces/objects/Window'
-import { addWall } from '@/lib/features/sceneSlice'
+import { addWall } from '@/app/redux/slices/sceneSlice'
 
 import { Lights } from './lights'
 import {
@@ -76,7 +76,7 @@ const ClassicSpace = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
       {linesArray.map((_, i) => (
         <Line key={i} i={i} nodes={nodes} lineMaterial={lineMaterial} />
       ))}
-      <Artworks />
+      <Artworks3D />
     </group>
   )
 }

@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
 
-import { editArtisticImage } from '@/lib/features/artworksSlice'
-import { setArtworkUploadedTrue } from '@/lib/features/wizardSlice'
+import { editArtisticImage } from '@/app/redux/slices/artworksSlice'
+import { setArtworkUploadedTrue } from '@/app/redux/slices/wizardSlice'
 
 export const useFileUpload = (currentArtworkId) => {
   const dispatch = useDispatch()

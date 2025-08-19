@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
-import { hideArtworkPanel } from '@/lib/features/dashboardSlice'
+import { hideArtworkPanel } from '@/app/redux/slices/dashboardSlice'
 
 import styles from './ArtworkPanel.module.scss'
 

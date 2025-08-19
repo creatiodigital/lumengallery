@@ -2,7 +2,7 @@ import { useGLTF } from '@react-three/drei'
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { Artwork } from '@/components/wallview/Artwork'
+import { Artwork2D } from '@/components/wallview/Artwork2D'
 import { Group } from '@/components/wallview/Group'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
@@ -14,9 +14,9 @@ import { useSelectBox } from '@/components/wallview/hooks/useSelectBox'
 import { Human } from '@/components/wallview/Human'
 import { SelectionBox } from '@/components/wallview/SelectionBox'
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { updateArtworkPosition } from '@/lib/features/exhibitionSlice'
-import { setShiftKeyDown } from '@/lib/features/wallViewSlice'
-import { setWallCoordinates, setWallDimensions } from '@/lib/features/wallViewSlice'
+import { updateArtworkPosition } from '@/app/redux/slices/exhibitionSlice'
+import { setShiftKeyDown } from '@/app/redux/slices/wallViewSlice'
+import { setWallCoordinates, setWallDimensions } from '@/app/redux/slices/wallViewSlice'
 
 import { Measurements } from '../Measurements'
 import { AlignedLine } from './AlignedLine'
@@ -170,7 +170,7 @@ export const Wall = () => {
           .map((id) => artworksById[id])
           .filter((artwork) => artwork.wallId === currentWallId)
           .map((artwork) => (
-            <Artwork
+            <Artwork2D
               key={artwork.id}
               artwork={artwork}
               onHandleResize={handleResize}

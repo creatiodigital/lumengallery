@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux'
 
-import { editArtwork, editArtisticImage } from '@/lib/features/artworksSlice'
+import { editArtwork, editArtisticImage } from '@/app/redux/slices/artworksSlice'
 
 export const useArtworkImageHandlers = (currentArtworkId) => {
   const dispatch = useDispatch()

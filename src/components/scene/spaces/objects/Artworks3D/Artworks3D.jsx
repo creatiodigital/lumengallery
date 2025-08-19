@@ -2,9 +2,9 @@ import React, { useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Vector3, Quaternion } from 'three'
 
-import { Artwork } from '@/components/scene/spaces/objects/Artwork'
+import { Artwork3D } from '@/components/scene/spaces/objects/Artwork3D'
 
-const Artworks = () => {
+const Artworks3D = () => {
   const allArtworkIds = useSelector((state) => state.artworks.allIds)
   const artworksbyId = useSelector((state) => state.artworks.byId)
   const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
@@ -40,10 +40,10 @@ const Artworks = () => {
   return (
     <>
       {artworksWithPosition.map((artwork) => (
-        <Artwork key={artwork.id} artwork={artwork} />
+        <Artwork3D key={artwork.id} artwork={artwork} />
       ))}
     </>
   )
 }
 
-export default Artworks
+export default Artworks3D
