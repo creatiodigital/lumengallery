@@ -7,7 +7,7 @@ import {
   increaseScaleFactor,
   decreaseScaleFactor,
   setPanPosition,
-} from '@/app/redux/slices/wallViewSlice'
+} from '@/redux/slices/wallViewSlice'
 
 import styles from './CenterPanel.module.scss'
 

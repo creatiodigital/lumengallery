@@ -4,8 +4,8 @@ import { useDispatch, useSelector } from 'react-redux'
 
 import { FileInput } from '@/components/ui/FileInput'
 import { Icon } from '@/components/ui/Icon'
-import { editArtisticImage } from '@/app/redux/slices/artworksSlice'
-import { chooseCurrentArtworkId } from '@/app/redux/slices/wallViewSlice'
+import { editArtisticImage } from '@/redux/slices/artworksSlice'
+import { chooseCurrentArtworkId } from '@/redux/slices/wallViewSlice'
 
 import styles from './ArtisticImage.module.scss'
 

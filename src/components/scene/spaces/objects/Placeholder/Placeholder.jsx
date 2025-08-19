@@ -2,8 +2,8 @@ import React, { useMemo } from 'react'
 import { useDispatch } from 'react-redux'
 import { MeshStandardMaterial, EdgesGeometry, LineDashedMaterial } from 'three'
 
-import { hideArtworkPanel } from '@/app/redux/slices/dashboardSlice'
-import { showWallView } from '@/app/redux/slices/wallViewSlice'
+import { hideArtworkPanel } from '@/redux/slices/dashboardSlice'
+import { showWallView } from '@/redux/slices/wallViewSlice'
 
 const Placeholder = ({ i, nodes }) => {
   const dispatch = useDispatch()

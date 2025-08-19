@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { updateArtworkPosition } from '@/app/redux/slices/exhibitionSlice'
+import { updateArtworkPosition } from '@/redux/slices/exhibitionSlice'
 
 export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
   const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)

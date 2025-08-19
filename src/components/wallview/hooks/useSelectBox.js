@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { useGroupArtwork } from '@/components/wallview/hooks/useGroupArtwork'
-import { chooseCurrentArtworkId } from '@/app/redux/slices/wallViewSlice'
+import { chooseCurrentArtworkId } from '@/redux/slices/wallViewSlice'
 
 export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) => {
   const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)

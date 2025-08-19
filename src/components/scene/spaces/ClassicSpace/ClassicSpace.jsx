@@ -11,7 +11,7 @@ import { Placeholder } from '@/components/scene/spaces/objects/Placeholder'
 import { Reel } from '@/components/scene/spaces/objects/Reel'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { Window } from '@/components/scene/spaces/objects/Window'
-import { addWall } from '@/app/redux/slices/sceneSlice'
+import { addWall } from '@/redux/slices/sceneSlice'
 
 import { Lights } from './lights'
 import {

@@ -2,7 +2,7 @@ import React, { memo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { useMoveGroupArtwork } from '@/components/wallview/hooks/useMoveGroupArtwork'
-import { setGroupHovered, setGroupNotHovered } from '@/app/redux/slices/wallViewSlice'
+import { setGroupHovered, setGroupNotHovered } from '@/redux/slices/wallViewSlice'
 
 import styles from './Group.module.scss'
 

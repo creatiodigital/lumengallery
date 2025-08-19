@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux'
 
 import { Icon } from '@/components/ui/Icon'
 import { useArtisticText } from '@/components/wallview/hooks/useArtisticText'
-import { setEditingArtwork } from '@/app/redux/slices/dashboardSlice'
+import { setEditingArtwork } from '@/redux/slices/dashboardSlice'
 
 import styles from './ArtisticText.module.scss'
 

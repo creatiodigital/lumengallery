@@ -5,8 +5,8 @@ import { ArtisticImage } from '@/components/wallview/ArtisticImage'
 import { ArtisticText } from '@/components/wallview/ArtisticText'
 import { Handles } from '@/components/wallview/Handles'
 import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
-import { chooseCurrentArtworkId } from '@/app/redux/slices/wallViewSlice'
-import { showWizard } from '@/app/redux/slices/wizardSlice'
+import { chooseCurrentArtworkId } from '@/redux/slices/wallViewSlice'
+import { showWizard } from '@/redux/slices/wizardSlice'
 
 import styles from './Artwork.module.scss'
 

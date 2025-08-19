@@ -5,8 +5,8 @@ import { DoubleSide, MeshStandardMaterial } from 'three'
 
 import { Frame } from '@/components/scene/spaces/objects/Frame'
 import { Passepartout } from '@/components/scene/spaces/objects/Passepartout'
-import { showArtworkPanel } from '@/app/redux/slices/dashboardSlice'
-import { setCurrentArtwork } from '@/app/redux/slices/sceneSlice'
+import { showArtworkPanel } from '@/redux/slices/dashboardSlice'
+import { setCurrentArtwork } from '@/redux/slices/sceneSlice'
 
 const Display = ({ artwork }) => {
   const { position, quaternion, width, height, artisticImageProperties } = artwork

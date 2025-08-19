@@ -2,13 +2,13 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
-import { updateArtworkPosition } from '@/app/redux/slices/exhibitionSlice'
+import { updateArtworkPosition } from '@/redux/slices/exhibitionSlice'
 import {
   setAlignedPairs,
   startDragging,
   stopDragging,
   chooseCurrentArtworkId,
-} from '@/app/redux/slices/wallViewSlice'
+} from '@/redux/slices/wallViewSlice'
 
 import { areAligned } from './helpers'
 

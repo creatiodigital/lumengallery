@@ -4,8 +4,8 @@ import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
-import { hideEditMode } from '@/app/redux/slices/dashboardSlice'
-import { hidePlaceholders, showPlaceholders } from '@/app/redux/slices/sceneSlice'
+import { hideEditMode } from '@/redux/slices/dashboardSlice'
+import { hidePlaceholders, showPlaceholders } from '@/redux/slices/sceneSlice'
 
 import styles from './Menu.module.scss'
 

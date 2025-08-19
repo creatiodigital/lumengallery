@@ -5,18 +5,18 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Button } from '@/components/ui/Button'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
-import { editArtwork } from '@/app/redux/slices/artworksSlice'
-import { showEditMode } from '@/app/redux/slices/dashboardSlice'
-import { editWallName } from '@/app/redux/slices/sceneSlice'
-import { showHuman, hideHuman, removeGroup } from '@/app/redux/slices/wallViewSlice'
+import { editArtwork } from '@/redux/slices/artworksSlice'
+import { showEditMode } from '@/redux/slices/dashboardSlice'
+import { editWallName } from '@/redux/slices/sceneSlice'
+import { showHuman, hideHuman, removeGroup } from '@/redux/slices/wallViewSlice'
 import {
   increaseScaleFactor,
   decreaseScaleFactor,
   resetPan,
   hideWallView,
   chooseCurrentArtworkId,
-} from '@/app/redux/slices/wallViewSlice'
-import { showWizard } from '@/app/redux/slices/wizardSlice'
+} from '@/redux/slices/wallViewSlice'
+import { showWizard } from '@/redux/slices/wizardSlice'
 
 import styles from './LeftPanel.module.scss'
 

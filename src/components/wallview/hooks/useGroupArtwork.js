@@ -1,11 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import {
-  addArtworkToGroup,
-  removeGroup,
-  createArtworkGroup,
-} from '@/app/redux/slices/wallViewSlice'
+import { addArtworkToGroup, removeGroup, createArtworkGroup } from '@/redux/slices/wallViewSlice'
 
 export const useGroupArtwork = () => {
   const dispatch = useDispatch()
