@@ -9,7 +9,7 @@ import { chooseCurrentArtworkId } from '@/app/redux/slices/wallViewSlice'
 
 import styles from './ArtisticImage.module.scss'
 
-const ArtisticImage = ({ artwork }) => {
+const ArtisticImage2D = ({ artwork }) => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
 
   const fileInputRef = useRef(null)
@@ -122,4 +122,4 @@ const ArtisticImage = ({ artwork }) => {
   )
 }
 
-export default ArtisticImage
+export default ArtisticImage2D

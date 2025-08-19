@@ -2,7 +2,7 @@ import { useGLTF } from '@react-three/drei'
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
-import { Artwork2D } from '@/components/wallview/Artwork2D'
+import { Artwork } from '@/components/wallview/Artwork'
 import { Group } from '@/components/wallview/Group'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
@@ -170,7 +170,7 @@ export const Wall = () => {
           .map((id) => artworksById[id])
           .filter((artwork) => artwork.wallId === currentWallId)
           .map((artwork) => (
-            <Artwork2D
+            <Artwork
               key={artwork.id}
               artwork={artwork}
               onHandleResize={handleResize}

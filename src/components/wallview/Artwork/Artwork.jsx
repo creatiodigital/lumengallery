@@ -8,7 +8,7 @@ import { useMoveArtwork } from '@/components/wallview/hooks/useMoveArtwork'
 import { chooseCurrentArtworkId } from '@/app/redux/slices/wallViewSlice'
 import { showWizard } from '@/app/redux/slices/wizardSlice'
 
-import styles from './Artwork2D.module.scss'
+import styles from './Artwork.module.scss'
 
 const Artwork = memo(
   ({

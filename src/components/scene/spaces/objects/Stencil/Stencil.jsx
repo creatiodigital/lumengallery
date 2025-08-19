@@ -2,7 +2,7 @@ import { Text } from '@react-three/drei'
 import React, { useState, useRef, useEffect } from 'react'
 import { DoubleSide } from 'three'
 
-const ArtisticText = ({ artwork }) => {
+const Stencil = ({ artwork }) => {
   const { id, position, quaternion, width, height, artisticTextProperties } = artwork
   const textContent = artisticTextProperties?.textContent || ''
   const textAlign = artisticTextProperties?.textAlign || 'left'
@@ -102,4 +102,4 @@ const ArtisticText = ({ artwork }) => {
   )
 }
 
-export default ArtisticText
+export default Stencil

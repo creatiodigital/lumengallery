@@ -8,7 +8,7 @@ import { Passepartout } from '@/components/scene/spaces/objects/Passepartout'
 import { showArtworkPanel } from '@/app/redux/slices/dashboardSlice'
 import { setCurrentArtwork } from '@/app/redux/slices/sceneSlice'
 
-const ArtisticImage = ({ artwork }) => {
+const Display = ({ artwork }) => {
   const { position, quaternion, width, height, artisticImageProperties } = artwork
 
   const {
@@ -94,4 +94,4 @@ const ArtisticImage = ({ artwork }) => {
   )
 }
 
-export default ArtisticImage
+export default Display

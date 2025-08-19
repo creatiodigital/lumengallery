@@ -2,7 +2,7 @@ import { useGLTF } from '@react-three/drei'
 import React, { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Artworks3D } from '@/components/scene/spaces/objects/Artworks3D'
+import { ArtObjects } from '@/components/scene/spaces/objects/ArtObjects'
 import { Ceiling } from '@/components/scene/spaces/objects/Ceiling'
 import { CeilingGlass } from '@/components/scene/spaces/objects/CeilingGlass'
 import { Floor } from '@/components/scene/spaces/objects/Floor'
@@ -56,7 +56,7 @@ const ModernSpace = ({ wallRefs, ...props }) => {
       {reelsArray.map((_, i) => (
         <Reel key={i} i={i} nodes={nodes} reelMaterial={reelMaterial} />
       ))}
-      <Artworks3D />
+      <ArtObjects />
     </group>
   )
 }
