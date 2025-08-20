@@ -1,25 +1,17 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+
+import { exhibitionFactory } from '@/factories/exhibitionFactory'
+import type { ArtworkPosition } from '@/types/artwork'
+import type { Exhibition } from '@/types/exhibition'
 
 const exhibitionSlice = createSlice({
   name: 'exhibition',
-  initialState: {
-    id: '',
-    userId: '',
-    name: '',
-    mainTitle: '',
-    url: '',
-    thumbnailUrl: '',
-    spaceId: '',
-    bannerUrl: '',
-    startDate: '',
-    endDate: '',
-    exhibitionArtworksById: {},
-    allExhibitionArtworkIds: [],
-    status: '',
-    visibility: '',
-  },
+  initialState: exhibitionFactory(),
   reducers: {
-    createArtworkPosition: (state, action) => {
+    createArtworkPosition: (
+      state: Exhibition,
+      action: PayloadAction<{ artworkId: string; artworkPosition: ArtworkPosition }>,
+    ) => {
       const { artworkId, artworkPosition } = action.payload
 
       if (!state.exhibitionArtworksById[artworkId]) {
@@ -30,7 +22,11 @@ const exhibitionSlice = createSlice({
         }
       }
     },
-    updateArtworkPosition: (state, action) => {
+
+    updateArtworkPosition: (
+      state: Exhibition,
+      action: PayloadAction<{ artworkId: string; artworkPosition: Partial<ArtworkPosition> }>,
+    ) => {
       const { artworkId, artworkPosition } = action.payload
 
       if (state.exhibitionArtworksById[artworkId]) {
@@ -40,7 +36,8 @@ const exhibitionSlice = createSlice({
         }
       }
     },
-    deleteArtworkPosition: (state, action) => {
+
+    deleteArtworkPosition: (state: Exhibition, action: PayloadAction<{ artworkId: string }>) => {
       const { artworkId } = action.payload
       delete state.exhibitionArtworksById[artworkId]
       state.allExhibitionArtworkIds = state.allExhibitionArtworkIds.filter((id) => id !== artworkId)
@@ -50,4 +47,5 @@ const exhibitionSlice = createSlice({
 
 export const { createArtworkPosition, updateArtworkPosition, deleteArtworkPosition } =
   exhibitionSlice.actions
+
 export default exhibitionSlice.reducer

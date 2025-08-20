@@ -1,9 +1,19 @@
-// mocks.js
+import type { ArtworkType, ArtworkKind } from '@/types/artwork'
 
-export const createNewArtwork = ({ id, wallId, canvas, artworkType }) => {
+export const createNewArtwork = ({
+  id,
+  wallId,
+  canvas,
+  artworkType,
+}: {
+  id: string
+  wallId: string
+  canvas: string
+  artworkType: ArtworkKind
+}): ArtworkType => {
   return {
     id,
-    name: '', // We'll assign the name in the reducer
+    name: '',
     artworkType,
     wallId,
     canvas,

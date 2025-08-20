@@ -1,14 +1,8 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-import { createNewArtwork } from '../../factories/createNewArtwork'
-import type {
-  ArtworkType,
-  ArtworkKind,
-  ArtisticImageType,
-  ArtisticTextType,
-} from '../../types/artwork'
+import { createNewArtwork } from '@/factories/artworkFactory'
+import type { ArtworkType, ArtworkKind, ArtisticImageType, ArtisticTextType } from '@/types/artwork'
 
-// ---- Types for State ----
 interface ArtworksState {
   byId: Record<string, ArtworkType>
   allIds: string[]

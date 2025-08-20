@@ -1,33 +1,34 @@
-// types/artwork.ts
-export type ArtworkKind = 'image' | 'text' // extend later: | 'video'
+export type ArtworkKind = 'image' | 'text'
 
 export type FontFamily = 'roboto' | 'lora'
 export type FontWeight = 'regular' | 'bold'
 export type TextAlign = 'left' | 'right' | 'center'
 
-export interface ArtisticImageType {
+export type Option<T> = { label: string; value: T }
+
+export type ArtisticImageType = {
   imageUrl: string
   showArtworkInformation: boolean
   showFrame: boolean
   frameColor: string
-  frameThickness: { label: string; value: number }
+  frameThickness: Option<number>
   showPassepartout: boolean
   passepartoutColor: string
-  passepartoutThickness: { label: string; value: number }
+  passepartoutThickness: Option<number>
 }
 
-export interface ArtisticTextType {
+export type ArtisticTextType = {
   textContent: string
-  fontFamily: { label: string; value: FontFamily }
-  fontSize: { label: string; value: number }
-  fontWeight: { label: string; value: FontWeight }
-  letterSpacing: { label: string; value: number }
-  lineHeight: { label: string; value: number }
+  fontFamily: Option<FontFamily>
+  fontSize: Option<number>
+  fontWeight: Option<FontWeight>
+  letterSpacing: Option<number>
+  lineHeight: Option<number>
   textColor: string
   textAlign: TextAlign
 }
 
-export interface ArtworkType {
+export type ArtworkType = {
   id: string
   name: string
   artworkType: ArtworkKind
@@ -41,4 +42,12 @@ export interface ArtworkType {
   dimensions: string
   artisticImageProperties?: ArtisticImageType
   artisticTextProperties?: ArtisticTextType
+}
+
+export type ArtworkPosition = {
+  x: number
+  y: number
+  z: number
+  rotation?: number
+  scale?: number
 }
