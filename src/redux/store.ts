@@ -22,10 +22,13 @@ export const makeStore = () => {
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         serializableCheck: {
-          // Ignore non-serializable values in specific actions or paths
           ignoredActions: ['artworks/editArtworkTextureImage'],
-          ignoredPaths: ['artworks.artworks.texture'], // Adjust based on your state shape
+          ignoredPaths: ['artworks.artworks.texture'],
         },
       }),
   })
 }
+
+export type AppStore = ReturnType<typeof makeStore>
+export type RootState = ReturnType<AppStore['getState']>
+export type AppDispatch = AppStore['dispatch']

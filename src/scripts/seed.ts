@@ -5,7 +5,7 @@ import { PrismaClient } from '../generated/prisma/index.js'
 const prisma = new PrismaClient().$extends(withAccelerate())
 
 async function main() {
-  const artist = await prisma.artist.create({
+  const user = await prisma.user.create({
     data: {
       name: 'Eduardo',
       lastName: 'Plaza',
@@ -15,7 +15,7 @@ async function main() {
     },
   })
 
-  console.log('✅ Artist created:', artist)
+  console.log('✅ User created:', user)
 }
 
 main()

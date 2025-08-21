@@ -6,36 +6,40 @@ import { useDispatch, useSelector } from 'react-redux'
 import { EditView } from '@/components/editview'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { Select } from '@/components/ui/Select'
+import { Select, type SelectOption } from '@/components/ui/Select'
 import { useCreateExhibition } from '@/hooks/useCreateExhibition'
-import { fetchArtist } from '@/redux/slices/artistSlice'
-import { addExhibition, fetchExhibitionsByArtist } from '@/redux/slices/artistSlice'
+import { fetchArtist, addExhibition, fetchExhibitionsByArtist } from '@/redux/slices/artistSlice'
 import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
+import type { RootState, AppDispatch } from '@/redux/store'
+import type { SpaceOption } from '@/types/dashboard'
+import type { Exhibition } from '@/types/exhibition'
 
 import { spaceOptions } from './constants'
 import styles from './Dashboard.module.scss'
 
-export const Dashboard = () => {
-  const dispatch = useDispatch()
-  const isEditMode = useSelector((state) => state.dashboard.isEditMode)
-  const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
-  const { name, id, handler } = useSelector((state) => state.artist)
-  const [isModalShown, setIsModalShown] = useState(false)
-  const [mainTitle, setMainTitle] = useState('')
-  const [visibility, setVisibility] = useState('private')
-  const { createExhibition, loading, error } = useCreateExhibition()
-  const exhibitions = useSelector((state) =>
+export const Dashboard: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>()
+
+  const isEditMode = useSelector((state: RootState) => state.dashboard.isEditMode)
+  const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
+  const { name, id, handler } = useSelector((state: RootState) => state.artist)
+  const exhibitions = useSelector((state: RootState) =>
     state.artist.allExhibitionIds.map((id) => state.artist.exhibitionsById[id]),
   )
+
+  const [isModalShown, setIsModalShown] = useState(false)
+  const [mainTitle, setMainTitle] = useState('')
+  const [visibility, setVisibility] = useState<string>('private')
+  const { createExhibition, loading, error } = useCreateExhibition()
 
   useEffect(() => {
     const hardcodedId = '915a1541-f132-4fd1-a714-e34527485054'
 
-    // First fetch the artist
     dispatch(fetchArtist(hardcodedId)).then((action) => {
-      // Once loaded, fetch their exhibitions using the ID
-      const artistId = action.payload.id
-      dispatch(fetchExhibitionsByArtist(artistId))
+      if (fetchArtist.fulfilled.match(action)) {
+        const artistId = action.payload.id
+        dispatch(fetchExhibitionsByArtist(artistId))
+      }
     })
   }, [dispatch])
 
@@ -43,8 +47,8 @@ export const Dashboard = () => {
     dispatch(showEditMode())
   }
 
-  const handleSelectSpace = (space) => {
-    dispatch(selectSpace(space))
+  const handleSelectSpace = (option: SelectOption) => {
+    dispatch(selectSpace(option.value as unknown as SpaceOption))
   }
 
   const handleNewExhibition = () => {
@@ -54,7 +58,7 @@ export const Dashboard = () => {
   const handleCreateExhibition = async () => {
     const exhibition = await createExhibition({
       mainTitle,
-      visibility: 'public',
+      visibility,
       userId: id,
       userHandler: handler,
       spaceId: 'modern',
@@ -62,7 +66,7 @@ export const Dashboard = () => {
 
     if (exhibition) {
       setIsModalShown(false)
-      dispatch(addExhibition(exhibition))
+      dispatch(addExhibition(exhibition as Exhibition))
     }
   }
 
@@ -71,8 +75,9 @@ export const Dashboard = () => {
       {!isEditMode && (
         <div className={styles.main}>
           <div className={styles.header}>
-            <h3>Hello {`${name}`}</h3>
+            <h3>Hello {name}</h3>
           </div>
+
           <div className={styles.exhibitions}>
             <Button variant="small" label="New exhibition" onClick={handleNewExhibition} />
             <div className={styles.list}>
@@ -95,9 +100,11 @@ export const Dashboard = () => {
               )}
             </div>
           </div>
+
           <div>
             <Button variant="small" onClick={handleEditGallery} label="Create Exhibition" />
           </div>
+
           {isModalShown && (
             <Modal>
               <div className={styles.wrapper}>
@@ -110,16 +117,20 @@ export const Dashboard = () => {
                     placeholder="e.g. My New Exhibition"
                     className={styles.input}
                   />
+
                   <h3>Visibility</h3>
                   <Select
                     options={[
                       { value: 'public', label: 'Public' },
                       { value: 'private', label: 'Private' },
                     ]}
-                    onSelect={(value) => setVisibility(value)}
-                    selectedLabel={visibility}
-                    size="medium"
+                    onSelect={(option) => setVisibility(option.value as string)}
+                    selectedLabel={{
+                      value: visibility,
+                      label: visibility === 'public' ? 'Public' : 'Private',
+                    }}
                   />
+
                   <h3>Choose a Space</h3>
                   <Select
                     options={spaceOptions}
@@ -128,6 +139,7 @@ export const Dashboard = () => {
                     size="medium"
                   />
                 </div>
+
                 <div className={styles.ctas}>
                   <Button variant="small" label="Cancel" onClick={() => setIsModalShown(false)} />
                   <Button
@@ -139,6 +151,7 @@ export const Dashboard = () => {
               </div>
             </Modal>
           )}
+
           {error && <p className={styles.error}>⚠️ {error}</p>}
         </div>
       )}

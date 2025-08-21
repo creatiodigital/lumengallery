@@ -6,6 +6,8 @@ export type Artist = {
   lastName: string
   handler: string
   biography: string
+  userType: string
+  email: string
 }
 
 export type ArtistState = {

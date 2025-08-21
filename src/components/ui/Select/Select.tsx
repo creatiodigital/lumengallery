@@ -5,21 +5,26 @@ import { Icon } from '@/components/ui/Icon'
 
 import styles from './Select.module.scss'
 
-type SelectOption = {
-  value: string | number
+export type SelectOption<T extends string | number = string | number> = {
+  value: T
   label: string
 }
 
-type SelectProps = {
-  options: SelectOption[]
-  selectedLabel: SelectOption
-  onSelect: (value: SelectOption) => void
+export type SelectProps<T extends string | number = string | number> = {
+  options: SelectOption<T>[]
+  selectedLabel: SelectOption<T>
+  onSelect: (value: SelectOption<T>) => void
   size?: 'small' | 'medium'
 }
 
-const Select = ({ options, selectedLabel, onSelect, size = 'small' }: SelectProps) => {
+const Select = <T extends string | number = string | number>({
+  options,
+  selectedLabel,
+  onSelect,
+  size = 'small',
+}: SelectProps<T>) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [currentLabel, setCurrentLabel] = useState<SelectOption>(selectedLabel)
+  const [currentLabel, setCurrentLabel] = useState<SelectOption<T>>(selectedLabel)
 
   const selectRef = useRef<HTMLDivElement>(null)
 
@@ -27,7 +32,7 @@ const Select = ({ options, selectedLabel, onSelect, size = 'small' }: SelectProp
     setCurrentLabel(selectedLabel)
   }, [selectedLabel])
 
-  const handleSelect = (option: SelectOption) => {
+  const handleSelect = (option: SelectOption<T>) => {
     setCurrentLabel(option)
     setIsOpen(false)
     onSelect(option)

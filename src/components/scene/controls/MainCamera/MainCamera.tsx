@@ -1,9 +1,12 @@
+'use client'
+
 import { useFrame } from '@react-three/fiber'
-import { useContext, useEffect, useRef, useState, useCallback } from 'react'
+import { useContext, useEffect, useRef, useState, useCallback, type RefObject } from 'react'
 import { useSelector } from 'react-redux'
-import { Vector3 } from 'three'
+import { Vector3, PerspectiveCamera } from 'three'
 
 import SceneContext from '@/contexts/SceneContext'
+import type { RootState } from '@/redux/store'
 
 import {
   createMouseState,
@@ -16,56 +19,69 @@ import {
   detachTouchHandlers,
   calculateMovementVector,
   detectCollisions,
+  type MouseState,
 } from './helpers'
 
 const MainCamera = () => {
   const [, setTick] = useState(0)
-  const { wallRefs, windowRefs, glassRefs } = useContext(SceneContext)
-  const keysPressed = useRef({})
-  const mouseState = useRef(createMouseState())
+
+  //TODO: review this condition
+  const context = useContext(SceneContext)
+  if (!context) {
+    throw new Error('MainCamera must be used within a SceneContext.Provider')
+  }
+  const { wallRefs, windowRefs, glassRefs } = context
+
+  // State refs
+  const keysPressed = useRef<Record<string, boolean>>({})
+  const mouseState: RefObject<MouseState> = useRef(createMouseState())
   const initialPositionSet = useRef(false)
   const rotationVelocity = useRef(0)
-  const dampingFactor = 0.6
-  const collitionDistance = 1
-
-  const moveSpeed = 0.03
-  const cameraElevation = 1.1
   const fov = useRef(70)
 
+  // constants
+  const dampingFactor = 0.6
+  const collisionDistance = 1
+  const moveSpeed = 0.03
+  const cameraElevation = 1.1
+
+  // Redux state
+  const wallCoordinates = useSelector((state: RootState) => state.wallView.currentWallCoordinates)
+  const wallNormal = useSelector((state: RootState) => state.wallView.currentWallNormal)
+
+  // handlers
   const onMouseMove = useCallback(
-    (event) => handleMouseMove(mouseState, setTick)(event),
-    [mouseState, setTick],
+    (event: MouseEvent) => handleMouseMove(mouseState, setTick)(event),
+    [mouseState],
   )
   const onMouseDown = useCallback(
-    (event) => attachMouseHandlers(onMouseMove, mouseState)(event),
-    [onMouseMove, mouseState],
+    (event: MouseEvent) => attachMouseHandlers(onMouseMove, mouseState)(event),
+    [onMouseMove],
   )
   const onMouseUp = useCallback(
-    (event) => detachMouseHandlers(onMouseMove, mouseState)(event),
-    [onMouseMove, mouseState],
+    (event: MouseEvent) => detachMouseHandlers(onMouseMove, mouseState)(event),
+    [onMouseMove],
   )
   const onTouchMove = useCallback(
-    (event) => handleTouchMove(mouseState, setTick)(event),
-    [mouseState, setTick],
+    (event: TouchEvent) => handleTouchMove(mouseState, setTick)(event),
+    [mouseState],
   )
   const onTouchStart = useCallback(
-    (event) => attachTouchHandlers(onTouchMove, mouseState)(event),
-    [onTouchMove, mouseState],
+    (event: TouchEvent) => attachTouchHandlers(onTouchMove, mouseState)(event),
+    [onTouchMove],
   )
   const onTouchEnd = useCallback(
     () => detachTouchHandlers(onTouchMove, mouseState)(),
-    [onTouchMove, mouseState],
+    [onTouchMove],
   )
   const onKeyDown = useCallback(
-    (event) => handleKeyPress(keysPressed, event.key, true),
-    [keysPressed],
+    (event: KeyboardEvent) => handleKeyPress(keysPressed, event.key, true),
+    [],
   )
   const onKeyUp = useCallback(
-    (event) => handleKeyPress(keysPressed, event.key, false),
-    [keysPressed],
+    (event: KeyboardEvent) => handleKeyPress(keysPressed, event.key, false),
+    [],
   )
-  const wallCoordinates = useSelector((state) => state.wallView.currentWallCoordinates)
-  const wallNormal = useSelector((state) => state.wallView.currentWallNormal)
 
   useEffect(() => {
     window.addEventListener('keydown', onKeyDown)
@@ -86,8 +102,10 @@ const MainCamera = () => {
   }, [onKeyDown, onKeyUp, onMouseDown, onMouseUp, onTouchStart, onTouchEnd])
 
   useFrame(({ camera }) => {
-    camera.fov = fov.current
-    camera.updateProjectionMatrix()
+    const cam = camera as PerspectiveCamera
+
+    cam.fov = fov.current
+    cam.updateProjectionMatrix()
 
     if (!initialPositionSet.current) {
       if (wallCoordinates && wallNormal) {
@@ -96,30 +114,32 @@ const MainCamera = () => {
         const offset = new Vector3(wallNormal.x * offsetDistance, 0, wallNormal.z * offsetDistance)
         const cameraPosition = lookAt.clone().add(offset)
 
-        camera.position.set(cameraPosition.x, cameraElevation, cameraPosition.z)
-        camera.lookAt(lookAt)
-        camera.updateProjectionMatrix()
+        cam.position.set(cameraPosition.x, cameraElevation, cameraPosition.z)
+        cam.lookAt(lookAt)
+        cam.updateProjectionMatrix()
       }
 
       initialPositionSet.current = true
     }
 
-    if (Math.abs(mouseState.current.deltaX) > 0.5) {
-      rotationVelocity.current += mouseState.current.deltaX * 0.002
+    if (Math.abs(mouseState.current?.deltaX ?? 0) > 0.5) {
+      rotationVelocity.current += (mouseState.current?.deltaX ?? 0) * 0.002
     }
 
     rotationVelocity.current *= dampingFactor
 
     const rotationDelta = -rotationVelocity.current
-    camera.rotateY(rotationDelta)
+    cam.rotateY(rotationDelta)
 
-    const moveVector = calculateMovementVector(keysPressed, moveSpeed, camera)
+    const moveVector = calculateMovementVector(keysPressed, moveSpeed, cam)
 
-    if (!detectCollisions(camera, moveVector, wallRefs, windowRefs, glassRefs, collitionDistance)) {
-      camera.position.add(moveVector)
+    if (!detectCollisions(cam, moveVector, wallRefs, windowRefs, glassRefs, collisionDistance)) {
+      cam.position.add(moveVector)
     }
 
-    mouseState.current.deltaX = 0
+    if (mouseState.current) {
+      mouseState.current.deltaX = 0
+    }
   })
 
   return null

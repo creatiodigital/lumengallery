@@ -2,12 +2,22 @@
 
 import { useState } from 'react'
 
-export function useCreateExhibition() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [createdExhibition, setCreatedExhibition] = useState(null)
+import type { Exhibition } from '@/types/exhibition'
 
-  const slugify = (str) =>
+type CreateExhibitionType = {
+  mainTitle: string
+  visibility: string
+  userId: string
+  userHandler: string
+  spaceId?: string
+}
+
+export function useCreateExhibition() {
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const [createdExhibition, setCreatedExhibition] = useState<Exhibition | null>(null)
+
+  const slugify = (str: string): string =>
     str
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
@@ -15,14 +25,18 @@ export function useCreateExhibition() {
       .replace(/--+/g, '-')
       .trim()
 
-  const createExhibition = async ({ mainTitle, visibility, userId, userHandler, spaceId = '' }) => {
+  const createExhibition = async ({
+    mainTitle,
+    visibility,
+    userId,
+    userHandler,
+    spaceId = '',
+  }: CreateExhibitionType): Promise<Exhibition | null> => {
     setLoading(true)
     setError(null)
 
     const handler = slugify(mainTitle)
     const url = `${userHandler}/${handler}`
-
-    console.log('xxx', mainTitle, visibility, userId, handler, url, spaceId)
 
     try {
       const res = await fetch('/api/exhibitions', {
@@ -40,11 +54,15 @@ export function useCreateExhibition() {
 
       if (!res.ok) throw new Error('Failed to create exhibition')
 
-      const data = await res.json()
+      const data: Exhibition = await res.json()
       setCreatedExhibition(data)
       return data
     } catch (err) {
-      setError(err.message)
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Unknown error')
+      }
       return null
     } finally {
       setLoading(false)

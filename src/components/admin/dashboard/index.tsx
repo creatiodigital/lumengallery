@@ -3,34 +3,40 @@
 import React, { useState } from 'react'
 
 import { useArtists } from '@/hooks/useArtists'
-import { useUpdateArtist } from '@/hooks/useUpdateArtist'
+// import { useUpdateArtist } from '@/hooks/useUpdateArtist'
+import type { Artist } from '@/types/artist'
 
 export const DashboardAdmin = () => {
   const { artists, loading, error } = useArtists()
-  const { updateArtist, statusById } = useUpdateArtist()
-  const [editingArtists, setEditingArtists] = useState({}) // key = artist.id
+  // const { updateArtist, statusById} = useUpdateArtist()
 
-  console.log('artists', artists)
+  // store a full Artist for each editing entry
+  const [editingArtists, setEditingArtists] = useState<Record<string, Artist>>({})
 
-  const handleChange = (id, field, value) => {
-    setEditingArtists((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        [field]: value,
-      },
-    }))
+  const handleChange = (id: string, field: keyof Artist, value: string) => {
+    setEditingArtists((prev) => {
+      const current = prev[id] ?? artists.find((a) => a.id === id)
+      if (!current) return prev
+
+      return {
+        ...prev,
+        [id]: {
+          ...current,
+          [field]: value,
+        },
+      }
+    })
   }
 
-  const handleSave = async (id) => {
-    const updates = editingArtists[id]
-    if (!updates) return
+  // const handleSave = async (id: string) => {
+  //   const artist = editingArtists[id]
+  //   if (!artist) return
 
-    await updateArtist({ id, ...updates })
-  }
+  //   await updateArtist(artist)
+  // }
 
-  const getFieldValue = (artist, field) => {
-    return editingArtists[artist.id]?.[field] ?? artist[field] ?? ''
+  const getFieldValue = (artist: Artist, field: keyof Artist): string => {
+    return (editingArtists[artist.id]?.[field] as string) ?? (artist[field] as string) ?? ''
   }
 
   if (loading) return <div>Loading...</div>
@@ -39,7 +45,7 @@ export const DashboardAdmin = () => {
   return (
     <div>
       <h1>All Artists</h1>
-      <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse' }}>
+      <table border={1} cellPadding="8" style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr>
             <th>ID</th>
@@ -90,15 +96,25 @@ export const DashboardAdmin = () => {
                   onChange={(e) => handleChange(artist.id, 'email', e.target.value)}
                 />
               </td>
-              <td>
-                <button onClick={() => handleSave(artist.id)}>
-                  {statusById[artist.id] === 'saving'
-                    ? 'Saving...'
-                    : statusById[artist.id] === 'saved'
-                      ? 'Saved ✓'
-                      : 'Save'}
-                </button>
-              </td>
+              {/* <td>
+                {(() => {
+                  const requestStatus = statusById[artist.id] ?? 'idle'
+
+                  return (
+                    <Button
+                      variant="small"
+                      label={
+                        requestStatus === 'loading'
+                          ? 'Saving...'
+                          : requestStatus === 'success'
+                            ? 'Saved ✓'
+                            : 'Save'
+                      }
+                      onClick={() => handleSave(artist.id)}
+                    />
+                  )
+                })()}
+              </td> */}
             </tr>
           ))}
         </tbody>
