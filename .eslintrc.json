@@ -1,6 +1,7 @@
 {
+  "parser": "@typescript-eslint/parser",
   "extends": ["next/core-web-vitals", "eslint:recommended", "plugin:prettier/recommended"],
-  "plugins": ["prettier", "import"],
+  "plugins": ["prettier", "import", "@typescript-eslint"],
   "env": {
     "browser": true,
     "es2021": true,
@@ -11,7 +12,10 @@
     "import/order": [
       "error",
       {
-        "groups": [["builtin", "external"], ["internal", "parent", "sibling", "index"]],
+        "groups": [
+          ["builtin", "external"],
+          ["internal", "parent", "sibling", "index"]
+        ],
         "pathGroups": [
           {
             "pattern": "*.scss",
@@ -31,6 +35,8 @@
           "caseInsensitive": true
         }
       }
-    ]
+    ],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error"]
   }
 }

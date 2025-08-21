@@ -148,7 +148,7 @@ export const LeftPanel = () => {
         <div className={styles.subsection}>
           <div className={styles.row}>
             <div className={styles.item}>
-              <Button type="small" onClick={handleSaveWallView} label="Save" />
+              <Button variant="small" onClick={handleSaveWallView} label="Save" />
             </div>
           </div>
         </div>

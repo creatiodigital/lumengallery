@@ -1,10 +1,16 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, type ReactNode } from 'react'
 
 import styles from './Tooltip.module.scss'
 
-const Tooltip = ({ label, children, top = -5 }) => {
+type TooltipProps = {
+  label: string
+  children: ReactNode
+  top?: number
+}
+
+const Tooltip = ({ label, children, top = -5 }: TooltipProps) => {
   const [isVisible, setIsVisible] = useState(false)
-  const timerRef = useRef(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const showTooltip = () => {
     timerRef.current = setTimeout(() => {

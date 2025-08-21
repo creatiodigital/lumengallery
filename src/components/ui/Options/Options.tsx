@@ -2,9 +2,23 @@ import React from 'react'
 
 import styles from './Options.module.scss'
 
-const Options = ({ options, selectOption, selected }) => {
-  const handleChange = (e) => {
-    selectOption(e.target.value)
+type Option = {
+  value: string | number
+  label: string
+}
+
+type OptionsProps = {
+  options: Option[]
+  selectOption: (value: string | number) => void
+  selected: string | number
+}
+
+const Options = ({ options, selectOption, selected }: OptionsProps) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target
+    // radio inputs always give string, so coerce if needed
+    const parsedValue = isNaN(Number(value)) ? value : Number(value)
+    selectOption(parsedValue)
   }
 
   return (

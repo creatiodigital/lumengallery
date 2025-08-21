@@ -5,41 +5,47 @@ import { Icon } from '@/components/ui/Icon'
 
 import styles from './Select.module.scss'
 
-const Select = ({ options, selectedLabel, onSelect, size }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [currentLabel, setCurrentLabel] = useState(selectedLabel)
+type SelectOption = {
+  value: string | number
+  label: string
+}
 
-  const selectRef = useRef(null)
+type SelectProps = {
+  options: SelectOption[]
+  selectedLabel: SelectOption
+  onSelect: (value: SelectOption) => void
+  size?: 'small' | 'medium'
+}
+
+const Select = ({ options, selectedLabel, onSelect, size = 'small' }: SelectProps) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [currentLabel, setCurrentLabel] = useState<SelectOption>(selectedLabel)
+
+  const selectRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (selectedLabel) {
-      setCurrentLabel(selectedLabel)
-    }
+    setCurrentLabel(selectedLabel)
   }, [selectedLabel])
 
-  const handleSelect = (option) => {
+  const handleSelect = (option: SelectOption) => {
     setCurrentLabel(option)
     setIsOpen(false)
-    if (onSelect) {
-      onSelect(option)
-    }
+    onSelect(option)
   }
 
   useEffect(() => {
-    const handleOutsideClick = (event) => {
-      if (selectRef.current && !selectRef.current.contains(event.target)) {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
 
     document.addEventListener('mousedown', handleOutsideClick)
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick)
-    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [])
 
   return (
-    <div className={c(styles.select, styles[size])} ref={selectRef}>
+    <div className={c(styles.select, size && styles[size])} ref={selectRef}>
       <div className={styles.input} onClick={() => setIsOpen(!isOpen)}>
         {currentLabel.label}
         <Icon name="chevronDown" size={size === 'medium' ? 20 : 16} color="#333333" />

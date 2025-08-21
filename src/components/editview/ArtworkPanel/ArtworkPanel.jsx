@@ -23,7 +23,7 @@ const ArtworkPanel = () => {
   return (
     <div ref={panelRef} className={styles.panel}>
       <div className={styles.cta}>
-        <Button type="outline" label="Close" onClick={() => dispatch(hideArtworkPanel())} />
+        <Button variant="outline" label="Close" onClick={() => dispatch(hideArtworkPanel())} />
       </div>
       <div className={styles.info}>
         {selectedArtwork && (

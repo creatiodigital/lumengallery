@@ -1,22 +1,35 @@
 import c from 'classnames'
-import React from 'react'
+import type { MouseEventHandler } from 'react'
 
 import { Icon } from '@/components/ui/Icon'
 
 import styles from './ButtonIcon.module.scss'
 
-function Button({
+type ButtonIconProps = {
+  icon: any
+  size?: 'small' | 'big'
+  type?: 'submit' | 'button' | 'reset'
+  color?: string
+  onClick: MouseEventHandler<HTMLButtonElement>
+  draggable?: boolean
+  onDragStart: MouseEventHandler<HTMLButtonElement>
+  onDragEnd: MouseEventHandler<HTMLButtonElement>
+}
+
+export const ButtonIcon = ({
   icon,
   size = 'small',
   color = '#ffffff',
+  type = 'button',
   onClick,
   draggable = false,
   onDragStart,
   onDragEnd,
-}) {
+}: ButtonIconProps) => {
   return (
     <button
       className={c([styles.button, styles[size]])}
+      type={type}
       onClick={onClick}
       draggable={draggable}
       onDragStart={onDragStart}
@@ -27,4 +40,4 @@ function Button({
   )
 }
 
-export default Button
+export default ButtonIcon

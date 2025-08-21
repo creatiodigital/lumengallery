@@ -1,8 +1,14 @@
 import React, { forwardRef } from 'react'
+import type { FormEventHandler } from 'react'
 
 import styles from './FileInput.module.scss'
 
-const FileInput = forwardRef(({ id, onInput }, ref) => {
+type FileInputProps = {
+  id: string
+  onInput: FormEventHandler<HTMLInputElement>
+}
+
+const FileInput = forwardRef<HTMLInputElement, FileInputProps>(({ id, onInput }, ref) => {
   return (
     <input
       ref={ref}

@@ -66,9 +66,17 @@ const icons = {
   verticalBottom: VerticalBottom,
   verticalCenter: VerticalCenter,
   verticalTop: VerticalTop,
+} as const
+
+export type IconName = keyof typeof icons
+
+export type IconProps = {
+  name: IconName
+  size?: number
+  color?: string
 }
 
-const Icon = ({ name, size = 24, color = 'currentColor' }) => {
+const Icon = ({ name, size = 24, color = 'currentColor' }: IconProps) => {
   const SvgIcon = icons[name]
   return SvgIcon ? <SvgIcon width={size} height={size} fill={color} /> : null
 }

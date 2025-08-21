@@ -74,7 +74,7 @@ export const Dashboard = () => {
             <h3>Hello {`${name}`}</h3>
           </div>
           <div className={styles.exhibitions}>
-            <Button type="small" label="New exhibition" onClick={handleNewExhibition} />
+            <Button variant="small" label="New exhibition" onClick={handleNewExhibition} />
             <div className={styles.list}>
               <h3 className={styles.subtitle}>My exhibitions</h3>
               {exhibitions.length === 0 ? (
@@ -84,7 +84,11 @@ export const Dashboard = () => {
                   {exhibitions.map((ex) => (
                     <li key={ex.id} className={styles.exhibitionItem}>
                       {ex.mainTitle}{' '}
-                      <Button type="small" label="Edit" onClick={() => console.log('Edit', ex)} />
+                      <Button
+                        variant="small"
+                        label="Edit"
+                        onClick={() => console.log('Edit', ex)}
+                      />
                     </li>
                   ))}
                 </ul>
@@ -92,7 +96,7 @@ export const Dashboard = () => {
             </div>
           </div>
           <div>
-            <Button type="small" onClick={handleEditGallery} label="Create Exhibition" />
+            <Button variant="small" onClick={handleEditGallery} label="Create Exhibition" />
           </div>
           {isModalShown && (
             <Modal>
@@ -125,9 +129,9 @@ export const Dashboard = () => {
                   />
                 </div>
                 <div className={styles.ctas}>
-                  <Button type="small" label="Cancel" onClick={() => setIsModalShown(false)} />
+                  <Button variant="small" label="Cancel" onClick={() => setIsModalShown(false)} />
                   <Button
-                    type="small"
+                    variant="small"
                     label={loading ? 'Creating...' : 'Create'}
                     onClick={handleCreateExhibition}
                   />
