@@ -3,7 +3,7 @@ export type SpaceOptionType = {
   value: 'classic' | 'modern'
 }
 
-export type DashboardState = {
+export type DashboardStateType = {
   isEditMode: boolean
   isArtworkPanelOpen: boolean
   isEditingArtwork: boolean

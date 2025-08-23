@@ -1,6 +1,6 @@
-import type { DashboardState } from '@/types/dashboard'
+import type { DashboardStateType } from '@/types/dashboard'
 
-export const createDashboardState = (): DashboardState => ({
+export const createDashboardState = (): DashboardStateType => ({
   isEditMode: false,
   isArtworkPanelOpen: false,
   isEditingArtwork: false,

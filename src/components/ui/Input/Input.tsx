@@ -39,7 +39,7 @@ const Input = ({
         autoFocus={autoFocus}
       />
       {icon && (
-        <div className={c(styles.icon, { [styles[`rotate${rotate}`]]: !!rotate })}>
+        <div className={c(styles.icon, { [styles[`rotate${rotate}` as string]]: !!rotate })}>
           <Icon name={icon} size={16} color="#444444" />
         </div>
       )}

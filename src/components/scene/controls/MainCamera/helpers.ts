@@ -32,15 +32,20 @@ export const handleMouseMove =
 export const handleTouchMove =
   (mouseState: RefObject<MouseState>, setTick: Dispatch<SetStateAction<number>>) =>
   (event: TouchEvent) => {
-    if (!mouseState.current?.isTouchActive || mouseState.current.lastTouchX == null) return
+    if (
+      !mouseState.current?.isTouchActive ||
+      mouseState.current.lastTouchX == null ||
+      event.touches.length === 0
+    ) {
+      return
+    }
 
-    const currentX = event.touches[0].clientX
+    const currentX = event.touches[0]!.clientX
     const deltaX = currentX - mouseState.current.lastTouchX
     mouseState.current.deltaX = deltaX
     mouseState.current.lastTouchX = currentX
     setTick((tick) => tick + 1)
   }
-
 export const handleKeyPress = (
   keysPressed: RefObject<Record<string, boolean>>,
   key: string,
@@ -76,7 +81,7 @@ export const attachTouchHandlers =
   (event: TouchEvent) => {
     if (event.touches.length === 2 && mouseState.current) {
       mouseState.current.isTouchActive = true
-      mouseState.current.lastTouchX = event.touches[0].clientX
+      mouseState.current.lastTouchX = event.touches[0]!.clientX
       mouseState.current.deltaX = 0
       window.addEventListener('touchmove', onTouchMove)
     }

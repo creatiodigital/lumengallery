@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 
-import type { RequestStatus } from '@/types/api'
+import type { RequestStatusType } from '@/types/api'
 import type { ArtistType } from '@/types/artist'
 
 export function useUpdateArtist() {
-  const [statusById, setStatusById] = useState<Record<string, RequestStatus>>({})
+  const [statusById, setStatusById] = useState<Record<string, RequestStatusType>>({})
 
   const updateArtist = async (artist: ArtistType): Promise<boolean> => {
     const { id, ...rest } = artist

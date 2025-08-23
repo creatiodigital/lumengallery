@@ -1,8 +1,8 @@
-export type FontFamily = 'roboto' | 'lora'
-export type FontWeight = 'regular' | 'bold'
-export type TextAlign = 'left' | 'right' | 'center'
+export type FontFamilyType = 'roboto' | 'lora'
+export type FontWeightType = 'regular' | 'bold'
+export type TextAlignType = 'left' | 'right' | 'center'
 
-export type Option<T> = { label: string; value: T }
+export type OptionType<T> = { label: string; value: T }
 
 export type ArtworkKindType = 'image' | 'text'
 
@@ -40,10 +40,10 @@ export type ArtisticImageType = ArtworkType & {
     showArtworkInformation: boolean
     showFrame: boolean
     frameColor: string
-    frameThickness: Option<number>
+    frameThickness: OptionType<number>
     showPassepartout: boolean
     passepartoutColor: string
-    passepartoutThickness: Option<number>
+    passepartoutThickness: OptionType<number>
   }
 }
 
@@ -51,11 +51,11 @@ export type ArtisticTextType = ArtworkType & {
   artworkType: 'text'
   artisticTextProperties: {
     textContent: string
-    fontFamily: Option<'roboto' | 'lora'>
-    fontSize: Option<number>
-    fontWeight: Option<'regular' | 'bold'>
-    letterSpacing: Option<number>
-    lineHeight: Option<number>
+    fontFamily: OptionType<'roboto' | 'lora'>
+    fontSize: OptionType<number>
+    fontWeight: OptionType<'regular' | 'bold'>
+    letterSpacing: OptionType<number>
+    lineHeight: OptionType<number>
     textColor: string
     textAlign: 'left' | 'right' | 'center'
   }
