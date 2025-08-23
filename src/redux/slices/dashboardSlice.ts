@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import { createDashboardState } from '@/factories/dashboardFactory'
-import type { DashboardState, SpaceOption } from '@/types/dashboard'
+import type { DashboardState, SpaceOptionType } from '@/types/dashboard'
 
 const dashboardSlice = createSlice({
   name: 'dashboard',
@@ -22,7 +22,7 @@ const dashboardSlice = createSlice({
     setEditingArtwork: (state: DashboardState, action: PayloadAction<boolean>) => {
       state.isEditingArtwork = action.payload
     },
-    selectSpace: (state: DashboardState, action: PayloadAction<SpaceOption>) => {
+    selectSpace: (state: DashboardState, action: PayloadAction<SpaceOptionType>) => {
       state.selectedSpace = action.payload
     },
   },

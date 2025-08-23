@@ -28,9 +28,9 @@ export const CreatePanel = () => {
             size="big"
             icon="picture"
             label="Paint"
-            onClick={() => handleCreateArtwork('paint')}
+            onClick={() => handleCreateArtwork('image')}
             draggable
-            onDragStart={(e) => handleArtworkDragStart(e, 'paint')}
+            onDragStart={(e) => handleArtworkDragStart(e, 'image')}
           />
         </Tooltip>
         <Tooltip label="Click or drag to wall to create an artistic text" top={-40}>

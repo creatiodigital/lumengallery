@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useRef } from 'react'
 import { useDispatch } from 'react-redux'
 
@@ -7,8 +9,12 @@ import { setEditingArtwork } from '@/redux/slices/dashboardSlice'
 
 import styles from './ArtisticText.module.scss'
 
-const ArtisticText = ({ artworkId }) => {
-  const contentRef = useRef(null)
+interface ArtisticTextProps {
+  artworkId: string
+}
+
+const ArtisticText = ({ artworkId }: ArtisticTextProps) => {
+  const contentRef = useRef<HTMLDivElement | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const dispatch = useDispatch()
 
@@ -23,17 +29,17 @@ const ArtisticText = ({ artworkId }) => {
     lineHeight,
   } = useArtisticText(artworkId)
 
-  const fontFamilyVariable =
-    {
-      roboto: 'var(--font-wall1)',
-      lora: 'var(--font-wall2)',
-    }[fontFamily] || 'var(--font-wall1)'
+  const fontFamilyMap: Record<'roboto' | 'lora', string> = {
+    roboto: 'var(--font-wall1)',
+    lora: 'var(--font-wall2)',
+  }
+  const fontWeightMap: Record<'regular' | 'bold', number> = {
+    regular: 400,
+    bold: 600,
+  }
 
-  const fontWeightVariable =
-    {
-      regular: 400,
-      bold: 600,
-    }[fontWeight] || 400
+  const fontFamilyVariable = fontFamilyMap[fontFamily.value as 'roboto' | 'lora']
+  const fontWeightVariable = fontWeightMap[fontWeight.value as 'regular' | 'bold']
 
   const handleDoubleClick = () => {
     if (!isEditing) {
@@ -74,9 +80,8 @@ const ArtisticText = ({ artworkId }) => {
             color: textColor,
             fontFamily: fontFamilyVariable,
             fontWeight: fontWeightVariable,
-            // letterSpacing: letterSpacing,
-            fontSize: fontSize,
-            lineHeight: lineHeight,
+            fontSize,
+            lineHeight,
           }}
           className={`${styles.content} ${isEditing ? styles.editable : ''}`}
           contentEditable={isEditing}

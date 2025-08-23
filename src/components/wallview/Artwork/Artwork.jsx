@@ -83,7 +83,7 @@ const Artwork = memo(
       >
         {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
         {artworkType === 'text' && <ArtisticText artworkId={id} />}
-        {artworkType === 'paint' && <ArtisticImage artwork={artwork} />}
+        {artworkType === 'image' && <ArtisticImage artwork={artwork} />}
       </div>
     )
   },

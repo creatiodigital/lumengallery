@@ -1,23 +1,26 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit'
 
 import { createArtistState } from '@/factories/artistFactory'
-import type { Artist, ArtistState } from '@/types/artist'
-import type { Exhibition } from '@/types/exhibition'
+import type { ArtistType, ArtistStateType } from '@/types/artist'
+import type { ExhibitionType } from '@/types/exhibition'
 
-export const fetchArtist = createAsyncThunk<Artist, string>('artist/fetchArtist', async (id) => {
-  const res = await fetch(`/api/artists/${id}`)
-  if (!res.ok) throw new Error('Fetch failed')
-  return res.json() as Promise<Artist>
-})
+export const fetchArtist = createAsyncThunk<ArtistType, string>(
+  'artist/fetchArtist',
+  async (id) => {
+    const res = await fetch(`/api/artists/${id}`)
+    if (!res.ok) throw new Error('Fetch failed')
+    return res.json() as Promise<ArtistType>
+  },
+)
 
-export const fetchExhibitionsByArtist = createAsyncThunk<Exhibition[], string>(
+export const fetchExhibitionsByArtist = createAsyncThunk<ExhibitionType[], string>(
   'artist/fetchExhibitionsByArtist',
   async (userId) => {
     const res = await fetch(`/api/exhibitions?userId=${userId}`, {
       cache: 'no-store',
     })
     if (!res.ok) throw new Error('Failed to fetch exhibitions')
-    return res.json() as Promise<Exhibition[]>
+    return res.json() as Promise<ExhibitionType[]>
   },
 )
 
@@ -25,7 +28,7 @@ const artistSlice = createSlice({
   name: 'artist',
   initialState: createArtistState(),
   reducers: {
-    addExhibition: (state: ArtistState, action: PayloadAction<Exhibition>) => {
+    addExhibition: (state: ArtistStateType, action: PayloadAction<ExhibitionType>) => {
       const exhibition = action.payload
       state.exhibitionsById[exhibition.id] = exhibition
 
@@ -36,25 +39,28 @@ const artistSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchArtist.pending, (state: ArtistState) => {
+      .addCase(fetchArtist.pending, (state: ArtistStateType) => {
         state.status = 'loading'
       })
-      .addCase(fetchArtist.fulfilled, (state: ArtistState, action: PayloadAction<Artist>) => {
-        state.status = 'succeeded'
-        const artist = action.payload
-        state.id = artist.id
-        state.name = artist.name
-        state.lastName = artist.lastName
-        state.handler = artist.handler
-        state.biography = artist.biography
-      })
-      .addCase(fetchArtist.rejected, (state: ArtistState, action) => {
+      .addCase(
+        fetchArtist.fulfilled,
+        (state: ArtistStateType, action: PayloadAction<ArtistType>) => {
+          state.status = 'succeeded'
+          const artist = action.payload
+          state.id = artist.id
+          state.name = artist.name
+          state.lastName = artist.lastName
+          state.handler = artist.handler
+          state.biography = artist.biography
+        },
+      )
+      .addCase(fetchArtist.rejected, (state: ArtistStateType, action) => {
         state.status = 'failed'
         state.error = action.error.message ?? 'Unknown error'
       })
       .addCase(
         fetchExhibitionsByArtist.fulfilled,
-        (state: ArtistState, action: PayloadAction<Exhibition[]>) => {
+        (state: ArtistStateType, action: PayloadAction<ExhibitionType[]>) => {
           state.exhibitionsById = {}
           state.allExhibitionIds = []
 

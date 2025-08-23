@@ -1,16 +1,23 @@
 import { Text } from '@react-three/drei'
 import React, { useState, useRef, useEffect } from 'react'
-import { DoubleSide } from 'three'
+import type { ComponentRef } from 'react'
+import { DoubleSide, Vector3, Quaternion } from 'three'
 
-const Stencil = ({ artwork }) => {
+import type { ArtisticTextType } from '@/types/artwork'
+
+type StencilProps = {
+  artwork: ArtisticTextType & {
+    position: Vector3
+    quaternion: Quaternion
+    width: number
+    height: number
+  }
+}
+
+const Stencil = ({ artwork }: StencilProps) => {
   const { id, position, quaternion, width, height, artisticTextProperties } = artwork
-  const textContent = artisticTextProperties?.textContent || ''
-  const textAlign = artisticTextProperties?.textAlign || 'left'
-  const textColor = artisticTextProperties?.textColor.value || '#000000'
-  const fontSize = artisticTextProperties?.fontSize.value || 16
-  const lineHeight = artisticTextProperties?.lineHeight.value || 1
-  const fontWeight = artisticTextProperties?.fontWeight.value || 'regular'
-  const fontFamily = artisticTextProperties?.fontFamily.value || 'roboto'
+  const { textContent, textAlign, textColor, fontSize, lineHeight, fontWeight, fontFamily } =
+    artisticTextProperties
 
   const fontSizeFactor = 0.01
 
@@ -23,11 +30,11 @@ const Stencil = ({ artwork }) => {
       regular: '/fonts/lora-regular.ttf',
       bold: '/fonts/lora-bold.ttf',
     },
-  }
+  } as const
 
-  const fontUrl = fontMap[fontFamily]?.[fontWeight] || fontMap['roboto']['regular']
+  const fontUrl = fontMap[fontFamily.value]?.[fontWeight.value] ?? fontMap['roboto']['regular']
 
-  const textRef = useRef()
+  const textRef = useRef<ComponentRef<typeof Text>>(null)
   const [textWidth, setTextWidth] = useState(0)
 
   const calculateTextWidth = () => {
@@ -52,12 +59,12 @@ const Stencil = ({ artwork }) => {
   const planeWidth = width || 1
   const planeHeight = height || 1
 
-  const getAnchorX = (textAlign, planeWidth) => {
-    switch (textAlign) {
+  const getAnchorX = (align: typeof textAlign, planeW: number): number => {
+    switch (align) {
       case 'left':
-        return -planeWidth / 2 + planeWidth
+        return -planeW / 2 + planeW
       case 'right':
-        return planeWidth / 2 - planeWidth + textWidth
+        return planeW / 2 - planeW + textWidth
       case 'center':
         return textWidth / 2
       default:
@@ -65,8 +72,8 @@ const Stencil = ({ artwork }) => {
     }
   }
 
-  const getAnchorY = (planeHeight) => {
-    return planeHeight / 2 - planeHeight
+  const getAnchorY = (planeH: number): number => {
+    return planeH / 2 - planeH
   }
 
   return (
@@ -82,8 +89,8 @@ const Stencil = ({ artwork }) => {
         <mesh key={id} renderOrder={2}>
           <Text
             ref={textRef}
-            fontSize={fontSize * fontSizeFactor}
-            lineHeight={lineHeight}
+            fontSize={fontSize.value * fontSizeFactor}
+            lineHeight={lineHeight.value}
             color={textColor}
             font={fontUrl}
             anchorX={getAnchorX(textAlign, width)}

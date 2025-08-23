@@ -4,16 +4,16 @@ import React, { useState } from 'react'
 
 import { useArtists } from '@/hooks/useArtists'
 // import { useUpdateArtist } from '@/hooks/useUpdateArtist'
-import type { Artist } from '@/types/artist'
+import type { ArtistType } from '@/types/artist'
 
 export const DashboardAdmin = () => {
   const { artists, loading, error } = useArtists()
   // const { updateArtist, statusById} = useUpdateArtist()
 
   // store a full Artist for each editing entry
-  const [editingArtists, setEditingArtists] = useState<Record<string, Artist>>({})
+  const [editingArtists, setEditingArtists] = useState<Record<string, ArtistType>>({})
 
-  const handleChange = (id: string, field: keyof Artist, value: string) => {
+  const handleChange = (id: string, field: keyof ArtistType, value: string) => {
     setEditingArtists((prev) => {
       const current = prev[id] ?? artists.find((a) => a.id === id)
       if (!current) return prev
@@ -35,7 +35,7 @@ export const DashboardAdmin = () => {
   //   await updateArtist(artist)
   // }
 
-  const getFieldValue = (artist: Artist, field: keyof Artist): string => {
+  const getFieldValue = (artist: ArtistType, field: keyof ArtistType): string => {
     return (editingArtists[artist.id]?.[field] as string) ?? (artist[field] as string) ?? ''
   }
 

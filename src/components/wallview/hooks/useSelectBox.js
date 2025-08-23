@@ -100,7 +100,6 @@ export const useSelectBox = (wallRef, boundingData, scaleFactor, preventClick) =
     }
 
     selectedArtworks.forEach((artwork) => {
-      console.log('here', artwork)
       handleAddArtworkToGroup(artwork.id)
     })
 

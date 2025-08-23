@@ -1,6 +1,6 @@
-import type { WallView } from '@/types/wallView'
+import type { WallViewType } from '@/types/wallView'
 
-export const wallViewFactory = (): WallView => ({
+export const wallViewFactory = (): WallViewType => ({
   isWallView: false,
   currentArtworkId: null,
   currentWallId: null,

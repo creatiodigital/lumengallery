@@ -8,24 +8,23 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Select, type SelectOption } from '@/components/ui/Select'
 import { useCreateExhibition } from '@/hooks/useCreateExhibition'
+import { selectExhibitions } from '@/redux/selectors/artistSelectors'
 import { fetchArtist, addExhibition, fetchExhibitionsByArtist } from '@/redux/slices/artistSlice'
 import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
 import type { RootState, AppDispatch } from '@/redux/store'
-import type { SpaceOption } from '@/types/dashboard'
-import type { Exhibition } from '@/types/exhibition'
+import type { SpaceOptionType } from '@/types/dashboard'
+import type { ExhibitionType } from '@/types/exhibition'
 
 import { spaceOptions } from './constants'
 import styles from './Dashboard.module.scss'
 
-export const Dashboard: React.FC = () => {
+export const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>()
 
   const isEditMode = useSelector((state: RootState) => state.dashboard.isEditMode)
   const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
   const { name, id, handler } = useSelector((state: RootState) => state.artist)
-  const exhibitions = useSelector((state: RootState) =>
-    state.artist.allExhibitionIds.map((id) => state.artist.exhibitionsById[id]),
-  )
+  const exhibitions = useSelector(selectExhibitions)
 
   const [isModalShown, setIsModalShown] = useState(false)
   const [mainTitle, setMainTitle] = useState('')
@@ -48,7 +47,7 @@ export const Dashboard: React.FC = () => {
   }
 
   const handleSelectSpace = (option: SelectOption) => {
-    dispatch(selectSpace(option.value as unknown as SpaceOption))
+    dispatch(selectSpace(option.value as unknown as SpaceOptionType))
   }
 
   const handleNewExhibition = () => {
@@ -66,7 +65,7 @@ export const Dashboard: React.FC = () => {
 
     if (exhibition) {
       setIsModalShown(false)
-      dispatch(addExhibition(exhibition as Exhibition))
+      dispatch(addExhibition(exhibition as ExhibitionType))
     }
   }
 

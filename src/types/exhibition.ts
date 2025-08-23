@@ -1,6 +1,6 @@
-import type { ArtworkPosition } from '@/types/artwork'
+import type { ArtworkPositionType } from '@/types/artwork'
 
-export type Exhibition = {
+export type ExhibitionType = {
   id: string
   userId: string
   name: string
@@ -11,7 +11,7 @@ export type Exhibition = {
   bannerUrl: string
   startDate: string
   endDate: string
-  exhibitionArtworksById: Record<string, ArtworkPosition>
+  exhibitionArtworksById: Record<string, ArtworkPositionType>
   allExhibitionArtworkIds: string[]
   status: string
   visibility: string

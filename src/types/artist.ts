@@ -1,6 +1,6 @@
-import type { Exhibition } from './exhibition'
+import type { ExhibitionType } from './exhibition'
 
-export type Artist = {
+export type ArtistType = {
   id: string
   name: string
   lastName: string
@@ -10,7 +10,7 @@ export type Artist = {
   email: string
 }
 
-export type ArtistState = {
+export type ArtistStateType = {
   id: string
   name: string
   lastName: string
@@ -18,6 +18,6 @@ export type ArtistState = {
   biography: string
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
-  exhibitionsById: Record<string, Exhibition>
+  exhibitionsById: Record<string, ExhibitionType>
   allExhibitionIds: string[]
 }

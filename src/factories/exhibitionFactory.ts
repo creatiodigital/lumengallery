@@ -1,6 +1,6 @@
-import type { Exhibition } from '@/types/exhibition'
+import type { ExhibitionType } from '@/types/exhibition'
 
-export const exhibitionFactory = (): Exhibition => ({
+export const exhibitionFactory = (): ExhibitionType => ({
   id: '',
   userId: '',
   name: '',

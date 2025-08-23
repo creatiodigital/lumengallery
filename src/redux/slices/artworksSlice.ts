@@ -1,12 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import { createNewArtwork } from '@/factories/artworkFactory'
-import type { ArtworkType, ArtworkKind, ArtisticImageType, ArtisticTextType } from '@/types/artwork'
+import type { Artwork, ArtworkKindType, ArtisticImageType, ArtisticTextType } from '@/types/artwork'
 
 interface ArtworksState {
-  byId: Record<string, ArtworkType>
+  byId: Record<string, Artwork>
   allIds: string[]
-  artworkCounters: Record<string, number>
+  artworkCounters: Record<ArtworkKindType, number>
 }
 
 const initialState: ArtworksState = {
@@ -24,13 +24,13 @@ const artworksSlice = createSlice({
   reducers: {
     createArtwork: (
       state,
-      action: PayloadAction<{ wallId: string; id: string; artworkType: ArtworkKind }>,
+      action: PayloadAction<{ wallId: string; id: string; artworkType: ArtworkKindType }>,
     ) => {
       const { wallId, id, artworkType } = action.payload
 
       state.artworkCounters[artworkType] = (state.artworkCounters[artworkType] ?? 0) + 1
 
-      const newArtwork = createNewArtwork({ id, wallId, canvas: '', artworkType })
+      const newArtwork = createNewArtwork({ id, wallId, artworkType })
 
       newArtwork.name = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)} ${
         state.artworkCounters[artworkType]
@@ -40,9 +40,11 @@ const artworksSlice = createSlice({
       state.allIds.push(id)
     },
 
-    editArtwork: <K extends keyof ArtworkType>(
+    editArtwork: <
+      K extends Exclude<keyof Artwork, 'artisticImageProperties' | 'artisticTextProperties'>,
+    >(
       state: ArtworksState,
-      action: PayloadAction<{ currentArtworkId: string; property: K; value: ArtworkType[K] }>,
+      action: PayloadAction<{ currentArtworkId: string; property: K; value: Artwork[K] }>,
     ) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.byId[currentArtworkId]
@@ -51,26 +53,35 @@ const artworksSlice = createSlice({
       }
     },
 
-    editArtisticImage: <K extends keyof ArtisticImageType>(
+    editArtisticImage: <K extends keyof ArtisticImageType['artisticImageProperties']>(
       state: ArtworksState,
-      action: PayloadAction<{ currentArtworkId: string; property: K; value: ArtisticImageType[K] }>,
+      action: PayloadAction<{
+        currentArtworkId: string
+        property: K
+        value: ArtisticImageType['artisticImageProperties'][K]
+      }>,
     ) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.byId[currentArtworkId]
-      if (artwork) {
-        artwork.artisticImageProperties ??= {} as ArtisticImageType
-        artwork.artisticImageProperties[property] = value
+
+      if (artwork?.artworkType === 'image') {
+        const imageArtwork = artwork as ArtisticImageType
+        imageArtwork.artisticImageProperties[property] = value
       }
     },
 
-    editArtisticText: <K extends keyof ArtisticTextType>(
+    editArtisticText: <K extends keyof ArtisticTextType['artisticTextProperties']>(
       state: ArtworksState,
-      action: PayloadAction<{ currentArtworkId: string; property: K; value: ArtisticTextType[K] }>,
+      action: PayloadAction<{
+        currentArtworkId: string
+        property: K
+        value: ArtisticTextType['artisticTextProperties'][K]
+      }>,
     ) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.byId[currentArtworkId]
-      if (artwork) {
-        artwork.artisticTextProperties ??= {} as ArtisticTextType
+
+      if (artwork?.artworkType === 'text') {
         artwork.artisticTextProperties[property] = value
       }
     },

@@ -24,7 +24,7 @@ const RightPanel = () => {
         {!isGroupCreated && isWizardOpen && (
           <>
             <ArtworkPanel />
-            {artworkType === 'paint' && <ArtisticImagePanel />}
+            {artworkType === 'image' && <ArtisticImagePanel />}
             {artworkType === 'text' && <ArtisticTextPanel />}
           </>
         )}

@@ -1,6 +1,6 @@
-import type { ArtistState } from '@/types/artist'
+import type { ArtistStateType } from '@/types/artist'
 
-export const createArtistState = (): ArtistState => ({
+export const createArtistState = (): ArtistStateType => ({
   id: '',
   name: '',
   lastName: '',

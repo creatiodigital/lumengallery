@@ -5,8 +5,6 @@ import prisma from '@/lib/prisma'
 export async function GET(_, { params }) {
   const { id } = params
 
-  console.log('id', id)
-
   try {
     const artist = await prisma.user.findUnique({
       where: { id },
@@ -28,8 +26,6 @@ export async function PUT(request, { params }) {
     const { id } = params
     const body = await request.json()
     const { name, lastName, biography, handler, userType, email } = body
-
-    console.log('[PUT] Updating artist:', { id, ...body })
 
     const updated = await prisma.user.update({
       where: { id },

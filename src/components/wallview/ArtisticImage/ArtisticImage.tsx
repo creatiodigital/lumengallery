@@ -6,18 +6,22 @@ import { FileInput } from '@/components/ui/FileInput'
 import { Icon } from '@/components/ui/Icon'
 import { editArtisticImage } from '@/redux/slices/artworksSlice'
 import { chooseCurrentArtworkId } from '@/redux/slices/wallViewSlice'
+import type { RootState } from '@/redux/store'
+import type { ArtisticImageType } from '@/types/artwork'
 
 import styles from './ArtisticImage.module.scss'
 
-const ArtisticImage2D = ({ artwork }) => {
-  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+type ArtisticImageProps = {
+  artwork: ArtisticImageType
+}
 
-  const fileInputRef = useRef(null)
+const ArtisticImage = ({ artwork }: ArtisticImageProps) => {
+  const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const dispatch = useDispatch()
   const [isDragOver, setIsDragOver] = useState(false)
   const allowedTypes = ['image/jpeg', 'image/png']
-
-  const { artisticImageProperties } = artwork
 
   const {
     showFrame,
@@ -27,14 +31,14 @@ const ArtisticImage2D = ({ artwork }) => {
     showPassepartout,
     passepartoutColor,
     passepartoutThickness,
-  } = artisticImageProperties
+  } = artwork.artisticImageProperties
 
   const handleDoubleClick = () => {
-    fileInputRef.current.click()
+    fileInputRef.current?.click()
   }
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0]
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (file && validateFile(file)) {
       processFile(file)
     } else {
@@ -42,7 +46,7 @@ const ArtisticImage2D = ({ artwork }) => {
     }
   }
 
-  const handleDragOver = (event) => {
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     setIsDragOver(true)
   }
@@ -51,7 +55,7 @@ const ArtisticImage2D = ({ artwork }) => {
     setIsDragOver(false)
   }
 
-  const handleDrop = (event) => {
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
     setIsDragOver(false)
     const file = event.dataTransfer.files[0]
@@ -67,14 +71,18 @@ const ArtisticImage2D = ({ artwork }) => {
     }
   }
 
-  const validateFile = (file) => {
+  const validateFile = (file: File) => {
     return allowedTypes.includes(file.type)
   }
 
-  const processFile = (file) => {
+  const processFile = (file: File) => {
     const fileUrl = URL.createObjectURL(file)
     dispatch(
-      editArtisticImage({ currentArtworkId: artwork.id, property: 'imageUrl', value: fileUrl }),
+      editArtisticImage({
+        currentArtworkId: artwork.id,
+        property: 'imageUrl',
+        value: fileUrl,
+      }),
     )
   }
 
@@ -82,7 +90,7 @@ const ArtisticImage2D = ({ artwork }) => {
     <div
       className={`${styles.frame} ${isDragOver ? styles.dragOver : ''}`}
       style={{
-        border: showFrame && imageUrl ? `${frameThickness.value}px solid ${frameColor}` : null,
+        border: showFrame && imageUrl ? `${frameThickness.value}px solid ${frameColor}` : undefined,
       }}
       onDoubleClick={handleDoubleClick}
       onDragOver={handleDragOver}
@@ -96,7 +104,7 @@ const ArtisticImage2D = ({ artwork }) => {
           border:
             showPassepartout && imageUrl
               ? `${passepartoutThickness.value}px solid ${passepartoutColor}`
-              : null,
+              : undefined,
         }}
       >
         <div
@@ -122,4 +130,4 @@ const ArtisticImage2D = ({ artwork }) => {
   )
 }
 
-export default ArtisticImage2D
+export default ArtisticImage

@@ -1,7 +1,6 @@
-// factories/wizardFactory.ts
-import type { Wizard } from '@/types/wizard'
+import type { WizardType } from '@/types/wizard'
 
-export const wizardFactory = (): Wizard => ({
+export const wizardFactory = (): WizardType => ({
   isWizardOpen: false,
   isArtworkUploaded: false,
 })

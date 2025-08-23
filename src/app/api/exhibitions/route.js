@@ -7,8 +7,6 @@ export async function POST(request) {
     const body = await request.json()
     const { visibility, userId, handler, url, spaceId } = body
 
-    console.log('[POST /api/exhibitions] payload:', body)
-
     const exhibition = await prisma.exhibition.create({
       data: {
         mainTitle: 'Photography 1',

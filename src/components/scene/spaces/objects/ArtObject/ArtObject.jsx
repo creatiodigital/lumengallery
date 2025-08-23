@@ -5,7 +5,7 @@ import { Stencil } from '@/components/scene/spaces/objects/Stencil'
 
 const ArtObject = ({ artwork }) => {
   switch (artwork?.artworkType) {
-    case 'paint':
+    case 'image':
       return <Display artwork={artwork} />
     case 'text':
       return <Stencil artwork={artwork} />

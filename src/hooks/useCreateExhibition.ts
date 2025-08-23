@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import type { Exhibition } from '@/types/exhibition'
+import type { ExhibitionType } from '@/types/exhibition'
 
 type CreateExhibitionType = {
   mainTitle: string
@@ -15,7 +15,7 @@ type CreateExhibitionType = {
 export function useCreateExhibition() {
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  const [createdExhibition, setCreatedExhibition] = useState<Exhibition | null>(null)
+  const [createdExhibition, setCreatedExhibition] = useState<ExhibitionType | null>(null)
 
   const slugify = (str: string): string =>
     str
@@ -31,7 +31,7 @@ export function useCreateExhibition() {
     userId,
     userHandler,
     spaceId = '',
-  }: CreateExhibitionType): Promise<Exhibition | null> => {
+  }: CreateExhibitionType): Promise<ExhibitionType | null> => {
     setLoading(true)
     setError(null)
 
@@ -54,7 +54,7 @@ export function useCreateExhibition() {
 
       if (!res.ok) throw new Error('Failed to create exhibition')
 
-      const data: Exhibition = await res.json()
+      const data: ExhibitionType = await res.json()
       setCreatedExhibition(data)
       return data
     } catch (err) {
