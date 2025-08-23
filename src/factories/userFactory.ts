@@ -1,11 +1,13 @@
-import type { ArtistStateType } from '@/types/artist'
+import type { UserStateType } from '@/types/user'
 
-export const createArtistState = (): ArtistStateType => ({
+export const createUserState = (): UserStateType => ({
   id: '',
   name: '',
   lastName: '',
   handler: '',
   biography: '',
+  userType: '',
+  email: '',
   status: 'idle',
   error: null,
   exhibitionsById: {},

@@ -6,17 +6,17 @@ export async function GET(_, { params }) {
   const { id } = params
 
   try {
-    const artist = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id },
     })
 
-    if (!artist || artist.userType !== 'artist') {
-      return NextResponse.json({ error: 'Artist not found' }, { status: 404 })
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json(artist)
+    return NextResponse.json(user)
   } catch (error) {
-    console.error('[GET /api/artists/[id]] error:', error)
+    console.error('[GET /api/users/[id]] error:', error)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }

@@ -1,6 +1,6 @@
 import type { ExhibitionType } from './exhibition'
 
-export type ArtistType = {
+export type UserType = {
   id: string
   name: string
   lastName: string
@@ -10,12 +10,7 @@ export type ArtistType = {
   email: string
 }
 
-export type ArtistStateType = {
-  id: string
-  name: string
-  lastName: string
-  handler: string
-  biography: string
+export type UserStateType = UserType & {
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
   exhibitionsById: Record<string, ExhibitionType>

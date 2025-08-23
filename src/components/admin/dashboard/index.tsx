@@ -2,20 +2,20 @@
 
 import React, { useState } from 'react'
 
-import { useArtists } from '@/hooks/useArtists'
-// import { useUpdateArtist } from '@/hooks/useUpdateArtist'
-import type { ArtistType } from '@/types/artist'
+import { useUsers } from '@/hooks/useUsers'
+// import { useUpdateUser } from '@/hooks/useUpdateUser'
+import type { UserType } from '@/types/user'
 
 export const DashboardAdmin = () => {
-  const { artists, loading, error } = useArtists()
-  // const { updateArtist, statusById} = useUpdateArtist()
+  const { users, loading, error } = useUsers()
+  // const { updateUser, statusById} = useUpdateUser()
 
-  // store a full Artist for each editing entry
-  const [editingArtists, setEditingArtists] = useState<Record<string, ArtistType>>({})
+  // store a full User for each editing entry
+  const [editingUsers, setEditingUsers] = useState<Record<string, UserType>>({})
 
-  const handleChange = (id: string, field: keyof ArtistType, value: string) => {
-    setEditingArtists((prev) => {
-      const current = prev[id] ?? artists.find((a) => a.id === id)
+  const handleChange = (id: string, field: keyof UserType, value: string) => {
+    setEditingUsers((prev) => {
+      const current = prev[id] ?? users.find((a) => a.id === id)
       if (!current) return prev
 
       return {
@@ -29,14 +29,14 @@ export const DashboardAdmin = () => {
   }
 
   // const handleSave = async (id: string) => {
-  //   const artist = editingArtists[id]
-  //   if (!artist) return
+  //   const user = editingUsers[id]
+  //   if (!user) return
 
-  //   await updateArtist(artist)
+  //   await updateUser(user)
   // }
 
-  const getFieldValue = (artist: ArtistType, field: keyof ArtistType): string => {
-    return (editingArtists[artist.id]?.[field] as string) ?? (artist[field] as string) ?? ''
+  const getFieldValue = (user: UserType, field: keyof UserType): string => {
+    return (editingUsers[user.id]?.[field] as string) ?? (user[field] as string) ?? ''
   }
 
   if (loading) return <div>Loading...</div>
@@ -44,7 +44,7 @@ export const DashboardAdmin = () => {
 
   return (
     <div>
-      <h1>All Artists</h1>
+      <h1>All Users</h1>
       <table border={1} cellPadding="8" style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr>
@@ -58,47 +58,47 @@ export const DashboardAdmin = () => {
           </tr>
         </thead>
         <tbody>
-          {artists.map((artist) => (
-            <tr key={artist.id}>
-              <td>{artist.id}</td>
+          {users.map((user) => (
+            <tr key={user.id}>
+              <td>{user.id}</td>
               <td>
                 <input
                   type="text"
-                  value={getFieldValue(artist, 'name')}
-                  onChange={(e) => handleChange(artist.id, 'name', e.target.value)}
+                  value={getFieldValue(user, 'name')}
+                  onChange={(e) => handleChange(user.id, 'name', e.target.value)}
                 />
               </td>
               <td>
                 <input
                   type="text"
-                  value={getFieldValue(artist, 'lastName')}
-                  onChange={(e) => handleChange(artist.id, 'lastName', e.target.value)}
+                  value={getFieldValue(user, 'lastName')}
+                  onChange={(e) => handleChange(user.id, 'lastName', e.target.value)}
                 />
               </td>
               <td>
                 <input
                   type="text"
-                  value={getFieldValue(artist, 'handler')}
-                  onChange={(e) => handleChange(artist.id, 'handler', e.target.value)}
+                  value={getFieldValue(user, 'handler')}
+                  onChange={(e) => handleChange(user.id, 'handler', e.target.value)}
                 />
               </td>
               <td>
                 <input
                   type="text"
-                  value={getFieldValue(artist, 'biography')}
-                  onChange={(e) => handleChange(artist.id, 'biography', e.target.value)}
+                  value={getFieldValue(user, 'biography')}
+                  onChange={(e) => handleChange(user.id, 'biography', e.target.value)}
                 />
               </td>
               <td>
                 <input
                   type="email"
-                  value={getFieldValue(artist, 'email')}
-                  onChange={(e) => handleChange(artist.id, 'email', e.target.value)}
+                  value={getFieldValue(user, 'email')}
+                  onChange={(e) => handleChange(user.id, 'email', e.target.value)}
                 />
               </td>
               {/* <td>
                 {(() => {
-                  const requestStatus = statusById[artist.id] ?? 'idle'
+                  const requestStatus = statusById[user.id] ?? 'idle'
 
                   return (
                     <Button
@@ -110,7 +110,7 @@ export const DashboardAdmin = () => {
                             ? 'Saved ✓'
                             : 'Save'
                       }
-                      onClick={() => handleSave(artist.id)}
+                      onClick={() => handleSave(user.id)}
                     />
                   )
                 })()}

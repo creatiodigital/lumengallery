@@ -9,8 +9,8 @@ import { Modal } from '@/components/ui/Modal'
 import { Select, type SelectOption } from '@/components/ui/Select'
 import { useCreateExhibition } from '@/hooks/useCreateExhibition'
 import { selectExhibitions } from '@/redux/selectors/artistSelectors'
-import { fetchArtist, addExhibition, fetchExhibitionsByArtist } from '@/redux/slices/artistSlice'
 import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
+import { fetchUser, addExhibition, fetchExhibitionsByUser } from '@/redux/slices/userSlice'
 import type { RootState, AppDispatch } from '@/redux/store'
 import type { SpaceOptionType } from '@/types/dashboard'
 import type { ExhibitionType } from '@/types/exhibition'
@@ -23,7 +23,7 @@ export const Dashboard = () => {
 
   const isEditMode = useSelector((state: RootState) => state.dashboard.isEditMode)
   const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
-  const { name, id, handler } = useSelector((state: RootState) => state.artist)
+  const { name, id, handler } = useSelector((state: RootState) => state.user)
   const exhibitions = useSelector(selectExhibitions)
 
   const [isModalShown, setIsModalShown] = useState(false)
@@ -34,10 +34,10 @@ export const Dashboard = () => {
   useEffect(() => {
     const hardcodedId = '915a1541-f132-4fd1-a714-e34527485054'
 
-    dispatch(fetchArtist(hardcodedId)).then((action) => {
-      if (fetchArtist.fulfilled.match(action)) {
+    dispatch(fetchUser(hardcodedId)).then((action) => {
+      if (fetchUser.fulfilled.match(action)) {
         const artistId = action.payload.id
-        dispatch(fetchExhibitionsByArtist(artistId))
+        dispatch(fetchExhibitionsByUser(artistId))
       }
     })
   }, [dispatch])

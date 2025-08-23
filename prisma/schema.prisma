@@ -29,7 +29,7 @@ model Exhibition {
   id           String    @id @default(uuid())
   userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  handler      String // used in URL: /{user.handler}/{exhibition.handler}
+  handler      String
   mainTitle    String
   url          String    @unique
   thumbnailUrl String?

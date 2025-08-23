@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const users = await prisma.user.findMany({
       where: {
-        userType: 'artist',
+        userType: 'user',
       },
     })
 

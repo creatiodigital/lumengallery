@@ -1,17 +1,18 @@
 import { withAccelerate } from '@prisma/extension-accelerate'
 
-import { PrismaClient } from '../generated/prisma/index.js'
+import { PrismaClient } from '../src/generated/prisma/index.js'
 
 const prisma = new PrismaClient().$extends(withAccelerate())
 
 async function main() {
   const user = await prisma.user.create({
     data: {
-      name: 'Eduardo',
-      lastName: 'Plaza',
-      handler: 'eduardo-plaza',
+      name: 'Mathias',
+      lastName: 'Heizmann',
+      handler: 'mathias-heizmann',
       biography: 'A simple biography',
       email: 'edoplaza@gmail.com',
+      userType: 'artist',
     },
   })
 

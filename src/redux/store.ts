@@ -1,10 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit'
 
-import artistReducer from './slices/artistSlice'
 import artworksReducer from './slices/artworksSlice'
 import dashboardReducer from './slices/dashboardSlice'
 import exhibitionReducer from './slices/exhibitionSlice'
 import sceneReducer from './slices/sceneSlice'
+import userReducer from './slices/userSlice'
 import wallViewReducer from './slices/wallViewSlice'
 import wizardReducer from './slices/wizardSlice'
 
@@ -15,7 +15,7 @@ export const makeStore = () => {
       exhibition: exhibitionReducer,
       wizard: wizardReducer,
       wallView: wallViewReducer,
-      artist: artistReducer,
+      user: userReducer,
       artworks: artworksReducer,
       scene: sceneReducer,
     },
