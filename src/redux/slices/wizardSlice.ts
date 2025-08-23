@@ -1,22 +1,22 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 import { wizardFactory } from '@/factories/wizardFactory'
-import type { WizardType } from '@/types/wizard'
+import type { TWizard } from '@/types/wizard'
 
 const wizardSlice = createSlice({
   name: 'wizard',
   initialState: wizardFactory(),
   reducers: {
-    showWizard: (state: WizardType) => {
+    showWizard: (state: TWizard) => {
       state.isWizardOpen = true
     },
-    hideWizard: (state: WizardType) => {
+    hideWizard: (state: TWizard) => {
       state.isWizardOpen = false
     },
-    setArtworkUploadedTrue: (state: WizardType) => {
+    setArtworkUploadedTrue: (state: TWizard) => {
       state.isArtworkUploaded = true
     },
-    setArtworkUploadedFalse: (state: WizardType) => {
+    setArtworkUploadedFalse: (state: TWizard) => {
       state.isArtworkUploaded = false
     },
   },

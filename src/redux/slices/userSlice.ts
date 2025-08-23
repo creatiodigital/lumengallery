@@ -1,24 +1,24 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit'
 
 import { createUserState } from '@/factories/userFactory'
-import type { ExhibitionType } from '@/types/exhibition'
-import type { UserType, UserStateType } from '@/types/user'
+import type { TExhibition } from '@/types/exhibition'
+import type { TUser, TUserState } from '@/types/user'
 
-export const fetchUser = createAsyncThunk<UserType, string>('user/fetchUser', async (id) => {
+export const fetchUser = createAsyncThunk<TUser, string>('user/fetchUser', async (id) => {
   console.log('id', id)
   const res = await fetch(`/api/users/${id}`)
   if (!res.ok) throw new Error('Fetch failed')
-  return res.json() as Promise<UserType>
+  return res.json() as Promise<TUser>
 })
 
-export const fetchExhibitionsByUser = createAsyncThunk<ExhibitionType[], string>(
+export const fetchExhibitionsByUser = createAsyncThunk<TExhibition[], string>(
   'user/fetchExhibitionsByUser',
   async (userId) => {
     const res = await fetch(`/api/exhibitions?userId=${userId}`, {
       cache: 'no-store',
     })
     if (!res.ok) throw new Error('Failed to fetch exhibitions')
-    return res.json() as Promise<ExhibitionType[]>
+    return res.json() as Promise<TExhibition[]>
   },
 )
 
@@ -26,7 +26,7 @@ const userSlice = createSlice({
   name: 'user',
   initialState: createUserState(),
   reducers: {
-    addExhibition: (state: UserStateType, action: PayloadAction<ExhibitionType>) => {
+    addExhibition: (state: TUserState, action: PayloadAction<TExhibition>) => {
       const exhibition = action.payload
       state.exhibitionsById[exhibition.id] = exhibition
 
@@ -37,10 +37,10 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchUser.pending, (state: UserStateType) => {
+      .addCase(fetchUser.pending, (state: TUserState) => {
         state.status = 'loading'
       })
-      .addCase(fetchUser.fulfilled, (state: UserStateType, action: PayloadAction<UserType>) => {
+      .addCase(fetchUser.fulfilled, (state: TUserState, action: PayloadAction<TUser>) => {
         state.status = 'succeeded'
         const user = action.payload
         state.id = user.id
@@ -49,13 +49,13 @@ const userSlice = createSlice({
         state.handler = user.handler
         state.biography = user.biography
       })
-      .addCase(fetchUser.rejected, (state: UserStateType, action) => {
+      .addCase(fetchUser.rejected, (state: TUserState, action) => {
         state.status = 'failed'
         state.error = action.error.message ?? 'Unknown error'
       })
       .addCase(
         fetchExhibitionsByUser.fulfilled,
-        (state: UserStateType, action: PayloadAction<ExhibitionType[]>) => {
+        (state: TUserState, action: PayloadAction<TExhibition[]>) => {
           state.exhibitionsById = {}
           state.allExhibitionIds = []
 

@@ -16,8 +16,8 @@ export const CreatePanel = () => {
 
   const { handleCreateArtwork } = useCreateArtwork(boundingData, currentWallId)
 
-  const handleArtworkDragStart = (e, artworkType) => {
-    e.dataTransfer.setData('artworkType', artworkType)
+  const handleArtworkDragStart = (e, TArtwork) => {
+    e.dataTransfer.setData('TArtwork', TArtwork)
   }
 
   return (

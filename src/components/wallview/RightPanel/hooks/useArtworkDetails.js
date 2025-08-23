@@ -18,7 +18,7 @@ export const useArtworkDetails = (currentArtworkId) => {
       textContent: '',
       artisticTextProperties: {},
       artisticImageProperties: {},
-      artworkType: '',
+      TArtwork: '',
       width: 0,
       height: 0,
       x: 0,
@@ -35,7 +35,7 @@ export const useArtworkDetails = (currentArtworkId) => {
     artworkDimensions,
     description,
     textContent,
-    artworkType,
+    TArtwork,
     artisticTextProperties,
     artisticImageProperties,
   } = artwork
@@ -54,6 +54,6 @@ export const useArtworkDetails = (currentArtworkId) => {
     textContent,
     artisticTextProperties,
     artisticImageProperties,
-    artworkType,
+    TArtwork,
   }
 }

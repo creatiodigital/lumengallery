@@ -14,11 +14,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserType {
+  artist
+  admin
+  curator
+  general
+}
+
+
 model User {
   id          String       @id @default(uuid())
   name        String
   lastName    String
-  userType    String       @default("general")
+  userType    UserType     @default(general)
   handler     String       @unique
   biography   String
   email       String?      @unique

@@ -12,8 +12,8 @@ import { selectExhibitions } from '@/redux/selectors/artistSelectors'
 import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
 import { fetchUser, addExhibition, fetchExhibitionsByUser } from '@/redux/slices/userSlice'
 import type { RootState, AppDispatch } from '@/redux/store'
-import type { SpaceOptionType } from '@/types/dashboard'
-import type { ExhibitionType } from '@/types/exhibition'
+import type { TSpaceOption } from '@/types/dashboard'
+import type { TExhibition } from '@/types/exhibition'
 
 import { spaceOptions } from './constants'
 import styles from './Dashboard.module.scss'
@@ -47,7 +47,7 @@ export const Dashboard = () => {
   }
 
   const handleSelectSpace = (option: SelectOption) => {
-    dispatch(selectSpace(option.value as unknown as SpaceOptionType))
+    dispatch(selectSpace(option.value as unknown as TSpaceOption))
   }
 
   const handleNewExhibition = () => {
@@ -65,7 +65,7 @@ export const Dashboard = () => {
 
     if (exhibition) {
       setIsModalShown(false)
-      dispatch(addExhibition(exhibition as ExhibitionType))
+      dispatch(addExhibition(exhibition as TExhibition))
     }
   }
 
@@ -85,7 +85,7 @@ export const Dashboard = () => {
                 <p>You do not have any exhibitions yet.</p>
               ) : (
                 <ul className={styles.exhibitionList}>
-                  {exhibitions.map((ex) => (
+                  {exhibitions.map((ex: TExhibition) => (
                     <li key={ex.id} className={styles.exhibitionItem}>
                       {ex.mainTitle}{' '}
                       <Button

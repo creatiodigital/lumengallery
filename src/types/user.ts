@@ -1,6 +1,6 @@
-import type { ExhibitionType } from './exhibition'
+import type { TExhibition } from './exhibition'
 
-export type UserType = {
+export type TUser = {
   id: string
   name: string
   lastName: string
@@ -10,9 +10,9 @@ export type UserType = {
   email: string
 }
 
-export type UserStateType = UserType & {
+export type TUserState = TUser & {
   status: 'idle' | 'loading' | 'succeeded' | 'failed'
   error: string | null
-  exhibitionsById: Record<string, ExhibitionType>
+  exhibitionsById: Record<string, TExhibition>
   allExhibitionIds: string[]
 }

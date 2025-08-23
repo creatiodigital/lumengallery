@@ -1,38 +1,38 @@
-export type WallType = {
+export type TWall = {
   id: string
   name: string
 }
 
-export type CoordinatesType = {
+export type TCoordinates = {
   x: number
   y: number
   z: number
 }
 
-export type PanPositionType = {
+export type TPanPosition = {
   x: number
   y: number
 }
 
-export type WallDimensionsType = {
+export type TWallDimensions = {
   width: number | null
   height: number | null
 }
 
-export type ArtworkGroupType = {
+export type TArtworkGroup = {
   groupX?: number
   groupY?: number
   [key: string]: unknown
 }
 
-export type WallViewType = {
+export type TWallView = {
   isWallView: boolean
   currentArtworkId: string | null
   currentWallId: string | null
-  currentWallCoordinates: CoordinatesType
-  currentWallNormal: CoordinatesType
+  currentWallCoordinates: TCoordinates
+  currentWallNormal: TCoordinates
   scaleFactor: number
-  panPosition: PanPositionType
+  panPosition: TPanPosition
   isHumanVisible: boolean
   wallHeight: number | null
   wallWidth: number | null
@@ -40,7 +40,7 @@ export type WallViewType = {
   isDraggingGroup: boolean
   isShiftKeyDown: boolean
   artworkGroupIds: string[]
-  artworkGroup: ArtworkGroupType
+  artworkGroup: TArtworkGroup
   isGroupHovered: boolean
   alignedPairs: unknown[]
 }

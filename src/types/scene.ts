@@ -1,8 +1,8 @@
-import type { WallType } from './wallView'
+import type { TWall } from './wallView'
 
-export type SceneType = {
+export type TScene = {
   isArtworkPanelOpen: boolean
   isPlaceholdersShown: boolean
   currentArtworkId: string | null
-  walls: WallType[]
+  walls: TWall[]
 }

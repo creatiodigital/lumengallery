@@ -6,11 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const users = await prisma.user.findMany({
-      where: {
-        userType: 'user',
-      },
-    })
+    const users = await prisma.user.findMany()
 
     return NextResponse.json(users)
   } catch (error) {

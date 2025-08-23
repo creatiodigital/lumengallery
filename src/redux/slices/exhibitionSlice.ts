@@ -1,16 +1,16 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import { exhibitionFactory } from '@/factories/exhibitionFactory'
-import type { ArtworkPositionType } from '@/types/artwork'
-import type { ExhibitionType } from '@/types/exhibition'
+import type { TArtworkPosition } from '@/types/artwork'
+import type { TExhibition } from '@/types/exhibition'
 
 const exhibitionSlice = createSlice({
   name: 'exhibition',
   initialState: exhibitionFactory(),
   reducers: {
     createArtworkPosition: (
-      state: ExhibitionType,
-      action: PayloadAction<{ artworkId: string; artworkPosition: ArtworkPositionType }>,
+      state: TExhibition,
+      action: PayloadAction<{ artworkId: string; artworkPosition: TArtworkPosition }>,
     ) => {
       const { artworkId, artworkPosition } = action.payload
 
@@ -24,8 +24,8 @@ const exhibitionSlice = createSlice({
     },
 
     updateArtworkPosition: (
-      state: ExhibitionType,
-      action: PayloadAction<{ artworkId: string; artworkPosition: Partial<ArtworkPositionType> }>,
+      state: TExhibition,
+      action: PayloadAction<{ artworkId: string; artworkPosition: Partial<TArtworkPosition> }>,
     ) => {
       const { artworkId, artworkPosition } = action.payload
 
@@ -37,10 +37,7 @@ const exhibitionSlice = createSlice({
       }
     },
 
-    deleteArtworkPosition: (
-      state: ExhibitionType,
-      action: PayloadAction<{ artworkId: string }>,
-    ) => {
+    deleteArtworkPosition: (state: TExhibition, action: PayloadAction<{ artworkId: string }>) => {
       const { artworkId } = action.payload
       delete state.exhibitionArtworksById[artworkId]
       state.allExhibitionArtworkIds = state.allExhibitionArtworkIds.filter((id) => id !== artworkId)

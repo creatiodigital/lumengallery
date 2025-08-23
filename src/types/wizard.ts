@@ -1,4 +1,4 @@
-export type WizardType = {
+export type TWizard = {
   isWizardOpen: boolean
   isArtworkUploaded: boolean
 }

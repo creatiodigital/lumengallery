@@ -8,10 +8,10 @@ import { Passepartout } from '@/components/scene/spaces/objects/Passepartout'
 import { showArtworkPanel } from '@/redux/slices/dashboardSlice'
 import { setCurrentArtwork } from '@/redux/slices/sceneSlice'
 import type { RootState } from '@/redux/store'
-import type { ArtisticImageType } from '@/types/artwork'
+import type { TArtisticImage } from '@/types/artwork'
 
 type DisplayProps = {
-  artwork: ArtisticImageType
+  artwork: TArtisticImage
 }
 
 const Display = ({ artwork }: DisplayProps) => {

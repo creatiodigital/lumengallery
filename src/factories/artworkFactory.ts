@@ -1,4 +1,4 @@
-import type { Artwork, ArtworkKindType } from '@/types/artwork'
+import type { TArtwork, TArtworkKind } from '@/types/artwork'
 
 export const createNewArtwork = ({
   id,
@@ -7,8 +7,8 @@ export const createNewArtwork = ({
 }: {
   id: string
   wallId: string
-  artworkType: ArtworkKindType
-}): Artwork => {
+  artworkType: TArtworkKind
+}): TArtwork => {
   const base = {
     id,
     name: '',
@@ -18,6 +18,8 @@ export const createNewArtwork = ({
     rotation: 0,
     scale: 1,
   }
+
+  console.log('artworkType', artworkType)
 
   if (artworkType === 'image') {
     return {

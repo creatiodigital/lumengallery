@@ -4,9 +4,9 @@ import { Vector3, Quaternion } from 'three'
 
 import { ArtObject } from '@/components/scene/spaces/objects/ArtObject'
 import type { RootState } from '@/redux/store'
-import type { Artwork } from '@/types/artwork'
+import type { TArtwork } from '@/types/artwork'
 
-type ArtworkWithPosition = Artwork & {
+type ArtworkWithPosition = TArtwork & {
   position: Vector3
   quaternion: Quaternion
   width: number

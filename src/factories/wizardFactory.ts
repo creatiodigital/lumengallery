@@ -1,6 +1,6 @@
-import type { WizardType } from '@/types/wizard'
+import type { TWizard } from '@/types/wizard'
 
-export const wizardFactory = (): WizardType => ({
+export const wizardFactory = (): TWizard => ({
   isWizardOpen: false,
   isArtworkUploaded: false,
 })

@@ -3,10 +3,10 @@ import React, { useState, useRef, useEffect } from 'react'
 import type { ComponentRef } from 'react'
 import { DoubleSide, Vector3, Quaternion } from 'three'
 
-import type { ArtisticTextType } from '@/types/artwork'
+import type { TArtisticText } from '@/types/artwork'
 
 type StencilProps = {
-  artwork: ArtisticTextType & {
+  artwork: TArtisticText & {
     position: Vector3
     quaternion: Quaternion
     width: number

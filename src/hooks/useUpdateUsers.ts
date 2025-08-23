@@ -2,13 +2,13 @@
 
 import { useState } from 'react'
 
-import type { RequestStatusType } from '@/types/api'
-import type { UserType } from '@/types/user'
+import type { TRequestStatusType } from '@/types/api'
+import type { TUser } from '@/types/user'
 
 export function useUpdateUser() {
-  const [statusById, setStatusById] = useState<Record<string, RequestStatusType>>({})
+  const [statusById, setStatusById] = useState<Record<string, TRequestStatusType>>({})
 
-  const updateUser = async (user: UserType): Promise<boolean> => {
+  const updateUser = async (user: TUser): Promise<boolean> => {
     const { id, ...rest } = user
 
     setStatusById((prev) => ({ ...prev, [id]: 'pending' }))

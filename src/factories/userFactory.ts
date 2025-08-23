@@ -1,6 +1,6 @@
-import type { UserStateType } from '@/types/user'
+import type { TUserState } from '@/types/user'
 
-export const createUserState = (): UserStateType => ({
+export const createUserState = (): TUserState => ({
   id: '',
   name: '',
   lastName: '',

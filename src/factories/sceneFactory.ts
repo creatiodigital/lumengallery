@@ -1,6 +1,6 @@
-import type { SceneType } from '@/types/scene'
+import type { TScene } from '@/types/scene'
 
-export const sceneFactory = (): SceneType => ({
+export const sceneFactory = (): TScene => ({
   isArtworkPanelOpen: false,
   isPlaceholdersShown: true,
   currentArtworkId: null,

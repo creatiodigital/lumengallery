@@ -7,12 +7,12 @@ import { Icon } from '@/components/ui/Icon'
 import { editArtisticImage } from '@/redux/slices/artworksSlice'
 import { chooseCurrentArtworkId } from '@/redux/slices/wallViewSlice'
 import type { RootState } from '@/redux/store'
-import type { ArtisticImageType } from '@/types/artwork'
+import type { TArtisticImage } from '@/types/artwork'
 
 import styles from './ArtisticImage.module.scss'
 
 type ArtisticImageProps = {
-  artwork: ArtisticImageType
+  artwork: TArtisticImage
 }
 
 const ArtisticImage = ({ artwork }: ArtisticImageProps) => {

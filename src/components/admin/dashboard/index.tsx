@@ -4,16 +4,16 @@ import React, { useState } from 'react'
 
 import { useUsers } from '@/hooks/useUsers'
 // import { useUpdateUser } from '@/hooks/useUpdateUser'
-import type { UserType } from '@/types/user'
+import type { TUser } from '@/types/user'
 
 export const DashboardAdmin = () => {
   const { users, loading, error } = useUsers()
   // const { updateUser, statusById} = useUpdateUser()
 
   // store a full User for each editing entry
-  const [editingUsers, setEditingUsers] = useState<Record<string, UserType>>({})
+  const [editingUsers, setEditingUsers] = useState<Record<string, TUser>>({})
 
-  const handleChange = (id: string, field: keyof UserType, value: string) => {
+  const handleChange = (id: string, field: keyof TUser, value: string) => {
     setEditingUsers((prev) => {
       const current = prev[id] ?? users.find((a) => a.id === id)
       if (!current) return prev
@@ -35,7 +35,7 @@ export const DashboardAdmin = () => {
   //   await updateUser(user)
   // }
 
-  const getFieldValue = (user: UserType, field: keyof UserType): string => {
+  const getFieldValue = (user: TUser, field: keyof TUser): string => {
     return (editingUsers[user.id]?.[field] as string) ?? (user[field] as string) ?? ''
   }
 
@@ -98,15 +98,15 @@ export const DashboardAdmin = () => {
               </td>
               {/* <td>
                 {(() => {
-                  const requestStatus = statusById[user.id] ?? 'idle'
+                  const TRequestStatusType = statusById[user.id] ?? 'idle'
 
                   return (
                     <Button
                       variant="small"
                       label={
-                        requestStatus === 'loading'
+                        TRequestStatusType === 'loading'
                           ? 'Saving...'
-                          : requestStatus === 'success'
+                          : TRequestStatusType === 'success'
                             ? 'Saved ✓'
                             : 'Save'
                       }

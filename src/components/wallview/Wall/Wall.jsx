@@ -73,14 +73,14 @@ export const Wall = () => {
   const handleDropArtworkOnWall = useCallback(
     (e) => {
       e.preventDefault()
-      const artworkType = e.dataTransfer.getData('artworkType')
+      const TArtwork = e.dataTransfer.getData('TArtwork')
 
-      if (artworkType && wallRef.current && boundingData) {
+      if (TArtwork && wallRef.current && boundingData) {
         const rect = wallRef.current.getBoundingClientRect()
         const x = ((e.clientX - rect.left) / rect.width) * boundingData.width * scaling
         const y = ((e.clientY - rect.top) / rect.height) * boundingData.height * scaling
 
-        handleCreateArtworkDrag(artworkType, x, y)
+        handleCreateArtworkDrag(TArtwork, x, y)
       }
     },
     [wallRef, boundingData, scaling, handleCreateArtworkDrag], // Include dependencies

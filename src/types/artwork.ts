@@ -1,12 +1,12 @@
-export type FontFamilyType = 'roboto' | 'lora'
-export type FontWeightType = 'regular' | 'bold'
-export type TextAlignType = 'left' | 'right' | 'center'
+export type TFontFamily = 'roboto' | 'lora'
+export type TFontWeight = 'regular' | 'bold'
+export type TTextAlign = 'left' | 'right' | 'center'
 
-export type OptionType<T> = { label: string; value: T }
+export type TOption<T> = { label: string; value: T }
 
-export type ArtworkKindType = 'image' | 'text'
+export type TArtworkKind = 'image' | 'text'
 
-export type ArtworkPositionType = {
+export type TArtworkPosition = {
   posX3d: number
   posY3d: number
   posZ3d: number
@@ -20,7 +20,7 @@ export type ArtworkPositionType = {
   height3d?: number
 }
 
-export type ArtworkType = {
+export type TArtworkBase = {
   id: string
   name: string
   wallId: string
@@ -33,32 +33,32 @@ export type ArtworkType = {
   height?: number
 }
 
-export type ArtisticImageType = ArtworkType & {
+export type TArtisticImage = TArtworkBase & {
   artworkType: 'image'
   artisticImageProperties: {
     imageUrl: string
     showArtworkInformation: boolean
     showFrame: boolean
     frameColor: string
-    frameThickness: OptionType<number>
+    frameThickness: TOption<number>
     showPassepartout: boolean
     passepartoutColor: string
-    passepartoutThickness: OptionType<number>
+    passepartoutThickness: TOption<number>
   }
 }
 
-export type ArtisticTextType = ArtworkType & {
+export type TArtisticText = TArtworkBase & {
   artworkType: 'text'
   artisticTextProperties: {
     textContent: string
-    fontFamily: OptionType<'roboto' | 'lora'>
-    fontSize: OptionType<number>
-    fontWeight: OptionType<'regular' | 'bold'>
-    letterSpacing: OptionType<number>
-    lineHeight: OptionType<number>
+    fontFamily: TOption<'roboto' | 'lora'>
+    fontSize: TOption<number>
+    fontWeight: TOption<'regular' | 'bold'>
+    letterSpacing: TOption<number>
+    lineHeight: TOption<number>
     textColor: string
     textAlign: 'left' | 'right' | 'center'
   }
 }
 
-export type Artwork = ArtisticImageType | ArtisticTextType
+export type TArtwork = TArtisticImage | TArtisticText

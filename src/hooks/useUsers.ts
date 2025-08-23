@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 
-import type { UserType } from '@/types/user'
+import type { TUser } from '@/types/user'
 
 export function useUsers() {
-  const [users, setUsers] = useState<UserType[]>([])
+  const [users, setUsers] = useState<TUser[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -14,7 +14,7 @@ export function useUsers() {
       try {
         const res = await fetch('/api/users', { cache: 'no-store' })
         if (!res.ok) throw new Error('Failed to fetch users')
-        const data: UserType[] = await res.json()
+        const data: TUser[] = await res.json()
         setUsers(data)
       } catch (err) {
         if (err instanceof Error) {

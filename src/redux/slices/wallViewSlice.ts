@@ -1,42 +1,37 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import { wallViewFactory } from '@/factories/wallViewFactory'
-import type {
-  WallViewType,
-  CoordinatesType,
-  WallDimensionsType,
-  ArtworkGroupType,
-} from '@/types/wallView'
+import type { TWallView, TCoordinates, TWallDimensions, TArtworkGroup } from '@/types/wallView'
 
 const wallViewSlice = createSlice({
   name: 'wallView',
   initialState: wallViewFactory(),
   reducers: {
-    showWallView: (state: WallViewType, action: PayloadAction<string>) => {
+    showWallView: (state: TWallView, action: PayloadAction<string>) => {
       state.isWallView = true
       state.currentWallId = action.payload
     },
-    hideWallView: (state: WallViewType) => {
+    hideWallView: (state: TWallView) => {
       state.isWallView = false
       state.currentWallId = null
     },
-    showHuman: (state: WallViewType) => {
+    showHuman: (state: TWallView) => {
       state.isHumanVisible = true
     },
-    hideHuman: (state: WallViewType) => {
+    hideHuman: (state: TWallView) => {
       state.isHumanVisible = false
     },
-    chooseCurrentArtworkId: (state: WallViewType, action: PayloadAction<string | null>) => {
+    chooseCurrentArtworkId: (state: TWallView, action: PayloadAction<string | null>) => {
       state.currentArtworkId = action.payload
     },
-    increaseScaleFactor: (state: WallViewType) => {
+    increaseScaleFactor: (state: TWallView) => {
       state.scaleFactor = Math.min(state.scaleFactor + 0.02, 2)
     },
-    decreaseScaleFactor: (state: WallViewType) => {
+    decreaseScaleFactor: (state: TWallView) => {
       state.scaleFactor = Math.max(state.scaleFactor - 0.02, 0.64)
     },
     setPanPosition: (
-      state: WallViewType,
+      state: TWallView,
       action: PayloadAction<{ deltaX: number; deltaY: number }>,
     ) => {
       const { deltaX, deltaY } = action.payload
@@ -45,67 +40,67 @@ const wallViewSlice = createSlice({
         y: state.panPosition.y + deltaY * 100,
       }
     },
-    resetPan: (state: WallViewType) => {
+    resetPan: (state: TWallView) => {
       state.panPosition = { x: -50, y: -50 }
       state.scaleFactor = 1
     },
-    setWallDimensions: (state: WallViewType, action: PayloadAction<WallDimensionsType>) => {
+    setWallDimensions: (state: TWallView, action: PayloadAction<TWallDimensions>) => {
       const { width, height } = action.payload
       state.wallWidth = width
       state.wallHeight = height
     },
     setWallCoordinates: (
-      state: WallViewType,
-      action: PayloadAction<{ coordinates: CoordinatesType; normal: CoordinatesType }>,
+      state: TWallView,
+      action: PayloadAction<{ coordinates: TCoordinates; normal: TCoordinates }>,
     ) => {
       const { coordinates, normal } = action.payload
       state.currentWallCoordinates = coordinates
       state.currentWallNormal = normal
     },
-    setAlignedPairs: (state: WallViewType, action: PayloadAction<unknown[]>) => {
+    setAlignedPairs: (state: TWallView, action: PayloadAction<unknown[]>) => {
       state.alignedPairs = action.payload
     },
-    clearAlignedPairs: (state: WallViewType) => {
+    clearAlignedPairs: (state: TWallView) => {
       state.alignedPairs = []
     },
-    startDragging: (state: WallViewType) => {
+    startDragging: (state: TWallView) => {
       state.isDragging = true
     },
-    stopDragging: (state: WallViewType) => {
+    stopDragging: (state: TWallView) => {
       state.isDragging = false
     },
-    startDraggingGroup: (state: WallViewType) => {
+    startDraggingGroup: (state: TWallView) => {
       state.isDraggingGroup = true
     },
-    stopDraggingGroup: (state: WallViewType) => {
+    stopDraggingGroup: (state: TWallView) => {
       state.isDraggingGroup = false
     },
-    setShiftKeyDown: (state: WallViewType, action: PayloadAction<boolean>) => {
+    setShiftKeyDown: (state: TWallView, action: PayloadAction<boolean>) => {
       state.isShiftKeyDown = action.payload
     },
-    addArtworkToGroup: (state: WallViewType, action: PayloadAction<string>) => {
+    addArtworkToGroup: (state: TWallView, action: PayloadAction<string>) => {
       state.artworkGroupIds.push(action.payload)
     },
-    removeArtworkFromGroup: (state: WallViewType, action: PayloadAction<string>) => {
+    removeArtworkFromGroup: (state: TWallView, action: PayloadAction<string>) => {
       state.artworkGroupIds = state.artworkGroupIds.filter((id) => id !== action.payload)
     },
-    createArtworkGroup: (state: WallViewType, action: PayloadAction<ArtworkGroupType>) => {
+    createArtworkGroup: (state: TWallView, action: PayloadAction<TArtworkGroup>) => {
       state.artworkGroup = action.payload
     },
     editArtworkGroup: (
-      state: WallViewType,
+      state: TWallView,
       action: PayloadAction<{ groupX?: number; groupY?: number }>,
     ) => {
       state.artworkGroup.groupX = action.payload.groupX
       state.artworkGroup.groupY = action.payload.groupY
     },
-    removeGroup: (state: WallViewType) => {
+    removeGroup: (state: TWallView) => {
       state.artworkGroupIds = []
     },
-    setGroupHovered: (state: WallViewType) => {
+    setGroupHovered: (state: TWallView) => {
       state.isGroupHovered = true
     },
-    setGroupNotHovered: (state: WallViewType) => {
+    setGroupNotHovered: (state: TWallView) => {
       state.isGroupHovered = false
     },
   },
