@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
+import type { RefObject } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
@@ -9,25 +10,43 @@ import {
   stopDragging,
   chooseCurrentArtworkId,
 } from '@/redux/slices/wallViewSlice'
+import type { RootState } from '@/redux/store'
+import type { TDimensions } from '@/types/geometry'
 
 import { areAligned } from './helpers'
 
-export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
-  const [draggedArtworkId, setDraggedArtworkId] = useState(null)
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
+type TOffset = { x: number; y: number }
 
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
-  const allExhibitionArtworkIds = useSelector((state) => state.exhibition.allExhibitionArtworkIds)
-  const isEditingArtwork = useSelector((state) => state.dashboard.isEditingArtwork)
-  const isDragging = useSelector((state) => state.wallView.isDragging)
-  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
-  const currentWallId = useSelector((state) => state.wallView.currentWallId)
+type TAlignmentPair = {
+  from: string | null
+  to: string | undefined
+  direction: string
+}
+
+export const useMoveArtwork = (
+  wallRef: RefObject<HTMLDivElement>,
+  boundingData: TDimensions | null,
+  scaleFactor: number,
+) => {
+  const [draggedArtworkId, setDraggedArtworkId] = useState<string | null>(null)
+  const [offset, setOffset] = useState<TOffset>({ x: 0, y: 0 })
+
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
+  const allExhibitionArtworkIds = useSelector(
+    (state: RootState) => state.exhibition.allExhibitionArtworkIds,
+  )
+  const isEditingArtwork = useSelector((state: RootState) => state.dashboard.isEditingArtwork)
+  const isDragging = useSelector((state: RootState) => state.wallView.isDragging)
+  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds)
+  const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
   const dispatch = useDispatch()
 
   const isArtworkVisible = artworkGroupIds.length > 1
 
   const handleArtworkDragStart = useCallback(
-    (event, artworkId) => {
+    (event: MouseEvent, artworkId: string) => {
       if (isEditingArtwork || !wallRef.current || isArtworkVisible) return
 
       event.stopPropagation()
@@ -48,8 +67,8 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
   )
 
   const handleArtworkDragMove = useCallback(
-    (event) => {
-      if (!isDragging || !draggedArtworkId || !boundingData) return
+    (event: MouseEvent) => {
+      if (!isDragging || !draggedArtworkId || !boundingData || !wallRef.current) return
 
       event.preventDefault()
       event.stopPropagation()
@@ -73,7 +92,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       let snapX = x
       let snapY = y
 
-      const alignedPairs = []
+      const alignedPairs: TAlignmentPair[] = []
 
       sameWallArtworks.forEach((otherArtwork) => {
         const alignment = areAligned(
@@ -88,13 +107,13 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
         if (alignment.horizontal) {
           if (alignment.horizontal === 'top') {
-            snapY = otherArtwork.posY2d // Align top
+            snapY = otherArtwork.posY2d
           }
           if (alignment.horizontal === 'bottom') {
-            snapY = otherArtwork.posY2d + otherArtwork.height2d - artwork.height2d // Align bottom
+            snapY = otherArtwork.posY2d + otherArtwork.height2d - artwork.height2d
           }
           if (alignment.horizontal === 'center-horizontal') {
-            snapY = otherArtwork.posY2d + otherArtwork.height2d / 2 - artwork.height2d / 2 // Align horizontal centers
+            snapY = otherArtwork.posY2d + otherArtwork.height2d / 2 - artwork.height2d / 2
           }
 
           alignedPairs.push({
@@ -153,6 +172,8 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
       scaleFactor,
       offset,
       currentWallId,
+      allExhibitionArtworkIds,
+      exhibitionArtworksById,
       dispatch,
     ],
   )
@@ -164,7 +185,7 @@ export const useMoveArtwork = (wallRef, boundingData, scaleFactor) => {
 
   useEffect(() => {
     if (isDragging) {
-      const moveHandler = (event) => handleArtworkDragMove(event)
+      const moveHandler = (event: MouseEvent) => handleArtworkDragMove(event)
       const upHandler = () => handleArtworkDragEnd()
 
       document.addEventListener('mousemove', moveHandler)

@@ -1,7 +1,26 @@
+type TAlignedArtwork = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+// Allowed alignment directions
+type HorizontalAlignment = 'top' | 'bottom' | 'center-horizontal' | null
+type VerticalAlignment = 'left' | 'right' | 'center-vertical' | null
+
+export interface AlignmentResult {
+  horizontal: HorizontalAlignment
+  vertical: VerticalAlignment
+}
+
 const tolerance = 3
 
-export const areAligned = (artworkA, artworkB) => {
-  const directions = {
+export const areAligned = (
+  artworkA: TAlignedArtwork,
+  artworkB: TAlignedArtwork,
+): AlignmentResult => {
+  const directions: AlignmentResult = {
     horizontal: null,
     vertical: null,
   }
@@ -27,6 +46,7 @@ export const areAligned = (artworkA, artworkB) => {
   if (Math.abs(artworkA.x + artworkA.width - (artworkB.x + artworkB.width)) <= tolerance) {
     directions.vertical = 'right'
   }
+
   if (Math.abs(artworkA.x + artworkA.width / 2 - (artworkB.x + artworkB.width / 2)) <= tolerance) {
     directions.vertical = 'center-vertical'
   }

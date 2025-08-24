@@ -38,8 +38,8 @@ const ArtisticText = ({ artworkId }: ArtisticTextProps) => {
     bold: 600,
   }
 
-  const fontFamilyVariable = fontFamilyMap[fontFamily.value as 'roboto' | 'lora']
-  const fontWeightVariable = fontWeightMap[fontWeight.value as 'regular' | 'bold']
+  const fontFamilyVariable = fontFamilyMap[fontFamily]
+  const fontWeightVariable = fontWeightMap[fontWeight]
 
   const handleDoubleClick = () => {
     if (!isEditing) {

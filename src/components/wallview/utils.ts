@@ -1,33 +1,55 @@
-import { Vector3, Quaternion } from 'three'
+import { Vector3, Quaternion, Mesh, BufferGeometry, Box3 } from 'three'
 
-export const calculateAverageNormal = (placeholder) => {
-  const normalsArray = placeholder.geometry.attributes.normal.array
+export const calculateAverageNormal = (placeholder: Mesh<BufferGeometry>): Vector3 => {
+  const normalsArray = placeholder.geometry.attributes.normal.array as Float32Array
   const normal = new Vector3(0, 0, 0)
+
   for (let i = 0; i < normalsArray.length; i += 3) {
     normal.x += normalsArray[i]
     normal.y += normalsArray[i + 1]
     normal.z += normalsArray[i + 2]
   }
+
   return normal.normalize()
 }
 
-export const calculateDimensionsAndBasis = (boundingBox, normal) => {
+export interface DimensionsAndBasis {
+  width: number
+  height: number
+  u: Vector3
+  v: Vector3
+  boundingBox: Box3
+  normal: Vector3
+}
+
+export const calculateDimensionsAndBasis = (boundingBox: Box3, normal: Vector3) => {
   const u = new Vector3()
   const v = new Vector3()
+
   if (Math.abs(normal.y) < 1) {
     u.crossVectors(normal, new Vector3(0, 1, 0)).normalize()
   } else {
     u.crossVectors(normal, new Vector3(1, 0, 0)).normalize()
   }
+
   v.crossVectors(normal, u).normalize()
+
   const size = new Vector3()
   boundingBox.getSize(size)
+
   const width = Math.abs(size.dot(u))
   const height = Math.abs(size.dot(v))
+
   return { width, height, u, v }
 }
 
-export const convert2DTo3D = (posX2d, posY2d, width2d, height2d, boundingData) => {
+export const convert2DTo3D = (
+  posX2d: number,
+  posY2d: number,
+  width2d: number,
+  height2d: number,
+  boundingData: DimensionsAndBasis,
+) => {
   const { boundingBox, normal, u, v, width, height } = boundingData
 
   const xRatio = 0.5 - posX2d / (width * 100)
