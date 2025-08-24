@@ -1,1 +1,1 @@
-export type TRequestStatusType = 'idle' | 'pending' | 'fulfilled' | 'rejected'
+export type TRequestStatus = 'idle' | 'pending' | 'fulfilled' | 'rejected'

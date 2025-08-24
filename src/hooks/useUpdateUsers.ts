@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 
-import type { TRequestStatusType } from '@/types/api'
+import type { TRequestStatus } from '@/types/api'
 import type { TUser } from '@/types/user'
 
 export function useUpdateUser() {
-  const [statusById, setStatusById] = useState<Record<string, TRequestStatusType>>({})
+  const [statusById, setStatusById] = useState<Record<string, TRequestStatus>>({})
 
   const updateUser = async (user: TUser): Promise<boolean> => {
     const { id, ...rest } = user

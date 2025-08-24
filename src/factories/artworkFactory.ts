@@ -19,8 +19,6 @@ export const createNewArtwork = ({
     scale: 1,
   }
 
-  console.log('artworkType', artworkType)
-
   if (artworkType === 'image') {
     return {
       ...base,

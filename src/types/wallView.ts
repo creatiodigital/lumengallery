@@ -43,4 +43,5 @@ export type TWallView = {
   artworkGroup: TArtworkGroup
   isGroupHovered: boolean
   alignedPairs: unknown[]
+  isGridVisible: boolean
 }

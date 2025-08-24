@@ -5,7 +5,6 @@ import type { TExhibition } from '@/types/exhibition'
 import type { TUser, TUserState } from '@/types/user'
 
 export const fetchUser = createAsyncThunk<TUser, string>('user/fetchUser', async (id) => {
-  console.log('id', id)
   const res = await fetch(`/api/users/${id}`)
   if (!res.ok) throw new Error('Fetch failed')
   return res.json() as Promise<TUser>

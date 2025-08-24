@@ -1,28 +1,28 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import { createDashboardState } from '@/factories/dashboardFactory'
-import type { DashboardStateType, TSpaceOption } from '@/types/dashboard'
+import type { TDashboardState, TSpaceOption } from '@/types/dashboard'
 
 const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState: createDashboardState(),
   reducers: {
-    showEditMode: (state: DashboardStateType) => {
+    showEditMode: (state: TDashboardState) => {
       state.isEditMode = true
     },
-    hideEditMode: (state: DashboardStateType) => {
+    hideEditMode: (state: TDashboardState) => {
       state.isEditMode = false
     },
-    showArtworkPanel: (state: DashboardStateType) => {
+    showArtworkPanel: (state: TDashboardState) => {
       state.isArtworkPanelOpen = true
     },
-    hideArtworkPanel: (state: DashboardStateType) => {
+    hideArtworkPanel: (state: TDashboardState) => {
       state.isArtworkPanelOpen = false
     },
-    setEditingArtwork: (state: DashboardStateType, action: PayloadAction<boolean>) => {
+    setEditingArtwork: (state: TDashboardState, action: PayloadAction<boolean>) => {
       state.isEditingArtwork = action.payload
     },
-    selectSpace: (state: DashboardStateType, action: PayloadAction<TSpaceOption>) => {
+    selectSpace: (state: TDashboardState, action: PayloadAction<TSpaceOption>) => {
       state.selectedSpace = action.payload
     },
   },

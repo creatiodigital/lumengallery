@@ -98,15 +98,15 @@ export const DashboardAdmin = () => {
               </td>
               {/* <td>
                 {(() => {
-                  const TRequestStatusType = statusById[user.id] ?? 'idle'
+                  const TRequestStatus = statusById[user.id] ?? 'idle'
 
                   return (
                     <Button
                       variant="small"
                       label={
-                        TRequestStatusType === 'loading'
+                        TRequestStatus === 'loading'
                           ? 'Saving...'
-                          : TRequestStatusType === 'success'
+                          : TRequestStatus === 'success'
                             ? 'Saved ✓'
                             : 'Save'
                       }

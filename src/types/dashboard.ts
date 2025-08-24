@@ -3,7 +3,7 @@ export type TSpaceOption = {
   value: 'classic' | 'modern'
 }
 
-export type DashboardStateType = {
+export type TDashboardState = {
   isEditMode: boolean
   isArtworkPanelOpen: boolean
   isEditingArtwork: boolean

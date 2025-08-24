@@ -4,22 +4,21 @@ import { editArtisticText } from '@/redux/slices/artworksSlice'
 
 export const useArtisticText = (artworkId) => {
   const dispatch = useDispatch()
-
   const byId = useSelector((state) => state.artworks.byId)
   const artwork = byId[artworkId]
 
-  const textContent = artwork?.artisticTextProperties?.textContent
-  const textAlign = artwork?.artisticTextProperties?.textAlign || 'left'
-  const textColor = artwork?.artisticTextProperties?.textColor
-  const fontSize = artwork?.artisticTextProperties?.fontSize.value
-  const lineHeight = artwork?.artisticTextProperties?.lineHeight.value
-  const fontFamily = artwork?.artisticTextProperties?.fontFamily.value
-  const fontWeight = artwork?.artisticTextProperties?.fontWeight.value
-  const letterSpacing = artwork?.artisticTextProperties?.letterSpacing.value
+  const {
+    textContent,
+    textAlign,
+    textColor,
+    fontSize,
+    lineHeight,
+    fontFamily,
+    fontWeight,
+    letterSpacing,
+  } = artwork.artisticTextProperties
 
   const handleArtisticTextChange = (updatedText) => {
-    if (!artworkId) return
-
     dispatch(
       editArtisticText({
         currentArtworkId: artworkId,
@@ -33,11 +32,11 @@ export const useArtisticText = (artworkId) => {
     textContent,
     textAlign,
     textColor,
-    fontSize,
-    lineHeight,
-    fontFamily,
-    fontWeight,
-    letterSpacing,
+    fontSize: fontSize.value,
+    lineHeight: lineHeight.value,
+    fontFamily: fontFamily.value,
+    fontWeight: fontWeight.value,
+    letterSpacing: letterSpacing.value,
     handleArtisticTextChange,
   }
 }

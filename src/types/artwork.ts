@@ -7,6 +7,10 @@ export type TOption<T> = { label: string; value: T }
 export type TArtworkKind = 'image' | 'text'
 
 export type TArtworkPosition = {
+  id?: string
+  wallId?: string
+  posX2d: number
+  posY2d: number
   posX3d: number
   posY3d: number
   posZ3d: number
@@ -16,8 +20,11 @@ export type TArtworkPosition = {
   quaternionY: number
   quaternionZ: number
   quaternionW: number
+  width2d: number
+  height2d: number
   width3d?: number
   height3d?: number
+  imageURL?: string
 }
 
 export type TArtworkBase = {

@@ -18,4 +18,5 @@ export const wallViewFactory = (): TWallView => ({
   artworkGroup: {},
   isGroupHovered: false,
   alignedPairs: [],
+  isGridVisible: false,
 })
