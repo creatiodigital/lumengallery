@@ -26,7 +26,7 @@ const Group: React.FC<GroupProps> = memo(({ wallRef, boundingData, scaleFactor, 
 
   const dispatch = useDispatch()
 
-  const { handleGroupDragStart, handleGroupDragMove, handleGroupDragEnd } = useMoveGroupArtwork(
+  const { handleGroupDragStart, handleGroupDragEnd } = useMoveGroupArtwork(
     wallRef,
     boundingData,
     scaleFactor,
@@ -37,13 +37,7 @@ const Group: React.FC<GroupProps> = memo(({ wallRef, boundingData, scaleFactor, 
 
   const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()
-    handleGroupDragStart(event.nativeEvent) // use native event for addEventListener hooks
-  }
-
-  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (isDraggingGroup) {
-      handleGroupDragMove(event.nativeEvent)
-    }
+    handleGroupDragStart(event) // pass React.MouseEvent (hook expects it)
   }
 
   const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -71,7 +65,6 @@ const Group: React.FC<GroupProps> = memo(({ wallRef, boundingData, scaleFactor, 
         left: groupX,
       }}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}

@@ -57,7 +57,7 @@ export const Wall = () => {
   const currentArtwork = exhibitionArtworksById[currentArtworkId ?? '']
 
   const boundingData = useBoundingData(nodes, currentWallId)
-  const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
+  const { handleCreateArtworkDrag } = useCreateArtwork(boundingData!, currentWallId)
 
   const groupArtworkHandlers = useGroupArtwork()
 
@@ -84,7 +84,9 @@ export const Wall = () => {
         const x = ((e.clientX - rect.left) / rect.width) * boundingData.width * scaling
         const y = ((e.clientY - rect.top) / rect.height) * boundingData.height * scaling
 
-        handleCreateArtworkDrag(artworkType, x, y)
+        if (artworkType === 'image' || artworkType === 'text') {
+          handleCreateArtworkDrag(artworkType, x, y)
+        }
       }
     },
     [wallRef, boundingData, scaling, handleCreateArtworkDrag], // Include dependencies

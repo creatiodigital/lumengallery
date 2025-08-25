@@ -11,17 +11,20 @@ import {
   removeGroup,
 } from '@/redux/slices/wallViewSlice'
 import { showWizard } from '@/redux/slices/wizardSlice'
+import type { RootState } from '@/redux/store'
+import type { TArtworkKind } from '@/types/artwork'
+import type { TDimensions } from '@/types/geometry'
 
-export const useCreateArtwork = (boundingData, currentWallId) => {
+export const useCreateArtwork = (boundingData: TDimensions, currentWallId: string | null) => {
   const dispatch = useDispatch()
   const initialSize = 100
 
-  const wallWidth = useSelector((state) => state.wallView.wallWidth)
-  const wallHeight = useSelector((state) => state.wallView.wallHeight)
+  const wallWidth = useSelector((state: RootState) => state.wallView.wallWidth)
+  const wallHeight = useSelector((state: RootState) => state.wallView.wallHeight)
 
   const handleCreateArtwork = useCallback(
-    (artworkType) => {
-      if (!boundingData) return
+    (artworkType: TArtworkKind) => {
+      if (!boundingData || !wallWidth || !wallHeight) return
 
       const posX2d = (wallWidth * 100) / 2 - initialSize / 2
       const posY2d = (wallHeight * 100) / 2 - initialSize / 2
@@ -35,8 +38,7 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
         createArtwork({
           id: artworkId,
           artworkType,
-          wallId: currentWallId,
-          imageURL: null,
+          wallId: currentWallId ?? '',
         }),
       )
 
@@ -57,7 +59,7 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
           artworkId,
           artworkPosition: {
             id: artworkId,
-            wallId: currentWallId,
+            wallId: currentWallId ?? '',
             ...artworkPosition,
             ...new3DCoordinate,
           },
@@ -68,7 +70,7 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
   )
 
   const handleCreateArtworkDrag = useCallback(
-    (artworkType, posX2d, posY2d) => {
+    (artworkType: TArtworkKind, posX2d: number, posY2d: number) => {
       if (!boundingData) return
 
       const adjustedX = posX2d - initialSize / 2
@@ -83,8 +85,7 @@ export const useCreateArtwork = (boundingData, currentWallId) => {
         createArtwork({
           id: artworkId,
           artworkType,
-          wallId: currentWallId,
-          imageURL: null,
+          wallId: currentWallId ?? '',
         }),
       )
 
