@@ -1,6 +1,31 @@
+import React from 'react'
+
 import styles from './AlignedLine.module.scss'
 
-const AlignedLine = ({ start, end, direction }) => {
+type LineRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+type Direction =
+  | 'horizontal'
+  | 'vertical'
+  | 'top'
+  | 'bottom'
+  | 'left'
+  | 'right'
+  | 'center-horizontal'
+  | 'center-vertical'
+
+type AlignedLineProps = {
+  start: LineRect
+  end: LineRect
+  direction: Direction
+}
+
+const AlignedLine: React.FC<AlignedLineProps> = ({ start, end, direction }) => {
   const isHorizontal =
     direction === 'horizontal' ||
     direction === 'top' ||
@@ -41,7 +66,7 @@ const AlignedLine = ({ start, end, direction }) => {
       : Math.max(start.y + start.height, end.y + end.height),
   }
 
-  const style = {
+  const style: React.CSSProperties = {
     width: isHorizontal ? `${lineEnd.x - lineStart.x}px` : '1px',
     height: isHorizontal ? '1px' : `${lineEnd.y - lineStart.y}px`,
     top: `${lineStart.y}px`,

@@ -1,7 +1,13 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import { wallViewFactory } from '@/factories/wallViewFactory'
-import type { TWallView, TCoordinates, TWallDimensions, TArtworkGroup } from '@/types/wallView'
+import type {
+  TWallView,
+  TCoordinates,
+  TWallDimensions,
+  TArtworkGroup,
+  TAlignmentPair,
+} from '@/types/wallView'
 
 const wallViewSlice = createSlice({
   name: 'wallView',
@@ -57,7 +63,7 @@ const wallViewSlice = createSlice({
       state.currentWallCoordinates = coordinates
       state.currentWallNormal = normal
     },
-    setAlignedPairs: (state: TWallView, action: PayloadAction<unknown[]>) => {
+    setAlignedPairs: (state: TWallView, action: PayloadAction<TAlignmentPair[]>) => {
       state.alignedPairs = action.payload
     },
     clearAlignedPairs: (state: TWallView) => {

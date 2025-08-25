@@ -1,5 +1,6 @@
 import { useGLTF } from '@react-three/drei'
 import React, { useRef, useEffect, useState, useCallback } from 'react'
+import type { DragEvent } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Artwork } from '@/components/wallview/Artwork'
@@ -17,50 +18,53 @@ import { convert2DTo3D } from '@/components/wallview/utils'
 import { updateArtworkPosition } from '@/redux/slices/exhibitionSlice'
 import { setShiftKeyDown } from '@/redux/slices/wallViewSlice'
 import { setWallCoordinates, setWallDimensions } from '@/redux/slices/wallViewSlice'
+import type { RootState } from '@/redux/store'
 
 import { Measurements } from '../Measurements'
 import { AlignedLine } from './AlignedLine'
 import styles from './Wall.module.scss'
 
 export const Wall = () => {
-  const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
+  const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
-  const allIds = useSelector((state) => state.artworks.allIds)
-  const artworksById = useSelector((state) => state.artworks.byId)
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+  const allIds = useSelector((state: RootState) => state.artworks.allIds)
+  const artworksById = useSelector((state: RootState) => state.artworks.byId)
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
 
-  const isDragging = useSelector((state) => state.wallView.isDragging)
-  const currentWallId = useSelector((state) => state.wallView.currentWallId)
-  const scaleFactor = useSelector((state) => state.wallView.scaleFactor)
-  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+  const isDragging = useSelector((state: RootState) => state.wallView.isDragging)
+  const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
+  const scaleFactor = useSelector((state: RootState) => state.wallView.scaleFactor)
+  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds)
   const [wallWidth, setWallWidth] = useState('')
   const [wallHeight, setWallHeight] = useState('')
-  const [hoveredArtworkId, setHoveredArtworkId] = useState(null)
+  const [hoveredArtworkId, setHoveredArtworkId] = useState<string | null>(null)
 
-  const isArtworkUploaded = useSelector((state) => state.wizard.isArtworkUploaded)
-  const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
-  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const isArtworkUploaded = useSelector((state: RootState) => state.wizard.isArtworkUploaded)
+  const isHumanVisible = useSelector((state: RootState) => state.wallView.isHumanVisible)
+  const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
 
-  const alignedPairs = useSelector((state) => state.wallView.alignedPairs)
+  const alignedPairs = useSelector((state: RootState) => state.wallView.alignedPairs)
   const dispatch = useDispatch()
   const scaling = 100
   const humanHeight = 180
   const humanWidth = 70
 
-  const wallRef = useRef(null)
+  const wallRef = useRef<HTMLDivElement>(null!)
   const preventClick = useRef(false)
 
-  const currentArtwork = exhibitionArtworksById[currentArtworkId]
+  const currentArtwork = exhibitionArtworksById[currentArtworkId ?? '']
 
   const boundingData = useBoundingData(nodes, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData, currentWallId)
 
-  const groupArtworkHandlers = useGroupArtwork(wallRef, boundingData, scaleFactor, preventClick)
+  const groupArtworkHandlers = useGroupArtwork()
 
   const { handleRemoveArtworkGroup } = groupArtworkHandlers
 
   const { handleSelectMouseDown, handleSelectMouseMove, handleSelectMouseUp, selectionBox } =
-    useSelectBox(wallRef, boundingData, scaleFactor, preventClick)
+    useSelectBox(wallRef, scaleFactor, preventClick)
 
   const { handleResize } = useResizeArtwork(boundingData, scaleFactor, wallRef)
 
@@ -71,7 +75,7 @@ export const Wall = () => {
   }, [])
 
   const handleDropArtworkOnWall = useCallback(
-    (e) => {
+    (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault()
       const artworkType = e.dataTransfer.getData('artworkType')
 
@@ -86,7 +90,7 @@ export const Wall = () => {
     [wallRef, boundingData, scaling, handleCreateArtworkDrag], // Include dependencies
   )
 
-  const handleDragArtworkOverWall = useCallback((e) => {
+  const handleDragArtworkOverWall = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault()
   }, [])
 
@@ -129,8 +133,8 @@ export const Wall = () => {
 
       dispatch(
         updateArtworkPosition({
-          artworkId: currentArtworkId,
-          artworkPosition: { new3DCoordinate },
+          artworkId: currentArtworkId ?? '',
+          artworkPosition: { ...new3DCoordinate },
         }),
       )
     }
@@ -146,11 +150,7 @@ export const Wall = () => {
     handleDeselect()
   }, [preventClick, handleRemoveArtworkGroup, handleDeselect])
 
-  useKeyboardEvents(
-    currentArtworkId,
-    hoveredArtworkId === currentArtworkId,
-    artworkGroupIds.length > 0,
-  )
+  useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
 
   return (
     <div className={styles.wrapper}>
@@ -193,7 +193,7 @@ export const Wall = () => {
           />
         )}
         {selectionBox && <SelectionBox selectionBox={selectionBox} scaleFactor={scaleFactor} />}
-        {alignedPairs?.map((pair, index) => {
+        {alignedPairs?.map((pair, index: number) => {
           if (!isDragging) return null
 
           const from = exhibitionArtworksById[pair.from] || {}
@@ -203,16 +203,16 @@ export const Wall = () => {
             <AlignedLine
               key={index}
               start={{
-                x: parseFloat(from.posX2d),
-                y: parseFloat(from.posY2d),
-                width: parseFloat(from.width2d),
-                height: parseFloat(from.height2d),
+                x: from.posX2d,
+                y: from.posY2d,
+                width: from.width2d,
+                height: from.height2d,
               }}
               end={{
-                x: parseFloat(to.posX2d),
-                y: parseFloat(to.posY2d),
-                width: parseFloat(to.width2d),
-                height: parseFloat(to.height2d),
+                x: to.posX2d,
+                y: to.posY2d,
+                width: to.width2d,
+                height: to.height2d,
               }}
               direction={pair.direction}
             />

@@ -1,18 +1,28 @@
 import { useCallback, useMemo } from 'react'
+import type { RefObject } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { updateArtworkPosition } from '@/redux/slices/exhibitionSlice'
+import type { RootState } from '@/redux/store'
+import type { TDimensions } from '@/types/geometry'
+import type { TDirection } from '@/types/wallView'
 
-export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+export const useResizeArtwork = (
+  boundingData: TDimensions | null,
+  scaleFactor: number,
+  wallRef: RefObject<HTMLDivElement | null>,
+) => {
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
 
   const dispatch = useDispatch()
-  const isGridVisible = useSelector((state) => state.wallView.isGridVisible)
+  const isGridVisible = useSelector((state: RootState) => state.wallView.isGridVisible)
   const gridSize = 20
 
   const handleResize = useCallback(
-    (event, artworkId, direction) => {
+    (event: MouseEvent, artworkId: string, direction: TDirection) => {
       event.stopPropagation()
 
       const artwork = exhibitionArtworksById[artworkId]
@@ -32,7 +42,7 @@ export const useResizeArtwork = (boundingData, scaleFactor, wallRef) => {
       const initialX = artwork.posX2d
       const initialY = artwork.posY2d
 
-      const handleMouseMove = (moveEvent) => {
+      const handleMouseMove = (moveEvent: MouseEvent) => {
         const deltaX = (moveEvent.clientX - startX) / scaleFactor
         const deltaY = (moveEvent.clientY - startY) / scaleFactor
 

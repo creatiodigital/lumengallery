@@ -1,14 +1,28 @@
 import React, { memo } from 'react'
+import type { RefObject } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import { useMoveGroupArtwork } from '@/components/wallview/hooks/useMoveGroupArtwork'
 import { setGroupHovered, setGroupNotHovered } from '@/redux/slices/wallViewSlice'
+import type { RootState } from '@/redux/store'
+import type { TDimensions } from '@/types/geometry'
 
 import styles from './Group.module.scss'
 
-const Group = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
-  const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const isDraggingGroup = useSelector((state) => state.wallView.isDraggingGroup)
+type GroupProps = {
+  wallRef: RefObject<HTMLDivElement | null>
+  boundingData: TDimensions | null
+  scaleFactor: number
+  preventClick: RefObject<boolean>
+  groupArtworkHandlers: {
+    handleAddArtworkToGroup: (id: string) => void
+    handleRemoveArtworkGroup: () => void
+  }
+}
+
+const Group: React.FC<GroupProps> = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
+  const artworkGroup = useSelector((state: RootState) => state.wallView.artworkGroup)
+  const isDraggingGroup = useSelector((state: RootState) => state.wallView.isDraggingGroup)
 
   const dispatch = useDispatch()
 
@@ -21,21 +35,21 @@ const Group = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
 
   const { groupHeight, groupWidth, groupY, groupX } = artworkGroup
 
-  const handleMouseDown = (event) => {
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()
-    handleGroupDragStart(event)
+    handleGroupDragStart(event.nativeEvent) // use native event for addEventListener hooks
   }
 
-  const handleMouseMove = (event) => {
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     if (isDraggingGroup) {
-      handleGroupDragMove(event)
+      handleGroupDragMove(event.nativeEvent)
     }
   }
 
-  const handleMouseUp = (event) => {
+  const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
     if (isDraggingGroup) {
       event.stopPropagation()
-      handleGroupDragEnd(event)
+      handleGroupDragEnd()
     }
   }
 
@@ -51,8 +65,8 @@ const Group = memo(({ wallRef, boundingData, scaleFactor, preventClick }) => {
     <div
       className={styles.group}
       style={{
-        height: groupHeight,
-        width: groupWidth,
+        height: groupHeight as number,
+        width: groupWidth as number,
         top: groupY,
         left: groupX,
       }}

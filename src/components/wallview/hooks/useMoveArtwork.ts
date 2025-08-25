@@ -12,16 +12,11 @@ import {
 } from '@/redux/slices/wallViewSlice'
 import type { RootState } from '@/redux/store'
 import type { TDimensions } from '@/types/geometry'
+import type { TAlignmentPair } from '@/types/wallView'
 
 import { areAligned } from './helpers'
 
 type TOffset = { x: number; y: number }
-
-type TAlignmentPair = {
-  from: string | null
-  to: string | undefined
-  direction: string
-}
 
 export const useMoveArtwork = (
   wallRef: RefObject<HTMLDivElement>,
@@ -116,11 +111,13 @@ export const useMoveArtwork = (
             snapY = otherArtwork.posY2d + otherArtwork.height2d / 2 - artwork.height2d / 2
           }
 
-          alignedPairs.push({
-            from: draggedArtworkId,
-            to: otherArtwork.id,
-            direction: alignment.horizontal,
-          })
+          if (draggedArtworkId && otherArtwork?.id) {
+            alignedPairs.push({
+              from: draggedArtworkId,
+              to: otherArtwork.id,
+              direction: alignment.horizontal,
+            })
+          }
         }
 
         if (alignment.vertical) {
@@ -134,11 +131,13 @@ export const useMoveArtwork = (
             snapX = otherArtwork.posX2d + otherArtwork.width2d / 2 - artwork.width2d / 2
           }
 
-          alignedPairs.push({
-            from: draggedArtworkId,
-            to: otherArtwork.id,
-            direction: alignment.vertical,
-          })
+          if (draggedArtworkId && otherArtwork?.id) {
+            alignedPairs.push({
+              from: draggedArtworkId,
+              to: otherArtwork.id,
+              direction: alignment.vertical,
+            })
+          }
         }
       })
 

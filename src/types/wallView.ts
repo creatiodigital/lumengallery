@@ -9,6 +9,20 @@ export type TCoordinates = {
   z: number
 }
 
+export type TAlignmentPair = {
+  from: string
+  to: string
+  direction:
+    | 'horizontal'
+    | 'vertical'
+    | 'top'
+    | 'bottom'
+    | 'left'
+    | 'right'
+    | 'center-horizontal'
+    | 'center-vertical'
+}
+
 export type TPanPosition = {
   x: number
   y: number
@@ -42,6 +56,16 @@ export type TWallView = {
   artworkGroupIds: string[]
   artworkGroup: TArtworkGroup
   isGroupHovered: boolean
-  alignedPairs: unknown[]
+  alignedPairs: TAlignmentPair[]
   isGridVisible: boolean
 }
+
+export type TDirection =
+  | 'left'
+  | 'right'
+  | 'top'
+  | 'bottom'
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-right'

@@ -1,5 +1,7 @@
 import { Vector3, Quaternion, Mesh, BufferGeometry, Box3 } from 'three'
 
+import type { TDimensions } from '@/types/geometry'
+
 export const calculateAverageNormal = (placeholder: Mesh<BufferGeometry>): Vector3 => {
   const normalsArray = placeholder.geometry.attributes.normal.array as Float32Array
   const normal = new Vector3(0, 0, 0)
@@ -11,15 +13,6 @@ export const calculateAverageNormal = (placeholder: Mesh<BufferGeometry>): Vecto
   }
 
   return normal.normalize()
-}
-
-export interface DimensionsAndBasis {
-  width: number
-  height: number
-  u: Vector3
-  v: Vector3
-  boundingBox: Box3
-  normal: Vector3
 }
 
 export const calculateDimensionsAndBasis = (boundingBox: Box3, normal: Vector3) => {
@@ -48,7 +41,7 @@ export const convert2DTo3D = (
   posY2d: number,
   width2d: number,
   height2d: number,
-  boundingData: DimensionsAndBasis,
+  boundingData: TDimensions,
 ) => {
   const { boundingBox, normal, u, v, width, height } = boundingData
 

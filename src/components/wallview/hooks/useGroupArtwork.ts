@@ -2,14 +2,17 @@ import { useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { addArtworkToGroup, removeGroup, createArtworkGroup } from '@/redux/slices/wallViewSlice'
+import type { RootState } from '@/redux/store'
 
 export const useGroupArtwork = () => {
   const dispatch = useDispatch()
-  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
 
   const handleAddArtworkToGroup = useCallback(
-    (artworkId) => {
+    (artworkId: string) => {
       if (!artworkGroupIds.includes(artworkId)) {
         dispatch(addArtworkToGroup(artworkId))
       }
