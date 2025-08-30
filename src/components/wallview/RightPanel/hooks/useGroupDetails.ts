@@ -1,7 +1,9 @@
 import { useSelector } from 'react-redux'
 
+import type { RootState } from '@/redux/store'
+
 export const useGroupDetails = () => {
-  const groupProperties = useSelector((state) => state.wallView.artworkGroup)
+  const groupProperties = useSelector((state: RootState) => state.wallView.artworkGroup)
 
   const { groupX, groupY } = groupProperties
 

@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
+import type { Exhibition } from '@/generated/prisma'
 import prisma from '@/lib/prisma'
 
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = (await request.json()) as {
+      visibility: string
+      userId: string
+      handler: string
+      url: string
+      spaceId: string
+    }
+
     const { visibility, userId, handler, url, spaceId } = body
 
-    const exhibition = await prisma.exhibition.create({
+    const exhibition: Exhibition = await prisma.exhibition.create({
       data: {
         mainTitle: 'Photography 1',
         visibility,
@@ -26,7 +35,7 @@ export async function POST(request) {
   }
 }
 
-export async function GET(request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
 
@@ -35,7 +44,7 @@ export async function GET(request) {
   }
 
   try {
-    const exhibitions = await prisma.exhibition.findMany({
+    const exhibitions: Exhibition[] = await prisma.exhibition.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
     })

@@ -1,13 +1,14 @@
+import type { ChangeEvent } from 'react'
 import { useDispatch } from 'react-redux'
 
 import { editArtisticImage } from '@/redux/slices/artworksSlice'
 import { setArtworkUploadedTrue } from '@/redux/slices/wizardSlice'
 
-export const useFileUpload = (currentArtworkId) => {
+export const useFileUpload = (currentArtworkId: string) => {
   const dispatch = useDispatch()
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0]
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (file && currentArtworkId) {
       const imageUrl = URL.createObjectURL(file)
       dispatch(editArtisticImage({ currentArtworkId, property: 'imageUrl', value: imageUrl }))

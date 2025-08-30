@@ -2,27 +2,29 @@ import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { updateArtworkPosition } from '@/redux/slices/exhibitionSlice'
+import type { RootState } from '@/redux/store'
+import type { TDimensions } from '@/types/geometry'
+import type { TDistributeAlign } from '@/types/wizard'
 
-export const useDistributeGroup = (boundingData) => {
+export const useDistributeGroup = (boundingData: TDimensions | null) => {
   const dispatch = useDispatch()
-  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
-  const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds)
+  const artworkGroup = useSelector((state: RootState) => state.wallView.artworkGroup)
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
 
-  const distributeArtworksInGroup = (alignment) => {
+  const distributeArtworksInGroup = (alignment: TDistributeAlign) => {
     const { groupX, groupY, groupWidth, groupHeight } = artworkGroup
 
-    // Filter artworks in the group, maintaining the visual order
     let groupedArtworks = artworkGroupIds.map((id) => exhibitionArtworksById[id]).filter(Boolean)
 
-    // Sort artworks visually based on the alignment
     if (alignment === 'horizontal') {
       groupedArtworks = groupedArtworks.sort((a, b) => a.posX2d - b.posX2d)
     } else if (alignment === 'vertical') {
       groupedArtworks = groupedArtworks.sort((a, b) => a.posY2d - b.posY2d)
     }
 
-    // Calculate total dimensions of artworks
     const artworkTotalWidth = groupedArtworks.reduce((total, artwork) => total + artwork.width2d, 0)
     const artworkTotalHeight = groupedArtworks.reduce(
       (total, artwork) => total + artwork.height2d,
@@ -38,8 +40,8 @@ export const useDistributeGroup = (boundingData) => {
       gapsBetweenArtworks > 0 ? (groupHeight - artworkTotalHeight) / gapsBetweenArtworks : 0
 
     // Initialize positions
-    const horizontalPositions = []
-    const verticalPositions = []
+    const horizontalPositions: number[] = []
+    const verticalPositions: number[] = []
 
     if (alignment === 'horizontal') {
       let currentX = groupX // Start at the left edge of the group
@@ -79,20 +81,24 @@ export const useDistributeGroup = (boundingData) => {
           posY2d: newY,
         }
 
-        const new3DCoordinate = convert2DTo3D(
-          newX,
-          newY,
-          artwork.width2d,
-          artwork.height2d,
-          boundingData,
-        )
+        if (boundingData) {
+          const new3DCoordinate = convert2DTo3D(
+            newX,
+            newY,
+            artwork.width2d,
+            artwork.height2d,
+            boundingData,
+          )
 
-        dispatch(
-          updateArtworkPosition({
-            artworkId: artwork.id,
-            artworkPosition: { ...artworkPosition, ...new3DCoordinate },
-          }),
-        )
+          if (artwork?.id) {
+            dispatch(
+              updateArtworkPosition({
+                artworkId: artwork.id,
+                artworkPosition: { ...artworkPosition, ...new3DCoordinate },
+              }),
+            )
+          }
+        }
       }
     })
   }
