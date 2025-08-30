@@ -30,6 +30,11 @@ export type TArtworkPosition = {
 export type TArtworkBase = {
   id: string
   name: string
+  artworkTitle?: string
+  author?: string
+  artworkDimensions?: string
+  artworkYear?: string
+  description?: string
   wallId: string
   dimensions: string
   position: { x: number; y: number; z: number }

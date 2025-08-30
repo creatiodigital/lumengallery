@@ -73,7 +73,7 @@ const ArtisticImage = () => {
                       <span className={styles.label}>Title</span>
                       <Input
                         value={artworkTitle}
-                        onChange={(e) => handleEditArtwork('authorTitle', e.target.value)}
+                        onChange={(e) => handleEditArtwork('artworkTitle', e.target.value)}
                       />
                     </div>
                   </div>

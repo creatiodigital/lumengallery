@@ -13,7 +13,7 @@ const RightPanel = () => {
   const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
   const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
 
-  const { TArtwork } = useArtworkDetails(currentArtworkId)
+  const { artworkType } = useArtworkDetails(currentArtworkId)
 
   const isGroupCreated = artworkGroupIds.length > 1
 
@@ -24,8 +24,8 @@ const RightPanel = () => {
         {!isGroupCreated && isWizardOpen && (
           <>
             <ArtworkPanel />
-            {TArtwork === 'image' && <ArtisticImagePanel />}
-            {TArtwork === 'text' && <ArtisticTextPanel />}
+            {artworkType === 'image' && <ArtisticImagePanel />}
+            {artworkType === 'text' && <ArtisticTextPanel />}
           </>
         )}
       </div>

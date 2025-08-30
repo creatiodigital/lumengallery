@@ -12,8 +12,8 @@ type ButtonIconProps = {
   color?: string
   onClick: MouseEventHandler<HTMLButtonElement>
   draggable?: boolean
-  onDragStart: MouseEventHandler<HTMLButtonElement>
-  onDragEnd: MouseEventHandler<HTMLButtonElement>
+  onDragStart?: MouseEventHandler<HTMLButtonElement>
+  onDragEnd?: MouseEventHandler<HTMLButtonElement>
 }
 
 export const ButtonIcon = ({

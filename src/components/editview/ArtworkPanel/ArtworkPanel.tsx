@@ -3,22 +3,24 @@ import { useSelector, useDispatch } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
 import { hideArtworkPanel } from '@/redux/slices/dashboardSlice'
+import type { RootState } from '@/redux/store'
+import type { TArtwork } from '@/types/artwork'
 
 import styles from './ArtworkPanel.module.scss'
 
 const ArtworkPanel = () => {
   const dispatch = useDispatch()
   const panelRef = useRef(null)
-  const selectedSceneArtworkId = useSelector((state) => state.scene.currentArtworkId)
-  const byId = useSelector((state) => state.artworks.byId)
+  const selectedSceneArtworkId = useSelector((state: RootState) => state.scene.currentArtworkId)
+  const byId = useSelector((state: RootState) => state.artworks.byId)
 
-  const selectedArtwork = useMemo(
-    () => byId[selectedSceneArtworkId],
+  const selectedArtwork: TArtwork = useMemo(
+    () => byId[selectedSceneArtworkId ?? ''],
     [byId, selectedSceneArtworkId],
   )
 
   const { name, artworkTitle, author, artworkYear, description, artworkDimensions } =
-    selectedArtwork || {}
+    selectedArtwork
 
   return (
     <div ref={panelRef} className={styles.panel}>
