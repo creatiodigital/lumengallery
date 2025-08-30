@@ -4,12 +4,15 @@ import { useSelector } from 'react-redux'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
 import { Scene } from '@/components/scene'
 import { WallView } from '@/components/wallview'
+import type { RootState } from '@/redux/store'
 
 import { Menu } from './Menu'
 
 function EditView() {
-  const isWallView = useSelector((state) => state.wallView.isWallView)
-  const isArtworkPanelOpen = useSelector((state) => state.dashboard.isArtworkPanelOpen)
+  const isWallView: boolean = useSelector((state: RootState) => state.wallView.isWallView)
+  const isArtworkPanelOpen: boolean = useSelector(
+    (state: RootState) => state.dashboard.isArtworkPanelOpen,
+  )
   return (
     <>
       {!isWallView && (

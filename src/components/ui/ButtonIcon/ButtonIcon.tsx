@@ -1,5 +1,5 @@
 import c from 'classnames'
-import type { MouseEventHandler } from 'react'
+import React from 'react'
 
 import { Icon } from '@/components/ui/Icon'
 
@@ -10,10 +10,10 @@ type ButtonIconProps = {
   size?: 'small' | 'big'
   type?: 'submit' | 'button' | 'reset'
   color?: string
-  onClick: MouseEventHandler<HTMLButtonElement>
+  onClick: React.MouseEventHandler<HTMLButtonElement>
   draggable?: boolean
-  onDragStart?: MouseEventHandler<HTMLButtonElement>
-  onDragEnd?: MouseEventHandler<HTMLButtonElement>
+  onDragStart?: React.DragEventHandler<HTMLButtonElement>
+  onDragEnd?: React.DragEventHandler<HTMLButtonElement>
 }
 
 export const ButtonIcon = ({

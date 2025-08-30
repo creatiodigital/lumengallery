@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import type { RefObject } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
@@ -22,7 +22,7 @@ export const useResizeArtwork = (
   const gridSize = 20
 
   const handleResize = useCallback(
-    (event: MouseEvent, artworkId: string, direction: TDirection) => {
+    (event: React.MouseEvent, artworkId: string, direction: TDirection) => {
       event.stopPropagation()
 
       const artwork = exhibitionArtworksById[artworkId]

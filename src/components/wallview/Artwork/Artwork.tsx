@@ -11,7 +11,7 @@ import { showWizard } from '@/redux/slices/wizardSlice'
 import type { RootState } from '@/redux/store'
 import type { TArtwork } from '@/types/artwork'
 import type { TDimensions } from '@/types/geometry'
-import type { TDirection } from '@/types/wallView'
+import type { ResizeHandler } from '@/types/wallView'
 
 import styles from './Artwork.module.scss'
 
@@ -20,7 +20,7 @@ type ArtworkProps = {
   wallRef: RefObject<HTMLDivElement>
   boundingData: TDimensions | null
   scaleFactor: number
-  onHandleResize: (event: MouseEvent, artworkId: string, direction: TDirection) => void
+  onHandleResize: ResizeHandler
   setHoveredArtworkId: (id: string | null) => void
   groupArtworkHandlers: {
     handleAddArtworkToGroup: (id: string) => void
