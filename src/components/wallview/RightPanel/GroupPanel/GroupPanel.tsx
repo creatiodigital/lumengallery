@@ -5,6 +5,8 @@ import { useSelector } from 'react-redux'
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
+import type { RootState } from '@/redux/store'
+import type { TAlign, TDistributeAlign } from '@/types/wizard'
 
 import { useAlignGroup } from '../hooks/useAlignGroup'
 import { useDistributeGroup } from '../hooks/useDistributeGroup'
@@ -13,11 +15,11 @@ import { useGroupHandlers } from '../hooks/useGroupHandlers'
 import styles from '../RightPanel.module.scss'
 
 const GroupPanel = () => {
-  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds)
+  const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
+  const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
 
-  const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
-  const currentWallId = useSelector((state) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes, currentWallId)
 
   const { groupX, groupY } = useGroupDetails()
@@ -30,15 +32,15 @@ const GroupPanel = () => {
   const { alignArtworksInGroup } = useAlignGroup(boundingData)
   const { distributeArtworksInGroup } = useDistributeGroup(boundingData)
 
-  const handleAlignElements = (alignment) => {
+  const handleAlignElements = (alignment: TAlign) => {
     alignArtworksInGroup(alignment)
   }
 
-  const handleDistributeElements = (alignment) => {
+  const handleDistributeElements = (alignment: TDistributeAlign) => {
     distributeArtworksInGroup(alignment)
   }
 
-  const handleAlignGroup = (alignment) => {
+  const handleAlignGroup = (alignment: TAlign) => {
     alignGroupToWall(alignment)
   }
 

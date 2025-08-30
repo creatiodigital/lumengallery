@@ -7,11 +7,12 @@ import { Select } from '@/components/ui/Select'
 import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArtworkDetails'
 import { useArtworkTextHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkTextHandlers'
 import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
+import type { RootState } from '@/redux/store'
 
 import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } from './constants'
 
 const ArtisticText = () => {
-  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
 
   const { handleEditArtworkText } = useArtworkTextHandlers(currentArtworkId)
 

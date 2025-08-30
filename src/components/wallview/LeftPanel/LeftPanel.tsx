@@ -1,4 +1,5 @@
 import c from 'classnames'
+import React from 'react'
 import { useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
@@ -17,24 +18,25 @@ import {
   chooseCurrentArtworkId,
 } from '@/redux/slices/wallViewSlice'
 import { showWizard } from '@/redux/slices/wizardSlice'
+import type { RootState } from '@/redux/store'
 
 import styles from './LeftPanel.module.scss'
 
 export const LeftPanel = () => {
   const dispatch = useDispatch()
 
-  const artworksById = useSelector((state) => state.artworks.byId)
-  const allIds = useSelector((state) => state.artworks.allIds)
-  const currentWallId = useSelector((state) => state.wallView.currentWallId)
-  const walls = useSelector((state) => state.scene.walls)
-  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
-  const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
-  const isHumanVisible = useSelector((state) => state.wallView.isHumanVisible)
+  const artworksById = useSelector((state: RootState) => state.artworks.byId)
+  const allIds = useSelector((state: RootState) => state.artworks.allIds)
+  const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
+  const walls = useSelector((state: RootState) => state.scene.walls)
+  const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
+  const isWizardOpen = useSelector((state: RootState) => state.wizard.isWizardOpen)
+  const isHumanVisible = useSelector((state: RootState) => state.wallView.isHumanVisible)
 
-  const [isWallNameEditing, setisWallNameEditing] = useState(false)
+  const [isWallNameEditing, setIsWallNameEditing] = useState(false)
   const [newWallName, setNewWallName] = useState('')
 
-  const [isEditingArtwork, setIsEditingArtwork] = useState(null) // Track editing artwork ID
+  const [isEditingArtwork, setIsEditingArtwork] = useState<string | null>(null)
   const [newArtworkName, setNewArtworkName] = useState('')
 
   const currentWall = walls.find((wall) => wall.id === currentWallId)
@@ -77,7 +79,7 @@ export const LeftPanel = () => {
     }
   }
 
-  const handleSelectArtwork = (artworkId) => {
+  const handleSelectArtwork = (artworkId: string | null) => {
     if (currentArtworkId !== artworkId) {
       dispatch(chooseCurrentArtworkId(artworkId))
     }
@@ -89,39 +91,39 @@ export const LeftPanel = () => {
   const handleDoubleClick = () => {
     if (currentWall) {
       setNewWallName(currentWall.name)
-      setisWallNameEditing(true)
+      setIsWallNameEditing(true)
     }
   }
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewWallName(e.target.value)
   }
 
   const handleBlur = () => {
     if (currentWall && newWallName.trim() !== '') {
-      dispatch(editWallName({ wallId: currentWallId, newName: newWallName.trim() }))
+      dispatch(editWallName({ wallId: currentWallId!, newName: newWallName.trim() }))
     }
-    setisWallNameEditing(false)
+    setIsWallNameEditing(false)
   }
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleBlur()
     } else if (e.key === 'Escape') {
-      setisWallNameEditing(false)
+      setIsWallNameEditing(false)
     }
   }
 
-  const handleDoubleClickArtwork = (artworkId, currentName) => {
+  const handleDoubleClickArtwork = (artworkId: string, currentName: string) => {
     setNewArtworkName(currentName)
     setIsEditingArtwork(artworkId)
   }
 
-  const handleChangeArtworkName = (e) => {
+  const handleChangeArtworkName = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewArtworkName(e.target.value)
   }
 
-  const handleBlurArtworkName = (artworkId) => {
+  const handleBlurArtworkName = (artworkId: string) => {
     if (newArtworkName.trim() !== '') {
       dispatch(
         editArtwork({
@@ -134,7 +136,7 @@ export const LeftPanel = () => {
     setIsEditingArtwork(null)
   }
 
-  const handleKeyDownArtworkName = (e, artworkId) => {
+  const handleKeyDownArtworkName = (e: React.KeyboardEvent, artworkId: string) => {
     if (e.key === 'Enter') {
       handleBlurArtworkName(artworkId)
     } else if (e.key === 'Escape') {

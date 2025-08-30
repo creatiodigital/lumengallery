@@ -97,8 +97,8 @@ const wallViewSlice = createSlice({
       state: TWallView,
       action: PayloadAction<{ groupX?: number; groupY?: number }>,
     ) => {
-      state.artworkGroup.groupX = action.payload.groupX
-      state.artworkGroup.groupY = action.payload.groupY
+      state.artworkGroup.groupX = action.payload.groupX ?? 0
+      state.artworkGroup.groupY = action.payload.groupY ?? 0
     },
     removeGroup: (state: TWallView) => {
       state.artworkGroupIds = []

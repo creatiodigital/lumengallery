@@ -2,14 +2,19 @@ import { useDispatch, useSelector } from 'react-redux'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { updateArtworkPosition } from '@/redux/slices/exhibitionSlice'
+import type { RootState } from '@/redux/store'
+import type { TDimensions } from '@/types/geometry'
+import type { TAlign } from '@/types/wizard'
 
-export const useAlignGroup = (boundingData) => {
+export const useAlignGroup = (boundingData: TDimensions | null) => {
   const dispatch = useDispatch()
-  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
-  const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds)
+  const artworkGroup = useSelector((state: RootState) => state.wallView.artworkGroup)
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
 
-  const alignArtworksInGroup = (alignment) => {
+  const alignArtworksInGroup = (alignment: TAlign) => {
     const { groupX, groupY, groupWidth, groupHeight } = artworkGroup
 
     artworkGroupIds.forEach((artworkId) => {
@@ -54,14 +59,15 @@ export const useAlignGroup = (boundingData) => {
           height2d,
         }
 
-        const new3DCoordinate = convert2DTo3D(newX, newY, width2d, height2d, boundingData)
-
-        dispatch(
-          updateArtworkPosition({
-            artworkId,
-            artworkPosition: { ...artworkPosition, ...new3DCoordinate },
-          }),
-        )
+        if (boundingData) {
+          const new3DCoordinate = convert2DTo3D(newX, newY, width2d, height2d, boundingData)
+          dispatch(
+            updateArtworkPosition({
+              artworkId,
+              artworkPosition: { ...artworkPosition, ...new3DCoordinate },
+            }),
+          )
+        }
       }
     })
   }

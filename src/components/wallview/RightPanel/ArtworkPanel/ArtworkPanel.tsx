@@ -6,21 +6,23 @@ import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
+import type { RootState } from '@/redux/store'
+import type { TAlign } from '@/types/wizard'
 
 import { useArtworkDetails } from '../hooks/useArtworkDetails'
 import { useArtworkHandlers } from '../hooks/useArtworkHandlers'
 import styles from '../RightPanel.module.scss'
 
 const ArtworkPanel = () => {
-  const selectedSpace = useSelector((state) => state.dashboard.selectedSpace)
+  const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
-  const currentWallId = useSelector((state) => state.wallView.currentWallId)
-  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
+  const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
 
   const { width, height, x, y, name } = useArtworkDetails(currentArtworkId)
-  const wallWidth = useSelector((state) => state.wallView.wallWidth)
-  const wallHeight = useSelector((state) => state.wallView.wallHeight)
+  const wallWidth = useSelector((state: RootState) => state.wallView.wallWidth)
+  const wallHeight = useSelector((state: RootState) => state.wallView.wallHeight)
 
   const {
     handleNameChange,
@@ -31,8 +33,8 @@ const ArtworkPanel = () => {
     handleHeightChange,
   } = useArtworkHandlers(currentArtworkId, boundingData)
 
-  const handleAlign = (alignment) => {
-    handleAlignChange(alignment, wallWidth, wallHeight, boundingData)
+  const handleAlign = (alignment: TAlign) => {
+    handleAlignChange(alignment, wallWidth, wallHeight)
   }
 
   return (

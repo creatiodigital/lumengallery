@@ -2,12 +2,12 @@ import type { ChangeEventHandler } from 'react'
 
 import styles from './Textarea.module.scss'
 
-type TextareaProps = {
+type TTextarea = {
   value: string
-  onChange: ChangeEventHandler<HTMLElement>
+  onChange: ChangeEventHandler<HTMLTextAreaElement>
 }
 
-function Textarea({ value, onChange }: TextareaProps) {
+function Textarea({ value, onChange }: TTextarea) {
   return (
     <div className={styles.wrapper}>
       <textarea className={styles.textarea} value={value} onChange={onChange} />

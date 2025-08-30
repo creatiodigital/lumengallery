@@ -36,9 +36,10 @@ export type TWallDimensions = {
 }
 
 export type TArtworkGroup = {
-  groupX?: number
-  groupY?: number
-  [key: string]: unknown
+  groupX: number
+  groupY: number
+  groupWidth: number
+  groupHeight: number
 }
 
 export type TWallView = {

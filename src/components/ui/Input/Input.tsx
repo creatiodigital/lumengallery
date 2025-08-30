@@ -6,15 +6,15 @@ import type { IconName } from '@/components/ui/Icon'
 
 import styles from './Input.module.scss'
 
-type InputProps = {
+type TInput = {
   variant?: string
   value: string
   onChange: ChangeEventHandler<HTMLInputElement>
-  icon: IconName
+  icon?: IconName
   rotate?: number
   onBlur?: FocusEventHandler<HTMLInputElement>
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>
-  autoFocus: boolean
+  autoFocus?: boolean
 }
 
 const Input = ({
@@ -26,7 +26,7 @@ const Input = ({
   onBlur,
   onKeyDown,
   autoFocus = false,
-}: InputProps) => {
+}: TInput) => {
   return (
     <div className={styles.wrapper}>
       <input

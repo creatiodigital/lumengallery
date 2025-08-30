@@ -9,11 +9,12 @@ import { Textarea } from '@/components/ui/Textarea'
 import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArtworkDetails'
 import { useArtworkImageHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkImageHandlers'
 import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
+import type { RootState } from '@/redux/store'
 
 import { frameThicknessOptions, passepartoutThicknessOptions } from './constants'
 
 const ArtisticImage = () => {
-  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
+  const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
 
   const {
     artworkTitle,
