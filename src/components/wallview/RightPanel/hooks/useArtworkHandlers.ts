@@ -1,20 +1,32 @@
+import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { Box3 } from 'three'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { editArtwork } from '@/redux/slices/artworksSlice'
 import { updateArtworkPosition } from '@/redux/slices/exhibitionSlice'
+import type { RootState } from '@/redux/store'
+import type { TDimensions } from '@/types/geometry'
+import type { TAlign } from '@/types/wizard'
 
-export const useArtworkHandlers = (currentArtworkId, boundingData) => {
+type TBoundingData = TDimensions & {
+  boundingBox: Box3
+  normal: { x: number; y: number; z: number }
+}
+
+export const useArtworkHandlers = (currentArtworkId: string, boundingData: TBoundingData) => {
   const dispatch = useDispatch()
 
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
 
-  const sanitizeNumberInput = (value) => {
-    const normalizedValue = value * 100
+  const sanitizeNumberInput = (value: number | string): number => {
+    const normalizedValue = Number(value) * 100
     return normalizedValue
   }
 
-  const handleNameChange = (e) => {
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(
       editArtwork({
         currentArtworkId,
@@ -24,16 +36,14 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     )
   }
 
-  const handleAlignChange = (alignment, wallWidth, wallHeight) => {
+  const handleAlignChange = (alignment: TAlign, wallWidth: number, wallHeight: number) => {
     const currentEdited = exhibitionArtworksById[currentArtworkId]
-
     if (!currentEdited) return
 
     const artworkWidth = currentEdited.width2d
     const artworkHeight = currentEdited.height2d
     const artworkX = currentEdited.posX2d
     const artworkY = currentEdited.posY2d
-
     const factor = 100
 
     let newX = artworkX
@@ -62,11 +72,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
         break
     }
 
-    const artworkPosition = {
-      posX2d: newX,
-      posY2d: newY,
-    }
-
+    const artworkPosition = { posX2d: newX, posY2d: newY }
     const new3DCoordinate = convert2DTo3D(newX, newY, artworkWidth, artworkHeight, boundingData)
 
     dispatch(
@@ -77,9 +83,8 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     )
   }
 
-  const handleMoveXChange = (e) => {
+  const handleMoveXChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newX = sanitizeNumberInput(e.target.value)
-
     const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
@@ -87,15 +92,7 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     const artworkHeight = currentEdited.height2d
     const artworkY = currentEdited.posY2d
 
-    const new3DCoordinate = convert2DTo3D(
-      newX,
-      artworkY,
-
-      artworkWidth,
-      artworkHeight,
-
-      boundingData,
-    )
+    const new3DCoordinate = convert2DTo3D(newX, artworkY, artworkWidth, artworkHeight, boundingData)
 
     dispatch(
       updateArtworkPosition({
@@ -105,9 +102,8 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     )
   }
 
-  const handleMoveYChange = (e) => {
+  const handleMoveYChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newY = sanitizeNumberInput(e.target.value)
-
     const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
@@ -125,15 +121,13 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     )
   }
 
-  const handleWidthChange = (e) => {
+  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newWidth = sanitizeNumberInput(e.target.value)
-
     const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
-    const x = currentEdited.artworkX
+    const x = currentEdited.posX2d
     const currentWidth = currentEdited.width2d
-
     const newX = x + (currentWidth - newWidth) / 2
 
     dispatch(
@@ -144,13 +138,12 @@ export const useArtworkHandlers = (currentArtworkId, boundingData) => {
     )
   }
 
-  const handleHeightChange = (e) => {
+  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newHeight = sanitizeNumberInput(e.target.value)
-
     const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
-    const y = currentEdited.artworkY
+    const y = currentEdited.posY2d
     const currentHeight = currentEdited.height2d
     const newY = y + (currentHeight - newHeight) / 2
 

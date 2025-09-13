@@ -8,16 +8,17 @@ import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArt
 import { useArtworkTextHandlers } from '@/components/wallview/RightPanel/hooks/useArtworkTextHandlers'
 import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 import type { RootState } from '@/redux/store'
+import type { TOption } from '@/types/artwork'
 
 import { fontSizes, lineHeights, fontFamilies, fontWeights, letterSpacings } from './constants'
 
 const ArtisticText = () => {
   const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
 
-  const { handleEditArtworkText } = useArtworkTextHandlers(currentArtworkId)
+  const { handleEditArtworkText } = useArtworkTextHandlers(currentArtworkId || '')
 
   const { textColor, fontSize, lineHeight, fontWeight, letterSpacing, fontFamily } =
-    useArtworkDetails(currentArtworkId)
+    useArtworkDetails(currentArtworkId!)
 
   return (
     <div className={styles.section}>
@@ -50,29 +51,29 @@ const ArtisticText = () => {
         <div className={styles.row}>
           <div className={styles.item}>
             <span className={styles.label}>Font size</span>
-            <Select
+            <Select<number>
               options={fontSizes}
               onSelect={(value) => handleEditArtworkText('fontSize', value)}
-              selectedLabel={fontSize}
+              selectedLabel={fontSize as TOption<number>}
             />
           </div>
 
           <div className={styles.item}>
             <span className={styles.label}>Line height</span>
-            <Select
+            <Select<number>
               options={lineHeights}
               onSelect={(value) => handleEditArtworkText('lineHeight', value)}
-              selectedLabel={lineHeight}
+              selectedLabel={lineHeight as TOption<number>}
             />
           </div>
         </div>
         <div className={styles.row}>
           <div className={styles.item}>
             <span className={styles.label}>Font Weight</span>
-            <Select
+            <Select<'regular' | 'bold'>
               options={fontWeights}
               onSelect={(value) => handleEditArtworkText('fontWeight', value)}
-              selectedLabel={fontWeight}
+              selectedLabel={fontWeight as TOption<'regular' | 'bold'>}
             />
           </div>
           <div className={styles.item}>
@@ -80,17 +81,17 @@ const ArtisticText = () => {
             <Select
               options={letterSpacings}
               onSelect={(value) => handleEditArtworkText('letterSpacing', value)}
-              selectedLabel={letterSpacing}
+              selectedLabel={letterSpacing as TOption<number>}
             />
           </div>
         </div>
         <div className={styles.row}>
           <div className={styles.item}>
             <span className={styles.label}>Font Family</span>
-            <Select
+            <Select<'roboto' | 'lora'>
               options={fontFamilies}
               onSelect={(value) => handleEditArtworkText('fontFamily', value)}
-              selectedLabel={fontFamily}
+              selectedLabel={fontFamily as TOption<'roboto' | 'lora'>}
             />
           </div>
         </div>
@@ -100,7 +101,7 @@ const ArtisticText = () => {
           <div className={styles.item}>
             <span className={styles.label}>Color</span>
             <ColorPicker
-              textColor={textColor}
+              textColor={textColor!}
               onColorSelect={(value) => handleEditArtworkText('textColor', value)}
             />
           </div>

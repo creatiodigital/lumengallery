@@ -1,3 +1,5 @@
+import type { TOption } from '@/types/artwork'
+
 export const fontSizes = [
   { label: '8', value: 8 },
   { label: '9', value: 9 },
@@ -30,11 +32,11 @@ export const lineHeights = [
   { label: '1.9', value: 1.9 },
   { label: '2', value: 2 },
 ]
-export const fontWeights = [
+export const fontWeights: TOption<'regular' | 'bold'>[] = [
   { label: 'Regular', value: 'regular' },
   { label: 'Bold', value: 'bold' },
 ]
-export const fontFamilies = [
+export const fontFamilies: TOption<'roboto' | 'lora'>[] = [
   { label: 'Roboto', value: 'roboto' },
   { label: 'Lora', value: 'lora' },
 ]

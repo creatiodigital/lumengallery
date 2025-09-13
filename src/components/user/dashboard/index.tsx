@@ -6,12 +6,13 @@ import { useDispatch, useSelector } from 'react-redux'
 import { EditView } from '@/components/editview'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { Select, type SelectOption } from '@/components/ui/Select'
+import { Select } from '@/components/ui/Select'
 import { useCreateExhibition } from '@/hooks/useCreateExhibition'
 import { selectExhibitions } from '@/redux/selectors/artistSelectors'
 import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
 import { fetchUser, addExhibition, fetchExhibitionsByUser } from '@/redux/slices/userSlice'
 import type { RootState, AppDispatch } from '@/redux/store'
+import type { TOption } from '@/types/artwork'
 import type { TSpaceOption } from '@/types/dashboard'
 import type { TExhibition } from '@/types/exhibition'
 
@@ -46,7 +47,7 @@ export const Dashboard = () => {
     dispatch(showEditMode())
   }
 
-  const handleSelectSpace = (option: SelectOption) => {
+  const handleSelectSpace = (option: TOption<string>) => {
     dispatch(selectSpace(option.value as unknown as TSpaceOption))
   }
 

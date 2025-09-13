@@ -1,12 +1,14 @@
 import { useDispatch, useSelector } from 'react-redux'
 
 import { editArtwork, editArtisticImage } from '@/redux/slices/artworksSlice'
+import type { RootState } from '@/redux/store'
+import type { TArtwork } from '@/types/artwork'
 
-export const useArtworkImageHandlers = (currentArtworkId) => {
+export const useArtworkImageHandlers = (currentArtworkId: string) => {
   const dispatch = useDispatch()
-  const artworksById = useSelector((state) => state.artworks.byId)
+  const artworksById = useSelector((state: RootState) => state.artworks.byId)
 
-  const handleEditArtwork = (property, value) => {
+  const handleEditArtwork = <K extends keyof TArtwork>(property: K, value: TArtwork[K]) => {
     const currentEdited = artworksById[currentArtworkId]
     if (!currentEdited) return
 
@@ -19,7 +21,7 @@ export const useArtworkImageHandlers = (currentArtworkId) => {
     )
   }
 
-  const handleEditArtisticImage = (property, value) => {
+  const handleEditArtisticImage = <K extends keyof TArtwork>(property: K, value: TArtwork[K]) => {
     const currentEdited = artworksById[currentArtworkId]
     if (!currentEdited) return
 

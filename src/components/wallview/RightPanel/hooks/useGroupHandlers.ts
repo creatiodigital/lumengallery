@@ -1,19 +1,31 @@
+import React from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { Box3 } from 'three'
 
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { updateArtworkPosition } from '@/redux/slices/exhibitionSlice'
 import { editArtworkGroup } from '@/redux/slices/wallViewSlice'
+import type { RootState } from '@/redux/store'
+import type { TDimensions } from '@/types/geometry'
+import type { TAlign } from '@/types/wizard'
 
-export const useGroupHandlers = (artworkGroupIds, boundingData) => {
+type TBoundingData = TDimensions & {
+  boundingBox: Box3
+  normal: { x: number; y: number; z: number }
+}
+
+export const useGroupHandlers = (artworkGroupIds: string[], boundingData: TBoundingData) => {
   const dispatch = useDispatch()
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
 
-  const wallHeight = useSelector((state) => state.wallView.wallHeight)
-  const wallWidth = useSelector((state) => state.wallView.wallWidth)
-  const artworkGroup = useSelector((state) => state.wallView.artworkGroup)
+  const wallHeight = useSelector((state: RootState) => state.wallView.wallHeight)
+  const wallWidth = useSelector((state: RootState) => state.wallView.wallWidth)
+  const artworkGroup = useSelector((state: RootState) => state.wallView.artworkGroup)
 
-  const handleMoveGroupXChange = (e) => {
-    const newGroupX = e.target.value * 100
+  const handleMoveGroupXChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newGroupX = Number(e.target.value) * 100
     const deltaX = newGroupX - artworkGroup.groupX
 
     dispatch(editArtworkGroup({ groupX: newGroupX, groupY: artworkGroup.groupY }))
@@ -46,8 +58,8 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     })
   }
 
-  const handleMoveGroupYChange = (e) => {
-    const newGroupY = e.target.value * 100
+  const handleMoveGroupYChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newGroupY = Number(e.target.value) * 100
     const deltaY = newGroupY - artworkGroup.groupY
 
     dispatch(editArtworkGroup({ groupX: artworkGroup.groupX, groupY: newGroupY }))
@@ -80,7 +92,7 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
     })
   }
 
-  const alignGroupToWall = (alignment) => {
+  const alignGroupToWall = (alignment: TAlign) => {
     let newGroupX = artworkGroup.groupX
     let newGroupY = artworkGroup.groupY
 
@@ -89,19 +101,19 @@ export const useGroupHandlers = (artworkGroupIds, boundingData) => {
         newGroupY = 0
         break
       case 'verticalCenter':
-        newGroupY = (wallHeight * 100) / 2 - artworkGroup.groupHeight / 2
+        newGroupY = (wallHeight! * 100) / 2 - artworkGroup.groupHeight / 2
         break
       case 'verticalBottom':
-        newGroupY = wallHeight * 100 - artworkGroup.groupHeight
+        newGroupY = wallHeight! * 100 - artworkGroup.groupHeight
         break
       case 'horizontalLeft':
         newGroupX = 0
         break
       case 'horizontalCenter':
-        newGroupX = (wallWidth * 100) / 2 - artworkGroup.groupWidth / 2
+        newGroupX = (wallWidth! * 100) / 2 - artworkGroup.groupWidth / 2
         break
       case 'horizontalRight':
-        newGroupX = wallWidth * 100 - artworkGroup.groupWidth
+        newGroupX = wallWidth! * 100 - artworkGroup.groupWidth
         break
       default:
         console.warn('Invalid alignment type:', alignment)

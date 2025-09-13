@@ -20,7 +20,7 @@ const ArtworkPanel = () => {
   const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
   const boundingData = useBoundingData(nodes, currentWallId)
 
-  const { width, height, x, y, name } = useArtworkDetails(currentArtworkId)
+  const { width, height, x, y, name } = useArtworkDetails(currentArtworkId!)
   const wallWidth = useSelector((state: RootState) => state.wallView.wallWidth)
   const wallHeight = useSelector((state: RootState) => state.wallView.wallHeight)
 
@@ -31,10 +31,10 @@ const ArtworkPanel = () => {
     handleMoveYChange,
     handleWidthChange,
     handleHeightChange,
-  } = useArtworkHandlers(currentArtworkId, boundingData)
+  } = useArtworkHandlers(currentArtworkId!, boundingData!)
 
   const handleAlign = (alignment: TAlign) => {
-    handleAlignChange(alignment, wallWidth, wallHeight)
+    handleAlignChange(alignment, wallWidth!, wallHeight!)
   }
 
   return (

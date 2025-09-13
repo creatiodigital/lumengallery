@@ -1,8 +1,12 @@
 import { useSelector } from 'react-redux'
 
-export const useArtworkDetails = (currentArtworkId) => {
-  const artworksById = useSelector((state) => state.artworks.byId)
-  const exhibitionArtworksById = useSelector((state) => state.exhibition.exhibitionArtworksById)
+import type { RootState } from '@/redux/store'
+
+export const useArtworkDetails = (currentArtworkId: string) => {
+  const artworksById = useSelector((state: RootState) => state.artworks.byId)
+  const exhibitionArtworksById = useSelector(
+    (state: RootState) => state.exhibition.exhibitionArtworksById,
+  )
 
   const artwork = artworksById[currentArtworkId]
   const artworkPosition = exhibitionArtworksById[currentArtworkId]
@@ -66,7 +70,7 @@ export const useArtworkDetails = (currentArtworkId) => {
 
   return {
     width: Math.round(width2d),
-    height: Math.round(height3d),
+    height: Math.round(height3d!),
     x: Math.round(posX2d),
     y: Math.round(posY2d),
     name,

@@ -26,7 +26,7 @@ const GroupPanel = () => {
 
   const { handleMoveGroupXChange, handleMoveGroupYChange, alignGroupToWall } = useGroupHandlers(
     artworkGroupIds,
-    boundingData,
+    boundingData!,
   )
 
   const { alignArtworksInGroup } = useAlignGroup(boundingData)

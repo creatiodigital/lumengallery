@@ -15,7 +15,7 @@ const RightPanel = () => {
   const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
   const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds)
 
-  const { artworkType } = useArtworkDetails(currentArtworkId)
+  const { artworkType } = useArtworkDetails(currentArtworkId!)
 
   const isGroupCreated = artworkGroupIds.length > 1
 
