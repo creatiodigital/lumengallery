@@ -18,6 +18,10 @@ const ArtisticText = ({ artworkId }: ArtisticTextProps) => {
   const [isEditing, setIsEditing] = useState(false)
   const dispatch = useDispatch()
 
+  const artisticText = useArtisticText(artworkId)
+
+  if (!artisticText) return null
+
   const {
     textContent,
     textAlign,
@@ -27,7 +31,7 @@ const ArtisticText = ({ artworkId }: ArtisticTextProps) => {
     fontFamily,
     fontWeight,
     lineHeight,
-  } = useArtisticText(artworkId)
+  } = artisticText
 
   const fontFamilyMap: Record<'roboto' | 'lora', string> = {
     roboto: 'var(--font-wall1)',
@@ -68,7 +72,7 @@ const ArtisticText = ({ artworkId }: ArtisticTextProps) => {
       className={`${styles.text} ${isEditing ? styles.editing : ''}`}
       onDoubleClick={handleDoubleClick}
     >
-      {!textContent.trim() && !isEditing ? (
+      {!textContent?.trim() && !isEditing ? (
         <div className={styles.empty}>
           <Icon name="text" size={40} color={isEditing ? '#ffffff' : '#000000'} />
         </div>

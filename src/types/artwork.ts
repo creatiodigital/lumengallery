@@ -1,10 +1,9 @@
 export type TFontFamily = 'roboto' | 'lora'
 export type TFontWeight = 'regular' | 'bold'
 export type TTextAlign = 'left' | 'right' | 'center'
+export type TArtworkKind = 'image' | 'text'
 
 export type TOption<T> = { label: string; value: T }
-
-export type TArtworkKind = 'image' | 'text'
 
 export type TArtworkPosition = {
   id?: string
@@ -27,9 +26,10 @@ export type TArtworkPosition = {
   imageURL?: string
 }
 
-export type TArtworkBase = {
+export type TArtwork = {
   id: string
   name: string
+  artworkType?: TArtworkKind
   artworkTitle?: string
   author?: string
   artworkDimensions?: string
@@ -43,34 +43,21 @@ export type TArtworkBase = {
   quaternion?: { x: number; y: number; z: number; w: number }
   width?: number
   height?: number
-}
 
-export type TArtisticImage = TArtworkBase & {
-  artworkType: 'image'
-  artisticImageProperties: {
-    imageUrl: string
-    showArtworkInformation: boolean
-    showFrame: boolean
-    frameColor: string
-    frameThickness: TOption<number>
-    showPassepartout: boolean
-    passepartoutColor: string
-    passepartoutThickness: TOption<number>
-  }
+  imageUrl?: string
+  showArtworkInformation?: boolean
+  showFrame?: boolean
+  frameColor?: string
+  frameThickness?: TOption<number>
+  showPassepartout?: boolean
+  passepartoutColor?: string
+  passepartoutThickness?: TOption<number>
+  textContent?: string
+  fontFamily?: TOption<'roboto' | 'lora'>
+  fontSize?: TOption<number>
+  fontWeight?: TOption<'regular' | 'bold'>
+  letterSpacing?: TOption<number>
+  lineHeight?: TOption<number>
+  textColor?: string
+  textAlign?: 'left' | 'right' | 'center'
 }
-
-export type TArtisticText = TArtworkBase & {
-  artworkType: 'text'
-  artisticTextProperties: {
-    textContent: string
-    fontFamily: TOption<'roboto' | 'lora'>
-    fontSize: TOption<number>
-    fontWeight: TOption<'regular' | 'bold'>
-    letterSpacing: TOption<number>
-    lineHeight: TOption<number>
-    textColor: string
-    textAlign: 'left' | 'right' | 'center'
-  }
-}
-
-export type TArtwork = TArtisticImage | TArtisticText

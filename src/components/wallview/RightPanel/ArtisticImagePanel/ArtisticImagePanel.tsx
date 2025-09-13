@@ -22,10 +22,6 @@ const ArtisticImage = () => {
     author,
     artworkYear,
     artworkDimensions,
-    artisticImageProperties,
-  } = useArtworkDetails(currentArtworkId)
-
-  const {
     showFrame,
     showArtworkInformation,
     imageUrl,
@@ -34,7 +30,7 @@ const ArtisticImage = () => {
     passepartoutThickness,
     frameColor,
     frameThickness,
-  } = artisticImageProperties
+  } = useArtworkDetails(currentArtworkId)
 
   const { handleEditArtwork, handleEditArtisticImage } = useArtworkImageHandlers(currentArtworkId)
 
@@ -57,60 +53,60 @@ const ArtisticImage = () => {
           </div>
 
           {showArtworkInformation && (
-            <>
-              <div className={styles.section}>
-                <div className={styles.subsection}>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Author</span>
-                      <Input
-                        value={author}
-                        onChange={(e) => handleEditArtwork('author', e.target.value)}
-                      />
-                    </div>
+            <div className={styles.section}>
+              <div className={styles.subsection}>
+                <div className={styles.row}>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Author</span>
+                    <Input
+                      value={author}
+                      onChange={(e) => handleEditArtwork('author', e.target.value)}
+                    />
                   </div>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Title</span>
-                      <Input
-                        value={artworkTitle}
-                        onChange={(e) => handleEditArtwork('artworkTitle', e.target.value)}
-                      />
-                    </div>
+                </div>
+                <div className={styles.row}>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Title</span>
+                    <Input
+                      value={artworkTitle}
+                      onChange={(e) => handleEditArtwork('artworkTitle', e.target.value)}
+                    />
                   </div>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Year</span>
-                      <Input
-                        value={artworkYear}
-                        onChange={(e) => handleEditArtwork('artworkYear', e.target.value)}
-                      />
-                    </div>
+                </div>
+                <div className={styles.row}>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Year</span>
+                    <Input
+                      value={artworkYear}
+                      onChange={(e) => handleEditArtwork('artworkYear', e.target.value)}
+                    />
                   </div>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Description</span>
-                      <Textarea
-                        value={description}
-                        onChange={(e) => handleEditArtwork('description', e.target.value)}
-                      />
-                    </div>
+                </div>
+                <div className={styles.row}>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Description</span>
+                    <Textarea
+                      value={description}
+                      onChange={(e) => handleEditArtwork('description', e.target.value)}
+                    />
                   </div>
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Dimensions</span>
-                      <Input
-                        value={artworkDimensions}
-                        onChange={(e) => handleEditArtwork('artworkDimensions', e.target.value)}
-                      />
-                    </div>
+                </div>
+                <div className={styles.row}>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Dimensions</span>
+                    <Input
+                      value={artworkDimensions}
+                      onChange={(e) => handleEditArtwork('artworkDimensions', e.target.value)}
+                    />
                   </div>
                 </div>
               </div>
-            </>
+            </div>
           )}
+
           <div className={styles.section}>
             <h2 className={styles.title}>Features</h2>
+
             <div className={styles.subsection}>
               <div className={styles.row}>
                 <div className={styles.item}>
@@ -121,6 +117,7 @@ const ArtisticImage = () => {
                   />
                 </div>
               </div>
+
               {showFrame && (
                 <div className={styles.row}>
                   <div className={styles.item}>
@@ -141,6 +138,7 @@ const ArtisticImage = () => {
                 </div>
               )}
             </div>
+
             <div className={styles.subsection}>
               <div className={styles.row}>
                 <div className={styles.item}>
@@ -151,31 +149,26 @@ const ArtisticImage = () => {
                   />
                 </div>
               </div>
-              <div className={styles.subsection}>
-                {showPassepartout && (
-                  <div className={styles.row}>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Color</span>
-                      <ColorPicker
-                        textColor={passepartoutColor}
-                        onColorSelect={(value) =>
-                          handleEditArtisticImage('passepartoutColor', value)
-                        }
-                      />
-                    </div>
-                    <div className={styles.item}>
-                      <span className={styles.label}>Thickness</span>
-                      <Select
-                        options={passepartoutThicknessOptions}
-                        onSelect={(value) =>
-                          handleEditArtisticImage('passepartoutThickness', value)
-                        }
-                        selectedLabel={passepartoutThickness}
-                      />
-                    </div>
+
+              {showPassepartout && (
+                <div className={styles.row}>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Color</span>
+                    <ColorPicker
+                      textColor={passepartoutColor}
+                      onColorSelect={(value) => handleEditArtisticImage('passepartoutColor', value)}
+                    />
                   </div>
-                )}
-              </div>
+                  <div className={styles.item}>
+                    <span className={styles.label}>Thickness</span>
+                    <Select
+                      options={passepartoutThicknessOptions}
+                      onSelect={(value) => handleEditArtisticImage('passepartoutThickness', value)}
+                      selectedLabel={passepartoutThickness}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </>

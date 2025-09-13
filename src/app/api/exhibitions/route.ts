@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
         handler,
         url,
         spaceId,
-        status: 'DRAFT', // hardcoded for now
+        status: 'DRAFT',
       },
     })
 

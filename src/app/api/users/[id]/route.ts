@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import type { Prisma } from '@/generated/prisma'
-// import the enum as a VALUE (not type-only)
 import { UserType as UserTypeEnum } from '@/generated/prisma'
 import prisma from '@/lib/prisma'
 
@@ -47,14 +46,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Invalid userType' }, { status: 400 })
     }
 
-    // Build Prisma.UserUpdateInput without referring to Prisma.UserType
     const data: Prisma.UserUpdateInput = {}
     if (body.name !== undefined) data.name = body.name
     if (body.lastName !== undefined) data.lastName = body.lastName
     if (body.biography !== undefined) data.biography = body.biography
     if (body.handler !== undefined) data.handler = body.handler
     if (body.email !== undefined) data.email = body.email
-    if (userTypeEnum !== undefined) data.userType = { set: userTypeEnum } // ✅ operations input
+    if (userTypeEnum !== undefined) data.userType = { set: userTypeEnum }
 
     const updated = await prisma.user.update({ where: { id }, data })
     return NextResponse.json(updated)

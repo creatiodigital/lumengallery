@@ -1,7 +1,6 @@
 import type { NextFontWithVariable } from 'next/dist/compiled/@next/font'
 import { Cabin, Fraunces, Roboto, Lora } from 'next/font/google'
 
-// Each call returns NextFontWithVariable, so we can annotate explicitly
 export const cabin: NextFontWithVariable = Cabin({
   subsets: ['latin'],
   variable: '--font-sans',

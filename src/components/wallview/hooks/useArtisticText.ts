@@ -2,12 +2,12 @@ import { useDispatch, useSelector } from 'react-redux'
 
 import { editArtisticText } from '@/redux/slices/artworksSlice'
 import type { RootState } from '@/redux/store'
-import type { TArtisticText } from '@/types/artwork'
+import type { TArtwork } from '@/types/artwork'
 
 export const useArtisticText = (artworkId: string) => {
   const dispatch = useDispatch()
   const byId = useSelector((state: RootState) => state.artworks.byId)
-  const artwork = byId[artworkId] as TArtisticText | undefined
+  const artwork = byId[artworkId] as TArtwork | undefined
 
   if (!artwork) {
     throw new Error(`No artwork found for id ${artworkId}`)
@@ -22,7 +22,7 @@ export const useArtisticText = (artworkId: string) => {
     fontFamily,
     fontWeight,
     letterSpacing,
-  } = artwork.artisticTextProperties
+  } = artwork
 
   const handleArtisticTextChange = (updatedText: string) => {
     dispatch(
@@ -32,6 +32,10 @@ export const useArtisticText = (artworkId: string) => {
         value: updatedText,
       }),
     )
+  }
+
+  if (!fontSize || !lineHeight || !fontFamily || !fontWeight || !letterSpacing) {
+    return null // or fallback UI
   }
 
   return {

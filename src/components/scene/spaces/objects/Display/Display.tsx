@@ -8,14 +8,27 @@ import { Passepartout } from '@/components/scene/spaces/objects/Passepartout'
 import { showArtworkPanel } from '@/redux/slices/dashboardSlice'
 import { setCurrentArtwork } from '@/redux/slices/sceneSlice'
 import type { RootState } from '@/redux/store'
-import type { TArtisticImage } from '@/types/artwork'
+import type { TArtwork } from '@/types/artwork'
 
 type DisplayProps = {
-  artwork: TArtisticImage
+  artwork: TArtwork
 }
 
 const Display = ({ artwork }: DisplayProps) => {
-  const { position, quaternion, width, height, artisticImageProperties } = artwork
+  const {
+    position,
+    quaternion,
+    width,
+    height,
+    showArtworkInformation,
+    imageUrl,
+    showFrame,
+    frameColor,
+    frameThickness,
+    showPassepartout,
+    passepartoutColor,
+    passepartoutThickness,
+  } = artwork
 
   const pos = useMemo(
     () => new Vector3(position.x, position.y, position.z),
@@ -29,17 +42,6 @@ const Display = ({ artwork }: DisplayProps) => {
         : undefined,
     [quaternion?.x, quaternion?.y, quaternion?.z, quaternion?.w],
   )
-
-  const {
-    showArtworkInformation,
-    imageUrl,
-    showFrame,
-    frameColor,
-    frameThickness,
-    showPassepartout,
-    passepartoutColor,
-    passepartoutThickness,
-  } = artisticImageProperties
 
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
@@ -65,10 +67,10 @@ const Display = ({ artwork }: DisplayProps) => {
     roughness: 1,
   })
 
-  const frameT = showFrame ? frameThickness.value : 0
-  const passepartoutT = showPassepartout ? passepartoutThickness.value : 0
+  const frameT = (showFrame ? frameThickness?.value : 0) || 0
+  const passepartoutT = (showPassepartout ? passepartoutThickness?.value : 0) || 0
 
-  const innerWidth = planeWidth - (frameT + passepartoutT) / 50
+  const innerWidth = planeWidth - (frameT || 1 + passepartoutT) / 50
   const innerHeight = planeHeight - (frameT + passepartoutT) / 50
 
   return (
@@ -97,24 +99,26 @@ const Display = ({ artwork }: DisplayProps) => {
       )}
 
       {/* Frame */}
-      {showFrame && (
+      {showFrame && frameThickness?.value && (
         <Frame
           width={planeWidth}
           height={planeHeight}
-          thickness={frameThickness.value / 100}
+          thickness={frameThickness?.value / 100}
           material={frameMaterial}
         />
       )}
 
-      {/* Passepartout */}
-      {showPassepartout && passepartoutThickness.value > 0 && (
-        <Passepartout
-          width={planeWidth - frameThickness.value / 50}
-          height={planeHeight - frameThickness.value / 50}
-          thickness={passepartoutThickness.value / 100}
-          material={passepartoutMaterial}
-        />
-      )}
+      {showPassepartout &&
+        passepartoutThickness?.value &&
+        passepartoutThickness?.value &&
+        frameThickness?.value && (
+          <Passepartout
+            width={planeWidth - frameThickness?.value / 50}
+            height={planeHeight - frameThickness?.value / 50}
+            thickness={passepartoutThickness?.value / 100}
+            material={passepartoutMaterial}
+          />
+        )}
     </group>
   )
 }

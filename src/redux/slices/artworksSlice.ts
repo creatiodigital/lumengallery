@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import { createNewArtwork } from '@/factories/artworkFactory'
-import type { TArtwork, TArtworkKind, TArtisticImage, TArtisticText } from '@/types/artwork'
+import type { TArtwork, TArtworkKind } from '@/types/artwork'
 
 interface TArtworksState {
   byId: Record<string, TArtwork>
@@ -40,9 +40,7 @@ const artworksSlice = createSlice({
       state.allIds.push(id)
     },
 
-    editArtwork: <
-      K extends Exclude<keyof TArtwork, 'artisticImageProperties' | 'artisticTextProperties'>,
-    >(
+    editArtwork: <K extends keyof TArtwork>(
       state: TArtworksState,
       action: PayloadAction<{ currentArtworkId: string; property: K; value: TArtwork[K] }>,
     ) => {
@@ -53,36 +51,27 @@ const artworksSlice = createSlice({
       }
     },
 
-    editArtisticImage: <K extends keyof TArtisticImage['artisticImageProperties']>(
+    editArtisticImage: <K extends keyof TArtwork>(
       state: TArtworksState,
-      action: PayloadAction<{
-        currentArtworkId: string
-        property: K
-        value: TArtisticImage['artisticImageProperties'][K]
-      }>,
+      action: PayloadAction<{ currentArtworkId: string; property: K; value: TArtwork[K] }>,
     ) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.byId[currentArtworkId]
 
       if (artwork?.artworkType === 'image') {
-        const imageArtwork = artwork as TArtisticImage
-        imageArtwork.artisticImageProperties[property] = value
+        artwork[property] = value
       }
     },
 
-    editArtisticText: <K extends keyof TArtisticText['artisticTextProperties']>(
+    editArtisticText: <K extends keyof TArtwork>(
       state: TArtworksState,
-      action: PayloadAction<{
-        currentArtworkId: string
-        property: K
-        value: TArtisticText['artisticTextProperties'][K]
-      }>,
+      action: PayloadAction<{ currentArtworkId: string; property: K; value: TArtwork[K] }>,
     ) => {
       const { currentArtworkId, property, value } = action.payload
       const artwork = state.byId[currentArtworkId]
 
       if (artwork?.artworkType === 'text') {
-        artwork.artisticTextProperties[property] = value
+        artwork[property] = value
       }
     },
 

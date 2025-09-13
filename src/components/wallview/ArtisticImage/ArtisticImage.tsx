@@ -7,12 +7,12 @@ import { Icon } from '@/components/ui/Icon'
 import { editArtisticImage } from '@/redux/slices/artworksSlice'
 import { chooseCurrentArtworkId } from '@/redux/slices/wallViewSlice'
 import type { RootState } from '@/redux/store'
-import type { TArtisticImage } from '@/types/artwork'
+import type { TArtwork } from '@/types/artwork'
 
 import styles from './ArtisticImage.module.scss'
 
 type ArtisticImageProps = {
-  artwork: TArtisticImage
+  artwork: TArtwork
 }
 
 const ArtisticImage = ({ artwork }: ArtisticImageProps) => {
@@ -31,7 +31,7 @@ const ArtisticImage = ({ artwork }: ArtisticImageProps) => {
     showPassepartout,
     passepartoutColor,
     passepartoutThickness,
-  } = artwork.artisticImageProperties
+  } = artwork
 
   const handleDoubleClick = () => {
     fileInputRef.current?.click()
@@ -90,7 +90,10 @@ const ArtisticImage = ({ artwork }: ArtisticImageProps) => {
     <div
       className={`${styles.frame} ${isDragOver ? styles.dragOver : ''}`}
       style={{
-        border: showFrame && imageUrl ? `${frameThickness.value}px solid ${frameColor}` : undefined,
+        border:
+          showFrame && imageUrl && frameThickness?.value
+            ? `${frameThickness.value}px solid ${frameColor}`
+            : undefined,
       }}
       onDoubleClick={handleDoubleClick}
       onDragOver={handleDragOver}
@@ -102,7 +105,7 @@ const ArtisticImage = ({ artwork }: ArtisticImageProps) => {
         className={styles.passepartout}
         style={{
           border:
-            showPassepartout && imageUrl
+            showPassepartout && imageUrl && passepartoutThickness
               ? `${passepartoutThickness.value}px solid ${passepartoutColor}`
               : undefined,
         }}
