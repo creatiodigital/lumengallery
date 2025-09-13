@@ -7,11 +7,12 @@ import { ArtworkPanel } from './ArtworkPanel'
 import { GroupPanel } from './GroupPanel'
 import { useArtworkDetails } from './hooks/useArtworkDetails'
 import styles from './RightPanel.module.scss'
+import type { RootState } from '@/redux/store'
 
 const RightPanel = () => {
-  const isWizardOpen = useSelector((state) => state.wizard.isWizardOpen)
-  const currentArtworkId = useSelector((state) => state.wallView.currentArtworkId)
-  const artworkGroupIds = useSelector((state) => state.wallView.artworkGroupIds)
+  const isWizardOpen = useSelector((state: RootState) => state.wizard.isWizardOpen)
+  const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
+  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds)
 
   const { artworkType } = useArtworkDetails(currentArtworkId)
 
