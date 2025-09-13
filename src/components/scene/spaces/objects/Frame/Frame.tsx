@@ -1,6 +1,14 @@
 import React from 'react'
+import { Material } from 'three'
 
-const Frame = ({ width, height, thickness, material }) => {
+interface FrameProps {
+  width: number
+  height: number
+  thickness: number
+  material: Material
+}
+
+const Frame: React.FC<FrameProps> = ({ width, height, thickness, material }) => {
   return (
     <group>
       {/* Left side */}

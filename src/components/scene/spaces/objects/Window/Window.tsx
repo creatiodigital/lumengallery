@@ -1,6 +1,23 @@
 import React from 'react'
+import { Mesh, BufferGeometry, Material } from 'three'
 
-const Window = ({ i, windowRef, glassRef, nodes, windowMaterial, glassMaterial }) => {
+interface WindowProps {
+  i: number
+  windowRef: React.Ref<Mesh>
+  glassRef: React.Ref<Mesh>
+  nodes: Record<string, Mesh & { geometry: BufferGeometry }>
+  windowMaterial: Material
+  glassMaterial: Material
+}
+
+const Window: React.FC<WindowProps> = ({
+  i,
+  windowRef,
+  glassRef,
+  nodes,
+  windowMaterial,
+  glassMaterial,
+}) => {
   return (
     <>
       <mesh

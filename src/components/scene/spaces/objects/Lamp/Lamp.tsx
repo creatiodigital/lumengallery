@@ -1,6 +1,14 @@
 import React from 'react'
+import { Mesh, BufferGeometry, Material } from 'three'
 
-const Lamp = ({ i, nodes, lampMaterial, bulbMaterial }) => {
+interface LampProps {
+  i: number
+  nodes: Record<string, Mesh & { geometry: BufferGeometry }>
+  lampMaterial: Material
+  bulbMaterial: Material
+}
+
+const Lamp: React.FC<LampProps> = ({ i, nodes, lampMaterial, bulbMaterial }) => {
   return (
     <>
       <mesh

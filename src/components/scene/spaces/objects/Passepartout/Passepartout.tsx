@@ -1,6 +1,14 @@
 import React from 'react'
+import { Material } from 'three'
 
-const Passepartout = ({ width, height, thickness, material }) => {
+interface PassepartoutProps {
+  width: number
+  height: number
+  thickness: number
+  material: Material
+}
+
+const Passepartout: React.FC<PassepartoutProps> = ({ width, height, thickness, material }) => {
   return (
     <group>
       {/* Left side */}

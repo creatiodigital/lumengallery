@@ -1,7 +1,12 @@
 import React, { useMemo } from 'react'
-import { MeshStandardMaterial } from 'three'
+import { Mesh, BufferGeometry, MeshStandardMaterial } from 'three'
 
-const RectLight = ({ i, nodes }) => {
+interface RectLightProps {
+  i: number
+  nodes: Record<string, Mesh & { geometry: BufferGeometry }>
+}
+
+const RectLight: React.FC<RectLightProps> = ({ i, nodes }) => {
   const rectLightMaterial = useMemo(
     () =>
       new MeshStandardMaterial({
