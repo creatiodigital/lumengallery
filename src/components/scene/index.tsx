@@ -6,11 +6,11 @@ import { ACESFilmicToneMapping, Mesh } from 'three'
 
 import { Loader } from '@/components/ui/Loader'
 import SceneContext from '@/contexts/SceneContext'
+import type { TArtwork } from '@/types/artwork'
 
 import Controls from './controls'
 import styles from './Scene.module.scss'
 import { Space } from './Space'
-import type { TArtwork } from '@/types/artwork'
 
 export const Scene = () => {
   const wallRefs = useRef<React.RefObject<Mesh | null>[]>([])

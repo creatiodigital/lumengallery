@@ -5,8 +5,8 @@ import { useSelector } from 'react-redux'
 import type { Mesh } from 'three'
 
 import SceneContext from '@/contexts/SceneContext'
-import type { TArtwork } from '@/types/artwork'
 import type { RootState } from '@/redux/store'
+import type { TArtwork } from '@/types/artwork'
 
 import { spaceComponents, spaceRefsConfig } from './constants'
 
@@ -17,17 +17,12 @@ type SpaceProps = {
 
 export const Space: React.FC<SpaceProps> = ({ onPlaceholderClick, artworks }) => {
   const sceneContext = useContext(SceneContext)
-
   const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
 
-  // Fallback for invalid usage or uninitialized state
-  if (!sceneContext || !selectedSpace) return null
-
-  const { wallRefs, windowRefs, glassRefs } = sceneContext
-
-  const spaceKey = selectedSpace.value as keyof typeof spaceRefsConfig
+  const spaceKey = selectedSpace?.value as keyof typeof spaceRefsConfig
   const spaceConfig = spaceRefsConfig[spaceKey] || {}
 
+  // ❗Hooks must be unconditional
   const wallRefArray = useMemo(
     () => Array.from({ length: spaceConfig.walls || 0 }, () => createRef<Mesh>()),
     [spaceConfig.walls],
@@ -43,13 +38,17 @@ export const Space: React.FC<SpaceProps> = ({ onPlaceholderClick, artworks }) =>
     [spaceConfig.glass],
   )
 
-  // Assign to context (you control the .current assignment elsewhere)
+  // ❗Only return null after hooks are called
+  if (!sceneContext || !selectedSpace) return null
+
+  const { wallRefs, windowRefs, glassRefs } = sceneContext
+
+  // Assign to context (this side-effect is okay here)
   if ('walls' in spaceConfig) wallRefs.current = wallRefArray
   if ('windows' in spaceConfig) windowRefs.current = windowRefArray
   if ('glass' in spaceConfig) glassRefs.current = glassRefArray
 
   const SpaceComponent = spaceComponents[selectedSpace.value as keyof typeof spaceComponents]
-
   if (!SpaceComponent) return null
 
   return (

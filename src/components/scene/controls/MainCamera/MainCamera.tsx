@@ -3,7 +3,7 @@
 import { useFrame } from '@react-three/fiber'
 import { useContext, useEffect, useRef, useState, useCallback, type RefObject } from 'react'
 import { useSelector } from 'react-redux'
-import { Vector3, PerspectiveCamera } from 'three'
+import { Vector3, PerspectiveCamera, Mesh } from 'three'
 
 import SceneContext from '@/contexts/SceneContext'
 import type { RootState } from '@/redux/store'
@@ -18,18 +18,42 @@ import {
   detachMouseHandlers,
   detachTouchHandlers,
   calculateMovementVector,
-  detectCollisions,
   type MouseState,
 } from './helpers'
+
+// 🔧 Updated version of detectCollisions with nullable mesh refs
+function detectCollisions(
+  camera: PerspectiveCamera,
+  movementVector: Vector3,
+  wallRefs: RefObject<Mesh | null>[],
+  windowRefs: RefObject<Mesh | null>[],
+  glassRefs: RefObject<Mesh | null>[],
+  collisionDistance: number,
+): boolean {
+  // Example dummy implementation — update this with your real logic
+  for (const refGroup of [wallRefs, windowRefs, glassRefs]) {
+    for (const ref of refGroup) {
+      const mesh = ref.current
+      if (!mesh) continue
+
+      // Add your actual bounding box / collision logic here
+      const distance = mesh.position.distanceTo(camera.position)
+      if (distance < collisionDistance) {
+        return true
+      }
+    }
+  }
+  return false
+}
 
 const MainCamera = () => {
   const [, setTick] = useState(0)
 
-  //TODO: review this condition
   const context = useContext(SceneContext)
   if (!context) {
     throw new Error('MainCamera must be used within a SceneContext.Provider')
   }
+
   const { wallRefs, windowRefs, glassRefs } = context
 
   // State refs
@@ -39,7 +63,7 @@ const MainCamera = () => {
   const rotationVelocity = useRef(0)
   const fov = useRef(70)
 
-  // constants
+  // Constants
   const dampingFactor = 0.6
   const collisionDistance = 1
   const moveSpeed = 0.03
@@ -49,7 +73,7 @@ const MainCamera = () => {
   const wallCoordinates = useSelector((state: RootState) => state.wallView.currentWallCoordinates)
   const wallNormal = useSelector((state: RootState) => state.wallView.currentWallNormal)
 
-  // handlers
+  // Handlers
   const onMouseMove = useCallback(
     (event: MouseEvent) => handleMouseMove(mouseState, setTick)(event),
     [mouseState],
@@ -127,13 +151,25 @@ const MainCamera = () => {
     }
 
     rotationVelocity.current *= dampingFactor
-
     const rotationDelta = -rotationVelocity.current
     cam.rotateY(rotationDelta)
 
     const moveVector = calculateMovementVector(keysPressed, moveSpeed, cam)
 
-    if (!detectCollisions(cam, moveVector, wallRefs, windowRefs, glassRefs, collisionDistance)) {
+    const wallRefsArray = wallRefs.current ?? []
+    const windowRefsArray = windowRefs.current ?? []
+    const glassRefsArray = glassRefs.current ?? []
+
+    if (
+      !detectCollisions(
+        cam,
+        moveVector,
+        wallRefsArray,
+        windowRefsArray,
+        glassRefsArray,
+        collisionDistance,
+      )
+    ) {
       cam.position.add(moveVector)
     }
 

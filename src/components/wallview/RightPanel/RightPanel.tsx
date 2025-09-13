@@ -1,13 +1,14 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 
+import type { RootState } from '@/redux/store'
+
 import { ArtisticImagePanel } from './ArtisticImagePanel'
 import { ArtisticTextPanel } from './ArtisticTextPanel'
 import { ArtworkPanel } from './ArtworkPanel'
 import { GroupPanel } from './GroupPanel'
 import { useArtworkDetails } from './hooks/useArtworkDetails'
 import styles from './RightPanel.module.scss'
-import type { RootState } from '@/redux/store'
 
 const RightPanel = () => {
   const isWizardOpen = useSelector((state: RootState) => state.wizard.isWizardOpen)

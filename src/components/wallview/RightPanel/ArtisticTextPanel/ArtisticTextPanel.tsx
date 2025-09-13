@@ -16,9 +16,8 @@ const ArtisticText = () => {
 
   const { handleEditArtworkText } = useArtworkTextHandlers(currentArtworkId)
 
-  const { artisticTextProperties } = useArtworkDetails(currentArtworkId)
-
-  const textColor = artisticTextProperties?.textColor ?? '#000000'
+  const { textColor, fontSize, lineHeight, fontWeight, letterSpacing, fontFamily } =
+    useArtworkDetails(currentArtworkId)
 
   return (
     <div className={styles.section}>
@@ -54,7 +53,7 @@ const ArtisticText = () => {
             <Select
               options={fontSizes}
               onSelect={(value) => handleEditArtworkText('fontSize', value)}
-              selectedLabel={artisticTextProperties?.fontSize}
+              selectedLabel={fontSize}
             />
           </div>
 
@@ -63,7 +62,7 @@ const ArtisticText = () => {
             <Select
               options={lineHeights}
               onSelect={(value) => handleEditArtworkText('lineHeight', value)}
-              selectedLabel={artisticTextProperties?.lineHeight}
+              selectedLabel={lineHeight}
             />
           </div>
         </div>
@@ -73,7 +72,7 @@ const ArtisticText = () => {
             <Select
               options={fontWeights}
               onSelect={(value) => handleEditArtworkText('fontWeight', value)}
-              selectedLabel={artisticTextProperties?.fontWeight}
+              selectedLabel={fontWeight}
             />
           </div>
           <div className={styles.item}>
@@ -81,7 +80,7 @@ const ArtisticText = () => {
             <Select
               options={letterSpacings}
               onSelect={(value) => handleEditArtworkText('letterSpacing', value)}
-              selectedLabel={artisticTextProperties?.letterSpacing}
+              selectedLabel={letterSpacing}
             />
           </div>
         </div>
@@ -91,7 +90,7 @@ const ArtisticText = () => {
             <Select
               options={fontFamilies}
               onSelect={(value) => handleEditArtworkText('fontFamily', value)}
-              selectedLabel={artisticTextProperties?.fontFamily}
+              selectedLabel={fontFamily}
             />
           </div>
         </div>

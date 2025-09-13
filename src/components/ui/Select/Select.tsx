@@ -2,6 +2,7 @@ import c from 'classnames'
 import React, { useState, useRef, useEffect } from 'react'
 
 import { Icon } from '@/components/ui/Icon'
+
 import styles from './Select.module.scss'
 
 export type SelectOption<T extends string | number = string | number> = {
