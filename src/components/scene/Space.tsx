@@ -22,7 +22,6 @@ export const Space: React.FC<SpaceProps> = ({ onPlaceholderClick, artworks }) =>
   const spaceKey = selectedSpace?.value as keyof typeof spaceRefsConfig
   const spaceConfig = spaceRefsConfig[spaceKey] || {}
 
-  // ❗Hooks must be unconditional
   const wallRefArray = useMemo(
     () => Array.from({ length: spaceConfig.walls || 0 }, () => createRef<Mesh>()),
     [spaceConfig.walls],
@@ -38,12 +37,10 @@ export const Space: React.FC<SpaceProps> = ({ onPlaceholderClick, artworks }) =>
     [spaceConfig.glass],
   )
 
-  // ❗Only return null after hooks are called
   if (!sceneContext || !selectedSpace) return null
 
   const { wallRefs, windowRefs, glassRefs } = sceneContext
 
-  // Assign to context (this side-effect is okay here)
   if ('walls' in spaceConfig) wallRefs.current = wallRefArray
   if ('windows' in spaceConfig) windowRefs.current = windowRefArray
   if ('glass' in spaceConfig) glassRefs.current = glassRefArray

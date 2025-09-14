@@ -1,6 +1,8 @@
 import { useGLTF } from '@react-three/drei'
 import React, { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import { Mesh, BufferGeometry, MeshStandardMaterial, Texture } from 'three'
+import type { GLTF } from 'three-stdlib'
 
 import { ArtObjects } from '@/components/scene/spaces/objects/ArtObjects'
 import { Ceiling } from '@/components/scene/spaces/objects/Ceiling'
@@ -12,6 +14,7 @@ import { Reel } from '@/components/scene/spaces/objects/Reel'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { Window } from '@/components/scene/spaces/objects/Window'
 import { addWall } from '@/redux/slices/sceneSlice'
+import type { TArtwork } from '@/types/artwork'
 
 import { Lights } from './lights'
 import {
@@ -23,12 +26,39 @@ import {
   bulbMaterial,
 } from './materials'
 
-const ClassicSpace = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
-  const { nodes, materials } = useGLTF('/assets/spaces/classic.glb')
+// 🔹 GLTF typing (nodes + materials used by components)
+type GLTFResult = GLTF & {
+  nodes: {
+    floor: Mesh & { geometry: BufferGeometry }
+    ceiling: Mesh & { geometry: BufferGeometry }
+    [key: string]: Mesh
+  }
+  materials: {
+    floorMaterial: MeshStandardMaterial & { map?: Texture }
+    ceilingMaterial: MeshStandardMaterial & { map?: Texture }
+    wallMaterial?: MeshStandardMaterial & { map?: Texture }
+    [key: string]: MeshStandardMaterial | undefined
+  }
+}
+
+type ClassicSpaceProps = React.ComponentProps<'group'> & {
+  wallRefs: React.RefObject<Mesh | null>[]
+  windowRefs: React.RefObject<Mesh | null>[]
+  glassRefs: React.RefObject<Mesh | null>[]
+  onPlaceholderClick: (wallId: string) => void
+  artworks: TArtwork[]
+}
+
+const ClassicSpace: React.FC<ClassicSpaceProps> = ({
+  wallRefs,
+  windowRefs,
+  glassRefs,
+  ...props
+}) => {
+  const { nodes, materials } = useGLTF('/assets/spaces/classic.glb') as GLTFResult
 
   const dispatch = useDispatch()
-
-  const isPlaceholdersShown = useSelector((state) => state.scene.isPlaceholdersShown)
+  const isPlaceholdersShown = useSelector((state: any) => state.scene.isPlaceholdersShown)
 
   const wallsArray = useMemo(() => Array.from({ length: 1 }), [])
   const windowsArray = useMemo(() => Array.from({ length: 2 }), [])
@@ -41,10 +71,10 @@ const ClassicSpace = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
     placeholdersArray.forEach((_, i) => {
       const wallNode = nodes[`placeholder${i}`]
       if (wallNode) {
-        dispatch(addWall({ id: wallNode.uuid, name: `Wall ${i + 1}` }))
+        dispatch(addWall({ id: wallNode.uuid }))
       }
     })
-  }, [nodes, dispatch, wallsArray, placeholdersArray])
+  }, [nodes, dispatch, placeholdersArray])
 
   return (
     <group {...props} dispose={null}>
