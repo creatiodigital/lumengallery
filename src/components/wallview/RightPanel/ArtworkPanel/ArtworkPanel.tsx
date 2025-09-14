@@ -1,6 +1,7 @@
 import { useGLTF } from '@react-three/drei'
 import React from 'react'
 import { useSelector } from 'react-redux'
+import { Mesh } from 'three'
 
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Input } from '@/components/ui/Input'
@@ -18,7 +19,7 @@ const ArtworkPanel = () => {
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
   const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
   const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
-  const boundingData = useBoundingData(nodes, currentWallId)
+  const boundingData = useBoundingData(nodes as Record<string, Mesh>, currentWallId)
 
   const { width, height, x, y, name } = useArtworkDetails(currentArtworkId!)
   const wallWidth = useSelector((state: RootState) => state.wallView.wallWidth)

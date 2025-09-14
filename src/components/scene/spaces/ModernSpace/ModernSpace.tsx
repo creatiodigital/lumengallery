@@ -13,6 +13,7 @@ import { RectLamp } from '@/components/scene/spaces/objects/RectLamp'
 import { Reel } from '@/components/scene/spaces/objects/Reel'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { addWall } from '@/redux/slices/sceneSlice'
+import type { RootState } from '@/redux/store'
 import type { TArtwork } from '@/types/artwork'
 
 import { Lights } from './lights'
@@ -42,7 +43,7 @@ const ModernSpace: React.FC<ModernSpaceProps> = ({ wallRefs, ...props }) => {
   const { nodes, materials } = useGLTF('/assets/spaces/modern.glb') as GLTFResult
 
   const dispatch = useDispatch()
-  const isPlaceholdersShown = useSelector((state: any) => state.scene.isPlaceholdersShown)
+  const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
 
   const wallsArray = useMemo(() => Array.from({ length: 1 }), [])
   const placeholdersArray = useMemo(() => Array.from({ length: 4 }), [])

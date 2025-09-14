@@ -2,6 +2,7 @@ import { useGLTF } from '@react-three/drei'
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import type { DragEvent } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { Mesh } from 'three'
 
 import { Artwork } from '@/components/wallview/Artwork'
 import { Group } from '@/components/wallview/Group'
@@ -58,7 +59,7 @@ export const Wall = () => {
 
   const currentArtwork = exhibitionArtworksById[currentArtworkId ?? '']
 
-  const boundingData = useBoundingData(nodes, currentWallId)
+  const boundingData = useBoundingData(nodes as Record<string, Mesh>, currentWallId)
   const { handleCreateArtworkDrag } = useCreateArtwork(boundingData!, currentWallId)
 
   const groupArtworkHandlers = useGroupArtwork()

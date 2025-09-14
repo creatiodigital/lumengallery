@@ -1,6 +1,7 @@
 import { useGLTF } from '@react-three/drei'
 import React from 'react'
 import { useSelector } from 'react-redux'
+import { Mesh } from 'three'
 
 import { ButtonIcon } from '@/components/ui/ButtonIcon'
 import { Tooltip } from '@/components/ui/Tooltip'
@@ -15,7 +16,7 @@ export const CreatePanel = () => {
   const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
   const { nodes } = useGLTF(`/assets/spaces/${selectedSpace.value}.glb`)
 
-  const boundingData = useBoundingData(nodes, currentWallId)
+  const boundingData = useBoundingData(nodes as Record<string, Mesh>, currentWallId)
 
   const { handleCreateArtwork } = useCreateArtwork(boundingData!, currentWallId)
 

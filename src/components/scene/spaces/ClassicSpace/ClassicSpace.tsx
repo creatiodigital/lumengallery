@@ -14,6 +14,7 @@ import { Reel } from '@/components/scene/spaces/objects/Reel'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { Window } from '@/components/scene/spaces/objects/Window'
 import { addWall } from '@/redux/slices/sceneSlice'
+import type { RootState } from '@/redux/store'
 import type { TArtwork } from '@/types/artwork'
 
 import { Lights } from './lights'
@@ -58,7 +59,7 @@ const ClassicSpace: React.FC<ClassicSpaceProps> = ({
   const { nodes, materials } = useGLTF('/assets/spaces/classic.glb') as GLTFResult
 
   const dispatch = useDispatch()
-  const isPlaceholdersShown = useSelector((state: any) => state.scene.isPlaceholdersShown)
+  const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
 
   const wallsArray = useMemo(() => Array.from({ length: 1 }), [])
   const windowsArray = useMemo(() => Array.from({ length: 2 }), [])

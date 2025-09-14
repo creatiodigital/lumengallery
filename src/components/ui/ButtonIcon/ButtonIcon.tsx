@@ -2,18 +2,14 @@ import c from 'classnames'
 import React from 'react'
 
 import { Icon } from '@/components/ui/Icon'
+import type { IconName } from '@/components/ui/Icon'
 
 import styles from './ButtonIcon.module.scss'
 
-type ButtonIconProps = {
-  icon: any
+type ButtonIconProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'color'> & {
+  icon: IconName
   size?: 'small' | 'big'
-  type?: 'submit' | 'button' | 'reset'
   color?: string
-  onClick: React.MouseEventHandler<HTMLButtonElement>
-  draggable?: boolean
-  onDragStart?: React.DragEventHandler<HTMLButtonElement>
-  onDragEnd?: React.DragEventHandler<HTMLButtonElement>
 }
 
 export const ButtonIcon = ({
