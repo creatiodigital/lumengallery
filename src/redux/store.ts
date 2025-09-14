@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 
+import { api } from './slices/apiSlice'
 import artworksReducer from './slices/artworksSlice'
 import dashboardReducer from './slices/dashboardSlice'
 import exhibitionReducer from './slices/exhibitionSlice'
@@ -18,6 +19,7 @@ export const makeStore = () => {
       user: userReducer,
       artworks: artworksReducer,
       scene: sceneReducer,
+      [api.reducerPath]: api.reducer, // 👈 add API reducer
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -25,7 +27,7 @@ export const makeStore = () => {
           ignoredActions: ['artworks/editArtworkTextureImage'],
           ignoredPaths: ['artworks.artworks.texture'],
         },
-      }),
+      }).concat(api.middleware), // 👈 add API middleware
   })
 }
 

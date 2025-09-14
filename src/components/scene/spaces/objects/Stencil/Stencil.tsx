@@ -98,13 +98,13 @@ const Stencil = ({ artwork }: StencilProps) => {
           <Text
             ref={textRef}
             fontSize={fontSize.value * fontSizeFactor}
-            lineHeight={lineHeight?.value}
-            color={textColor}
+            lineHeight={lineHeight?.value ?? 1}
+            color={textColor ?? 'black'}
             font={fontUrl}
             anchorX={getAnchorX(textAlign, width ?? 1)}
             anchorY={getAnchorY(height ?? 1)}
-            maxWidth={width}
-            textAlign={textAlign}
+            maxWidth={width ?? 0}
+            textAlign={textAlign ?? 'left'}
             whiteSpace="normal"
             overflowWrap="break-word"
             onSync={calculateTextWidth}

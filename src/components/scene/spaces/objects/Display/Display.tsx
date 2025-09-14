@@ -43,13 +43,13 @@ const Display = ({ artwork }: DisplayProps) => {
   const planeHeight = height || 1
 
   const frameMaterial = new MeshStandardMaterial({
-    color: frameColor,
+    color: frameColor ?? '#ffffff',
     roughness: 0.3,
     metalness: 0.1,
   })
 
   const passepartoutMaterial = new MeshStandardMaterial({
-    color: passepartoutColor,
+    color: passepartoutColor ?? '#ffffff',
     roughness: 1,
   })
 

@@ -9,8 +9,9 @@ import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
 import { useCreateExhibition } from '@/hooks/useCreateExhibition'
 import { selectExhibitions } from '@/redux/selectors/userSelectors'
+import { useGetUserQuery, useGetExhibitionsByUserQuery } from '@/redux/slices/apiSlice'
 import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
-import { fetchUser, addExhibition, fetchExhibitionsByUser } from '@/redux/slices/userSlice'
+import { addExhibition, hydrateUser, hydrateExhibitions } from '@/redux/slices/userSlice'
 import type { RootState, AppDispatch } from '@/redux/store'
 import type { TOption } from '@/types/artwork'
 import type { TSpaceOption } from '@/types/dashboard'
@@ -32,16 +33,23 @@ export const Dashboard = () => {
   const [visibility, setVisibility] = useState<string>('private')
   const { createExhibition, loading, error } = useCreateExhibition()
 
-  useEffect(() => {
-    const hardcodedId = '915a1541-f132-4fd1-a714-e34527485054'
+  // 🔹 RTK Query fetching
+  const hardcodedId = '915a1541-f132-4fd1-a714-e34527485054'
+  const { data: userData } = useGetUserQuery(hardcodedId)
+  const { data: exhibitionsData } = useGetExhibitionsByUserQuery(hardcodedId)
 
-    dispatch(fetchUser(hardcodedId)).then((action) => {
-      if (fetchUser.fulfilled.match(action)) {
-        const artistId = action.payload.id
-        dispatch(fetchExhibitionsByUser(artistId))
-      }
-    })
-  }, [dispatch])
+  // 🔹 Hydrate slice when RTQ fetch succeeds
+  useEffect(() => {
+    if (userData) {
+      dispatch(hydrateUser(userData))
+    }
+  }, [userData, dispatch])
+
+  useEffect(() => {
+    if (exhibitionsData) {
+      dispatch(hydrateExhibitions(exhibitionsData))
+    }
+  }, [exhibitionsData, dispatch])
 
   const handleEditGallery = () => {
     dispatch(showEditMode())
