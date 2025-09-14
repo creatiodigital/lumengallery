@@ -14,11 +14,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserType {
+  artist
+  admin
+  curator
+  general
+}
+
+
 model User {
   id          String       @id @default(uuid())
   name        String
   lastName    String
-  userType    String       @default("general")
+  userType    UserType     @default(general)
   handler     String       @unique
   biography   String
   email       String?      @unique
@@ -29,7 +37,7 @@ model Exhibition {
   id           String    @id @default(uuid())
   userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  handler      String // used in URL: /{user.handler}/{exhibition.handler}
+  handler      String
   mainTitle    String
   url          String    @unique
   thumbnailUrl String?

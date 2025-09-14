@@ -1,0 +1,36 @@
+'use client'
+
+import React from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+
+import { ButtonIcon } from '@/components/ui/ButtonIcon'
+import { hideEditMode } from '@/redux/slices/dashboardSlice'
+import { hidePlaceholders, showPlaceholders } from '@/redux/slices/sceneSlice'
+import type { RootState } from '@/redux/store'
+
+import styles from './Menu.module.scss'
+
+export const Menu = () => {
+  const dispatch = useDispatch()
+  const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
+
+  const togglePlaceholders = () => {
+    if (isPlaceholdersShown) {
+      dispatch(hidePlaceholders())
+    } else {
+      dispatch(showPlaceholders())
+    }
+  }
+
+  return (
+    <div className={styles.menu}>
+      <ButtonIcon icon="close" onClick={() => dispatch(hideEditMode())} />
+      <ButtonIcon
+        icon={isPlaceholdersShown ? 'preview' : 'placeholder'}
+        onClick={() => togglePlaceholders()}
+      />
+    </div>
+  )
+}
+
+export default Menu
