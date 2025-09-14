@@ -12,32 +12,26 @@ export type SelectOption<T> = {
 
 export type SelectProps<T extends string | number = string | number> = {
   options: SelectOption<T>[]
-  selectedLabel: SelectOption<T> | undefined
-  onSelect: (value: SelectOption<T>) => void
+  value: T | undefined
+  onChange: (value: T) => void
   size?: 'small' | 'medium'
 }
 
 const Select = <T extends string | number = string | number>({
   options,
-  selectedLabel,
-  onSelect,
+  value,
+  onChange,
   size = 'small',
 }: SelectProps<T>) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [currentLabel, setCurrentLabel] = useState<SelectOption<T>>(
-    selectedLabel ?? { label: '', value: '' as T },
-  )
-
   const selectRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    setCurrentLabel(selectedLabel ?? { label: '', value: '' as T })
-  }, [selectedLabel])
+  const currentOption =
+    options.find((opt) => opt.value === value) ?? ({ label: '', value: '' as T } as SelectOption<T>)
 
   const handleSelect = (option: SelectOption<T>) => {
-    setCurrentLabel(option)
     setIsOpen(false)
-    onSelect(option)
+    onChange(option.value)
   }
 
   useEffect(() => {
@@ -54,7 +48,7 @@ const Select = <T extends string | number = string | number>({
   return (
     <div className={c(styles.select, size && styles[size])} ref={selectRef}>
       <div className={styles.input} onClick={() => setIsOpen(!isOpen)}>
-        {currentLabel?.label ?? ''}
+        {currentOption?.label ?? ''}
         <Icon name="chevronDown" size={size === 'medium' ? 20 : 16} color="#333333" />
       </div>
 

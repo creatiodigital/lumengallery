@@ -129,10 +129,15 @@ const ArtisticImage = () => {
                   </div>
                   <div className={styles.item}>
                     <span className={styles.label}>Thickness</span>
-                    <Select
+                    <Select<number>
                       options={frameThicknessOptions}
-                      onSelect={(value) => handleEditArtisticImage('frameThickness', value)}
-                      selectedLabel={frameThickness}
+                      value={frameThickness?.value}
+                      onChange={(val) =>
+                        handleEditArtisticImage('frameThickness', {
+                          label: String(val),
+                          value: val,
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -161,10 +166,15 @@ const ArtisticImage = () => {
                   </div>
                   <div className={styles.item}>
                     <span className={styles.label}>Thickness</span>
-                    <Select
+                    <Select<number>
                       options={passepartoutThicknessOptions}
-                      onSelect={(value) => handleEditArtisticImage('passepartoutThickness', value)}
-                      selectedLabel={passepartoutThickness}
+                      value={passepartoutThickness?.value}
+                      onChange={(val) =>
+                        handleEditArtisticImage('passepartoutThickness', {
+                          label: String(val),
+                          value: val,
+                        })
+                      }
                     />
                   </div>
                 </div>

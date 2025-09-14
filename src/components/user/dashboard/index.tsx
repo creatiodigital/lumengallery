@@ -119,23 +119,22 @@ export const Dashboard = () => {
                   />
 
                   <h3>Visibility</h3>
-                  <Select
+                  <Select<string>
                     options={[
                       { value: 'public', label: 'Public' },
                       { value: 'private', label: 'Private' },
                     ]}
-                    onSelect={(option) => setVisibility(option.value as string)}
-                    selectedLabel={{
-                      value: visibility,
-                      label: visibility === 'public' ? 'Public' : 'Private',
-                    }}
+                    value={visibility}
+                    onChange={(val) => setVisibility(val)}
                   />
 
                   <h3>Choose a Space</h3>
-                  <Select
+                  <Select<string>
                     options={spaceOptions}
-                    onSelect={handleSelectSpace}
-                    selectedLabel={selectedSpace}
+                    value={selectedSpace?.value}
+                    onChange={(val) =>
+                      handleSelectSpace(spaceOptions.find((opt) => opt.value === val)!)
+                    }
                     size="medium"
                   />
                 </div>

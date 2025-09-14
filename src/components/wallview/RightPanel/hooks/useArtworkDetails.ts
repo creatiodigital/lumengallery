@@ -1,6 +1,8 @@
 import { useSelector } from 'react-redux'
 
 import type { RootState } from '@/redux/store'
+import type { TOption } from '@/types/artwork'
+import type { TFontFamily, TFontWeight } from '@/types/fonts'
 
 export const useArtworkDetails = (currentArtworkId: string) => {
   const artworksById = useSelector((state: RootState) => state.artworks.byId)
@@ -25,11 +27,11 @@ export const useArtworkDetails = (currentArtworkId: string) => {
       showFrame: false,
       frameColor: '#000000',
       textColor: '#000000',
-      fontSize: 16,
-      lineHeight: 20,
-      fontWeight: 'regular',
-      letterSpacing: 0,
-      fontFamily: 'Roboto',
+      fontSize: { label: '16', value: 16 } as TOption<number>,
+      lineHeight: { label: '20', value: 20 } as TOption<number>,
+      fontWeight: { label: 'Regular', value: 'regular' } as TOption<TFontWeight>,
+      letterSpacing: { label: '0', value: 0 } as TOption<number>,
+      fontFamily: { label: 'Roboto', value: 'roboto' } as TOption<TFontFamily>,
       frameThickness: { label: '1', value: 1 },
       showPassepartout: false,
       passepartoutColor: '#ffffff',
