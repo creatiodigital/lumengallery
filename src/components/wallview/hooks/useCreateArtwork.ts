@@ -12,7 +12,7 @@ import {
 } from '@/redux/slices/wallViewSlice'
 import { showWizard } from '@/redux/slices/wizardSlice'
 import type { RootState } from '@/redux/store'
-import type { TArtworkKind } from '@/types/artwork'
+import type { TArtworkKind, TArtworkPosition } from '@/types/artwork'
 import type { TDimensions } from '@/types/geometry'
 
 export const useCreateArtwork = (boundingData: TDimensions, currentWallId: string | null) => {
@@ -31,40 +31,33 @@ export const useCreateArtwork = (boundingData: TDimensions, currentWallId: strin
 
       const artworkId = uuidv4()
 
+      // Step 1. Create metadata
       dispatch(showWizard())
       dispatch(chooseCurrentArtworkId(artworkId))
-
-      dispatch(
-        createArtwork({
-          id: artworkId,
-          artworkType,
-          wallId: currentWallId ?? '',
-        }),
-      )
+      dispatch(createArtwork({ id: artworkId, artworkType }))
 
       dispatch(removeGroup())
       dispatch(addArtworkToGroup(artworkId))
 
-      const artworkPosition = {
+      // Step 2. Create placement
+      const new3DCoordinate = convert2DTo3D(posX2d, posY2d, initialSize, initialSize, boundingData)
+
+      const artworkPosition: TArtworkPosition = {
+        id: artworkId,
+        artworkId,
+        wallId: currentWallId ?? '',
         posX2d,
         posY2d,
-        width2d: 100,
-        height2d: 100,
+        width2d: initialSize,
+        height2d: initialSize,
+        ...new3DCoordinate,
+        quaternionX: 0,
+        quaternionY: 0,
+        quaternionZ: 0,
+        quaternionW: 1,
       }
 
-      const new3DCoordinate = convert2DTo3D(posX2d, posY2d, 100, 100, boundingData)
-
-      dispatch(
-        createArtworkPosition({
-          artworkId,
-          artworkPosition: {
-            id: artworkId,
-            wallId: currentWallId ?? '',
-            ...artworkPosition,
-            ...new3DCoordinate,
-          },
-        }),
-      )
+      dispatch(createArtworkPosition({ artworkId, artworkPosition }))
     },
     [boundingData, wallWidth, wallHeight, dispatch, currentWallId, initialSize],
   )
@@ -78,27 +71,15 @@ export const useCreateArtwork = (boundingData: TDimensions, currentWallId: strin
 
       const artworkId = uuidv4()
 
+      // Step 1. Metadata
       dispatch(showWizard())
       dispatch(chooseCurrentArtworkId(artworkId))
-
-      dispatch(
-        createArtwork({
-          id: artworkId,
-          artworkType,
-          wallId: currentWallId ?? '',
-        }),
-      )
+      dispatch(createArtwork({ id: artworkId, artworkType }))
 
       dispatch(removeGroup())
       dispatch(addArtworkToGroup(artworkId))
 
-      const artworkPosition = {
-        posX2d: adjustedX,
-        posY2d: adjustedY,
-        width2d: initialSize,
-        height2d: initialSize,
-      }
-
+      // Step 2. Placement
       const new3DCoordinate = convert2DTo3D(
         adjustedX,
         adjustedY,
@@ -107,12 +88,22 @@ export const useCreateArtwork = (boundingData: TDimensions, currentWallId: strin
         boundingData,
       )
 
-      dispatch(
-        createArtworkPosition({
-          artworkId,
-          artworkPosition: { ...artworkPosition, ...new3DCoordinate },
-        }),
-      )
+      const artworkPosition: TArtworkPosition = {
+        id: artworkId,
+        artworkId,
+        wallId: currentWallId ?? '',
+        posX2d: adjustedX,
+        posY2d: adjustedY,
+        width2d: initialSize,
+        height2d: initialSize,
+        ...new3DCoordinate,
+        quaternionX: 0,
+        quaternionY: 0,
+        quaternionZ: 0,
+        quaternionW: 1,
+      }
+
+      dispatch(createArtworkPosition({ artworkId, artworkPosition }))
     },
     [boundingData, dispatch, currentWallId, initialSize],
   )

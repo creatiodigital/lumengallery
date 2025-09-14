@@ -2,27 +2,20 @@ import type { TArtwork, TArtworkKind } from '@/types/artwork'
 
 export const createNewArtwork = ({
   id,
-  wallId,
   artworkType,
 }: {
   id: string
-  wallId: string
   artworkType: TArtworkKind
 }): TArtwork => {
   return {
     id,
     name: '',
-    wallId,
     artworkType,
     artworkTitle: '',
     author: '',
     artworkDimensions: '',
     artworkYear: '',
     description: '',
-    dimensions: '',
-    position: { x: 0, y: 0, z: 0 },
-    rotation: 0,
-    scale: 1,
     imageUrl: '',
     showArtworkInformation: false,
     showFrame: false,

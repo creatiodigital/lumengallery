@@ -1,12 +1,12 @@
 import { Text } from '@react-three/drei'
 import React, { useState, useRef, useEffect } from 'react'
 import type { ComponentRef } from 'react'
-import { DoubleSide, Vector3, Quaternion } from 'three'
+import { DoubleSide } from 'three'
 
-import type { TArtwork } from '@/types/artwork'
+import type { RuntimeArtwork } from '@/utils/artworkTransform'
 
 type StencilProps = {
-  artwork: TArtwork
+  artwork: RuntimeArtwork
 }
 
 const Stencil = ({ artwork }: StencilProps) => {
@@ -24,6 +24,7 @@ const Stencil = ({ artwork }: StencilProps) => {
     fontWeight,
     fontFamily,
   } = artwork
+
   const fontSizeFactor = 0.01
 
   const fontMap = {
@@ -43,11 +44,6 @@ const Stencil = ({ artwork }: StencilProps) => {
 
   const textRef = useRef<ComponentRef<typeof Text>>(null)
   const [textWidth, setTextWidth] = useState(0)
-
-  const positionVec3 = new Vector3(position.x, position.y, position.z)
-  const quaternionObj = quaternion
-    ? new Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w)
-    : undefined
 
   const calculateTextWidth = () => {
     if (textRef.current) {
@@ -89,7 +85,7 @@ const Stencil = ({ artwork }: StencilProps) => {
   }
 
   return (
-    <group position={positionVec3} quaternion={quaternionObj}>
+    <group position={position} quaternion={quaternion}>
       {!textContent && (
         <mesh renderOrder={1}>
           <planeGeometry args={[planeWidth, planeHeight]} />
@@ -101,7 +97,7 @@ const Stencil = ({ artwork }: StencilProps) => {
         <mesh key={id} renderOrder={2}>
           <Text
             ref={textRef}
-            fontSize={fontSize?.value * fontSizeFactor}
+            fontSize={fontSize.value * fontSizeFactor}
             lineHeight={lineHeight?.value}
             color={textColor}
             font={fontUrl}

@@ -22,16 +22,12 @@ const artworksSlice = createSlice({
   name: 'artworks',
   initialState,
   reducers: {
-    createArtwork: (
-      state,
-      action: PayloadAction<{ wallId: string; id: string; artworkType: TArtworkKind }>,
-    ) => {
-      const { wallId, id, artworkType } = action.payload
+    createArtwork: (state, action: PayloadAction<{ id: string; artworkType: TArtworkKind }>) => {
+      const { id, artworkType } = action.payload
 
       state.artworkCounters[artworkType] = (state.artworkCounters[artworkType] ?? 0) + 1
 
-      const newArtwork = createNewArtwork({ id, wallId, artworkType })
-
+      const newArtwork = createNewArtwork({ id, artworkType })
       newArtwork.name = `${artworkType.charAt(0).toUpperCase() + artworkType.slice(1)} ${
         state.artworkCounters[artworkType]
       }`

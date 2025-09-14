@@ -7,23 +7,27 @@ export type TOption<T> = { label: string; value: T }
 
 export type TArtworkPosition = {
   id?: string
-  wallId?: string
+  artworkId: string // reference to TArtwork.id
+  exhibitionId?: string
+  wallId: string
+
+  // 2D placement
   posX2d: number
   posY2d: number
+  width2d: number
+  height2d: number
+
+  // 3D placement
   posX3d: number
   posY3d: number
   posZ3d: number
+  width3d?: number
+  height3d?: number
   rotation?: number
-  scale?: number
   quaternionX: number
   quaternionY: number
   quaternionZ: number
   quaternionW: number
-  width2d: number
-  height2d: number
-  width3d?: number
-  height3d?: number
-  imageURL?: string
 }
 
 export type TArtwork = {
@@ -35,15 +39,6 @@ export type TArtwork = {
   artworkDimensions?: string
   artworkYear?: string
   description?: string
-  wallId: string
-  dimensions: string
-  position: { x: number; y: number; z: number }
-  rotation?: number
-  scale?: number
-  quaternion?: { x: number; y: number; z: number; w: number }
-  width?: number
-  height?: number
-
   imageUrl?: string
   showArtworkInformation?: boolean
   showFrame?: boolean

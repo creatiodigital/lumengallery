@@ -1,6 +1,5 @@
 import c from 'classnames'
-import React from 'react'
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
@@ -19,6 +18,7 @@ import {
 } from '@/redux/slices/wallViewSlice'
 import { showWizard } from '@/redux/slices/wizardSlice'
 import type { RootState } from '@/redux/store'
+import { toRuntimeArtwork } from '@/utils/artworkTransform'
 
 import styles from './LeftPanel.module.scss'
 
@@ -27,6 +27,8 @@ export const LeftPanel = () => {
 
   const artworksById = useSelector((state: RootState) => state.artworks.byId)
   const allIds = useSelector((state: RootState) => state.artworks.allIds)
+  const positionsById = useSelector((state: RootState) => state.exhibition.exhibitionArtworksById)
+
   const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
   const walls = useSelector((state: RootState) => state.scene.walls)
   const currentArtworkId = useSelector((state: RootState) => state.wallView.currentArtworkId)
@@ -42,26 +44,24 @@ export const LeftPanel = () => {
   const currentWall = walls.find((wall) => wall.id === currentWallId)
   const currentWallName = currentWall ? currentWall.name : 'Select a wall'
 
-  const wallArtworks = useMemo(
-    () =>
-      allIds
-        .map((id) => artworksById[id])
-        .filter((artwork) => artwork.wallId === currentWallId)
-        .reverse(),
-    [allIds, artworksById, currentWallId],
-  )
+  const wallArtworks = useMemo(() => {
+    if (!currentWallId) return []
 
-  const handleZoomIn = () => {
-    dispatch(increaseScaleFactor())
-  }
+    return allIds
+      .map((id) => {
+        const artwork = artworksById[id]
+        const pos = positionsById[id]
+        if (!artwork || !pos) return null
+        if (pos.wallId !== currentWallId) return null
+        return toRuntimeArtwork(artwork, pos)
+      })
+      .filter((a): a is NonNullable<typeof a> => Boolean(a))
+      .reverse()
+  }, [allIds, artworksById, positionsById, currentWallId])
 
-  const handleZoomOut = () => {
-    dispatch(decreaseScaleFactor())
-  }
-
-  const handleResetView = () => {
-    dispatch(resetPan())
-  }
+  const handleZoomIn = () => dispatch(increaseScaleFactor())
+  const handleZoomOut = () => dispatch(decreaseScaleFactor())
+  const handleResetView = () => dispatch(resetPan())
 
   const handleSaveWallView = () => {
     dispatch(hideHuman())

@@ -1,17 +1,16 @@
 import { Image } from '@react-three/drei'
-import { useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { DoubleSide, MeshStandardMaterial, Vector3, Quaternion } from 'three'
+import { DoubleSide, MeshStandardMaterial } from 'three'
 
 import { Frame } from '@/components/scene/spaces/objects/Frame'
 import { Passepartout } from '@/components/scene/spaces/objects/Passepartout'
 import { showArtworkPanel } from '@/redux/slices/dashboardSlice'
 import { setCurrentArtwork } from '@/redux/slices/sceneSlice'
 import type { RootState } from '@/redux/store'
-import type { TArtwork } from '@/types/artwork'
+import type { RuntimeArtwork } from '@/utils/artworkTransform'
 
 type DisplayProps = {
-  artwork: TArtwork
+  artwork: RuntimeArtwork
 }
 
 const Display = ({ artwork }: DisplayProps) => {
@@ -29,19 +28,6 @@ const Display = ({ artwork }: DisplayProps) => {
     passepartoutColor,
     passepartoutThickness,
   } = artwork
-
-  const pos = useMemo(
-    () => new Vector3(position.x, position.y, position.z),
-    [position.x, position.y, position.z],
-  )
-
-  const quat = useMemo(
-    () =>
-      quaternion
-        ? new Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w)
-        : undefined,
-    [quaternion?.x, quaternion?.y, quaternion?.z, quaternion?.w],
-  )
 
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
   const dispatch = useDispatch()
@@ -70,11 +56,11 @@ const Display = ({ artwork }: DisplayProps) => {
   const frameT = (showFrame ? frameThickness?.value : 0) || 0
   const passepartoutT = (showPassepartout ? passepartoutThickness?.value : 0) || 0
 
-  const innerWidth = planeWidth - (frameT || 1 + passepartoutT) / 50
+  const innerWidth = planeWidth - (frameT + passepartoutT) / 50
   const innerHeight = planeHeight - (frameT + passepartoutT) / 50
 
   return (
-    <group position={pos} quaternion={quat} onDoubleClick={handleClick}>
+    <group position={position} quaternion={quaternion} onDoubleClick={handleClick}>
       {/* Invisible click area */}
       <mesh renderOrder={1}>
         <planeGeometry args={[planeWidth, planeHeight]} />
@@ -103,22 +89,19 @@ const Display = ({ artwork }: DisplayProps) => {
         <Frame
           width={planeWidth}
           height={planeHeight}
-          thickness={frameThickness?.value / 100}
+          thickness={frameThickness.value / 100}
           material={frameMaterial}
         />
       )}
 
-      {showPassepartout &&
-        passepartoutThickness?.value &&
-        passepartoutThickness?.value &&
-        frameThickness?.value && (
-          <Passepartout
-            width={planeWidth - frameThickness?.value / 50}
-            height={planeHeight - frameThickness?.value / 50}
-            thickness={passepartoutThickness?.value / 100}
-            material={passepartoutMaterial}
-          />
-        )}
+      {showPassepartout && passepartoutThickness?.value && frameThickness?.value && (
+        <Passepartout
+          width={planeWidth - frameThickness.value / 50}
+          height={planeHeight - frameThickness.value / 50}
+          thickness={passepartoutThickness.value / 100}
+          material={passepartoutMaterial}
+        />
+      )}
     </group>
   )
 }
