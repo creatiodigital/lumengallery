@@ -22,7 +22,6 @@ export const useBoundingData = (
       const boundingBox = currentWall.geometry.boundingBox as Box3
       const normal = calculateAverageNormal(currentWall)
       const dimensions = calculateDimensionsAndBasis(boundingBox, normal)
-      console.log('xxx', dimensions)
       setBoundingData({ ...dimensions, boundingBox, normal })
     }
   }, [currentWallId, nodes])

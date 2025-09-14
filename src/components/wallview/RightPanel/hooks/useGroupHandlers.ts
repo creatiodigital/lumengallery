@@ -93,6 +93,10 @@ export const useGroupHandlers = (artworkGroupIds: string[], boundingData: TBound
   }
 
   const alignGroupToWall = (alignment: TAlign) => {
+    if (!wallHeight || !wallWidth) {
+      console.warn('Wall dimensions are not available, cannot align group.')
+      return
+    }
     let newGroupX = artworkGroup.groupX
     let newGroupY = artworkGroup.groupY
 
@@ -101,19 +105,19 @@ export const useGroupHandlers = (artworkGroupIds: string[], boundingData: TBound
         newGroupY = 0
         break
       case 'verticalCenter':
-        newGroupY = (wallHeight! * 100) / 2 - artworkGroup.groupHeight / 2
+        newGroupY = (wallHeight * 100) / 2 - artworkGroup.groupHeight / 2
         break
       case 'verticalBottom':
-        newGroupY = wallHeight! * 100 - artworkGroup.groupHeight
+        newGroupY = wallHeight * 100 - artworkGroup.groupHeight
         break
       case 'horizontalLeft':
         newGroupX = 0
         break
       case 'horizontalCenter':
-        newGroupX = (wallWidth! * 100) / 2 - artworkGroup.groupWidth / 2
+        newGroupX = (wallWidth * 100) / 2 - artworkGroup.groupWidth / 2
         break
       case 'horizontalRight':
-        newGroupX = wallWidth! * 100 - artworkGroup.groupWidth
+        newGroupX = wallWidth * 100 - artworkGroup.groupWidth
         break
       default:
         console.warn('Invalid alignment type:', alignment)

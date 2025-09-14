@@ -132,9 +132,12 @@ export const Dashboard = () => {
                   <Select<string>
                     options={spaceOptions}
                     value={selectedSpace?.value}
-                    onChange={(val) =>
-                      handleSelectSpace(spaceOptions.find((opt) => opt.value === val)!)
-                    }
+                    onChange={(val) => {
+                      const opt = spaceOptions.find((opt) => opt.value === val)
+                      if (opt) {
+                        handleSelectSpace(opt)
+                      }
+                    }}
                     size="medium"
                   />
                 </div>

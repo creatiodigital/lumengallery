@@ -72,7 +72,7 @@ export const useArtworkDetails = (currentArtworkId: string) => {
 
   return {
     width: Math.round(width2d),
-    height: Math.round(height3d!),
+    height: Math.round(height3d ?? 0),
     x: Math.round(posX2d),
     y: Math.round(posY2d),
     name,
