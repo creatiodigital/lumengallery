@@ -42,7 +42,6 @@ export const useSelectBox = (
     }
   }, [draggingSelectBox, preventClick])
 
-  // ✅ React synthetic event
   const handleSelectMouseDown = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!wallRef.current) return
@@ -55,7 +54,6 @@ export const useSelectBox = (
     [wallRef, scaleFactor],
   )
 
-  // ✅ React synthetic event
   const handleSelectMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
       if (!selectionBox || !wallRef.current) return
@@ -117,7 +115,6 @@ export const useSelectBox = (
     dispatch,
   ])
 
-  // ✅ Here we must use native MouseEvent
   useEffect(() => {
     if (draggingSelectBox) {
       const moveHandler = (event: MouseEvent) => handleSelectMouseMove(event)

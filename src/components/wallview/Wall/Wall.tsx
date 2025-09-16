@@ -155,7 +155,6 @@ export const Wall = () => {
 
   useKeyboardEvents(currentArtworkId, hoveredArtworkId === currentArtworkId)
 
-  // 🔹 merge artworks with positions
   const wallArtworks = useMemo(() => {
     if (!currentWallId) return []
     return allIds
