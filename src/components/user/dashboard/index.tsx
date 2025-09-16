@@ -1,17 +1,21 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { EditView } from '@/components/editview'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Select } from '@/components/ui/Select'
-import { useCreateExhibition } from '@/hooks/useCreateExhibition'
 import { selectExhibitions } from '@/redux/selectors/userSelectors'
-import { useGetUserQuery, useGetExhibitionsByUserQuery } from '@/redux/slices/apiSlice'
 import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
-import { addExhibition, hydrateUser, hydrateExhibitions } from '@/redux/slices/userSlice'
+import {
+  useGetExhibitionsByUserQuery,
+  useCreateExhibitionMutation,
+  useDeleteExhibitionMutation,
+} from '@/redux/slices/exhibitionApi'
+import { useGetUserQuery } from '@/redux/slices/userApi'
+import { addExhibition, hydrateExhibitions, removeExhibition } from '@/redux/slices/userSlice'
 import type { RootState, AppDispatch } from '@/redux/store'
 import type { TOption } from '@/types/artwork'
 import type { TSpaceOption } from '@/types/dashboard'
@@ -25,27 +29,21 @@ export const Dashboard = () => {
 
   const isEditMode = useSelector((state: RootState) => state.dashboard.isEditMode)
   const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
-  const { name, id, handler } = useSelector((state: RootState) => state.user)
   const exhibitions = useSelector(selectExhibitions)
+  const [deleteExhibition] = useDeleteExhibitionMutation()
 
   const [isModalShown, setIsModalShown] = useState(false)
   const [mainTitle, setMainTitle] = useState('')
   const [visibility, setVisibility] = useState<string>('private')
-  const { createExhibition, loading, error } = useCreateExhibition()
 
-  // 🔹 RTK Query fetching
   const hardcodedId = '915a1541-f132-4fd1-a714-e34527485054'
+
   const { data: userData } = useGetUserQuery(hardcodedId)
   const { data: exhibitionsData } = useGetExhibitionsByUserQuery(hardcodedId)
 
-  // 🔹 Hydrate slice when RTQ fetch succeeds
-  useEffect(() => {
-    if (userData) {
-      dispatch(hydrateUser(userData))
-    }
-  }, [userData, dispatch])
+  const [createExhibition, { isLoading: creating, error }] = useCreateExhibitionMutation()
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (exhibitionsData) {
       dispatch(hydrateExhibitions(exhibitionsData))
     }
@@ -64,17 +62,27 @@ export const Dashboard = () => {
   }
 
   const handleCreateExhibition = async () => {
-    const exhibition = await createExhibition({
-      mainTitle,
-      visibility,
-      userId: id,
-      userHandler: handler,
-      spaceId: 'modern',
-    })
-
-    if (exhibition) {
+    try {
+      const newEx = await createExhibition({
+        mainTitle,
+        visibility,
+        userId: userData?.id ?? '',
+        userHandler: userData?.handler ?? '',
+        spaceId: 'modern',
+      }).unwrap()
+      dispatch(addExhibition(newEx))
       setIsModalShown(false)
-      dispatch(addExhibition(exhibition as TExhibition))
+    } catch (err) {
+      console.error('Failed to create exhibition', err)
+    }
+  }
+
+  const handleDeleteExhibition = async (id: string) => {
+    try {
+      await deleteExhibition(id).unwrap()
+      dispatch(removeExhibition(id))
+    } catch (err) {
+      console.error('Failed to delete exhibition', err)
     }
   }
 
@@ -83,7 +91,7 @@ export const Dashboard = () => {
       {!isEditMode && (
         <div className={styles.main}>
           <div className={styles.header}>
-            <h3>Hello {name}</h3>
+            <h3>Hello {userData?.name ?? ''}</h3>
           </div>
 
           <div className={styles.exhibitions}>
@@ -101,6 +109,11 @@ export const Dashboard = () => {
                         variant="small"
                         label="Edit"
                         onClick={() => console.log('Edit', ex)}
+                      />
+                      <Button
+                        variant="small"
+                        label="Delete"
+                        onClick={() => handleDeleteExhibition(ex.id)}
                       />
                     </li>
                   ))}
@@ -154,7 +167,7 @@ export const Dashboard = () => {
                   <Button variant="small" label="Cancel" onClick={() => setIsModalShown(false)} />
                   <Button
                     variant="small"
-                    label={loading ? 'Creating...' : 'Create'}
+                    label={creating ? 'Creating...' : 'Create'}
                     onClick={handleCreateExhibition}
                   />
                 </div>
@@ -162,7 +175,7 @@ export const Dashboard = () => {
             </Modal>
           )}
 
-          {error && <p className={styles.error}>⚠️ {error}</p>}
+          {error && <p className={styles.error}>⚠️ {JSON.stringify(error)}</p>}
         </div>
       )}
       {isEditMode && <EditView />}
