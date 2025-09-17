@@ -1,4 +1,3 @@
-// types/geometry.ts
 import { Box3, Vector3 } from 'three'
 
 export type TDimensions = {

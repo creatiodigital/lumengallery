@@ -21,7 +21,6 @@ import {
   type MouseState,
 } from './helpers'
 
-// 🔧 Updated version of detectCollisions with nullable mesh refs
 function detectCollisions(
   camera: PerspectiveCamera,
   movementVector: Vector3,
@@ -30,13 +29,11 @@ function detectCollisions(
   glassRefs: RefObject<Mesh | null>[],
   collisionDistance: number,
 ): boolean {
-  // Example dummy implementation — update this with your real logic
   for (const refGroup of [wallRefs, windowRefs, glassRefs]) {
     for (const ref of refGroup) {
       const mesh = ref.current
       if (!mesh) continue
 
-      // Add your actual bounding box / collision logic here
       const distance = mesh.position.distanceTo(camera.position)
       if (distance < collisionDistance) {
         return true
@@ -56,24 +53,20 @@ const MainCamera = () => {
 
   const { wallRefs, windowRefs, glassRefs } = context
 
-  // State refs
   const keysPressed = useRef<Record<string, boolean>>({})
   const mouseState: RefObject<MouseState> = useRef(createMouseState())
   const initialPositionSet = useRef(false)
   const rotationVelocity = useRef(0)
   const fov = useRef(70)
 
-  // Constants
   const dampingFactor = 0.6
   const collisionDistance = 1
   const moveSpeed = 0.03
   const cameraElevation = 1.1
 
-  // Redux state
   const wallCoordinates = useSelector((state: RootState) => state.wallView.currentWallCoordinates)
   const wallNormal = useSelector((state: RootState) => state.wallView.currentWallNormal)
 
-  // Handlers
   const onMouseMove = useCallback(
     (event: MouseEvent) => handleMouseMove(mouseState, setTick)(event),
     [mouseState],

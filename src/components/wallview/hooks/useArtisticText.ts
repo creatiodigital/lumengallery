@@ -35,7 +35,7 @@ export const useArtisticText = (artworkId: string) => {
   }
 
   if (!fontSize || !lineHeight || !fontFamily || !fontWeight || !letterSpacing) {
-    return null // or fallback UI
+    return null
   }
 
   return {

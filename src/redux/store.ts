@@ -19,7 +19,7 @@ export const makeStore = () => {
       user: userReducer,
       artworks: artworksReducer,
       scene: sceneReducer,
-      [baseApi.reducerPath]: baseApi.reducer, // 👈 stays the same
+      [baseApi.reducerPath]: baseApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -27,7 +27,7 @@ export const makeStore = () => {
           ignoredActions: ['artworks/editArtworkTextureImage'],
           ignoredPaths: ['artworks.artworks.texture'],
         },
-      }).concat(baseApi.middleware), // 👈 stays the same
+      }).concat(baseApi.middleware),
   })
 }
 

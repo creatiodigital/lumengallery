@@ -105,7 +105,9 @@ const Artwork = memo(
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
+        {currentArtworkId === id && artworkGroupIds.length <= 1 && (
+          <Handles artworkId={id} handleResize={onHandleResize} />
+        )}
         {artworkType === 'text' && <ArtisticText artworkId={id} />}
         {artworkType === 'image' && <ArtisticImage artwork={artwork} />}
       </div>

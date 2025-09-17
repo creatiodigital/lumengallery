@@ -7,17 +7,13 @@ export type TOption<T> = { label: string; value: T }
 
 export type TArtworkPosition = {
   id?: string
-  artworkId: string // reference to TArtwork.id
+  artworkId: string
   exhibitionId?: string
   wallId: string
-
-  // 2D placement
   posX2d: number
   posY2d: number
   width2d: number
   height2d: number
-
-  // 3D placement
   posX3d: number
   posY3d: number
   posZ3d: number

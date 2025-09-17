@@ -10,7 +10,6 @@ export const DashboardAdmin = () => {
   const { users, loading, error } = useUsers()
   // const { updateUser, statusById} = useUpdateUser()
 
-  // store a full User for each editing entry
   const [editingUsers, setEditingUsers] = useState<Record<string, TUser>>({})
 
   const handleChange = (id: string, field: keyof TUser, value: string) => {

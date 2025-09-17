@@ -1,4 +1,3 @@
-// types/fonts.ts
 export const FONT_FAMILIES = ['roboto', 'lora'] as const
 export type TFontFamily = (typeof FONT_FAMILIES)[number]
 

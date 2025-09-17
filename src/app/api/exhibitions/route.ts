@@ -7,6 +7,7 @@ import prisma from '@/lib/prisma'
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as {
+      mainTitle: string
       visibility: string
       userId: string
       handler: string
@@ -14,11 +15,11 @@ export async function POST(request: NextRequest) {
       spaceId: string
     }
 
-    const { visibility, userId, handler, url, spaceId } = body
+    const { mainTitle, visibility, userId, handler, url, spaceId } = body
 
     const exhibition: Exhibition = await prisma.exhibition.create({
       data: {
-        mainTitle: 'Photography 1',
+        mainTitle,
         visibility,
         userId,
         handler,
@@ -34,7 +35,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create exhibition' }, { status: 500 })
   }
 }
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')

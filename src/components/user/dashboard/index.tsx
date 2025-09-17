@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { EditView } from '@/components/editview'
 import { Button } from '@/components/ui/Button'
+import { ExhibitionModal } from '@/components/ui/ExhibitionModal'
 import { Modal } from '@/components/ui/Modal'
-import { Select } from '@/components/ui/Select'
 import { selectExhibitions } from '@/redux/selectors/userSelectors'
 import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
 import {
@@ -33,8 +33,6 @@ export const Dashboard = () => {
   const [deleteExhibition] = useDeleteExhibitionMutation()
 
   const [isModalShown, setIsModalShown] = useState(false)
-  const [mainTitle, setMainTitle] = useState('')
-  const [visibility, setVisibility] = useState<string>('private')
 
   const hardcodedId = '915a1541-f132-4fd1-a714-e34527485054'
 
@@ -43,48 +41,57 @@ export const Dashboard = () => {
 
   const [createExhibition, { isLoading: creating, error }] = useCreateExhibitionMutation()
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (exhibitionsData) {
       dispatch(hydrateExhibitions(exhibitionsData))
     }
   }, [exhibitionsData, dispatch])
 
-  const handleEditGallery = () => {
+  const handleEditGallery = useCallback(() => {
     dispatch(showEditMode())
-  }
+  }, [dispatch])
 
-  const handleSelectSpace = (option: TOption<string>) => {
-    dispatch(selectSpace(option.value as unknown as TSpaceOption))
-  }
+  const handleSelectSpace = useCallback(
+    (option: TOption<string>) => {
+      dispatch(selectSpace(option.value as unknown as TSpaceOption))
+    },
+    [dispatch],
+  )
 
-  const handleNewExhibition = () => {
+  const handleNewExhibition = useCallback(() => {
     setIsModalShown(true)
-  }
+  }, [])
 
-  const handleCreateExhibition = async () => {
-    try {
-      const newEx = await createExhibition({
-        mainTitle,
-        visibility,
-        userId: userData?.id ?? '',
-        userHandler: userData?.handler ?? '',
-        spaceId: 'modern',
-      }).unwrap()
-      dispatch(addExhibition(newEx))
-      setIsModalShown(false)
-    } catch (err) {
-      console.error('Failed to create exhibition', err)
-    }
-  }
+  const handleCreateExhibition = useCallback(
+    async (mainTitle: string, visibility: string) => {
+      try {
+        const newEx = await createExhibition({
+          mainTitle,
+          visibility,
+          userId: userData?.id ?? '',
+          userHandler: userData?.handler ?? '',
+          spaceId: 'modern',
+        }).unwrap()
+        dispatch(addExhibition(newEx))
+        setIsModalShown(false)
+      } catch (err) {
+        console.error('Failed to create exhibition', err)
+      }
+    },
+    [createExhibition, dispatch, userData?.id, userData?.handler],
+  )
 
-  const handleDeleteExhibition = async (id: string) => {
-    try {
-      await deleteExhibition(id).unwrap()
-      dispatch(removeExhibition(id))
-    } catch (err) {
-      console.error('Failed to delete exhibition', err)
-    }
-  }
+  const handleDeleteExhibition = useCallback(
+    async (id: string) => {
+      try {
+        await deleteExhibition(id).unwrap()
+        dispatch(removeExhibition(id))
+      } catch (err) {
+        console.error('Failed to delete exhibition', err)
+      }
+    },
+    [deleteExhibition, dispatch],
+  )
 
   return (
     <div className={styles.dashboard}>
@@ -127,51 +134,15 @@ export const Dashboard = () => {
           </div>
 
           {isModalShown && (
-            <Modal>
-              <div className={styles.wrapper}>
-                <div className={styles.content}>
-                  <h3>Exhibition Title</h3>
-                  <input
-                    type="text"
-                    value={mainTitle}
-                    onChange={(e) => setMainTitle(e.target.value)}
-                    placeholder="e.g. My New Exhibition"
-                    className={styles.input}
-                  />
-
-                  <h3>Visibility</h3>
-                  <Select<string>
-                    options={[
-                      { value: 'public', label: 'Public' },
-                      { value: 'private', label: 'Private' },
-                    ]}
-                    value={visibility}
-                    onChange={(val) => setVisibility(val)}
-                  />
-
-                  <h3>Choose a Space</h3>
-                  <Select<string>
-                    options={spaceOptions}
-                    value={selectedSpace?.value}
-                    onChange={(val) => {
-                      const opt = spaceOptions.find((opt) => opt.value === val)
-                      if (opt) {
-                        handleSelectSpace(opt)
-                      }
-                    }}
-                    size="medium"
-                  />
-                </div>
-
-                <div className={styles.ctas}>
-                  <Button variant="small" label="Cancel" onClick={() => setIsModalShown(false)} />
-                  <Button
-                    variant="small"
-                    label={creating ? 'Creating...' : 'Create'}
-                    onClick={handleCreateExhibition}
-                  />
-                </div>
-              </div>
+            <Modal onClose={() => setIsModalShown(false)}>
+              <ExhibitionModal
+                creating={creating}
+                onClose={() => setIsModalShown(false)}
+                onCreate={handleCreateExhibition}
+                selectedSpace={selectedSpace}
+                handleSelectSpace={handleSelectSpace}
+                spaceOptions={spaceOptions}
+              />
             </Modal>
           )}
 

@@ -16,7 +16,6 @@ type OptionsProps = {
 const Options = ({ options, selectOption, selected }: OptionsProps) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target
-    // radio inputs always give string, so coerce if needed
     const parsedValue = isNaN(Number(value)) ? value : Number(value)
     selectOption(parsedValue)
   }

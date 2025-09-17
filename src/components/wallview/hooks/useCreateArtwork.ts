@@ -31,7 +31,6 @@ export const useCreateArtwork = (boundingData: TDimensions, currentWallId: strin
 
       const artworkId = uuidv4()
 
-      // Step 1. Create metadata
       dispatch(showWizard())
       dispatch(chooseCurrentArtworkId(artworkId))
       dispatch(createArtwork({ id: artworkId, artworkType }))
@@ -39,7 +38,6 @@ export const useCreateArtwork = (boundingData: TDimensions, currentWallId: strin
       dispatch(removeGroup())
       dispatch(addArtworkToGroup(artworkId))
 
-      // Step 2. Create placement
       const new3DCoordinate = convert2DTo3D(posX2d, posY2d, initialSize, initialSize, boundingData)
 
       const artworkPosition: TArtworkPosition = {
@@ -71,7 +69,6 @@ export const useCreateArtwork = (boundingData: TDimensions, currentWallId: strin
 
       const artworkId = uuidv4()
 
-      // Step 1. Metadata
       dispatch(showWizard())
       dispatch(chooseCurrentArtworkId(artworkId))
       dispatch(createArtwork({ id: artworkId, artworkType }))
@@ -79,7 +76,6 @@ export const useCreateArtwork = (boundingData: TDimensions, currentWallId: strin
       dispatch(removeGroup())
       dispatch(addArtworkToGroup(artworkId))
 
-      // Step 2. Placement
       const new3DCoordinate = convert2DTo3D(
         adjustedX,
         adjustedY,

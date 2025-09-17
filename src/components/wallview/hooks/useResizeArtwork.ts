@@ -31,7 +31,6 @@ export const useResizeArtwork = (
 
       const rect = wallRef.current.getBoundingClientRect()
 
-      // Calculate grid offset caused by centering
       const gridOffsetX = (rect.width % gridSize) / 2
       const gridOffsetY = (rect.height % gridSize) / 2
 
@@ -55,7 +54,6 @@ export const useResizeArtwork = (
           newWidth = Math.max(20, initialWidth - deltaX)
           newX = initialX + deltaX
 
-          // Snap left handle
           if (isGridVisible) {
             newX = Math.round((newX - gridOffsetX) / gridSize) * gridSize + gridOffsetX
             newWidth = Math.max(20, initialWidth - (newX - initialX))
@@ -65,7 +63,6 @@ export const useResizeArtwork = (
         if (direction.includes('right')) {
           newWidth = Math.max(20, initialWidth + deltaX)
 
-          // Snap right handle
           if (isGridVisible) {
             newWidth =
               Math.round((newX + newWidth - gridOffsetX) / gridSize) * gridSize - newX + gridOffsetX
@@ -76,7 +73,6 @@ export const useResizeArtwork = (
           newHeight = Math.max(20, initialHeight - deltaY)
           newY = initialY + deltaY
 
-          // Snap top handle
           if (isGridVisible) {
             newY = Math.round((newY - gridOffsetY) / gridSize) * gridSize + gridOffsetY
             newHeight = Math.max(20, initialHeight - (newY - initialY))
@@ -86,7 +82,6 @@ export const useResizeArtwork = (
         if (direction.includes('bottom')) {
           newHeight = Math.max(20, initialHeight + deltaY)
 
-          // Snap bottom handle
           if (isGridVisible) {
             newHeight =
               Math.round((newY + newHeight - gridOffsetY) / gridSize) * gridSize -
