@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { ExhibitionModal } from '@/components/ui/ExhibitionModal'
 import { Modal } from '@/components/ui/Modal'
 import { selectExhibitions } from '@/redux/selectors/userSelectors'
-import { showEditMode, selectSpace } from '@/redux/slices/dashboardSlice'
+import { selectSpace } from '@/redux/slices/dashboardSlice'
 import {
   useGetExhibitionsByUserQuery,
   useCreateExhibitionMutation,
@@ -26,6 +27,7 @@ import styles from './Dashboard.module.scss'
 
 export const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const router = useRouter()
 
   const isEditMode = useSelector((state: RootState) => state.dashboard.isEditMode)
   const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
@@ -46,10 +48,6 @@ export const Dashboard = () => {
       dispatch(hydrateExhibitions(exhibitionsData))
     }
   }, [exhibitionsData, dispatch])
-
-  const handleEditGallery = useCallback(() => {
-    dispatch(showEditMode())
-  }, [dispatch])
 
   const handleSelectSpace = useCallback(
     (option: TOption<string>) => {
@@ -115,7 +113,9 @@ export const Dashboard = () => {
                       <Button
                         variant="small"
                         label="Edit"
-                        onClick={() => console.log('Edit', ex)}
+                        onClick={() =>
+                          router.push(`/${userData?.handler}/exhibition/${ex.url}/edit`)
+                        }
                       />
                       <Button
                         variant="small"
@@ -127,10 +127,6 @@ export const Dashboard = () => {
                 </ul>
               )}
             </div>
-          </div>
-
-          <div>
-            <Button variant="small" onClick={handleEditGallery} label="Create Exhibition" />
           </div>
 
           {isModalShown && (

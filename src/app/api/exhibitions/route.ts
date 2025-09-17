@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 
 import type { Exhibition } from '@/generated/prisma'
 import prisma from '@/lib/prisma'
+import { slugify } from '@/utils/slugify'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,11 +12,13 @@ export async function POST(request: NextRequest) {
       visibility: string
       userId: string
       handler: string
-      url: string
       spaceId: string
     }
 
-    const { mainTitle, visibility, userId, handler, url, spaceId } = body
+    const { mainTitle, visibility, userId, handler, spaceId } = body
+
+    // Generate slug from mainTitle
+    const slug = slugify(mainTitle)
 
     const exhibition: Exhibition = await prisma.exhibition.create({
       data: {
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
         visibility,
         userId,
         handler,
-        url,
+        url: slug, // 👉 store only the slug
         spaceId,
         status: 'DRAFT',
       },
@@ -35,6 +38,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create exhibition' }, { status: 500 })
   }
 }
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const userId = searchParams.get('userId')
