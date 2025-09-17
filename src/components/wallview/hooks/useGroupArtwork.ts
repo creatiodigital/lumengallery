@@ -6,7 +6,7 @@ import type { RootState } from '@/redux/store'
 
 export const useGroupArtwork = () => {
   const dispatch = useDispatch()
-  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
+  const artworkGroupIds = useSelector((state: RootState) => state.wallView.artworkGroupIds)
   const exhibitionArtworksById = useSelector(
     (state: RootState) => state.exhibition.exhibitionArtworksById,
   )
@@ -22,7 +22,7 @@ export const useGroupArtwork = () => {
 
   const handleCreateArtworkGroup = useCallback(() => {
     if (artworkGroupIds.length === 0) return
-    const artworkGroupItems = artworkGroupIds.map((id) => exhibitionArtworksById[id]) // RETHINK THIS (PERHAPS ADD GROUP IN EXHIBITION SLICE)
+    const artworkGroupItems = artworkGroupIds.map((id) => exhibitionArtworksById[id])
     const xValues = artworkGroupItems.map((artwork) => artwork.posX2d)
     const xEdgeValues = artworkGroupItems.map((artwork) => artwork.posX2d + artwork.width2d)
     const yValues = artworkGroupItems.map((artwork) => artwork.posY2d)
@@ -43,7 +43,7 @@ export const useGroupArtwork = () => {
     }
 
     dispatch(createArtworkGroup(groupProps))
-  }, [artworkGroupIds, dispatch])
+  }, [artworkGroupIds, exhibitionArtworksById, dispatch])
 
   const handleRemoveArtworkGroup = useCallback(() => {
     dispatch(removeGroup())
@@ -53,7 +53,7 @@ export const useGroupArtwork = () => {
     if (artworkGroupIds.length > 0) {
       handleCreateArtworkGroup()
     }
-  }, [artworkGroupIds])
+  }, [artworkGroupIds, handleCreateArtworkGroup])
 
   return {
     handleAddArtworkToGroup,

@@ -79,7 +79,6 @@ const Artwork = memo(
     const handleMouseEnter = () => setHoveredArtworkId(id)
     const handleMouseLeave = () => setHoveredArtworkId(null)
 
-    // explicitly forward the native event to the hook
     const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
       handleArtworkDragMove(event.nativeEvent)
     }
@@ -96,14 +95,19 @@ const Artwork = memo(
           zIndex: currentArtworkId === id ? 10 : 1,
           cursor: 'grabbing',
         }}
-        onMouseDown={(event) => handleArtworkDragStart(event.nativeEvent, id)}
+        onMouseDown={(event) => {
+          event.stopPropagation()
+          handleArtworkDragStart(event.nativeEvent, id)
+        }}
         onMouseMove={handleMouseMove}
         onMouseUp={() => handleArtworkDragEnd()}
         onClick={handleArtworkClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {currentArtworkId === id && <Handles artworkId={id} handleResize={onHandleResize} />}
+        {currentArtworkId === id && artworkGroupIds.length <= 1 && (
+          <Handles artworkId={id} handleResize={onHandleResize} />
+        )}
         {artworkType === 'text' && <ArtisticText artworkId={id} />}
         {artworkType === 'image' && <ArtisticImage artwork={artwork} />}
       </div>

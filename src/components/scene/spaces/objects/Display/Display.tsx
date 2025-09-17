@@ -61,13 +61,11 @@ const Display = ({ artwork }: DisplayProps) => {
 
   return (
     <group position={position} quaternion={quaternion} onDoubleClick={handleClick}>
-      {/* Invisible click area */}
       <mesh renderOrder={1}>
         <planeGeometry args={[planeWidth, planeHeight]} />
         <meshBasicMaterial visible={false} />
       </mesh>
 
-      {/* Placeholder if no image */}
       {!imageUrl && (
         <mesh renderOrder={2}>
           <planeGeometry args={[innerWidth, innerHeight]} />
@@ -75,7 +73,6 @@ const Display = ({ artwork }: DisplayProps) => {
         </mesh>
       )}
 
-      {/* Actual image */}
       {imageUrl && (
         <mesh castShadow receiveShadow renderOrder={2}>
           <Image url={imageUrl} side={DoubleSide} transparent toneMapped={false}>
@@ -84,7 +81,6 @@ const Display = ({ artwork }: DisplayProps) => {
         </mesh>
       )}
 
-      {/* Frame */}
       {showFrame && frameThickness?.value && (
         <Frame
           width={planeWidth}

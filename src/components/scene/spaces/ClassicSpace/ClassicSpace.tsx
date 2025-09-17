@@ -27,7 +27,6 @@ import {
   bulbMaterial,
 } from './materials'
 
-// 🔹 GLTF typing (nodes + materials used by components)
 type GLTFResult = GLTF & {
   nodes: {
     floor: Mesh & { geometry: BufferGeometry }

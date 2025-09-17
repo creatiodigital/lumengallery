@@ -3,26 +3,30 @@ import type { NextRequest } from 'next/server'
 
 import type { Exhibition } from '@/generated/prisma'
 import prisma from '@/lib/prisma'
+import { slugify } from '@/utils/slugify'
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as {
+      mainTitle: string
       visibility: string
       userId: string
       handler: string
-      url: string
       spaceId: string
     }
 
-    const { visibility, userId, handler, url, spaceId } = body
+    const { mainTitle, visibility, userId, handler, spaceId } = body
+
+    // Generate slug from mainTitle
+    const slug = slugify(mainTitle)
 
     const exhibition: Exhibition = await prisma.exhibition.create({
       data: {
-        mainTitle: 'Photography 1',
+        mainTitle,
         visibility,
         userId,
         handler,
-        url,
+        url: slug, // 👉 store only the slug
         spaceId,
         status: 'DRAFT',
       },

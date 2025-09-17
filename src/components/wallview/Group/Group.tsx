@@ -37,7 +37,7 @@ const Group: React.FC<GroupProps> = memo(({ wallRef, boundingData, scaleFactor, 
 
   const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()
-    handleGroupDragStart(event) // pass React.MouseEvent (hook expects it)
+    handleGroupDragStart(event)
   }
 
   const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {

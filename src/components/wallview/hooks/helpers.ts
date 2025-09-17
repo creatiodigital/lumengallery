@@ -5,7 +5,6 @@ type TAlignedArtwork = {
   height: number
 }
 
-// Allowed alignment directions
 type HorizontalAlignment = 'top' | 'bottom' | 'center-horizontal' | null
 type VerticalAlignment = 'left' | 'right' | 'center-vertical' | null
 

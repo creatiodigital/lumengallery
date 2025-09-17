@@ -145,7 +145,7 @@ export const detectCollisions = (
   glassRefs: RefObject<Mesh>[] = [],
   collisionDistance: number,
 ): boolean => {
-  if (moveVector.lengthSq() === 0) return false // don't raycast if no movement
+  if (moveVector.lengthSq() === 0) return false
 
   const direction = new Vector3().copy(moveVector).normalize()
   const raycaster = new Raycaster(camera.position, direction, 0, 3)

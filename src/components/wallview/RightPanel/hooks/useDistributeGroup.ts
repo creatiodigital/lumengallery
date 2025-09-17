@@ -33,18 +33,16 @@ export const useDistributeGroup = (boundingData: TDimensions | null) => {
 
     const gapsBetweenArtworks = groupedArtworks.length - 1
 
-    // Calculate spacing only for gaps between artworks
     const horizontalSpacing =
       gapsBetweenArtworks > 0 ? (groupWidth - artworkTotalWidth) / gapsBetweenArtworks : 0
     const verticalSpacing =
       gapsBetweenArtworks > 0 ? (groupHeight - artworkTotalHeight) / gapsBetweenArtworks : 0
 
-    // Initialize positions
     const horizontalPositions: number[] = []
     const verticalPositions: number[] = []
 
     if (alignment === 'horizontal') {
-      let currentX = groupX // Start at the left edge of the group
+      let currentX = groupX
       groupedArtworks.forEach((artwork) => {
         horizontalPositions.push(currentX)
         currentX += artwork.width2d + horizontalSpacing
@@ -52,14 +50,13 @@ export const useDistributeGroup = (boundingData: TDimensions | null) => {
     }
 
     if (alignment === 'vertical') {
-      let currentY = groupY // Start at the top edge of the group
+      let currentY = groupY
       groupedArtworks.forEach((artwork) => {
         verticalPositions.push(currentY)
         currentY += artwork.height2d + verticalSpacing
       })
     }
 
-    // Update artwork positions
     groupedArtworks.forEach((artwork, index) => {
       if (artwork) {
         let newX = artwork.posX2d

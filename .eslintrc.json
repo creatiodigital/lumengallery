@@ -8,6 +8,12 @@
     "node": true
   },
   "rules": {
+    "jsx-a11y/alt-text": [
+      "error",
+      {
+        "elements": ["img", "object", "area", "input[type=\"image\"]"]
+      }
+    ],
     "prettier/prettier": "error",
     "import/order": [
       "error",

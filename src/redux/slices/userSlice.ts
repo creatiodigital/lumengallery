@@ -1,22 +1,21 @@
-// src/redux/slices/userSlice.ts
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-import { createUserState } from '@/factories/userFactory'
 import type { TExhibition } from '@/types/exhibition'
-import type { TUser } from '@/types/user'
+
+type UserExhibitionsState = {
+  exhibitionsById: Record<string, TExhibition>
+  allExhibitionIds: string[]
+}
+
+const initialState: UserExhibitionsState = {
+  exhibitionsById: {},
+  allExhibitionIds: [],
+}
 
 const userSlice = createSlice({
   name: 'user',
-  initialState: createUserState(),
+  initialState,
   reducers: {
-    hydrateUser: (state, action: PayloadAction<TUser>) => {
-      const user = action.payload
-      state.id = user.id
-      state.name = user.name
-      state.lastName = user.lastName
-      state.handler = user.handler
-      state.biography = user.biography
-    },
     hydrateExhibitions: (state, action: PayloadAction<TExhibition[]>) => {
       state.exhibitionsById = {}
       state.allExhibitionIds = []
@@ -32,8 +31,13 @@ const userSlice = createSlice({
         state.allExhibitionIds.push(ex.id)
       }
     },
+    removeExhibition: (state, action: PayloadAction<string>) => {
+      const id = action.payload
+      delete state.exhibitionsById[id]
+      state.allExhibitionIds = state.allExhibitionIds.filter((exId) => exId !== id)
+    },
   },
 })
 
-export const { hydrateUser, hydrateExhibitions, addExhibition } = userSlice.actions
+export const { hydrateExhibitions, addExhibition, removeExhibition } = userSlice.actions
 export default userSlice.reducer

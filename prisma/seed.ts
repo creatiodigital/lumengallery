@@ -16,7 +16,7 @@ async function main() {
     },
   })
 
-  console.log('✅ User created:', user)
+  console.log('User created:', user)
 }
 
 main()

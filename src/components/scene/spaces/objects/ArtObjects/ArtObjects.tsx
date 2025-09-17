@@ -43,7 +43,7 @@ const ArtObjects = () => {
           height: pos.height3d || 1,
         }
       })
-      .filter((a): a is ArtworkWithPosition => a !== null) // remove nulls safely
+      .filter((a): a is ArtworkWithPosition => a !== null)
   }, [allArtworkIds, artworksById, exhibitionArtworksById])
 
   return (

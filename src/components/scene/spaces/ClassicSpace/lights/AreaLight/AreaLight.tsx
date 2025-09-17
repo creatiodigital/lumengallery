@@ -18,7 +18,6 @@ const AreaLight: React.FC = () => {
     const helper = new RectAreaLightHelper(light)
     helperRef.current = helper
 
-    // Add helper to scene (or to light.parent if defined)
     const parent = light.parent ?? scene
     parent.add(helper)
 

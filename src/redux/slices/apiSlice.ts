@@ -1,4 +1,3 @@
-// src/redux/slices/apiSlice.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 
 import type { TExhibition } from '@/types/exhibition'

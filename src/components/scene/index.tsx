@@ -17,12 +17,11 @@ export const Scene = () => {
   const windowRefs = useRef<React.RefObject<Mesh | null>[]>([])
   const glassRefs = useRef<React.RefObject<Mesh | null>[]>([])
 
-  // Placeholder props — you can replace these with actual values from Redux or parent
   const handlePlaceholderClick = (wallId: string) => {
     console.log('Clicked placeholder on wall:', wallId)
   }
 
-  const artworks: TArtwork[] = [] // Replace with real artworks
+  const artworks: TArtwork[] = []
 
   return (
     <SceneContext.Provider value={{ wallRefs, windowRefs, glassRefs }}>
