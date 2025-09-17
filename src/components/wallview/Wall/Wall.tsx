@@ -74,7 +74,7 @@ export const Wall = () => {
     return () => {
       dispatch(setShiftKeyDown(false))
     }
-  }, [])
+  }, [dispatch])
 
   const handleDropArtworkOnWall = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -141,6 +141,7 @@ export const Wall = () => {
         }),
       )
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isArtworkUploaded, dispatch])
 
   const { handleDeselect } = useDeselectArtwork()

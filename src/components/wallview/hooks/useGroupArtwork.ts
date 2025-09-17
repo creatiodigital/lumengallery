@@ -43,7 +43,7 @@ export const useGroupArtwork = () => {
     }
 
     dispatch(createArtworkGroup(groupProps))
-  }, [artworkGroupIds, dispatch])
+  }, [artworkGroupIds, exhibitionArtworksById, dispatch])
 
   const handleRemoveArtworkGroup = useCallback(() => {
     dispatch(removeGroup())
@@ -53,7 +53,7 @@ export const useGroupArtwork = () => {
     if (artworkGroupIds.length > 0) {
       handleCreateArtworkGroup()
     }
-  }, [artworkGroupIds])
+  }, [artworkGroupIds, handleCreateArtworkGroup])
 
   return {
     handleAddArtworkToGroup,
