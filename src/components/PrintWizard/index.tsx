@@ -166,23 +166,7 @@ export const PrintWizard = ({
     }
   }
 
-  // Once the client-side image measurement lands, snap orientation to
-  // match — unless the user has touched it (URL seed or manual toggle).
-  const [orientationTouched, setOrientationTouched] = useState(
-    urlSeed.values.orientation !== undefined,
-  )
-  useEffect(() => {
-    if (orientationTouched || measuredAspect === null) return
-    const derived = measuredAspect < 1 ? 'portrait' : 'landscape'
-    setConfig((prev) =>
-      prev.values.orientation === derived
-        ? prev
-        : { ...prev, values: { ...prev.values, orientation: derived } },
-    )
-  }, [measuredAspect, orientationTouched])
-
   const updateConfig = (patch: Record<string, string>) => {
-    if (patch.orientation !== undefined) setOrientationTouched(true)
     setConfig((prev) => {
       const nextValues = { ...prev.values, ...patch }
       // Picking 'None' for the passepartout colour hides the mount-size
@@ -388,11 +372,10 @@ export const PrintWizard = ({
 /**
  * Reconstruct a partial config from URL params. Accept a param only
  * when its key matches a catalog dimension id AND its value is a
- * valid option for that dimension (or 'portrait'/'landscape' for the
- * orientation dim). This protects against stale URLs from a different
- * config that doesn't fit the current catalog — e.g. a stale URL
- * `size=60x80` getting merged into a new catalog where size is
- * custom-only and `60x80` resolves to nothing.
+ * valid option for that dimension. This protects against stale URLs
+ * from a different config that doesn't fit the current catalog — e.g.
+ * a stale URL `size=60x80` getting merged into a new catalog where
+ * size is custom-only and `60x80` resolves to nothing.
  *
  * Also parses `customSize=WxH` (custom W×H in cm) and any border-
  * kind dimension's numeric value, so the buyer's full configuration
@@ -427,8 +410,6 @@ function readConfigFromParams(
       if (dim.options.some((o) => o.id === value)) values[key] = value
     } else if (dim.kind === 'size') {
       if (dim.options.some((o) => o.id === value)) values[key] = value
-    } else if (dim.kind === 'orientation') {
-      if (value === 'portrait' || value === 'landscape') values[key] = value
     } else if (dim.kind === 'border') {
       const cm = Number(value)
       if (Number.isFinite(cm) && cm >= dim.minCm && cm <= dim.maxCm) {
