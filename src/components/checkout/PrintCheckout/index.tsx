@@ -318,8 +318,9 @@ export const PrintCheckout = ({
   }, [handoff, country, quote, artwork.slug])
 
   const specs: SpecsSummary = handoff?.specs ?? []
+  const customSize = handoff?.config.customSize
   const orientation: 'portrait' | 'landscape' =
-    handoff?.config.values.orientation === 'landscape' ? 'landscape' : 'portrait'
+    customSize && customSize.widthCm > customSize.heightCm ? 'landscape' : 'portrait'
 
   const canSubmit = !!quote && !!handoff
 

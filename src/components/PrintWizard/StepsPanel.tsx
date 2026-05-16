@@ -826,8 +826,7 @@ const SizeDimensionSection = ({
   onChange,
   onCustomSizeChange,
 }: SizeSectionProps) => {
-  const orientation: 'portrait' | 'landscape' =
-    config.values.orientation === 'landscape' ? 'landscape' : 'portrait'
+  const orientation: 'portrait' | 'landscape' = aspectRatio < 1 ? 'portrait' : 'landscape'
 
   const filtered = useMemo(() => {
     return dimension.options

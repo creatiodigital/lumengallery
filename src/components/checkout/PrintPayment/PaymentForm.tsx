@@ -45,8 +45,9 @@ export const PaymentForm = ({
       ? `VAT (${Math.round((customerVatCents * 100) / subtotalCents)}%)`
       : 'VAT'
 
+  const customSize = stashed.config.customSize
   const orientation: 'portrait' | 'landscape' =
-    stashed.config.values.orientation === 'landscape' ? 'landscape' : 'portrait'
+    customSize && customSize.widthCm > customSize.heightCm ? 'landscape' : 'portrait'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

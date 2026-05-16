@@ -40,7 +40,8 @@ export type SpecsSummary = SpecRow[]
  * displayed sequence matches the wizard step order.
  */
 export function summarizeConfig(catalog: Catalog, config: WizardConfig): SpecsSummary {
-  const isLandscape = config.values.orientation === 'landscape'
+  const sizeCm = getEffectiveSizeCm(catalog, config)
+  const isLandscape = sizeCm ? sizeCm.widthCm > sizeCm.heightCm : false
   const rows: SpecsSummary = []
   for (const dim of catalog.dimensions) {
     if (!isDimensionVisible(dim, config, catalog)) continue
