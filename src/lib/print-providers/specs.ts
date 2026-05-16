@@ -12,8 +12,7 @@
  *
  * The buyer never sees a row for a dimension they didn't pick or one
  * that isn't currently visible (e.g. frame moulding hides itself when
- * format = "print only"), and never sees orientation as its own row
- * since the size string already flips for landscape.
+ * format = "print only").
  */
 import type { Catalog, Dimension, WizardConfig } from './types'
 import { getEffectiveBorderCm, getEffectiveSizeCm, isDimensionVisible } from './configHelpers'
@@ -78,8 +77,6 @@ function renderDimensionValue(
     if (cm <= 0) return '—'
     return `${roundCm(cm)} cm`
   }
-  // Orientation — already encoded in the size row's swap, would just
-  // duplicate information for the buyer.
   return null
 }
 

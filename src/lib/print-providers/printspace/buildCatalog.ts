@@ -133,7 +133,7 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
 
   // Dimension order mirrors TPS's "Order Prints" flow: paper-type
   // first, then print size + paper border, then mounting/framing
-  // and all its sub-options, then orientation.
+  // and all its sub-options.
   const dimensions: Catalog['dimensions'] = [
     {
       kind: 'enum',
@@ -240,12 +240,6 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
       options: hangingOptions,
       visibleWhen: { dimensionId: 'format', valueIn: ['framing'] },
     } satisfies EnumDimension,
-    // No orientation dimension — TPS sells custom W × H. Whether the
-    // print is portrait or landscape is implicit in the buyer's typed
-    // dimensions (W < H = portrait; W > H = landscape). Confirmed
-    // against TPS's "Order Prints" help doc + cart spec strings,
-    // 2026-04-27. The dimension stays implicit in the buyer's typed W×H.
-    // are aspect-fixed but rotation-free.
   ]
 
   return {

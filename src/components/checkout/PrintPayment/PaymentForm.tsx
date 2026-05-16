@@ -46,8 +46,6 @@ export const PaymentForm = ({
       : 'VAT'
 
   const customSize = stashed.config.customSize
-  const orientation: 'portrait' | 'landscape' =
-    customSize && customSize.widthCm > customSize.heightCm ? 'landscape' : 'portrait'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -167,7 +165,7 @@ export const PaymentForm = ({
           originalHeightPx: artwork.originalHeightPx,
         }}
         specs={stashed.specs}
-        orientation={orientation}
+        printSizeCm={customSize}
         country={country}
         priceLines={[
           { label: 'Subtotal', value: formatEuro(subtotalCents) },
