@@ -17,7 +17,6 @@ export type {
   GetQuoteInput,
   LoadCatalogInput,
   Option,
-  OrientationDimension,
   PrintProvider,
   PrintRecommendations,
   PrintRestrictions,
@@ -30,12 +29,7 @@ export type {
   WizardConfig,
 } from './types'
 
-export {
-  formatDualDimensions,
-  formatEuro,
-  formatSizeForOrientation,
-  sizeOptionLabel,
-} from './format'
+export { formatDualDimensions, formatEuro } from './format'
 
 export { buildAvailability } from './availability'
 export { estimateDelivery, formatDeliveryEstimate } from './delivery'

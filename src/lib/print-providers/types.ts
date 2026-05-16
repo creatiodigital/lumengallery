@@ -28,7 +28,7 @@ export type Catalog = {
   providerData?: unknown
 }
 
-export type Dimension = EnumDimension | SizeDimension | OrientationDimension | BorderDimension
+export type Dimension = EnumDimension | SizeDimension | BorderDimension
 
 export type DimensionBase = {
   id: string
@@ -59,10 +59,6 @@ export type SizeDimension = DimensionBase & {
     /** Lock width and height to the artwork's natural aspect ratio. */
     aspectLocked?: boolean
   }
-}
-
-export type OrientationDimension = DimensionBase & {
-  kind: 'orientation'
 }
 
 /**

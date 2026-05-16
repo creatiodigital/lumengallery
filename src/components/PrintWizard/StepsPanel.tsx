@@ -3,7 +3,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import Image from 'next/image'
 
-import { Button } from '@/components/ui/Button'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { Icon } from '@/components/ui/Icon'
 import { Input } from '@/components/ui/Input'
@@ -24,9 +23,9 @@ import {
   type SizeOption,
   type WizardConfig,
   clampCm,
+  formatDualDimensions,
   isDimensionVisible,
   isOptionPickable,
-  sizeOptionLabel,
 } from '@/lib/print-providers'
 import { type PrintLongEdgeBounds, formatPrintSize } from '@/lib/print-providers/printspace'
 
@@ -648,47 +647,6 @@ const DimensionSection = ({
   const aspectRatioForChild = aspectRatio
   if (!isDimensionVisible(dimension, config, catalog)) return null
 
-  if (dimension.kind === 'orientation') {
-    return (
-      <CollapsibleSection title={dimension.label} open={open} onToggle={onToggle}>
-        <div className={styles.stepField}>
-          <p className={styles.destinationHelp}>
-            How the print will be hung. Defaulted to match your artwork — flip it if you want a
-            different hang.
-          </p>
-          <div className={styles.orientationChoices} role="radiogroup" aria-label="Orientation">
-            {(['portrait', 'landscape'] as const).map((value) => {
-              const selected = config.values.orientation === value
-              return (
-                <Button
-                  key={value}
-                  variant="ghost"
-                  role="radio"
-                  aria-checked={selected}
-                  disabled={optionsLocked}
-                  className={`${styles.orientationChoice} ${
-                    selected ? styles.orientationChoiceSelected : ''
-                  } ${optionsLocked ? styles.orientationChoiceDisabled : ''}`}
-                  onClick={() => onChange({ orientation: value })}
-                >
-                  <span
-                    className={`${styles.orientationIcon} ${
-                      value === 'landscape' ? styles.orientationIconLandscape : ''
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <span className={styles.orientationLabel}>
-                    {value === 'portrait' ? 'Portrait' : 'Landscape'}
-                  </span>
-                </Button>
-              )
-            })}
-          </div>
-        </div>
-      </CollapsibleSection>
-    )
-  }
-
   if (dimension.kind === 'size') {
     return (
       <SizeDimensionSection
@@ -826,8 +784,6 @@ const SizeDimensionSection = ({
   onChange,
   onCustomSizeChange,
 }: SizeSectionProps) => {
-  const orientation: 'portrait' | 'landscape' = aspectRatio < 1 ? 'portrait' : 'landscape'
-
   const filtered = useMemo(() => {
     return dimension.options
       .filter((o) => o.printEligible)
@@ -854,7 +810,7 @@ const SizeDimensionSection = ({
     () =>
       sorted.map((size) => ({
         value: size.id,
-        label: sizeOptionLabel(size, orientation),
+        label: formatDualDimensions(size.widthCm, size.heightCm),
         tooltip: (
           <p>
             This size matches your artwork&apos;s aspect ratio — the whole image prints without
@@ -862,7 +818,7 @@ const SizeDimensionSection = ({
           </p>
         ),
       })),
-    [sorted, orientation],
+    [sorted],
   )
 
   return (
