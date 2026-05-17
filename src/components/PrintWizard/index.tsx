@@ -246,49 +246,22 @@ export const PrintWizard = ({
 
   const canContinue = true
 
-  // Pre-fetch quote on every (config, country) change. Without a
-  // country the server returns just the artwork line — shipping + tax
-  // appear once a destination is set on the checkout step.
-  //
-  // We deliberately KEEP the previous quote visible while the new one
-  // is in flight. Clearing it on every keystroke makes the price flash
-  // between "€X" → "…" → "€Y" as the buyer drags a slider.
-  const [quote, setQuote] = useState<Quote | null>(null)
-  const [quoteLoading, setQuoteLoading] = useState(false)
-  // Debounce the config so rapid slider/option changes collapse into a
-  // single quote request once the buyer stops interacting. Without this,
-  // every keystroke fires a server-action POST and Vercel's per-request
-  // latency means each in-flight request gets cancelled by the next
-  // config change — the displayed price ends up stuck for seconds (or
-  // until the wizard remounts) waiting for one to actually resolve.
-  const [debouncedConfig, setDebouncedConfig] = useState(config)
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedConfig(config), 200)
-    return () => clearTimeout(t)
-  }, [config])
-
-  useEffect(() => {
-    let cancelled = false
-    setQuoteLoading(true)
-    getProviderQuote(catalog.providerId, {
-      config: debouncedConfig,
-      country,
-      artistPriceCents: artwork.printPriceCents,
-    })
-      .then((q) => {
-        if (cancelled) return
-        setQuote(q)
-        setQuoteLoading(false)
-      })
-      .catch((err) => {
-        if (cancelled) return
-        console.warn('[PrintWizard] quote failed:', err)
-        setQuoteLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [catalog.providerId, debouncedConfig, country, artwork.printPriceCents])
+  // Synchronous price compute. The quote function is pure math (no DB,
+  // no fetch, no secrets) — running it client-side gives the buyer an
+  // instant price update on every config change, no round-trip, no
+  // debounce, no cancellation chain. The server re-runs this exact
+  // function at payment-intent creation so a tampered client price
+  // never reaches Stripe.
+  const quote: Quote = useMemo(
+    () =>
+      getProviderQuote(catalog.providerId, {
+        config,
+        country,
+        artistPriceCents: artwork.printPriceCents,
+      }),
+    [catalog.providerId, config, country, artwork.printPriceCents],
+  )
+  const quoteLoading = false
 
   const handleAddToCart = () => {
     // Stash everything downstream needs so checkout doesn't have to

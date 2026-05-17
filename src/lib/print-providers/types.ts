@@ -238,7 +238,7 @@ export interface PrintProvider {
    * cheap (no network) — cache anything heavy in `loadCatalog`.
    */
   buildAvailability(catalog: Catalog): AvailabilityCheck
-  getQuote(input: GetQuoteInput): Promise<Quote>
+  getQuote(input: GetQuoteInput): Quote
   /**
    * End-to-end delivery estimate for a given config + country, as a
    * range in calendar days. The wizard surfaces this in the summary

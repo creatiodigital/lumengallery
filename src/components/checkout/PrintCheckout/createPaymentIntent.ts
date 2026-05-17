@@ -266,7 +266,7 @@ export async function createPaymentIntent(
   const artistCents = artwork.printPriceCents
   const galleryCents = Math.round(artistCents * GALLERY_MARKUP_RATE)
 
-  const quote = await getProviderQuote(providerId, {
+  const quote = getProviderQuote(providerId, {
     config,
     country: address.countryCode,
     artistPriceCents: artistCents,

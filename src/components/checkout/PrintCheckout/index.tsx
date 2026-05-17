@@ -167,8 +167,6 @@ export const PrintCheckout = ({
     () => DIAL_CODES[initialCountry] ?? DIAL_CODES.ES,
   )
   const [handoff, setHandoff] = useState<WizardHandoff | null>(null)
-  const [quote, setQuote] = useState<Quote | null>(null)
-  const [quoteLoading, setQuoteLoading] = useState(true)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -291,6 +289,19 @@ export const PrintCheckout = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artwork.slug, providerId])
 
+  // Synchronous price compute. Pure math — runs client-side for an
+  // instant price update on every config / country change. See
+  // src/lib/print-providers/quote.ts for why this is safe.
+  const quote: Quote | null = useMemo(() => {
+    if (!handoff) return null
+    return getProviderQuote(handoff.providerId, {
+      config: handoff.config,
+      country,
+      artistPriceCents: artwork.printPriceCents,
+    })
+  }, [handoff, country, artwork.printPriceCents])
+  const quoteLoading = false
+
   // Persist the picked country back into the wizard handoff stash so
   // navigating back to the wizard pre-fills "Shipping to" and shows
   // the real shipping line instead of dashes.
@@ -306,41 +317,11 @@ export const PrintCheckout = ({
     }
   }, [handoff, country, quote, artwork.slug])
 
-  // Re-quote on every (config, country) change. When `country` is
-  // empty, the server returns only the artwork line — shipping and
-  // tax show "—" in the summary until the buyer picks a destination.
-  useEffect(() => {
-    if (!handoff) return
-    let cancelled = false
-    setQuoteLoading(true)
-
-    getProviderQuote(handoff.providerId, {
-      config: handoff.config,
-      country,
-      artistPriceCents: artwork.printPriceCents,
-    })
-      .then((next) => {
-        if (cancelled) return
-        setQuote(next)
-        setQuoteLoading(false)
-      })
-      .catch((err) => {
-        if (cancelled) return
-        console.warn('[PrintCheckout] live quote failed:', err)
-        setQuote(null)
-        setQuoteLoading(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [handoff, country, artwork.printPriceCents])
-
   const specs: SpecsSummary = handoff?.specs ?? []
   const orientation: 'portrait' | 'landscape' =
     handoff?.config.values.orientation === 'landscape' ? 'landscape' : 'portrait'
 
-  const canSubmit = !!quote && !quoteLoading && !!handoff
+  const canSubmit = !!quote && !!handoff
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault()
