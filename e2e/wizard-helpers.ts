@@ -33,7 +33,7 @@ export async function pickCheckoutCountry(page: Page, country: string): Promise<
  * <div>...SelectDropdown...</div></section>`; the dropdown trigger inside
  * has `aria-haspopup="listbox"` and opens a `<ul role="listbox">`.
  *
- * Some sections (TPL "Print", "Frame") group several SelectDropdowns. Pass
+ * Some sections (TPS "Print", "Frame") group several SelectDropdowns. Pass
  * `fieldLabel` to disambiguate by the dropdown's label `<span>` — when omitted,
  * the first dropdown in the section is used.
  */
@@ -59,7 +59,7 @@ export async function readWizardOptions(
 /**
  * Pick a value from a SelectDropdown inside the named section. Pass
  * `fieldLabel` to target a specific dropdown in a grouped section
- * (e.g. TPL "Print" → "Type" / "Paper").
+ * (e.g. TPS "Print" → "Type" / "Paper").
  */
 export async function pickWizardOption(
   page: Page,
@@ -103,7 +103,7 @@ function firstTrigger(section: ReturnType<Page['locator']>) {
  * SelectDropdown markup is `<div class="wrapper"><span class="label">{label}</span>
  * <button aria-haspopup="listbox">…</button>…</div>`. We find the label span by
  * exact text and walk to the immediately-following listbox button so grouped
- * sections (TPL "Print" → "Type" / "Paper") can be addressed by the dropdown
+ * sections (TPS "Print" → "Type" / "Paper") can be addressed by the dropdown
  * label rather than positional index.
  */
 function labeledTrigger(section: ReturnType<Page['locator']>, fieldLabel: string) {

@@ -28,7 +28,7 @@ import {
   isOptionPickable,
   sizeOptionLabel,
 } from '@/lib/print-providers'
-import { type PrintLongEdgeBounds, formatPrintSize } from '@/lib/print-providers/tpl'
+import { type PrintLongEdgeBounds, formatPrintSize } from '@/lib/print-providers/printspace'
 
 import styles from './PrintWizard.module.scss'
 
@@ -978,7 +978,7 @@ const CustomSizeInputs = ({
     if (!Number.isFinite(parsed) || parsed <= 0) return
 
     if (ratioWH === null) {
-      // No aspect lock — both fields independent. (Unused with TPL,
+      // No aspect lock — both fields independent. (Unused with TPS,
       // but kept for symmetry with the catalog.)
       const w = which === 'width' ? clampCm(parsed, minWidthCm, maxWidthCm, custom.stepCm) : widthCm
       const h =

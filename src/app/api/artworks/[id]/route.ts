@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server'
 import { deleteFromR2 } from '@/lib/r2'
 
 import { requireOwnership } from '@/lib/authUtils'
-import { TPL_FRAME_TYPES, TPL_PAPERS, TPL_WINDOW_MOUNTS } from '@/lib/print-providers/tpl'
+import { TPS_FRAME_TYPES, TPS_PAPERS, TPS_WINDOW_MOUNTS } from '@/lib/print-providers/printspace'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 import { Prisma } from '@/generated/prisma'
 import prisma from '@/lib/prisma'
@@ -41,9 +41,9 @@ function sanitizePrintOptions(raw: unknown): PrintRestrictions | null {
     obj.allowed && typeof obj.allowed === 'object' ? (obj.allowed as Record<string, unknown>) : null
   if (!inner) return null
   const next: Record<string, string[]> = {}
-  const paperIds = cleanIds(inner.paper, TPL_PAPERS)
-  const frameTypeIds = cleanIds(inner.frameType, TPL_FRAME_TYPES)
-  const windowMountIds = cleanIds(inner.windowMount, TPL_WINDOW_MOUNTS)
+  const paperIds = cleanIds(inner.paper, TPS_PAPERS)
+  const frameTypeIds = cleanIds(inner.frameType, TPS_FRAME_TYPES)
+  const windowMountIds = cleanIds(inner.windowMount, TPS_WINDOW_MOUNTS)
   if (paperIds) next.paper = paperIds
   if (frameTypeIds) next.frameType = frameTypeIds
   if (windowMountIds) next.windowMount = windowMountIds
@@ -61,7 +61,7 @@ function sanitizePrintRecommendations(
   const obj = raw as Record<string, unknown>
   const paperIdsRaw = obj.paper
   if (!Array.isArray(paperIdsRaw)) return null
-  const universeIds = new Set<string>(TPL_PAPERS.map((p) => p.id))
+  const universeIds = new Set<string>(TPS_PAPERS.map((p) => p.id))
   const allowedPapers = restrictions?.allowed?.paper
   const allowedSet = allowedPapers ? new Set(allowedPapers) : null
   const seen = new Set<string>()

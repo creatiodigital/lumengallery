@@ -10,7 +10,7 @@ import {
   findConfigRestrictionClash,
 } from '@/lib/print-providers'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
-import { getVatRate } from '@/lib/print-providers/tpl/pricing'
+import { getVatRate } from '@/lib/print-providers/printspace/pricing'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import type { PrintRestrictions } from '@/lib/print-providers/types'
 import { captureError } from '@/lib/observability/captureError'
@@ -64,7 +64,7 @@ const GALLERY_MARKUP_RATE = 0.45
  * is treated as a config-tamper signal — we'd rather reject than charge
  * an absurd amount on the customer's card while we figure out why our
  * pricing produced it. €10,000 is well above any plausible single-print
- * order (largest TPL framed prints land ≈ €1,500).
+ * order (largest TPS framed prints land ≈ €1,500).
  */
 const MAX_TOTAL_CENTS = 1_000_000
 
@@ -104,13 +104,13 @@ function validateConfigShape(config: unknown): config is WizardConfig {
 /** Whitelist `providerId` to known literals — guards the dispatch from
  *  unknown values being passed through if the abstraction grows. */
 function isKnownProvider(id: unknown): id is ProviderId {
-  return id === 'tpl'
+  return id === 'printspace'
 }
 
 // sanitizeLine moved to @/utils/sanitizeLine
 
 /**
- * Server-authoritative payment setup. Quotes the order against TPL so we
+ * Server-authoritative payment setup. Quotes the order against TPS so we
  * don't trust the number the client saw, then opens a Stripe
  * PaymentIntent for the final total Stripe Tax computed.
  *
@@ -266,7 +266,7 @@ export async function createPaymentIntent(
   const artistCents = artwork.printPriceCents
   const galleryCents = Math.round(artistCents * GALLERY_MARKUP_RATE)
 
-  const quote = getProviderQuote(providerId, {
+  const quote = await getProviderQuote(providerId, {
     config,
     country: address.countryCode,
     artistPriceCents: artistCents,
@@ -360,7 +360,7 @@ export async function createPaymentIntent(
           countryCode: address.countryCode,
           customerEmail: address.email,
           // Per-line breakdown for the admin order page. "Production"
-          // is the TPL print-base + frame + glass + mount cost.
+          // is the TPS print-base + frame + glass + mount cost.
           productionCents: String(productionCents),
           shippingCents: String(shippingCents),
           artistCents: String(artistCents),

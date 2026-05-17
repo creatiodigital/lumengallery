@@ -18,7 +18,7 @@ test('print wizard: print + size sections visible immediately', async ({ page })
   const response = await page.goto(routes.printWizard(fixtures.artworkSlug))
   expect(response?.status(), 'print wizard should respond 2xx').toBeLessThan(400)
 
-  // TPL bundles printType+paper into a single "Print" section and
+  // TPS bundles printType+paper into a single "Print" section and
   // size+border into "Print size". Both should be visible on first
   // paint — no destination gate.
   await expect(

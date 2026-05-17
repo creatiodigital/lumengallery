@@ -54,7 +54,7 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
   const originalHeightPx = artwork.originalHeight
   const artistName = `${artwork.user.name} ${artwork.user.lastName}`
 
-  const catalog = await loadProviderCatalog('tpl', {
+  const catalog = await loadProviderCatalog('printspace', {
     imageWidthPx: originalWidthPx,
     imageHeightPx: originalHeightPx,
   })

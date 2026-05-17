@@ -158,7 +158,7 @@ export function getEffectiveBorderCm(config: WizardConfig, dimensionId = 'border
 
 /**
  * Effective passepartout (mat) width in cm. Reads from the
- * `windowMountSize` border dim when present (TPL), else falls back
+ * `windowMountSize` border dim when present (TPS), else falls back
  * to the visual hint `matBorderCm` from the currently-selected
  * options (catalog visual hints).
  */

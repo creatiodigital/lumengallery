@@ -119,7 +119,7 @@ export async function signInThroughUi(
   // cookie jar with only the CSRF token, and any spec that reuses
   // it gets bounced off authenticated routes by the mount-time
   // session guard. NextAuth's JWT cookie name is
-  // `authjs.session-token` in dev (no `__Secure-` prefix without HTTPL).
+  // `authjs.session-token` in dev (no `__Secure-` prefix without HTTPS).
   await expect
     .poll(
       async () => {

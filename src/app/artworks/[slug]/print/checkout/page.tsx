@@ -42,7 +42,7 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
 
   // Load catalog for the country dropdown — every supported destination
   // is offered. Buyer picks here (no longer pre-locked from the wizard).
-  const catalog = await loadProviderCatalog('tpl', {
+  const catalog = await loadProviderCatalog('printspace', {
     imageWidthPx: artwork.originalWidth,
     imageHeightPx: artwork.originalHeight,
   })
@@ -59,7 +59,7 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
         originalHeightPx: artwork.originalHeight,
         printPriceCents: artwork.printPriceCents,
       }}
-      providerId="tpl"
+      providerId="printspace"
       supportedCountries={catalog.supportedCountries}
       initialCountry={initialCountry}
     />

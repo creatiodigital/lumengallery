@@ -83,23 +83,23 @@ const BUCKET_META: Record<
   new: {
     title: 'New',
     helper:
-      'Buyer paid; card is on hold. Place the order on the print lab, then click Capture & mark placed to charge the buyer and advance.',
+      'Buyer paid; card is on hold. Place the order on theprintspace, then click Capture & mark placed to charge the buyer and advance.',
     nextAction: 'Capture & mark placed',
   },
   'at-tps': {
-    title: 'At TPL',
+    title: 'At TPS',
     helper:
-      'Order placed at the print lab; payment captured. Click Mark in production once TPL confirms they’re printing.',
+      'Order placed at theprintspace; payment captured. Click Mark in production once TPS confirms they’re printing.',
     nextAction: 'Mark in production',
   },
   production: {
     title: 'In production',
-    helper: 'TPL is printing. Once they ship, paste the tracking URL to advance.',
+    helper: 'TPS is printing. Once they ship, paste the tracking URL to advance.',
     nextAction: 'Mark shipped',
   },
   shipped: {
     title: 'Shipped',
-    helper: 'TPL shipped. Mark delivered once the buyer confirms receipt.',
+    helper: 'TPS shipped. Mark delivered once the buyer confirms receipt.',
     nextAction: 'Mark delivered',
   },
   delivered: {
@@ -115,7 +115,7 @@ const BUCKET_META: Record<
   rejected: {
     title: 'Rejected',
     helper:
-      'Orders pulled out of the pipeline before delivery — TPL rejected the file, artist disabled prints, etc. Refunds (if needed) are handled from the order detail page.',
+      'Orders pulled out of the pipeline before delivery — TPS rejected the file, artist disabled prints, etc. Refunds (if needed) are handled from the order detail page.',
     nextAction: 'View details',
   },
   refunded: {

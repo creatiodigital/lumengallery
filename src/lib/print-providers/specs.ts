@@ -4,7 +4,7 @@
  * The summary panels (wizard right-hand side, checkout right-hand side)
  * and the order admin view all need to show the buyer "here is exactly
  * what you selected". Each provider emits a different set of dimensions
- * (TPL: print type / paper / size / framing / etc.).
+ * (TPS: print type / paper / size / framing / etc.).
  * paper / format / frame type / moulding / glass / hanging /
  * passepartout / size / border) — we don't try to flatten that into a
  * fixed shape. We just render whatever the catalog declared, in

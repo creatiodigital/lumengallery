@@ -14,7 +14,7 @@
  *     fit on Canson Baryta" surprises mid-flow.
  *   - Long edge hard cap: 200 cm. Above this a print stops being a
  *     consumer purchase — couriers classify tubes >150 cm as oversized
- *     parcels, TPL can't frame anything that big, and demand for
+ *     parcels, TPS can't frame anything that big, and demand for
  *     prints over ~180 cm is negligible outside bespoke commissions.
  *
  * Eligibility is "min print would print sharp at MIN_DPI". If the

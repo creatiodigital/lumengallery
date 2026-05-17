@@ -24,7 +24,7 @@ type CounterCard = {
 }
 
 const URGENT_COUNTERS: CounterCard[] = [
-  { label: 'Awaiting placement at TPL', count: 0, href: '/admin/orders', tone: 'amber' },
+  { label: 'Awaiting placement at TPS', count: 0, href: '/admin/orders', tone: 'amber' },
   { label: 'Needs attention', count: 0, href: '/admin/orders', tone: 'red' },
   { label: 'Refund still owed', count: 0, href: '/admin/orders', tone: 'red' },
   { label: 'Delivered, artist not paid', count: 0, href: '/admin/orders', tone: 'amber' },

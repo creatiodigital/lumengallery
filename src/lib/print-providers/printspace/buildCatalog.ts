@@ -1,5 +1,5 @@
 /**
- * Convert The Print Lab's hardcoded data into the canonical
+ * Convert The Print Space's hardcoded data into the canonical
  * provider-agnostic `Catalog` shape consumed by the wizard.
  *
  * Built up incrementally — only dimensions whose data has been
@@ -16,36 +16,36 @@ import type {
   VisualHints,
 } from '../types'
 import {
-  TPL_BORDER_BOUNDS,
-  TPL_FORMATS,
-  TPL_FRAME_TYPES,
-  TPL_GLASS_OPTIONS,
-  TPL_HANGING_OPTIONS,
-  TPL_MOULDINGS,
-  TPL_MOUNT_BOARD_BOUNDS,
-  TPL_PAPERS,
-  TPL_PRINT_TYPES,
-  TPL_SIZE_BOUNDS,
-  TPL_WINDOW_MOUNTS,
-  type TplFrameTypeId,
+  TPS_BORDER_BOUNDS,
+  TPS_FORMATS,
+  TPS_FRAME_TYPES,
+  TPS_GLASS_OPTIONS,
+  TPS_HANGING_OPTIONS,
+  TPS_MOULDINGS,
+  TPS_MOUNT_BOARD_BOUNDS,
+  TPS_PAPERS,
+  TPS_PRINT_TYPES,
+  TPS_SIZE_BOUNDS,
+  TPS_WINDOW_MOUNTS,
+  type TpsFrameTypeId,
 } from './data'
-import { TPL_SUPPORTED_COUNTRIES } from './pricing'
+import { TPS_SUPPORTED_COUNTRIES } from './pricing'
 
 type BuildInput = {
   imageWidthPx: number
   imageHeightPx: number
 }
 
-export function buildTplCatalog(_input: BuildInput): Catalog {
+export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
   // ── Print type ──────────────────────────────────────────────
-  const printTypeOptions: Option[] = TPL_PRINT_TYPES.map((t) => ({
+  const printTypeOptions: Option[] = TPS_PRINT_TYPES.map((t) => ({
     id: t.id,
     label: t.label,
     description: t.description,
   }))
 
   // ── Paper (cascades on print type via Option.visibleWhen) ──
-  const paperOptions: Option[] = TPL_PAPERS.map((p) => ({
+  const paperOptions: Option[] = TPS_PAPERS.map((p) => ({
     id: p.id,
     label: p.label,
     description: p.description,
@@ -54,7 +54,7 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
   }))
 
   // ── Format (Print Only vs Framing) ──────────────────────────
-  const formatOptions: Option[] = TPL_FORMATS.map((f) => ({
+  const formatOptions: Option[] = TPS_FORMATS.map((f) => ({
     id: f.id,
     label: f.label,
     description: f.description,
@@ -65,13 +65,13 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
   // ── Frame Type (only visible when Format = Framing) ─────────
   // Per-type moulding silhouette so the 3D preview reads differently
   // for Standard / Box / Floating / Tray without bespoke geometry.
-  const FRAME_TYPE_VISUALS: Record<TplFrameTypeId, VisualHints> = {
+  const FRAME_TYPE_VISUALS: Record<TpsFrameTypeId, VisualHints> = {
     standard: { mouldingWidthCm: 2.0, mouldingDepthCm: 2.2 },
     box: { mouldingWidthCm: 2.0, mouldingDepthCm: 5.5 },
     floating: { mouldingWidthCm: 1.4, mouldingDepthCm: 3.2 },
     tray: { mouldingWidthCm: 1.5, mouldingDepthCm: 5.0 },
   }
-  const frameTypeOptions: Option[] = TPL_FRAME_TYPES.map((t) => ({
+  const frameTypeOptions: Option[] = TPS_FRAME_TYPES.map((t) => ({
     id: t.id,
     label: t.label,
     description: t.description,
@@ -84,7 +84,7 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
   // for Thin / Square / Wide / Large profiles, since `collectVisualHints`
   // is order-merged and `moulding` comes after `frameType` — so this
   // overrides the per-frame-type default. The numbers are illustrative
-  // (TPL doesn't publish exact moulding widths in the public catalog),
+  // (TPS doesn't publish exact moulding widths in the public catalog),
   // tuned to make the visual difference clear without being unrealistic.
   const inferMouldingWidthCm = (mouldingId: string): number => {
     if (mouldingId.endsWith('-large')) return 4.5
@@ -94,7 +94,7 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
     if (mouldingId.endsWith('-thin-rounded') || mouldingId.endsWith('-thin')) return 1.4
     return 2.0
   }
-  const mouldingOptions: Option[] = TPL_MOULDINGS.map((m) => ({
+  const mouldingOptions: Option[] = TPS_MOULDINGS.map((m) => ({
     id: m.id,
     label: m.label,
     visibleWhen: { dimensionId: 'frameType', valueIn: [m.frameType] },
@@ -107,21 +107,21 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
   }))
 
   // ── Glass (visible when framing; same 3 options across all frame types) ─
-  const glassOptions: Option[] = TPL_GLASS_OPTIONS.map((g) => ({
+  const glassOptions: Option[] = TPS_GLASS_OPTIONS.map((g) => ({
     id: g.id,
     label: g.label,
     description: g.description,
   }))
 
   // ── Hanging (visible when framing; same 4 options across frame types) ─
-  const hangingOptions: Option[] = TPL_HANGING_OPTIONS.map((h) => ({
+  const hangingOptions: Option[] = TPS_HANGING_OPTIONS.map((h) => ({
     id: h.id,
     label: h.label,
     description: h.description,
   }))
 
   // ── Window Mount / Passepartout colour (visible when framing) ─
-  const windowMountOptions: Option[] = TPL_WINDOW_MOUNTS.map((w) => ({
+  const windowMountOptions: Option[] = TPS_WINDOW_MOUNTS.map((w) => ({
     id: w.id,
     label: w.label,
     visual: w.id === 'none' ? undefined : { matColorHex: w.hex },
@@ -129,9 +129,9 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
 
   // Visibility list for "anything except 'none'" — used to gate the
   // mount-board-size input so it only appears when a colour is picked.
-  const windowMountColourIds = TPL_WINDOW_MOUNTS.filter((w) => w.id !== 'none').map((w) => w.id)
+  const windowMountColourIds = TPS_WINDOW_MOUNTS.filter((w) => w.id !== 'none').map((w) => w.id)
 
-  // Dimension order mirrors TPL's "Order Prints" flow: paper-type
+  // Dimension order mirrors TPS's "Order Prints" flow: paper-type
   // first, then print size + paper border, then mounting/framing
   // and all its sub-options, then orientation.
   const dimensions: Catalog['dimensions'] = [
@@ -147,7 +147,7 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
       label: 'Paper',
       options: paperOptions,
     } satisfies EnumDimension,
-    // TPL sells custom-only sizes — no presets, aspect ratio locked
+    // TPS sells custom-only sizes — no presets, aspect ratio locked
     // to the artwork's so the buyer never gets a crop or pad.
     {
       kind: 'size',
@@ -155,9 +155,9 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
       label: 'Print size',
       options: [],
       custom: {
-        minCm: TPL_SIZE_BOUNDS.minCm,
-        maxCm: TPL_SIZE_BOUNDS.maxCm,
-        stepCm: TPL_SIZE_BOUNDS.stepCm,
+        minCm: TPS_SIZE_BOUNDS.minCm,
+        maxCm: TPS_SIZE_BOUNDS.maxCm,
+        stepCm: TPS_SIZE_BOUNDS.stepCm,
         aspectLocked: true,
       },
     } satisfies SizeDimension,
@@ -166,10 +166,10 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
       kind: 'border',
       id: 'border',
       label: 'Paper border',
-      minCm: TPL_BORDER_BOUNDS.minCm,
-      maxCm: TPL_BORDER_BOUNDS.maxCm,
-      stepCm: TPL_BORDER_BOUNDS.stepCm,
-      defaultCm: TPL_BORDER_BOUNDS.defaultCm,
+      minCm: TPS_BORDER_BOUNDS.minCm,
+      maxCm: TPS_BORDER_BOUNDS.maxCm,
+      stepCm: TPS_BORDER_BOUNDS.stepCm,
+      defaultCm: TPS_BORDER_BOUNDS.defaultCm,
       helpText:
         'Extra white space printed on the paper around the image — same paper, same size on every side. This is not a passepartout (separate mat board); it just makes the printed sheet larger than the image.',
     } satisfies BorderDimension,
@@ -209,7 +209,7 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
     // Window Mount (passepartout) — only meaningful for frame styles
     // that put the print behind glass with a window-cut card around
     // it (Standard, Box). Floating frames use a visible Dibond
-    // backboard around the print instead; TPL hides this dropdown
+    // backboard around the print instead; TPS hides this dropdown
     // for Floating, and we match that. Cascades transitively to
     // print-only via frameType's own format='framing' rule.
     {
@@ -225,10 +225,10 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
       kind: 'border',
       id: 'windowMountSize',
       label: 'Mount (Passepartout) Size',
-      minCm: TPL_MOUNT_BOARD_BOUNDS.minCm,
-      maxCm: TPL_MOUNT_BOARD_BOUNDS.maxCm,
-      stepCm: TPL_MOUNT_BOARD_BOUNDS.stepCm,
-      defaultCm: TPL_MOUNT_BOARD_BOUNDS.defaultCm,
+      minCm: TPS_MOUNT_BOARD_BOUNDS.minCm,
+      maxCm: TPS_MOUNT_BOARD_BOUNDS.maxCm,
+      stepCm: TPS_MOUNT_BOARD_BOUNDS.stepCm,
+      defaultCm: TPS_MOUNT_BOARD_BOUNDS.defaultCm,
       visibleWhen: { dimensionId: 'windowMount', valueIn: windowMountColourIds },
     } satisfies BorderDimension,
     // Hanging — visible when framing. Last so it sits after all
@@ -240,31 +240,31 @@ export function buildTplCatalog(_input: BuildInput): Catalog {
       options: hangingOptions,
       visibleWhen: { dimensionId: 'format', valueIn: ['framing'] },
     } satisfies EnumDimension,
-    // No orientation dimension — TPL sells custom W × H. Whether the
+    // No orientation dimension — TPS sells custom W × H. Whether the
     // print is portrait or landscape is implicit in the buyer's typed
     // dimensions (W < H = portrait; W > H = landscape). Confirmed
-    // against TPL's "Order Prints" help doc + cart spec strings,
+    // against TPS's "Order Prints" help doc + cart spec strings,
     // 2026-04-27. The dimension stays implicit in the buyer's typed W×H.
     // are aspect-fixed but rotation-free.
   ]
 
   return {
-    providerId: 'tpl',
+    providerId: 'printspace',
     currency: 'EUR',
     dimensions,
-    // ISO codes from the TPL shipping rate card (UK, EU + Germany,
+    // ISO codes from the TPS shipping rate card (UK, EU + Germany,
     // Nordic, US, Canada, AU/NZ) plus a curated ROW set for the major
     // markets we'll ship to.
-    supportedCountries: TPL_SUPPORTED_COUNTRIES,
+    supportedCountries: TPS_SUPPORTED_COUNTRIES,
   }
 }
 
 /**
- * Synchronous availability check for TPL. Currently a no-op: as long
+ * Synchronous availability check for TPS. Currently a no-op: as long
  * as the option's `visibleWhen` rule passes (handled upstream by the
  * generic config helpers) it's available. Once we wire shipping
  * regions, country-specific filtering layers on top.
  */
-export function buildTplAvailability(): AvailabilityCheck {
+export function buildPrintspaceAvailability(): AvailabilityCheck {
   return () => true
 }
