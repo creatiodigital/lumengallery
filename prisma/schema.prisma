@@ -223,11 +223,8 @@ model PrintOrder {
   totalCents              Int
   artistCents             Int
   galleryCents            Int
-  // The two production-cost columns predate the TPS-only switch and
-  // were originally named after the previous provider. Mapped to keep
-  // their data in place; the Prisma field uses the neutral name.
-  productionCents         Int    @map("prodigiItemCents")
-  productionShippingCents Int    @map("prodigiShippingCents")
+  productionCents         Int
+  productionShippingCents Int
   customerVatCents        Int
   currency                String @default("eur")
 
