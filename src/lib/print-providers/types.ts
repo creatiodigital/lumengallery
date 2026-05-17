@@ -1,6 +1,6 @@
 /**
  * Provider-agnostic contract between the print wizard and the underlying
- * fulfillment service (currently the print lab, but the abstraction is
+ * fulfillment service (currently theprintspace, but the abstraction is
  * preserved so swapping in a future adapter stays low-risk).
  *
  * The wizard imports ONLY this file. The adapter lives under its own
@@ -8,7 +8,7 @@
  * declared here.
  */
 
-export type ProviderId = 'tpl'
+export type ProviderId = 'printspace'
 
 // ── Catalog shape ────────────────────────────────────────────────
 
@@ -28,7 +28,7 @@ export type Catalog = {
   providerData?: unknown
 }
 
-export type Dimension = EnumDimension | SizeDimension | OrientationDimension | BorderDimension
+export type Dimension = EnumDimension | SizeDimension | BorderDimension
 
 export type DimensionBase = {
   id: string
@@ -59,10 +59,6 @@ export type SizeDimension = DimensionBase & {
     /** Lock width and height to the artwork's natural aspect ratio. */
     aspectLocked?: boolean
   }
-}
-
-export type OrientationDimension = DimensionBase & {
-  kind: 'orientation'
 }
 
 /**
@@ -168,7 +164,7 @@ export type WizardConfig = {
   customSize?: { widthCm: number; heightCm: number }
   /**
    * Per-border-dimension uniform value, in cm, keyed by dimension id.
-   * Catalogs can declare multiple `border`-kind dimensions (e.g. TPL
+   * Catalogs can declare multiple `border`-kind dimensions (e.g. TPS
    * has both `border` for paper border and `windowMountSize` for mat
    * width). Each is uniform on all four sides — no asymmetric inputs.
    */

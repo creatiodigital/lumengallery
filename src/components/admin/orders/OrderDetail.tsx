@@ -77,7 +77,7 @@ const buildLifecycle = (order: { fulfillmentStatus: string | null; paidOutAt: st
   const fIdx = ['Placed', 'Started', 'Shipped', 'Complete'].indexOf(order.fulfillmentStatus ?? '')
   return [
     { label: 'New', reached: true },
-    { label: 'At TPL', reached: fIdx >= 0 },
+    { label: 'At TPS', reached: fIdx >= 0 },
     { label: 'In production', reached: fIdx >= 1 },
     { label: 'Shipped', reached: fIdx >= 2 },
     { label: 'Delivered', reached: fIdx >= 3 },
@@ -545,7 +545,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               }}
             >
               <p style={{ margin: '0 0 12px 0', fontSize: 14 }}>
-                <strong>Mark this order as shipped.</strong> Paste the tracking URL TPL provided so
+                <strong>Mark this order as shipped.</strong> Paste the tracking URL TPS provided so
                 the buyer&apos;s email can link straight to it. Leave blank if you don&apos;t have
                 one yet.
               </p>
@@ -627,7 +627,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 rows={3}
-                placeholder="e.g. TPL rejected the file for low resolution."
+                placeholder="e.g. TPS rejected the file for low resolution."
                 style={{
                   width: '100%',
                   padding: 8,
@@ -933,9 +933,9 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
       )}
 
       <div className={dashboardStyles.section}>
-        <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>For TPL placement</h2>
+        <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>For TPS placement</h2>
         <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
-          Paste these into the print lab&apos;s &ldquo;Order Prints&rdquo; form.
+          Paste these into theprintspace&apos;s &ldquo;Order Prints&rdquo; form.
         </p>
 
         {order.specs.length > 0 && (

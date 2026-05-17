@@ -15,8 +15,8 @@ import {
   buildOriginalImageKey,
 } from '@/lib/r2'
 
-// Restricted to formats both print providers accept. The Print Lab
-// only takes JPEG, PNG and TIFF, matching the print lab's
+// Restricted to formats both print providers accept. The Print Space
+// only takes JPEG, PNG and TIFF, matching theprintspace's
 // is the safe intersection for the artwork-image pipeline.
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/tiff']
 
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Get original dimensions, DPI, format, and size.
-      // No orientation transform — TPL prints the file's raw pixels
+      // No orientation transform — TPS prints the file's raw pixels
       // ignoring any EXIF orientation tag, so we honor the same
       // convention everywhere: the pixel layout IS the truth.
       const sharp = (await import('sharp')).default

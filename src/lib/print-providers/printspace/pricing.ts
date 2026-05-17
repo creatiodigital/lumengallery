@@ -1,7 +1,7 @@
 /**
- * The Print Lab pricing tables. Shipping is exact (transcribed from
- * TPL's published rate card). Print + frame + glass + hanging values
- * are deliberately approximate placeholders — TPL's API doesn't
+ * The Print Space pricing tables. Shipping is exact (transcribed from
+ * TPS's published rate card). Print + frame + glass + hanging values
+ * are deliberately approximate placeholders — TPS's API doesn't
  * expose live prices, so the gallery rounds slightly upward to absorb
  * any per-job variance ("if there's a difference, it leans to the
  * gallery, never the buyer").
@@ -12,7 +12,7 @@
 // ── Size tiers ───────────────────────────────────────────────────
 //
 // Buyer-facing wizard accepts custom width × height. Internally we
-// bin the order into 5 size tiers based on the long edge (cm) — TPL
+// bin the order into 5 size tiers based on the long edge (cm) — TPS
 // uses the same tier breakpoints in its published shipping rate
 // card, so we mirror them for pricing approximation. Buyers never
 // see the tier labels; they exist only in this module.
@@ -78,9 +78,9 @@ const PRINT_BASE_CENTS: readonly SizeTier<number>[] = [
 //
 // All values biased 5-10% above real — variance lands in gallery's
 // favour, never the buyer's.
-import type { TplFrameTypeId } from './data'
+import type { TpsFrameTypeId } from './data'
 
-const FRAME_SUPPLEMENT_CENTS: Record<TplFrameTypeId, readonly SizeTier<number>[]> = {
+const FRAME_SUPPLEMENT_CENTS: Record<TpsFrameTypeId, readonly SizeTier<number>[]> = {
   standard: [
     { upToLongEdgeCm: 35, value: 11500 }, // ~€115, no real anchor
     { upToLongEdgeCm: 42, value: 12000 }, // €120 ← real €112 + ~7% bias
@@ -107,7 +107,7 @@ const FRAME_SUPPLEMENT_CENTS: Record<TplFrameTypeId, readonly SizeTier<number>[]
   // at mid sizes Tray is cheapest relative to Standard (~0.83×); at
   // large sizes Tray pulls ahead as Dibond mounting cost takes over.
   //
-  // TPL cart data 2026-05-14:
+  // TPS cart data 2026-05-14:
   //   20×29 Tray Black, no glass → framing €60.08
   //                                Standard same size = €63.21 (0.95×)
   //   30×43 Tray Black, no glass → framing €106.27
@@ -133,7 +133,7 @@ export function getPrintBaseCents(widthCm: number, heightCm: number): number {
 }
 
 export function getFrameSupplementCents(
-  frameType: TplFrameTypeId,
+  frameType: TpsFrameTypeId,
   widthCm: number,
   heightCm: number,
 ): number {
@@ -143,14 +143,14 @@ export function getFrameSupplementCents(
 // ── Glass supplement (per glass type, tiered for AR) ────────────
 //
 // Confirmed 2026-04-26: None and Standard glass cost the same on
-// TPL — Standard is bundled free with framing.
+// TPS — Standard is bundled free with framing.
 //
 // Anti Reflective Art DOES scale with frame size (calibrated
 // 2026-04-26 via direct comparison carts):
 //   long edge 42 → +€50  (Std vs AR delta at A3)
 //   long edge 86 → +€110 (cart €438.09 - cart €327.49 = €110.60)
 // Roughly doubles from small to large; tier values bias upward.
-import type { TplGlassId } from './data'
+import type { TpsGlassId } from './data'
 
 const ANTI_REFLECTIVE_SUPPLEMENT_CENTS: readonly SizeTier<number>[] = [
   { upToLongEdgeCm: 35, value: 5000 }, // €50
@@ -161,7 +161,7 @@ const ANTI_REFLECTIVE_SUPPLEMENT_CENTS: readonly SizeTier<number>[] = [
 ]
 
 export function getGlassSupplementCents(
-  glassId: TplGlassId,
+  glassId: TpsGlassId,
   widthCm: number,
   heightCm: number,
 ): number {
@@ -174,7 +174,7 @@ export function getGlassSupplementCents(
 
 // ── Mount Board (passepartout) supplement ───────────────────────
 //
-// Mount cost on TPL is stepped, NOT linear per cm. Three tiers
+// Mount cost on TPS is stepped, NOT linear per cm. Three tiers
 // observed at 30×43 (cart probe, 2026-04-26):
 //   0 mm           → no supplement
 //   3–39 mm        → +€19 (any mount under 4 cm)
@@ -201,11 +201,11 @@ export function getMountBoardSupplementCents(mountCm: number): number {
 
 // ── Hanging supplement (flat per hanging type) ──────────────────
 //
-// TPL includes hanging hardware in the frame price — choice doesn't
+// TPS includes hanging hardware in the frame price — choice doesn't
 // affect the buyer-facing total. Confirmed by inspection (2026-04-25).
-import type { TplHangingId } from './data'
+import type { TpsHangingId } from './data'
 
-export const TPL_HANGING_SUPPLEMENT_CENTS: Record<TplHangingId, number> = {
+export const TPS_HANGING_SUPPLEMENT_CENTS: Record<TpsHangingId, number> = {
   none: 0,
   'd-rings-cord': 0,
   'mirror-plates': 0,
@@ -214,11 +214,11 @@ export const TPL_HANGING_SUPPLEMENT_CENTS: Record<TplHangingId, number> = {
 
 // ── Shipping regions ─────────────────────────────────────────────
 //
-// Verbatim from TPL's rate card. ISO 3166-1 alpha-2 codes mapped to
+// Verbatim from TPS's rate card. ISO 3166-1 alpha-2 codes mapped to
 // the named delivery region.
-export type TplRegion = 'UK' | 'DE' | 'EU' | 'NORDIC' | 'US' | 'CA' | 'AU_NZ' | 'ROW'
+export type TpsRegion = 'UK' | 'DE' | 'EU' | 'NORDIC' | 'US' | 'CA' | 'AU_NZ' | 'ROW'
 
-const COUNTRY_REGION: Record<string, TplRegion> = {
+const COUNTRY_REGION: Record<string, TpsRegion> = {
   // UK
   GB: 'UK',
   // Germany (separate row from EU on the card)
@@ -263,14 +263,14 @@ const COUNTRY_REGION: Record<string, TplRegion> = {
   NZ: 'AU_NZ',
 }
 
-export function resolveTplRegion(countryCode: string): TplRegion {
+export function resolveTpsRegion(countryCode: string): TpsRegion {
   return COUNTRY_REGION[countryCode] ?? 'ROW'
 }
 
 // ── Shipping costs (verbatim from the rate card) ────────────────
 //
 // Per-order shipping for prints (any size, single line item).
-export const TPL_SHIPPING_PRINTS_CENTS: Record<TplRegion, number> = {
+export const TPS_SHIPPING_PRINTS_CENTS: Record<TpsRegion, number> = {
   UK: 695,
   DE: 695,
   EU: 1463,
@@ -283,10 +283,10 @@ export const TPL_SHIPPING_PRINTS_CENTS: Record<TplRegion, number> = {
 
 // Per-frame shipping (a framed order ships at this rate per frame
 // instead of the flat print rate above). Tiered by long-edge cm —
-// thresholds match TPL's published rate card bands but stripped of
+// thresholds match TPS's published rate card bands but stripped of
 // the A4/A3/A2/A1/A0 labels (gallery's pricing model uses long-edge
 // cm directly so labels don't leak anywhere internally).
-const SHIPPING_FRAMES_CENTS: Record<TplRegion, readonly SizeTier<number>[]> = {
+const SHIPPING_FRAMES_CENTS: Record<TpsRegion, readonly SizeTier<number>[]> = {
   UK: [
     { upToLongEdgeCm: 35, value: 1463 },
     { upToLongEdgeCm: 42, value: 1463 },
@@ -346,7 +346,7 @@ const SHIPPING_FRAMES_CENTS: Record<TplRegion, readonly SizeTier<number>[]> = {
 }
 
 export function getFrameShippingCents(
-  region: TplRegion,
+  region: TpsRegion,
   widthCm: number,
   heightCm: number,
 ): number {
@@ -355,9 +355,9 @@ export function getFrameShippingCents(
 
 // ── Delivery time (working days, per region) ────────────────────
 //
-// Verbatim from TPL rate card. Working days; convert to calendar
+// Verbatim from TPS rate card. Working days; convert to calendar
 // days by ×1.4 at the consumer surface.
-export const TPL_SHIPPING_DAYS: Record<TplRegion, { min: number; max: number }> = {
+export const TPS_SHIPPING_DAYS: Record<TpsRegion, { min: number; max: number }> = {
   UK: { min: 3, max: 7 },
   DE: { min: 3, max: 7 },
   EU: { min: 4, max: 10 },
@@ -368,15 +368,15 @@ export const TPL_SHIPPING_DAYS: Record<TplRegion, { min: number; max: number }> 
   ROW: { min: 5, max: 15 },
 }
 
-// Production turnaround (working days) per format. From TPL help
+// Production turnaround (working days) per format. From TPS help
 // docs (10 days for framing); print-only estimated at 3 working
 // days (industry norm).
-export const TPL_PRODUCTION_DAYS = {
+export const TPS_PRODUCTION_DAYS = {
   printOnly: 3,
   framing: 10,
 }
 
-// Gallery admin overhead — manual order placement on TPL portal
+// Gallery admin overhead — manual order placement on TPS portal
 // happens within ~1 working day of buyer payment.
 export const GALLERY_ADMIN_DAYS = 1
 
@@ -390,13 +390,13 @@ export function workingToCalendar(workingDays: number): number {
 
 // ── Supported countries ─────────────────────────────────────────
 //
-// Strictly the explicit rows on TPL's published shipping rate card —
+// Strictly the explicit rows on TPS's published shipping rate card —
 // UK, EU 27, Nordic non-EU (Norway / Iceland / Liechtenstein /
 // Switzerland), US, Canada, Australia + NZ. Other ISO codes are not
-// offered to buyers (TPL's rate card has a "ROW" row but per gallery
+// offered to buyers (TPS's rate card has a "ROW" row but per gallery
 // policy 2026-04-28 we don't ship outside these regions until we can
 // validate transit + customs handling for each market).
-export const TPL_SUPPORTED_COUNTRIES: string[] = [
+export const TPS_SUPPORTED_COUNTRIES: string[] = [
   // UK
   'GB',
   // EU 27
@@ -439,7 +439,7 @@ export const TPL_SUPPORTED_COUNTRIES: string[] = [
   'AU',
   'NZ',
   // Curated additions — high-GDP markets with reliable shipping that
-  // fall under TPL's ROW shipping rate (no Africa, no Latin America
+  // fall under TPS's ROW shipping rate (no Africa, no Latin America
   // for now per gallery policy 2026-04-28).
   'JP',
   'KR',
@@ -447,7 +447,7 @@ export const TPL_SUPPORTED_COUNTRIES: string[] = [
 
 // ── VAT ─────────────────────────────────────────────────────────
 
-export const TPL_GALLERY_MARKUP_RATE = 0.45
+export const TPS_GALLERY_MARKUP_RATE = 0.45
 
 // Per-destination standard VAT rate. Single source of truth for both
 // the checkout preview AND the PaymentIntent total — what's here is
@@ -457,7 +457,7 @@ export const TPL_GALLERY_MARKUP_RATE = 0.45
 // Pre-launch accountant review pending: OSS thresholds, postal-aware
 // Canary/Ceuta/Melilla zero-rating, B2B reverse-charge — see
 // project_vat_todo memory.
-const TPL_VAT_RATES: Record<string, number> = {
+const TPS_VAT_RATES: Record<string, number> = {
   AT: 0.2,
   BE: 0.21,
   BG: 0.2,
@@ -492,5 +492,5 @@ const TPL_VAT_RATES: Record<string, number> = {
  *  Returns 0 for any country we don't (yet) charge VAT for. */
 export function getVatRate(countryCode: string): number {
   if (!countryCode) return 0
-  return TPL_VAT_RATES[countryCode.toUpperCase()] ?? 0
+  return TPS_VAT_RATES[countryCode.toUpperCase()] ?? 0
 }

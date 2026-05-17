@@ -32,7 +32,7 @@ type AdminOrderNotificationArgs = {
   totalCents: number
   currency: string
   /** Spec rows (Print type / Paper / Frame / etc.) the admin pastes
-   *  into the print lab's "Order Prints" form. */
+   *  into theprintspace's "Order Prints" form. */
   skuAttributes: Record<string, string>
   adminOrderUrl: string
 }
@@ -40,7 +40,7 @@ type AdminOrderNotificationArgs = {
 /**
  * Sent to the gallery admin every time a buyer's card authorization
  * succeeds. Surfaces every field needed to place the order in the
- * the print lab's portal by hand (manual fulfillment mode).
+ * theprintspace's portal by hand (manual fulfillment mode).
  *
  * Resolves with `{ ok: false }` on failure rather than throwing, so the
  * caller can log + continue without aborting the webhook.
@@ -83,10 +83,10 @@ export async function sendAdminOrderNotification(
       from: `The Art Room Orders <${fromEmail}>`,
       to: ADMIN_ORDER_NOTIFICATION_TO,
       cc: ADMIN_ORDER_NOTIFICATION_CC,
-      subject: `New order #${args.orderId.slice(0, 8)} — ${args.artworkTitle} — needs placement at TPL`,
+      subject: `New order #${args.orderId.slice(0, 8)} — ${args.artworkTitle} — needs placement at TPS`,
       html: `
         <div style="font-family: Lato, sans-serif; max-width: 640px; margin: 0 auto; color: #111;">
-          <h2 style="font-size: 20px; margin: 0 0 8px 0;">New order — needs placement at TPL</h2>
+          <h2 style="font-size: 20px; margin: 0 0 8px 0;">New order — needs placement at TPS</h2>
           <p style="margin: 0 0 20px 0; color:#666;">Order #${safeOrderIdShort} · ${total}</p>
 
           <p style="margin: 0 0 20px 0;">

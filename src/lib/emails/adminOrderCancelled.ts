@@ -26,7 +26,7 @@ type AdminOrderCancelledArgs = {
 
 /**
  * Alert the gallery admin when an order is cancelled. Fires on
- * admin-initiated rejections — TPL doesn't expose a sync API, so
+ * admin-initiated rejections — TPS doesn't expose a sync API, so
  * admin owns the cancellation flow.
  *
  * Key signal: whether a refund is still owed to the buyer.

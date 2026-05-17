@@ -89,7 +89,11 @@
 // ── Left steps panel ─────────────────────────────────────────
 
 .stepsPanel {
-  padding: var(--space-5) var(--space-5) var(--space-40);
+  // Generous bottom padding so the last step's dropdown can scroll high
+  // enough on screen for its option-helper tooltip (which extends below
+  // and to the right of the focused option) to render without clipping
+  // against the panel's overflow.
+  padding: var(--space-5) var(--space-5) var(--space-80);
   overflow-y: auto;
   border-right: 1px solid var(--color-border-light);
 
@@ -457,74 +461,6 @@
   color: var(--color-text-secondary);
   line-height: 1.5;
   margin: var(--space-5) 0 var(--space-3);
-}
-
-// ── Orientation block ─────────────────────────────────────────
-.orientationBlock {
-  border: 1px solid var(--color-border-strong);
-  border-radius: 0;
-  padding: var(--space-4) var(--space-5);
-  margin-bottom: var(--space-4);
-  background: var(--color-white);
-}
-
-.orientationChoices {
-  display: flex;
-  gap: var(--space-3);
-}
-
-.orientationChoice {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 0;
-  background: transparent;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-
-  &:hover {
-    border-color: var(--color-gray-70);
-  }
-}
-
-.orientationChoiceSelected {
-  border-color: var(--color-text-primary);
-  background: var(--color-surface-subtle);
-}
-
-.orientationChoiceDisabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-
-  &:hover {
-    border-color: var(--color-border-strong);
-  }
-}
-
-.orientationIcon {
-  width: 18px;
-  height: 26px;
-  border: 1.5px solid var(--color-text-primary);
-  border-radius: 2px;
-}
-
-.orientationIconLandscape {
-  width: 26px;
-  height: 18px;
-}
-
-.orientationLabel {
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .destinationNotice {

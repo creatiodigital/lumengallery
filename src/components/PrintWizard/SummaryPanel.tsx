@@ -58,8 +58,8 @@ export const SummaryPanel = ({
   // renders them as-is, no portrait/landscape toggle anywhere.
   const effectiveSize = useMemo(() => getEffectiveSizeCm(catalog, config), [catalog, config])
 
-  // Merged visual hints from every selected enum option. The TPL
-  // (`color` dim) and TPL (`moulding` dim) write into `frameColorHex`
+  // Merged visual hints from every selected enum option. The TPS
+  // (`color` dim) and TPS (`moulding` dim) write into `frameColorHex`
   // — the merge picks whichever is set.
   const visuals = useMemo(() => collectVisualHints(catalog, config), [catalog, config])
 

@@ -1,25 +1,21 @@
-// Pure function — no DB, no fetch, no secrets. Safe to ship to the
-// client so the wizard can compute prices instantly. Server still
-// re-runs this at payment-intent creation so a tampered client price
-// never reaches Stripe.
 import type { GetQuoteInput, Quote, QuoteLine } from '../types'
-import type { TplFrameTypeId, TplGlassId, TplHangingId } from './data'
+import type { TpsFrameTypeId, TpsGlassId, TpsHangingId } from './data'
 import {
-  TPL_GALLERY_MARKUP_RATE,
-  TPL_HANGING_SUPPLEMENT_CENTS,
-  TPL_SHIPPING_PRINTS_CENTS,
+  TPS_GALLERY_MARKUP_RATE,
+  TPS_HANGING_SUPPLEMENT_CENTS,
+  TPS_SHIPPING_PRINTS_CENTS,
   getFrameShippingCents,
   getFrameSupplementCents,
   getGlassSupplementCents,
   getMountBoardSupplementCents,
   getPrintBaseCents,
   getVatRate,
-  resolveTplRegion,
+  resolveTpsRegion,
 } from './pricing'
 
 /**
- * The Print Lab quote — composed from approximate hardcoded tables
- * (see ./pricing.ts). TPL doesn't expose live prices via API; the
+ * The Print Space quote — composed from approximate hardcoded tables
+ * (see ./pricing.ts). TPS doesn't expose live prices via API; the
  * gallery accepts a small variance and rounds slightly upward so the
  * delta always lands in the gallery's favour, never the buyer's.
  *
@@ -32,10 +28,10 @@ import {
  *   tax      = 21% on subtotal when shipping to an EU country
  *   total    = subtotal + tax
  */
-export function getTplQuote(input: GetQuoteInput): Quote {
+export function getPrintspaceQuote(input: GetQuoteInput): Quote {
   const { config, country, artistPriceCents } = input
 
-  // Effective size — TPL sells custom sizes only, but `customSize`
+  // Effective size — TPS sells custom sizes only, but `customSize`
   // may be absent on a brand-new wizard render. Fall back to a
   // sensible default so we always return a quote shape rather than
   // throwing.
@@ -45,9 +41,9 @@ export function getTplQuote(input: GetQuoteInput): Quote {
 
   const formatId = config.values.format
   const isFramed = formatId === 'framing'
-  const frameTypeId = config.values.frameType as TplFrameTypeId | undefined
-  const glassId = (config.values.glass as TplGlassId | undefined) ?? 'none'
-  const hangingId = (config.values.hanging as TplHangingId | undefined) ?? 'none'
+  const frameTypeId = config.values.frameType as TpsFrameTypeId | undefined
+  const glassId = (config.values.glass as TpsGlassId | undefined) ?? 'none'
+  const hangingId = (config.values.hanging as TpsHangingId | undefined) ?? 'none'
 
   // Print base — same approximate per-tier number across paper /
   // print-type variants. Bias upward so paper variance never
@@ -62,7 +58,7 @@ export function getTplQuote(input: GetQuoteInput): Quote {
   // are bundled free). Only relevant when framed.
   const glassCents = isFramed ? getGlassSupplementCents(glassId, widthCm, heightCm) : 0
   // Hanging — flat per option, all currently €0.
-  const hangingCents = isFramed ? (TPL_HANGING_SUPPLEMENT_CENTS[hangingId] ?? 0) : 0
+  const hangingCents = isFramed ? (TPS_HANGING_SUPPLEMENT_CENTS[hangingId] ?? 0) : 0
   // Window mount (passepartout) — proportional to mount width when
   // a non-'none' colour is picked AND the buyer has set a width.
   const mountId = config.values.windowMount as string | undefined
@@ -71,7 +67,7 @@ export function getTplQuote(input: GetQuoteInput): Quote {
     isFramed && mountId && mountId !== 'none' ? getMountBoardSupplementCents(mountWidthCm) : 0
 
   // Gallery markup on the artist's price.
-  const galleryCents = Math.round(artistPriceCents * TPL_GALLERY_MARKUP_RATE)
+  const galleryCents = Math.round(artistPriceCents * TPS_GALLERY_MARKUP_RATE)
 
   // Wizard summary lumps artwork + production into a single "Artwork"
   // line and shows shipping separately when a destination is set.
@@ -98,10 +94,10 @@ export function getTplQuote(input: GetQuoteInput): Quote {
 
   // Shipping — flat per-print rate when not framed; tiered per-frame
   // rate when framed (long-edge cm).
-  const region = resolveTplRegion(country)
+  const region = resolveTpsRegion(country)
   const shippingCents = isFramed
     ? getFrameShippingCents(region, widthCm, heightCm)
-    : TPL_SHIPPING_PRINTS_CENTS[region]
+    : TPS_SHIPPING_PRINTS_CENTS[region]
   lines.push({ id: 'shipping', label: 'Shipping', amountCents: shippingCents, muted: true })
 
   const subtotalCents = artworkLineCents + shippingCents

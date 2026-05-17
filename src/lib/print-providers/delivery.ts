@@ -8,7 +8,7 @@
  * never from server-only quote/loadCatalog.
  */
 import type { Catalog, DeliveryEstimate, WizardConfig } from './types'
-import { estimateTplDelivery } from './tpl/delivery'
+import { estimateTpsDelivery } from './printspace/delivery'
 
 export function estimateDelivery(
   catalog: Catalog,
@@ -17,8 +17,8 @@ export function estimateDelivery(
 ): DeliveryEstimate {
   if (!country) return { minDays: 0, maxDays: 0 }
   switch (catalog.providerId) {
-    case 'tpl':
-      return estimateTplDelivery(config, country)
+    case 'printspace':
+      return estimateTpsDelivery(config, country)
     default:
       return { minDays: 0, maxDays: 0 }
   }

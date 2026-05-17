@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         await handleAccountUpdated(event.data.object as AccountLike)
         break
       // Auth succeeded — funds held, not captured. This is our signal to
-      // create the local PrintOrder so the admin can place it at TPL by
+      // create the local PrintOrder so the admin can place it at TPS by
       // hand. Capture happens later when the admin clicks "Capture &
       // mark placed" on the admin order detail page.
       case 'payment_intent.amount_capturable_updated':

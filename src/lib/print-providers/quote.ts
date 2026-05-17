@@ -1,21 +1,20 @@
 /**
- * Provider-agnostic quote dispatcher. The wizard imports this and passes
- * (providerId, input). Internally we route to the right adapter — wizard
- * stays oblivious to who's quoting.
+ * Provider-agnostic quote dispatcher. The wizard imports this single
+ * function and passes (providerId, input). Internally we route to the
+ * right adapter — wizard stays oblivious to who's quoting.
  *
- * Sync + client-importable. The pricing math is pure (no DB, no fetch,
- * no secrets) so there's no reason to round-trip through a server
- * action — the buyer's price updates instantly as they drag the size
- * slider, with zero latency. Server-side payment-intent creation
- * re-runs this exact same function so the buyer can't tamper.
+ * Pure math, no DB / fetch / secrets — runs client-side for instant
+ * price updates. The payment-intent server action re-runs this exact
+ * function as the authoritative price, so a tampered client price
+ * never reaches Stripe.
  */
 import type { GetQuoteInput, ProviderId, Quote } from './types'
-import { getTplQuote } from './tpl/getQuote'
+import { getPrintspaceQuote } from './printspace/getQuote'
 
 export function getProviderQuote(providerId: ProviderId, input: GetQuoteInput): Quote {
   switch (providerId) {
-    case 'tpl':
-      return getTplQuote(input)
+    case 'printspace':
+      return getPrintspaceQuote(input)
     default:
       throw new Error(`[print-providers] unknown providerId: ${providerId}`)
   }

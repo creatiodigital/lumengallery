@@ -21,11 +21,11 @@ interface FloatingPreviewProps {
 }
 
 // Visible coloured backboard border around the paper sheet, in metres.
-// TPL exposes this as a per-side configurable "Mount Board Size" for
+// TPS exposes this as a per-side configurable "Mount Board Size" for
 // Floating frames; for now we use a sane default so the preview reads
 // correctly. Wire it up to a wizard dimension when we add that input.
 const DEFAULT_BACKBOARD_BORDER_M = 0.02
-// Always white. TPL's schematic documents that foamex comes in
+// Always white. TPS's schematic documents that foamex comes in
 // white or black, but their actual order flow only exposes white,
 // so we don't surface a colour choice either.
 const DEFAULT_BACKBOARD_HEX = '#f6f3ec'

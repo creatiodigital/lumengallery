@@ -33,7 +33,7 @@ type StripePaymentIntent = {
  * Called from the `payment_intent.amount_capturable_updated` webhook once
  * the buyer's card is authorized (funds held, not captured). Creates (or
  * finds) the local PrintOrder row so the gallery admin can place the
- * order on the print lab's portal by hand.
+ * order on theprintspace's portal by hand.
  *
  * MANUAL FULFILLMENT MODE: auto-submit is disabled. Buyer's card stays
  * authorized; admin captures manually from Stripe when they place the
@@ -180,7 +180,7 @@ export async function createPrintOrderFromPaymentIntent(
   // 500-char per-value cap. The catalog is local data, so this is cheap.
   let specs: SpecsSummary = []
   try {
-    const catalog = await loadProviderCatalog('tpl', {
+    const catalog = await loadProviderCatalog('printspace', {
       imageWidthPx: artwork.originalWidth ?? 1000,
       imageHeightPx: artwork.originalHeight ?? 1000,
     })
@@ -376,7 +376,7 @@ export async function createPrintOrderFromPaymentIntent(
 
   // Admin order-notification email — idempotent via event log, same
   // pattern as the buyer email. Tells the gallery admin a new order is
-  // ready to be placed by hand on the print lab's portal; surfaces every
+  // ready to be placed by hand on theprintspace's portal; surfaces every
   // field needed to recreate the exact order.
   const alreadyNotifiedAdmin = await prisma.printOrderEvent.findFirst({
     where: { orderId: order.id, kind: 'email_sent', message: 'admin_order_notification' },

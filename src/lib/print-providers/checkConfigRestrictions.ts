@@ -4,10 +4,9 @@
  * handler to reject configs whose option got artist-vetoed between the
  * wizard pickup and the buyer hitting Pay.
  *
- * Iterates the catalog's enum dimensions only — sizes / borders /
- * orientation don't carry allow-lists in our restriction shape. For
- * each enum dim with an allow-list set, the buyer's chosen option must
- * be in it.
+ * Iterates the catalog's enum dimensions only — sizes and borders
+ * don't carry allow-lists in our restriction shape. For each enum dim
+ * with an allow-list set, the buyer's chosen option must be in it.
  */
 import type { Catalog, PrintRestrictions, WizardConfig } from './types'
 import { dimensionAllowList, isDimensionVisible } from './configHelpers'

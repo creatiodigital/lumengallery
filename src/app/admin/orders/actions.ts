@@ -134,9 +134,9 @@ export type AdminOrderDetail = AdminOrderRow & {
   customerVatCents: number
   /** Server-rendered spec rows (Print type / Paper / Frame / Glass / etc.)
    *  derived from `printConfig` + the catalog. The admin pastes these
-   *  into the print lab's "Order Prints" form. */
+   *  into theprintspace's "Order Prints" form. */
   specs: SpecsSummary
-  /** R2 URL of the print-master image (original) the admin uploads to TPL. */
+  /** R2 URL of the print-master image (original) the admin uploads to TPS. */
   assetUrl: string | null
   /** Web-sized thumbnail for visual ID at the top of the detail page. */
   thumbnailUrl: string | null
@@ -230,14 +230,14 @@ export async function getOrderDetail(
   })
   if (!r) return { ok: false, error: 'Order not found.' }
 
-  // Spec rows for the "For TPL placement" panel. Derived from the
+  // Spec rows for the "For TPS placement" panel. Derived from the
   // stored wizardConfig + the live catalog so the labels stay in sync
   // even if option labels change after the order was placed. Falls
   // back to an empty array on any catalog/render error — admin can
   // still read the raw printConfig in the timeline payload.
   let specs: SpecsSummary = []
   try {
-    const catalog = await loadProviderCatalog('tpl', {
+    const catalog = await loadProviderCatalog('printspace', {
       imageWidthPx: 1000,
       imageHeightPx: 1000,
     })
@@ -300,10 +300,10 @@ export async function getOrderDetail(
  * Manual fulfillment stage. The admin advances each order by hand from
  * the detail page. Stored on PrintOrder.fulfillmentStatus.
  */
-const STAGE_PENDING = null // buyer paid, not yet placed at TPL
-const STAGE_PLACED = 'Placed' // admin placed at TPL; payment captured
-const STAGE_STARTED = 'Started' // TPL started production
-const STAGE_SHIPPED = 'Shipped' // TPL shipped
+const STAGE_PENDING = null // buyer paid, not yet placed at TPS
+const STAGE_PLACED = 'Placed' // admin placed at TPS; payment captured
+const STAGE_STARTED = 'Started' // TPS started production
+const STAGE_SHIPPED = 'Shipped' // TPS shipped
 const STAGE_COMPLETE = 'Complete' // delivered; 14-day payout clock starts
 const STAGE_REJECTED = 'Rejected' // admin marked rejected / cancelled
 
@@ -605,7 +605,7 @@ export async function refundOrder(
 
 /**
  * Dev-only: create a fake local PrintOrder. Doesn't call any external
- * API — TPL has no sandbox. Starts the order at paymentStatus='authorized'
+ * API — TPS has no sandbox. Starts the order at paymentStatus='authorized'
  * and stage=null so the admin can exercise the full manual flow on the
  * detail page (Capture & mark placed → Mark in production → Mark shipped
  * → Mark delivered) and verify the four buyer emails.
@@ -641,7 +641,7 @@ export async function createTestOrder(): Promise<
   // QA of the manual flow itself.
   const pi = `pi_tps_test_${Date.now()}`
   const buyerEmail = guard.session.user.email ?? 'tps-test@theartroom.gallery'
-  const buyerName = guard.session.user.name ?? 'TPL Test Buyer'
+  const buyerName = guard.session.user.name ?? 'TPS Test Buyer'
 
   const order = await prisma.printOrder.create({
     data: {
@@ -665,7 +665,6 @@ export async function createTestOrder(): Promise<
         widthCm: 40,
         heightCm: 30,
         formatId: 'unframed',
-        orientation: 'landscape',
       },
       country: 'GB',
       totalCents: 6500,
@@ -752,7 +751,7 @@ export async function deleteOrder(
 }
 
 /**
- * Admin CTA: order placed at the print lab by hand. Captures the Stripe
+ * Admin CTA: order placed at theprintspace by hand. Captures the Stripe
  * auth (auth → succeeded) and advances stage to Placed. No buyer email
  * at this stage — Placed is internal.
  */
@@ -802,7 +801,7 @@ export async function markPlaced(
     orderId: order.id,
     kind: 'admin_action',
     actor: `admin:${guard.session.user.id}`,
-    message: 'Marked placed at The Print Lab (payment captured)',
+    message: 'Marked placed at The Print Space (payment captured)',
     payload: {},
   })
 
@@ -810,19 +809,19 @@ export async function markPlaced(
 }
 
 /**
- * Admin CTA: TPL accepted the order and started production. Sets stage
+ * Admin CTA: TPS accepted the order and started production. Sets stage
  * to Started and fires the buyer's "order accepted" email.
  */
 export async function markStarted(
   orderId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   return advanceStage(orderId, STAGE_STARTED, {
-    logMessage: 'Marked in production (TPL accepted the order)',
+    logMessage: 'Marked in production (TPS accepted the order)',
   })
 }
 
 /**
- * Admin CTA: TPL shipped the print. Stamps trackingUrl (if provided)
+ * Admin CTA: TPS shipped the print. Stamps trackingUrl (if provided)
  * so the buyer's "Your artwork is on its way" email links to it.
  * shippedAt is intentionally left for STAGE_COMPLETE — the column name
  * is historical, it really means "payout clock start" and we want that

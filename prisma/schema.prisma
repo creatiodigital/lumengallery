@@ -165,10 +165,10 @@ model Artwork {
   hiddenFromExhibition Boolean @default(false)
   order                Int     @default(0)
 
-  // Print sales (the print lab fulfillment). `printEnabled` gates the
+  // Print sales (theprintspace fulfillment). `printEnabled` gates the
   // "Order Print" CTA + the /print wizard; when false the artwork page
   // shows "Inquire" instead. `printPriceCents` is the artist's cut
-  // per print (the gallery markup + TPL cost stack on top at
+  // per print (the gallery markup + TPS cost stack on top at
   // checkout time). Nullable so we can distinguish "not set yet"
   // from a deliberate zero.
   printEnabled    Boolean @default(false)
@@ -223,19 +223,16 @@ model PrintOrder {
   totalCents              Int
   artistCents             Int
   galleryCents            Int
-  // The two production-cost columns predate the TPL-only switch and
-  // were originally named after the previous provider. Mapped to keep
-  // their data in place; the Prisma field uses the neutral name.
-  productionCents         Int    @map("prodigiItemCents")
-  productionShippingCents Int    @map("prodigiShippingCents")
+  productionCents         Int
+  productionShippingCents Int
   customerVatCents        Int
   currency                String @default("eur")
 
   // 'processing' | 'succeeded' | 'failed' | 'refunded'
   paymentStatus String @default("processing")
 
-  // Manual TPL fulfillment stage. Admin advances by hand from
-  // /admin/orders after placing the order on the print lab's portal.
+  // Manual TPS fulfillment stage. Admin advances by hand from
+  // /admin/orders after placing the order on theprintspace's portal.
   // Values: null (pending placement) | 'Placed' | 'Started' | 'Shipped'
   // | 'Complete' | 'Rejected'.
   fulfillmentStatus String?

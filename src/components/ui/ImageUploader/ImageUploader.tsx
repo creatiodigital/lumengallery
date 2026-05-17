@@ -62,8 +62,8 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-// Whitelist of MIME types both print providers accept. The Print Lab
-// only takes JPEG, PNG and TIFF, matching the print lab's
+// Whitelist of MIME types both print providers accept. The Print Space
+// only takes JPEG, PNG and TIFF, matching theprintspace's
 // the safe intersection.
 const ACCEPTED_MIME_TYPES: ReadonlySet<string> = new Set(['image/jpeg', 'image/png', 'image/tiff'])
 

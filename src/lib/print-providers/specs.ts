@@ -4,7 +4,7 @@
  * The summary panels (wizard right-hand side, checkout right-hand side)
  * and the order admin view all need to show the buyer "here is exactly
  * what you selected". Each provider emits a different set of dimensions
- * (TPL: print type / paper / size / framing / etc.).
+ * (TPS: print type / paper / size / framing / etc.).
  * paper / format / frame type / moulding / glass / hanging /
  * passepartout / size / border) — we don't try to flatten that into a
  * fixed shape. We just render whatever the catalog declared, in
@@ -12,8 +12,7 @@
  *
  * The buyer never sees a row for a dimension they didn't pick or one
  * that isn't currently visible (e.g. frame moulding hides itself when
- * format = "print only"), and never sees orientation as its own row
- * since the size string already flips for landscape.
+ * format = "print only").
  */
 import type { Catalog, Dimension, WizardConfig } from './types'
 import { getEffectiveBorderCm, getEffectiveSizeCm, isDimensionVisible } from './configHelpers'
@@ -40,7 +39,8 @@ export type SpecsSummary = SpecRow[]
  * displayed sequence matches the wizard step order.
  */
 export function summarizeConfig(catalog: Catalog, config: WizardConfig): SpecsSummary {
-  const isLandscape = config.values.orientation === 'landscape'
+  const sizeCm = getEffectiveSizeCm(catalog, config)
+  const isLandscape = sizeCm ? sizeCm.widthCm > sizeCm.heightCm : false
   const rows: SpecsSummary = []
   for (const dim of catalog.dimensions) {
     if (!isDimensionVisible(dim, config, catalog)) continue
@@ -77,8 +77,6 @@ function renderDimensionValue(
     if (cm <= 0) return '—'
     return `${roundCm(cm)} cm`
   }
-  // Orientation — already encoded in the size row's swap, would just
-  // duplicate information for the buyer.
   return null
 }
 
