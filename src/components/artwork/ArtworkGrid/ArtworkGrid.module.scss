@@ -41,10 +41,7 @@
   width: 100%;
   height: auto;
   object-fit: contain;
-  // No `max-height` cap — let the per-tile width/height from next/image
-  // drive the reserved slot. A `max-height` clamp at paint time made the
-  // rendered height differ from the placeholder slot for tall portrait
-  // works, which showed up as CLS on every grid render.
+  max-height: 600px;
 }
 
 .placeholder {
