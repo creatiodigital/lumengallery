@@ -3,6 +3,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 import { isSafeImageSrc } from '@/lib/imageSafety'
 
@@ -116,6 +133,32 @@ type ArtworkCardProps = {
   onUnlink: (exhibitionArtworkId: string, artworkName: string, exhibitionTitle: string) => void
   playingArtworkId: string | null
   onTogglePlay: (artworkId: string, soundUrl: string) => void
+  /** Hidden when a filter / search is active — dragging a subset would
+   *  scramble the order of items currently hidden by the filter. */
+  draggable: boolean
+}
+
+function SortableArtworkCard(props: ArtworkCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.artwork.id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className={styles.sortableRow}>
+      {props.draggable && (
+        <div className={styles.dragHandle} {...attributes} {...listeners}>
+          <span className={styles.dragIcon}>⠿</span>
+        </div>
+      )}
+      <ArtworkCard {...props} />
+    </div>
+  )
 }
 
 function ArtworkCard({
@@ -236,7 +279,6 @@ export const ArtworkLibraryPage = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'image' | 'text' | 'sound' | 'video'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   // Sound preview playback
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -307,12 +349,11 @@ export const ArtworkLibraryPage = () => {
     return true
   })
 
-  // Sort filtered artworks alphabetically by title
-  const sortedArtworks = [...filteredArtworks].sort((a, b) => {
-    const titleA = (a.title || a.name || '').toLowerCase()
-    const titleB = (b.title || b.name || '').toLowerCase()
-    return sortOrder === 'asc' ? titleA.localeCompare(titleB) : titleB.localeCompare(titleA)
-  })
+  // Display order = the artist's saved order (Artwork.order, asc). The
+  // /api/artworks endpoint already returns rows in that order, so we
+  // just preserve the filter's pass-through.
+  const sortedArtworks = filteredArtworks
+  const dragEnabled = typeFilter === 'all' && debouncedSearch.length === 0
 
   // Fetch artworks
   const fetchArtworks = useCallback(async () => {
@@ -396,6 +437,37 @@ export const ArtworkLibraryPage = () => {
     }
   }, [unlinkTarget, fetchArtworks])
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = artworks.findIndex((a) => a.id === active.id)
+    const newIndex = artworks.findIndex((a) => a.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const next = arrayMove(artworks, oldIndex, newIndex)
+    setArtworks(next)
+
+    try {
+      await fetch('/api/artworks/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artworkIds: next.map((a) => a.id) }),
+      })
+    } catch (error) {
+      console.error('Error reordering artworks:', error)
+      // Refetch to restore server state on error.
+      fetchArtworks()
+    }
+  }
+
   if (loading) {
     return <DashboardLayout backLink="/dashboard">Loading...</DashboardLayout>
   }
@@ -450,12 +522,6 @@ export const ArtworkLibraryPage = () => {
           />
           <Button
             font="dashboard"
-            variant="secondary"
-            label={sortOrder === 'asc' ? 'A → Z' : 'Z → A'}
-            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-          />
-          <Button
-            font="dashboard"
             variant="primary"
             label="Add Artwork"
             onClick={() => setShowAddModal(true)}
@@ -472,19 +538,27 @@ export const ArtworkLibraryPage = () => {
           </Text>
         </div>
       ) : (
-        <div className={styles.list}>
-          {sortedArtworks.map((artwork) => (
-            <ArtworkCard
-              key={artwork.id}
-              artwork={artwork}
-              onEdit={(id: string) => router.push(`/dashboard/artworks/${id}/edit`)}
-              onDelete={handleDeleteClick}
-              onUnlink={handleUnlinkClick}
-              playingArtworkId={playingArtworkId}
-              onTogglePlay={handleTogglePlay}
-            />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={sortedArtworks.map((a) => a.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className={styles.list}>
+              {sortedArtworks.map((artwork) => (
+                <SortableArtworkCard
+                  key={artwork.id}
+                  artwork={artwork}
+                  onEdit={(id: string) => router.push(`/dashboard/artworks/${id}/edit`)}
+                  onDelete={handleDeleteClick}
+                  onUnlink={handleUnlinkClick}
+                  playingArtworkId={playingArtworkId}
+                  onTogglePlay={handleTogglePlay}
+                  draggable={dragEnabled}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {showAddModal && (

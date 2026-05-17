@@ -46,7 +46,7 @@ const getCachedArtistFull = (slug: string) =>
               originalWidth: true,
               originalHeight: true,
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { order: 'asc' },
           },
         },
       }),
