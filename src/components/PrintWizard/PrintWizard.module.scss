@@ -89,7 +89,11 @@
 // ── Left steps panel ─────────────────────────────────────────
 
 .stepsPanel {
-  padding: var(--space-5) var(--space-5) var(--space-40);
+  // Generous bottom padding so the last step's dropdown can scroll high
+  // enough on screen for its option-helper tooltip (which extends below
+  // and to the right of the focused option) to render without clipping
+  // against the panel's overflow.
+  padding: var(--space-5) var(--space-5) var(--space-80);
   overflow-y: auto;
   border-right: 1px solid var(--color-border-light);
 
