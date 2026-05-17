@@ -48,9 +48,28 @@
 }
 
 .uploadingText {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-family: var(--font-dashboard), var(--font-dashboard-fallback);
   font-size: var(--text-sm);
   color: var(--color-text-primary);
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-default);
+  border-top-color: var(--color-text-primary);
+  animation: spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Preview - image exists state */
@@ -99,6 +118,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-2);
   font-family: var(--font-dashboard), var(--font-dashboard-fallback);
   font-size: var(--text-sm);
   color: var(--color-text-primary);

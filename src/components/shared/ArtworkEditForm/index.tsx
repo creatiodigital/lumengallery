@@ -181,7 +181,7 @@ type ArtworkEditFormProps = {
   onPrintOptionsChange?: (next: PrintRestrictions | null) => void
   /** Replace the whole printRecommendations object. Paper IDs only for now. */
   onPrintRecommendationsChange?: (next: PrintRecommendations | null) => void
-  onImageUpload: (file: File) => Promise<void>
+  onImageUpload: (file: File, previewUrl?: string) => Promise<void>
   onImageRemove: () => void | Promise<void>
   onSoundUpload?: (file: File) => Promise<void>
   onSoundRemove?: () => void | Promise<void>
@@ -790,8 +790,11 @@ export const ArtworkEditForm = ({
                           className={styles.printInfoTextMuted}
                           style={{ marginTop: 0, marginBottom: 'var(--space-2)' }}
                         >
-                          Buyers pick any custom size in this range. The other side auto-locks to
-                          your artwork&apos;s aspect ratio.
+                          This range is the maximum we can print sharply for{' '}
+                          <strong>this specific artwork</strong> — the higher the resolution of the
+                          file you uploaded, the bigger the max. Buyers pick any custom size in
+                          this range; the other side auto-locks to your artwork&apos;s aspect
+                          ratio.
                         </p>
                         <table
                           style={{

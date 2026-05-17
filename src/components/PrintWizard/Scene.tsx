@@ -17,7 +17,6 @@ interface SceneProps {
   imageUrl: string
   catalog: Catalog
   config: WizardConfig
-  imageAspectRatio: number
   /** Hide the artwork + frame until a destination is chosen. */
   configReady: boolean
 }
@@ -29,7 +28,7 @@ const MAX_TILT_DEG = 35
 // recentering hit-the-tick easy without needing pixel precision.
 const SNAP_TO_ZERO_DEG = 2
 
-export const Scene = ({ imageUrl, catalog, config, imageAspectRatio, configReady }: SceneProps) => {
+export const Scene = ({ imageUrl, catalog, config, configReady }: SceneProps) => {
   // Conscious-act control: buyer drags the slider to tilt the scene
   // and inspect the frame's depth profile. No mouse-orbit, no auto
   // rotation — the head-on view stays the default for sizing reads.
@@ -90,12 +89,7 @@ export const Scene = ({ imageUrl, catalog, config, imageAspectRatio, configReady
 
             <Suspense fallback={null}>
               {configReady && (
-                <PreviewArtwork
-                  imageUrl={imageUrl}
-                  catalog={catalog}
-                  config={config}
-                  imageAspectRatio={imageAspectRatio}
-                />
+                <PreviewArtwork imageUrl={imageUrl} catalog={catalog} config={config} />
               )}
             </Suspense>
           </group>

@@ -230,9 +230,15 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         },
       })
 
-      // Bust caches that include this artwork's data
+      // Bust caches that include this artwork's data. `page-prints` and
+      // `artworks` are global listing tags — without busting them, the
+      // /prints page and the artist profile can show stale presence/
+      // absence (e.g. just-enabled print artwork missing for up to an
+      // hour after the toggle).
       revalidateTag(`artwork-${id}`, 'default')
       for (const s of slugTags) revalidateTag(`artwork-slug-${s}`, 'default')
+      revalidateTag('page-prints', 'default')
+      revalidateTag('artworks', 'default')
       await revalidateLinkedExhibitions(id)
 
       return NextResponse.json(artwork)
@@ -247,6 +253,8 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       // Bust caches that include this artwork's data
       revalidateTag(`artwork-${id}`, 'default')
       for (const s of slugTags) revalidateTag(`artwork-slug-${s}`, 'default')
+      revalidateTag('page-prints', 'default')
+      revalidateTag('artworks', 'default')
       await revalidateLinkedExhibitions(id)
 
       return NextResponse.json(artwork)
@@ -262,9 +270,12 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
   try {
     const { id } = await context.params
 
-    // Get artwork first to check for image and verify ownership
+    // Get artwork first to check for image and verify ownership.
+    // Pulling user.handler so we can revalidate the artist profile cache
+    // tag after the row is gone.
     const artwork = await prisma.artwork.findUnique({
       where: { id },
+      include: { user: { select: { handler: true } } },
     })
 
     if (!artwork) {
@@ -283,13 +294,24 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
       select: { exhibition: { select: { url: true } } },
     })
 
-    // Delete associated image from R2 if exists
+    // Delete web-optimized image from R2 if exists
     if (artwork.imageUrl) {
       try {
         await deleteFromR2(artwork.imageUrl)
       } catch (error) {
         console.warn('Failed to delete image blob:', error)
         // Continue anyway - file might not exist
+      }
+    }
+
+    // Delete high-res original from R2 if exists. Without this, the
+    // raw uploaded TIFF/PNG/JPEG (often tens of MB) is orphaned in R2
+    // every time an artist removes a piece from their library.
+    if (artwork.originalImageUrl) {
+      try {
+        await deleteFromR2(artwork.originalImageUrl)
+      } catch (error) {
+        console.warn('Failed to delete original image blob:', error)
       }
     }
 
@@ -316,11 +338,17 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
       where: { id },
     })
 
-    // Bust detail page cache + any exhibition pages that showed it
+    // Bust detail page cache + any exhibition pages that showed it +
+    // the artist profile page that lists the artwork.
     revalidateTag(`artwork-${id}`, 'default')
     for (const { exhibition } of linkedExhibitions) {
       if (exhibition?.url) revalidateTag(`exhibition-${exhibition.url}`, 'default')
     }
+    if (artwork.user?.handler) {
+      revalidateTag(`artist-${artwork.user.handler}`, 'default')
+    }
+    revalidateTag('artists', 'default')
+    revalidateTag('artworks', 'default')
 
     return NextResponse.json({ success: true })
   } catch (error) {

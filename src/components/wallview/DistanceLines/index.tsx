@@ -191,7 +191,7 @@ export const DistanceLines = () => {
   return (
     <svg className={styles.container}>
       {distanceLines.map((line, index) => {
-        const labelText = `${(line.distance / WALL_SCALE).toFixed(2)} m`
+        const labelText = `${Math.round((line.distance / WALL_SCALE) * 100)} cm`
         const labelWidth = labelText.length * 5 + 2 // Approximate width
         const labelHeight = 11
 

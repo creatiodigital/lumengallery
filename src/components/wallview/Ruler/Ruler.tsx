@@ -124,7 +124,7 @@ function drawRuler(
       ctx.fillStyle = '#fff'
       ctx.font = '9px Inter, sans-serif'
       ctx.textAlign = 'center'
-      const label = Math.abs(m) < 0.001 ? '0' : `${m.toFixed(majorSpacingM < 0.5 ? 2 : 1)}`
+      const label = Math.abs(m) < 0.001 ? '0' : `${Math.round(m * 100)}`
       ctx.fillText(label, screenPos, 10)
     } else {
       ctx.beginPath()
@@ -139,7 +139,7 @@ function drawRuler(
       ctx.fillStyle = '#fff'
       ctx.font = '9px Inter, sans-serif'
       ctx.textAlign = 'center'
-      const label = Math.abs(m) < 0.001 ? '0' : `${m.toFixed(majorSpacingM < 0.5 ? 2 : 1)}`
+      const label = Math.abs(m) < 0.001 ? '0' : `${Math.round(m * 100)}`
       ctx.fillText(label, 0, 4)
       ctx.restore()
     }

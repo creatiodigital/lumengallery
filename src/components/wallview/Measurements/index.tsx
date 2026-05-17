@@ -13,12 +13,12 @@ type MeasurementsProps = {
 }
 
 const Measurements = memo(({ width, height, floorOffset = 0 }: MeasurementsProps) => {
-  // Calculate total height from floor to top of wall
-  const totalHeight = (parseFloat(height) + floorOffset).toFixed(2)
+  // width/height arrive as cm strings; floorOffset is meters from the boundingData.
+  const totalHeightCm = Math.round(parseFloat(height) + floorOffset * 100)
 
   return (
     <>
-      <Text font="dashboard" as="span" size="lg" className={styles.width}>{`${width} m`}</Text>
+      <Text font="dashboard" as="span" size="lg" className={styles.width}>{`${width} cm`}</Text>
       <Text
         font="dashboard"
         as="span"
@@ -31,7 +31,7 @@ const Measurements = memo(({ width, height, floorOffset = 0 }: MeasurementsProps
               }
             : undefined
         }
-      >{`${totalHeight} m`}</Text>
+      >{`${totalHeightCm} cm`}</Text>
     </>
   )
 })

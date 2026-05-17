@@ -12,6 +12,7 @@ import { NumberInput } from '@/components/ui/NumberInput'
 import { Text } from '@/components/ui/Typography'
 import { spaceConfigs, type SpaceKey } from '@/components/scene/constants'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
+import { cmEventToMeters } from '@/components/wallview/utils'
 
 import type { RootState } from '@/redux/store'
 import { toggleArtworkLocked } from '@/redux/slices/exhibitionSlice'
@@ -146,27 +147,27 @@ const GroupPanel = () => {
 
       <div className={styles.section}>
         <Text font="dashboard" as="h4" size="xs" className={styles.subtitle}>
-          Vertical position (m)
+          Vertical position (cm)
         </Text>
         <div className={styles.row}>
           <div className={styles.item}>
             <NumberInput
-              value={Math.round((fromTop / WALL_SCALE) * 100) / 100}
+              value={Math.round((fromTop / WALL_SCALE) * 100)}
               icon="arrowTopFromLine"
               label="from top"
               min={0}
-              max={1000}
-              onChange={handleFromTopChange}
+              max={100000}
+              onChange={(e) => handleFromTopChange(cmEventToMeters(e))}
             />
           </div>
           <div className={styles.item}>
             <NumberInput
-              value={Math.round((fromBottom / WALL_SCALE) * 100) / 100}
+              value={Math.round((fromBottom / WALL_SCALE) * 100)}
               icon="arrowBottomFromLine"
               label="from bottom"
               min={0}
-              max={1000}
-              onChange={handleFromBottomChange}
+              max={100000}
+              onChange={(e) => handleFromBottomChange(cmEventToMeters(e))}
             />
           </div>
         </div>
@@ -174,27 +175,27 @@ const GroupPanel = () => {
 
       <div className={styles.section}>
         <Text font="dashboard" as="h4" size="xs" className={styles.subtitle}>
-          Horizontal position (m)
+          Horizontal position (cm)
         </Text>
         <div className={styles.row}>
           <div className={styles.item}>
             <NumberInput
-              value={Math.round((fromLeft / WALL_SCALE) * 100) / 100}
+              value={Math.round((fromLeft / WALL_SCALE) * 100)}
               icon="arrowLeftFromLine"
               label="from left"
               min={0}
-              max={1000}
-              onChange={handleFromLeftChange}
+              max={100000}
+              onChange={(e) => handleFromLeftChange(cmEventToMeters(e))}
             />
           </div>
           <div className={styles.item}>
             <NumberInput
-              value={Math.round((fromRight / WALL_SCALE) * 100) / 100}
+              value={Math.round((fromRight / WALL_SCALE) * 100)}
               icon="arrowRightFromLine"
               label="from right"
               min={0}
-              max={1000}
-              onChange={handleFromRightChange}
+              max={100000}
+              onChange={(e) => handleFromRightChange(cmEventToMeters(e))}
             />
           </div>
         </div>

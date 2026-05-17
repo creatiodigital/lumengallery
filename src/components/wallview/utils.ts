@@ -1,8 +1,24 @@
+import type { ChangeEvent } from 'react'
 import { Vector3, Quaternion, Mesh, BufferGeometry, Box3 } from 'three'
 
 import { WALL_SCALE } from '@/components/wallview/constants'
 import type { TArtwork, TArtworkPosition } from '@/types/artwork'
 import type { TDimensions } from '@/types/geometry'
+
+// NumberInput passes synthetic events whose target.value is a string.
+// Position handlers in useArtworkHandlers / useGroupHandlers parse that
+// value as metres. Inputs now display centimetres, so convert at the
+// edge before forwarding the event.
+export const cmEventToMeters = (
+  e: ChangeEvent<HTMLInputElement>,
+): ChangeEvent<HTMLInputElement> => {
+  const cm = parseFloat(String(e.target.value).replace(',', '.'))
+  if (!Number.isFinite(cm)) return e
+  return {
+    ...e,
+    target: { ...e.target, value: String(cm / 100) },
+  } as ChangeEvent<HTMLInputElement>
+}
 
 /**
  * Compute the visual bounding rect of an artwork, including its

@@ -214,7 +214,7 @@ export const TPS_FRAME_TYPES: TpsFrameType[] = [
     label: 'Tray Frame',
     description:
       'Open frame, no glass. Your Dibond-mounted print sits slightly recessed below the moulding edge for a minimal, contemporary look.',
-    helperImageUrl: '/assets/helpers/tray.jpg',
+    helperImageUrl: '/assets/helpers/tray-v2.jpg',
   },
 ]
 

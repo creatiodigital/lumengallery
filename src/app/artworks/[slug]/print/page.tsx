@@ -42,9 +42,16 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
   if (!artwork.printEnabled || !artwork.printPriceCents) {
     notFound()
   }
+  // Missing original pixel dimensions = we can't compute a sharp print
+  // ceiling. Refuse to render the wizard so the per-artwork size ticks
+  // stay in sync with the canvas sidebar (which renders no marker in
+  // the same case) instead of silently using provider-wide bounds.
+  if (!artwork.originalWidth || !artwork.originalHeight) {
+    notFound()
+  }
 
-  const originalWidthPx = artwork.originalWidth ?? 1000
-  const originalHeightPx = artwork.originalHeight ?? 1000
+  const originalWidthPx = artwork.originalWidth
+  const originalHeightPx = artwork.originalHeight
   const artistName = `${artwork.user.name} ${artwork.user.lastName}`
 
   const catalog = await loadProviderCatalog('printspace', {

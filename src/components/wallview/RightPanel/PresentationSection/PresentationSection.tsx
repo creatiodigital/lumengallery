@@ -10,14 +10,6 @@ import { Tooltip } from '@/components/ui/Tooltip'
 import styles from '@/components/wallview/RightPanel/RightPanel.module.scss'
 import type { TArtwork } from '@/types/artwork'
 
-import {
-  frameSizeOptions,
-  frameThicknessOptions,
-  passepartoutSizeOptions,
-  passepartoutThicknessOptions,
-  supportThicknessOptions,
-} from './constants'
-
 type PresentationSectionProps = {
   disabled?: boolean
   showSupport: boolean
@@ -96,22 +88,30 @@ const PresentationSection = ({
                 disabled={disabled}
               />
             </div>
-            <div className={styles.item}>
+          </div>
+          <div className={styles.item}>
+            <div className={styles.sliderHeader}>
               <Text font="dashboard" as="span" size="xs" className={styles.label}>
                 Thickness (cm)
               </Text>
-              <Select<number>
-                options={supportThicknessOptions}
-                value={supportThickness?.value}
-                onChange={(val) =>
-                  onEdit('supportThickness', {
-                    label: String(val),
-                    value: val,
-                  })
-                }
-                disabled={disabled}
-              />
+              <span className={styles.sliderValue}>
+                {(supportThickness?.value ?? 2).toFixed(1)}
+              </span>
             </div>
+            <Slider
+              min={0}
+              max={10}
+              step={0.1}
+              value={supportThickness?.value ?? 2}
+              onChange={(v) =>
+                onEdit('supportThickness', {
+                  label: String(v),
+                  value: v,
+                })
+              }
+              disabled={disabled}
+              aria-label="Support thickness in centimeters"
+            />
           </div>
         </div>
       )}
@@ -300,37 +300,49 @@ const PresentationSection = ({
               </div>
             </>
           )}
-          <div className={styles.row}>
-            <div className={styles.item}>
+          <div className={styles.item}>
+            <div className={styles.sliderHeader}>
               <Text font="dashboard" as="span" size="xs" className={styles.label}>
                 Size (cm)
               </Text>
-              <Select<number>
-                options={frameSizeOptions}
-                value={frameSize?.value}
-                onChange={(val) =>
-                  onEdit('frameSize', {
-                    label: String(val),
-                    value: val,
-                  })
-                }
-              />
+              <span className={styles.sliderValue}>{frameSize?.value ?? 3}</span>
             </div>
-            <div className={styles.item}>
+            <Slider
+              min={1}
+              max={20}
+              step={1}
+              value={frameSize?.value ?? 3}
+              onChange={(v) =>
+                onEdit('frameSize', {
+                  label: String(v),
+                  value: v,
+                })
+              }
+              disabled={disabled}
+              aria-label="Frame size in centimeters"
+            />
+          </div>
+          <div className={styles.item}>
+            <div className={styles.sliderHeader}>
               <Text font="dashboard" as="span" size="xs" className={styles.label}>
                 Thickness (cm)
               </Text>
-              <Select<number>
-                options={frameThicknessOptions}
-                value={frameThickness?.value}
-                onChange={(val) =>
-                  onEdit('frameThickness', {
-                    label: String(val),
-                    value: val,
-                  })
-                }
-              />
+              <span className={styles.sliderValue}>{frameThickness?.value ?? 2}</span>
             </div>
+            <Slider
+              min={1}
+              max={20}
+              step={1}
+              value={frameThickness?.value ?? 2}
+              onChange={(v) =>
+                onEdit('frameThickness', {
+                  label: String(v),
+                  value: v,
+                })
+              }
+              disabled={disabled}
+              aria-label="Frame thickness in centimeters"
+            />
           </div>
         </div>
       )}
@@ -360,37 +372,51 @@ const PresentationSection = ({
               />
             </div>
           </div>
-          <div className={styles.row}>
-            <div className={styles.item}>
+          <div className={styles.item}>
+            <div className={styles.sliderHeader}>
               <Text font="dashboard" as="span" size="xs" className={styles.label}>
                 Size (cm)
               </Text>
-              <Select<number>
-                options={passepartoutSizeOptions}
-                value={passepartoutSize?.value}
-                onChange={(val) =>
-                  onEdit('passepartoutSize', {
-                    label: String(val),
-                    value: val,
-                  })
-                }
-              />
+              <span className={styles.sliderValue}>{passepartoutSize?.value ?? 3}</span>
             </div>
-            <div className={styles.item}>
+            <Slider
+              min={1}
+              max={20}
+              step={1}
+              value={passepartoutSize?.value ?? 3}
+              onChange={(v) =>
+                onEdit('passepartoutSize', {
+                  label: String(v),
+                  value: v,
+                })
+              }
+              disabled={disabled}
+              aria-label="Passepartout size in centimeters"
+            />
+          </div>
+          <div className={styles.item}>
+            <div className={styles.sliderHeader}>
               <Text font="dashboard" as="span" size="xs" className={styles.label}>
                 Thickness (cm)
               </Text>
-              <Select<number>
-                options={passepartoutThicknessOptions}
-                value={passepartoutThickness?.value}
-                onChange={(val) =>
-                  onEdit('passepartoutThickness', {
-                    label: String(val),
-                    value: val,
-                  })
-                }
-              />
+              <span className={styles.sliderValue}>
+                {(passepartoutThickness?.value ?? 1).toFixed(1)}
+              </span>
             </div>
+            <Slider
+              min={0.2}
+              max={3}
+              step={0.1}
+              value={passepartoutThickness?.value ?? 1}
+              onChange={(v) =>
+                onEdit('passepartoutThickness', {
+                  label: String(v),
+                  value: v,
+                })
+              }
+              disabled={disabled}
+              aria-label="Passepartout thickness in centimeters"
+            />
           </div>
         </div>
       )}

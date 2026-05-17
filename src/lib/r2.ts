@@ -1,4 +1,9 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import prisma from '@/lib/prisma'
@@ -62,6 +67,29 @@ export async function uploadToR2(key: string, body: Buffer, contentType: string)
   return `${PUBLIC_URL}/${key}`
 }
 
+// ── URL → key helpers ────────────────────────────────────────────────────────
+
+/**
+ * Extract the R2 object key from a public URL by stripping any of the
+ * known host prefixes the app has used over time (custom domain,
+ * r2.dev development URL, current production domain). Reused by
+ * `deleteFromR2` and the reconciliation script.
+ *
+ * Returns `null` for URLs that can't possibly be R2 (e.g. legacy
+ * Vercel Blob storage), so callers can skip them safely.
+ */
+export function extractR2KeyFromUrl(url: string): string | null {
+  if (!url) return null
+  if (url.includes('blob.vercel-storage.com')) return null
+  const stripped = url
+    .replace(`${PUBLIC_URL}/`, '')
+    .replace(/^https?:\/\/pub-[a-f0-9]+\.r2\.dev\//, '')
+    .replace(/^https?:\/\/assets\.theartroom\.gallery\//, '')
+  // If nothing was stripped, the URL wasn't pointing at R2.
+  if (stripped === url) return null
+  return stripped
+}
+
 // ── Delete ───────────────────────────────────────────────────────────────────
 
 /**
@@ -74,19 +102,53 @@ export async function deleteFromR2(url: string): Promise<void> {
     console.info('[R2] Skipping Vercel Blob URL (legacy):', url)
     return
   }
-
-  // Extract the R2 object key by stripping any known URL prefix.
-  // Handles both the custom domain and the r2.dev development URL.
-  const key = url
-    .replace(`${PUBLIC_URL}/`, '')
-    .replace(/^https?:\/\/pub-[a-f0-9]+\.r2\.dev\//, '')
-    .replace(/^https?:\/\/assets\.theartroom\.gallery\//, '')
+  const key = extractR2KeyFromUrl(url) ?? url
   await r2.send(
     new DeleteObjectCommand({
       Bucket: BUCKET,
       Key: key,
     }),
   )
+}
+
+/**
+ * Delete a single R2 object by its key (no URL parsing). Used by
+ * maintenance scripts that already have raw keys from a list call.
+ */
+export async function deleteR2KeyDirect(key: string): Promise<void> {
+  await r2.send(
+    new DeleteObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+    }),
+  )
+}
+
+// ── List ─────────────────────────────────────────────────────────────────────
+
+/**
+ * List every object key in the R2 bucket, optionally filtered by
+ * prefix. Pages through results so callers don't have to. Intended
+ * for maintenance scripts (orphan reconciliation, audits) — too
+ * expensive for request-path use on large buckets.
+ */
+export async function listAllR2Keys(prefix?: string): Promise<string[]> {
+  const keys: string[] = []
+  let continuationToken: string | undefined
+  do {
+    const res = await r2.send(
+      new ListObjectsV2Command({
+        Bucket: BUCKET,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    )
+    for (const obj of res.Contents ?? []) {
+      if (obj.Key) keys.push(obj.Key)
+    }
+    continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined
+  } while (continuationToken)
+  return keys
 }
 
 // ── Presigned URL (for client-side uploads) ──────────────────────────────────

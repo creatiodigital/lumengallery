@@ -12,8 +12,10 @@
  *     Capping at the narrowest paper means every paper option always
  *     supports the displayed range — no per-paper "this size won't
  *     fit on Canson Baryta" surprises mid-flow.
- *   - Long edge hard cap: 400 cm. In practice nothing ever reaches
- *     this; kept as a backstop against extreme aspect ratios.
+ *   - Long edge hard cap: 200 cm. Above this a print stops being a
+ *     consumer purchase — couriers classify tubes >150 cm as oversized
+ *     parcels, TPS can't frame anything that big, and demand for
+ *     prints over ~180 cm is negligible outside bespoke commissions.
  *
  * Eligibility is "min print would print sharp at MIN_DPI". If the
  * file can't deliver a 20 cm short edge at 300 DPI, no sellable size
@@ -23,7 +25,7 @@
 export const MIN_DPI = 300
 export const MIN_SHORT_EDGE_CM = 20
 export const MAX_SHORT_EDGE_CM = 110.5
-export const MAX_LONG_EDGE_CM = 400
+export const MAX_LONG_EDGE_CM = 200
 
 export type ImageMeta = { width: number; height: number }
 

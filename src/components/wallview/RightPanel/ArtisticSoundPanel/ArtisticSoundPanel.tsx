@@ -83,13 +83,13 @@ const ArtisticSoundPanel = ({ disabled }: { disabled?: boolean }) => {
           <div className={styles.row}>
             <div className={styles.item}>
               <Text font="dashboard" as="span" size="xs" className={styles.label}>
-                Distance (m)
+                Distance (cm)
               </Text>
               <NumberInput
-                value={soundDistance ?? 5}
-                min={1}
-                max={50}
-                onChange={(e) => handleEditSound('soundDistance', Number(e.target.value))}
+                value={Math.round((soundDistance ?? 5) * 100)}
+                min={100}
+                max={5000}
+                onChange={(e) => handleEditSound('soundDistance', Number(e.target.value) / 100)}
               />
             </div>
           </div>

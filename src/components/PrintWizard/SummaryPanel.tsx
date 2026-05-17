@@ -53,10 +53,9 @@ export const SummaryPanel = ({
   configReady,
   onAddToCart,
 }: SummaryPanelProps) => {
-  const orientation: 'portrait' | 'landscape' =
-    config.values.orientation === 'landscape' ? 'landscape' : 'portrait'
-
   // Effective print size — preset OR custom. Drives schema + label.
+  // Sizes are stored in the artwork's natural orientation; the schema
+  // renders them as-is, no portrait/landscape toggle anywhere.
   const effectiveSize = useMemo(() => getEffectiveSizeCm(catalog, config), [catalog, config])
 
   // Merged visual hints from every selected enum option. The TPS
@@ -73,19 +72,16 @@ export const SummaryPanel = ({
   const moldingColorHex = visuals.frameColorHex ?? '#0b0b0b'
   const mattingColorHex = visuals.matColorHex ?? '#f6f3ec'
 
-  // Sizes are stored portrait. Landscape orientation swaps width/height
-  // so the schema and label match how the print will be hung.
-  const isLandscape = orientation === 'landscape'
-  const printWidthCm = effectiveSize
-    ? isLandscape
-      ? effectiveSize.heightCm
-      : effectiveSize.widthCm
-    : 0
-  const printHeightCm = effectiveSize
-    ? isLandscape
-      ? effectiveSize.widthCm
-      : effectiveSize.heightCm
-    : 0
+  // Floating frame uses a coloured backboard instead of a passepartout —
+  // surface that visually in the 2D schema so it doesn't read identically
+  // to Standard. Backboard border matches the FloatingPreview default
+  // (2 cm on every side, see scene/preview/FloatingPreview.tsx).
+  const isFloatingFrame = showFrame && config.values.frameType === 'floating'
+  const backboardBorderCm = isFloatingFrame ? 2 : 0
+  const backboardColorHex = '#f6f3ec'
+
+  const printWidthCm = effectiveSize?.widthCm ?? 0
+  const printHeightCm = effectiveSize?.heightCm ?? 0
 
   if (!configReady) {
     return (
@@ -128,6 +124,8 @@ export const SummaryPanel = ({
             showFrame={showFrame}
             imageUrl={artwork.imageUrl}
             paperBorderCm={borderCm}
+            backboardBorderCm={backboardBorderCm}
+            backboardColorHex={backboardColorHex}
           />
         </div>
       )}

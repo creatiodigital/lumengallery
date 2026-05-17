@@ -198,8 +198,8 @@ export const useArtworkHandlers = (currentArtworkId: string, boundingData: TBoun
     )
   }
 
-  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newWidth = sanitizeNumberInput(e.target.value)
+  const handleWidthChange = (widthMeters: number) => {
+    const newWidth = widthMeters * WALL_SCALE
     const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
@@ -215,7 +215,7 @@ export const useArtworkHandlers = (currentArtworkId: string, boundingData: TBoun
       boundingData,
     )
 
-    dispatch(pushToHistory()) // Save state before width change
+    dispatch(pushToHistory())
     dispatch(
       updateArtworkPosition({
         artworkId: currentArtworkId,
@@ -224,8 +224,8 @@ export const useArtworkHandlers = (currentArtworkId: string, boundingData: TBoun
     )
   }
 
-  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newHeight = sanitizeNumberInput(e.target.value)
+  const handleHeightChange = (heightMeters: number) => {
+    const newHeight = heightMeters * WALL_SCALE
     const currentEdited = exhibitionArtworksById[currentArtworkId]
     if (!currentEdited) return
 
@@ -241,7 +241,7 @@ export const useArtworkHandlers = (currentArtworkId: string, boundingData: TBoun
       boundingData,
     )
 
-    dispatch(pushToHistory()) // Save state before height change
+    dispatch(pushToHistory())
     dispatch(
       updateArtworkPosition({
         artworkId: currentArtworkId,

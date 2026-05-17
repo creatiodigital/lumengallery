@@ -164,8 +164,8 @@ export const Wall = () => {
       wallRef.current.style.width = `${width * scaling}px`
       wallRef.current.style.height = `${height * scaling}px`
 
-      setWallWidth(width.toFixed(2))
-      setWallHeight(height.toFixed(2))
+      setWallWidth(String(Math.round(width * 100)))
+      setWallHeight(String(Math.round(height * 100)))
 
       const { boundingBox, normal } = boundingData
       const { min, max } = boundingBox

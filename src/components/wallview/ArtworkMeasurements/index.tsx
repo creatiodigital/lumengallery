@@ -21,17 +21,17 @@ const ArtworkMeasurements = memo(({ width2d, height2d }: ArtworkMeasurementsProp
   // Keep visible during resize so user can see size changes
   if (isDragging) return null
 
-  // Convert from 2D scale to meters (same as right panel: value / WALL_SCALE)
-  const widthMeters = (width2d / WALL_SCALE).toFixed(2)
-  const heightMeters = (height2d / WALL_SCALE).toFixed(2)
+  // Convert from 2D scale to cm (right panel displays cm; keep these consistent)
+  const widthCm = Math.round((width2d / WALL_SCALE) * 100)
+  const heightCm = Math.round((height2d / WALL_SCALE) * 100)
 
   return (
     <>
       <Text font="dashboard" as="span" size="sm" className={styles.width}>
-        {`${widthMeters} m`}
+        {`${widthCm} cm`}
       </Text>
       <Text font="dashboard" as="span" size="sm" className={styles.height}>
-        {`${heightMeters} m`}
+        {`${heightCm} cm`}
       </Text>
     </>
   )

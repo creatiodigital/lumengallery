@@ -137,6 +137,91 @@
   color: var(--color-black);
 }
 
+// Editable value: an inline input + unit text, styled to read like
+// the static .sliderValue when not focused.
+.sliderValueField {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.sliderValueInput {
+  font-family: monospace;
+  font-size: var(--text-xs);
+  color: var(--color-black);
+  text-align: right;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 2px 4px;
+  width: 56px;
+  outline: none;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-border-light);
+  }
+
+  &:focus {
+    border-color: var(--color-border-default);
+    background: var(--color-white);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.sliderUnit {
+  font-family: monospace;
+  font-size: var(--text-xs);
+  color: var(--color-black);
+}
+
+// Labelled input above each slider (wizard-style stack).
+.sizeField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+// Wraps a Slider so an overlay marker can be absolutely positioned
+// over the track (e.g. the print-max indicator on Width/Height).
+.sliderWithMarker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 16px;
+}
+
+// Spans the thumb's centre-travel range exactly: the native range
+// thumb's centre moves from thumb_radius to width - thumb_radius, so
+// inset by 6px on each side (half the 12px thumb). Markers using
+// `left: X%` inside this overlay align 1:1 with the thumb position.
+.markerTrack {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.maxPrintMarker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-red-50);
+  // Empirical nudge: native thumb's visual centre sits ~3px right
+  // of where pure left:% math puts the marker. Adjust here if your
+  // browser renders it differently.
+  transform: translateX(calc(-50% + 2px));
+  pointer-events: none;
+  z-index: 2;
+}
+
 // Range slider (matches LightingPanel style)
 .slider {
   width: 100%;

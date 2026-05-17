@@ -199,9 +199,9 @@ export function collectVisualHints(
 
 /**
  * Build a fresh starting config: pick the first option in each enum
- * dimension, the first DPI-eligible size with the best aspect fit, and
- * orientation derived from the image. Restrictions are applied per
- * dimension. Pre-country: doesn't consider availability.
+ * dimension and the first DPI-eligible size with the best aspect fit.
+ * Restrictions are applied per dimension. Pre-country: doesn't
+ * consider availability.
  */
 export function buildInitialConfig(
   catalog: Catalog,
@@ -231,8 +231,6 @@ export function buildInitialConfig(
           heightCm: clampCm(heightCm, dim.custom.minCm, dim.custom.maxCm, dim.custom.stepCm),
         }
       }
-    } else if (dim.kind === 'orientation') {
-      values[dim.id] = aspectRatio < 1 ? 'portrait' : 'landscape'
     } else if (dim.kind === 'border') {
       borders = { ...(borders ?? {}), [dim.id]: { allCm: dim.defaultCm } }
     }
@@ -294,7 +292,6 @@ export function configShipsTo(
 ): boolean {
   if (!country) return false
   for (const dim of catalog.dimensions) {
-    if (dim.kind === 'orientation') continue
     if (dim.kind === 'border') continue
     if (!isDimensionVisible(dim, config, catalog)) continue
     if (dim.kind === 'size') {
@@ -332,7 +329,7 @@ export function findShippableConfig(
   // Cartesian product over visible dimensions; exits early once a
   // shipping config is found. With ~6 dimensions and a handful of
   // options each this is fast enough for an interactive wizard.
-  const dims = catalog.dimensions.filter((d) => d.kind !== 'orientation')
+  const dims = catalog.dimensions
 
   type Candidate = { config: WizardConfig; cost: number }
   let best: Candidate | null = null
@@ -403,7 +400,6 @@ function diffCost(a: WizardConfig, b: WizardConfig): number {
     mount: 2,
     color: 1,
     frameColor: 1,
-    orientation: 1,
   }
   for (const k of keys) {
     if (a.values[k] !== b.values[k]) cost += WEIGHT[k] ?? 5

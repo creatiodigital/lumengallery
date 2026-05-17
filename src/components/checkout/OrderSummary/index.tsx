@@ -20,7 +20,7 @@ export type ArtworkSummary = {
   artistName: string
   year?: string
   imageUrl: string
-  /** Used to decide whether to rotate the thumb to match the buyer's chosen orientation. */
+  /** Used to decide whether to rotate the thumb so it matches the print's W×H. */
   originalWidthPx: number
   originalHeightPx: number
 }
@@ -40,8 +40,9 @@ interface OrderSummaryProps {
   /** Pre-computed display labels. Provider-agnostic — the wizard builds
    *  these from the live catalog; downstream surfaces just render them. */
   specs: SpecsSummary
-  /** Buyer's chosen orientation — drives thumb rotation. */
-  orientation: 'portrait' | 'landscape'
+  /** Print's W × H in cm — drives thumb rotation when it doesn't match
+   *  the artwork's natural aspect. Undefined → no rotation. */
+  printSizeCm?: { widthCm: number; heightCm: number }
   /** When set, renders a "Shipping to <country>" line above price rows. */
   country?: string
   priceLines: PriceLine[]
@@ -54,15 +55,16 @@ interface OrderSummaryProps {
 export const OrderSummary = ({
   artwork,
   specs,
-  orientation,
+  printSizeCm,
   country,
   priceLines,
   total,
   cta,
   notes,
 }: OrderSummaryProps) => {
-  const thumbRotated =
-    (orientation === 'landscape') !== artwork.originalWidthPx >= artwork.originalHeightPx
+  const printIsLandscape = printSizeCm ? printSizeCm.widthCm > printSizeCm.heightCm : false
+  const artworkIsLandscape = artwork.originalWidthPx >= artwork.originalHeightPx
+  const thumbRotated = printSizeCm ? printIsLandscape !== artworkIsLandscape : false
 
   return (
     <aside className={styles.summaryPanel}>

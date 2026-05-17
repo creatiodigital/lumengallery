@@ -28,7 +28,7 @@ export type Catalog = {
   providerData?: unknown
 }
 
-export type Dimension = EnumDimension | SizeDimension | OrientationDimension | BorderDimension
+export type Dimension = EnumDimension | SizeDimension | BorderDimension
 
 export type DimensionBase = {
   id: string
@@ -59,10 +59,6 @@ export type SizeDimension = DimensionBase & {
     /** Lock width and height to the artwork's natural aspect ratio. */
     aspectLocked?: boolean
   }
-}
-
-export type OrientationDimension = DimensionBase & {
-  kind: 'orientation'
 }
 
 /**
@@ -238,7 +234,7 @@ export interface PrintProvider {
    * cheap (no network) — cache anything heavy in `loadCatalog`.
    */
   buildAvailability(catalog: Catalog): AvailabilityCheck
-  getQuote(input: GetQuoteInput): Promise<Quote>
+  getQuote(input: GetQuoteInput): Quote
   /**
    * End-to-end delivery estimate for a given config + country, as a
    * range in calendar days. The wizard surfaces this in the summary

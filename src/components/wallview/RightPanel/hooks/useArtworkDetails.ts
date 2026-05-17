@@ -1,10 +1,6 @@
 import { useSelector } from 'react-redux'
 
 import { WALL_SCALE } from '@/components/wallview/constants'
-import {
-  frameThicknessOptions,
-  passepartoutThicknessOptions,
-} from '@/components/wallview/RightPanel/PresentationSection/constants'
 
 import type { RootState } from '@/redux/store'
 import type { TOption } from '@/types/artwork'
@@ -13,13 +9,14 @@ import type { TFontFamily, TFontWeight } from '@/types/fonts'
 const DEFAULT_FRAME_THICKNESS: TOption<number> = { label: '2', value: 2 }
 const DEFAULT_PASSEPARTOUT_THICKNESS: TOption<number> = { label: '0.6', value: 0.6 }
 
+const inRange = (v: number | undefined, min: number, max: number): v is number =>
+  typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max
+
 const normalizeFrameThickness = (v?: TOption<number>): TOption<number> =>
-  v && frameThicknessOptions.some((o) => o.value === v.value) ? v : DEFAULT_FRAME_THICKNESS
+  v && inRange(v.value, 1, 20) ? v : DEFAULT_FRAME_THICKNESS
 
 const normalizePassepartoutThickness = (v?: TOption<number>): TOption<number> =>
-  v && passepartoutThicknessOptions.some((o) => o.value === v.value)
-    ? v
-    : DEFAULT_PASSEPARTOUT_THICKNESS
+  v && inRange(v.value, 0.2, 3) ? v : DEFAULT_PASSEPARTOUT_THICKNESS
 
 export const useArtworkDetails = (currentArtworkId: string) => {
   const artworksById = useSelector((state: RootState) => state.artworks.byId)

@@ -32,6 +32,9 @@ const PaymentPage = async ({ params, searchParams }: PaymentPageProps) => {
 
   if (!artwork || !artwork.imageUrl) notFound()
   if (!artwork.printEnabled || !artwork.printPriceCents) notFound()
+  // Stay in sync with the wizard entry — no original dims means we
+  // can't compute a sharp print ceiling, so the print flow is closed.
+  if (!artwork.originalWidth || !artwork.originalHeight) notFound()
 
   const country = pickString(sp.country) ?? ''
   const artistName = `${artwork.user.name} ${artwork.user.lastName}`
@@ -44,8 +47,8 @@ const PaymentPage = async ({ params, searchParams }: PaymentPageProps) => {
         artistName,
         year: artwork.year ?? undefined,
         imageUrl: artwork.imageUrl,
-        originalWidthPx: artwork.originalWidth ?? 1000,
-        originalHeightPx: artwork.originalHeight ?? 1000,
+        originalWidthPx: artwork.originalWidth,
+        originalHeightPx: artwork.originalHeight,
         printPriceCents: artwork.printPriceCents,
       }}
       providerId="printspace"

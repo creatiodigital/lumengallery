@@ -665,7 +665,6 @@ export async function createTestOrder(): Promise<
         widthCm: 40,
         heightCm: 30,
         formatId: 'unframed',
-        orientation: 'landscape',
       },
       country: 'GB',
       totalCents: 6500,

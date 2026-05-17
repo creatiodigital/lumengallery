@@ -246,9 +246,8 @@ export const Guides = () => {
           const draggingGuide = guides.find((g) => g.id === dragRef.current!.guideId)
           if (!draggingGuide) return null
           const isH = draggingGuide.orientation === 'horizontal'
-          const label = isH
-            ? `y: ${draggingGuide.position.toFixed(2)}`
-            : `x: ${draggingGuide.position.toFixed(2)}`
+          const positionCm = Math.round(draggingGuide.position * 100)
+          const label = isH ? `y: ${positionCm} cm` : `x: ${positionCm} cm`
           return createPortal(
             <div
               style={{

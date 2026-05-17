@@ -1,5 +1,3 @@
-'use server'
-
 import type { GetQuoteInput, Quote, QuoteLine } from '../types'
 import type { TpsFrameTypeId, TpsGlassId, TpsHangingId } from './data'
 import {
@@ -30,7 +28,7 @@ import {
  *   tax      = 21% on subtotal when shipping to an EU country
  *   total    = subtotal + tax
  */
-export async function getPrintspaceQuote(input: GetQuoteInput): Promise<Quote> {
+export function getPrintspaceQuote(input: GetQuoteInput): Quote {
   const { config, country, artistPriceCents } = input
 
   // Effective size — TPS sells custom sizes only, but `customSize`

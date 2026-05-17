@@ -8,7 +8,7 @@ import { PrintPlane } from './parts/PrintPlane'
 
 interface StandardPreviewProps {
   texture: Texture
-  /** Pre-flipped print dimensions (orientation-aware). */
+  /** Print dimensions in metres. */
   printWidthM: number
   printHeightM: number
   /** White paper border around the print (same sheet). 0 = none. */

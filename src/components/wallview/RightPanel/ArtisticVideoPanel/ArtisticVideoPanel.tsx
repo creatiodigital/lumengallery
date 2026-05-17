@@ -104,13 +104,15 @@ const ArtisticVideoPanel = ({ disabled }: { disabled?: boolean }) => {
           <div className={styles.row}>
             <div className={styles.item}>
               <Text font="dashboard" as="span" size="xs" className={styles.label}>
-                Proximity Distance (m)
+                Proximity Distance (cm)
               </Text>
               <NumberInput
-                value={videoProximityDistance ?? 3}
-                min={1}
-                max={50}
-                onChange={(e) => handleEditVideo('videoProximityDistance', Number(e.target.value))}
+                value={Math.round((videoProximityDistance ?? 3) * 100)}
+                min={100}
+                max={5000}
+                onChange={(e) =>
+                  handleEditVideo('videoProximityDistance', Number(e.target.value) / 100)
+                }
               />
             </div>
           </div>
@@ -128,13 +130,13 @@ const ArtisticVideoPanel = ({ disabled }: { disabled?: boolean }) => {
           <div className={styles.row}>
             <div className={styles.item}>
               <Text font="dashboard" as="span" size="xs" className={styles.label}>
-                Sound Distance (m)
+                Sound Distance (cm)
               </Text>
               <NumberInput
-                value={soundDistance ?? 5}
-                min={1}
-                max={50}
-                onChange={(e) => handleEditVideo('soundDistance', Number(e.target.value))}
+                value={Math.round((soundDistance ?? 5) * 100)}
+                min={100}
+                max={5000}
+                onChange={(e) => handleEditVideo('soundDistance', Number(e.target.value) / 100)}
               />
             </div>
           </div>

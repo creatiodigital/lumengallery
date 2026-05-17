@@ -168,7 +168,10 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Get original dimensions, DPI, format, and size
+      // Get original dimensions, DPI, format, and size.
+      // No orientation transform — TPS prints the file's raw pixels
+      // ignoring any EXIF orientation tag, so we honor the same
+      // convention everywhere: the pixel layout IS the truth.
       const sharp = (await import('sharp')).default
       const metadata = await sharp(originalBuffer).metadata()
       const originalWidth = metadata.width ?? 0

@@ -19,6 +19,7 @@ import {
   type WizardConfig,
   buildAvailability,
   buildInitialConfig,
+  isOptionVisible,
   summarizeConfig,
 } from '@/lib/print-providers'
 import { getPrintLongEdgeBounds } from '@/lib/print-providers/printspace'
@@ -165,23 +166,7 @@ export const PrintWizard = ({
     }
   }
 
-  // Once the client-side image measurement lands, snap orientation to
-  // match — unless the user has touched it (URL seed or manual toggle).
-  const [orientationTouched, setOrientationTouched] = useState(
-    urlSeed.values.orientation !== undefined,
-  )
-  useEffect(() => {
-    if (orientationTouched || measuredAspect === null) return
-    const derived = measuredAspect < 1 ? 'portrait' : 'landscape'
-    setConfig((prev) =>
-      prev.values.orientation === derived
-        ? prev
-        : { ...prev, values: { ...prev.values, orientation: derived } },
-    )
-  }, [measuredAspect, orientationTouched])
-
   const updateConfig = (patch: Record<string, string>) => {
-    if (patch.orientation !== undefined) setOrientationTouched(true)
     setConfig((prev) => {
       const nextValues = { ...prev.values, ...patch }
       // Picking 'None' for the passepartout colour hides the mount-size
@@ -191,6 +176,24 @@ export const PrintWizard = ({
       let nextBorders = prev.borders
       if (patch.windowMount === 'none' && prev.borders?.windowMountSize) {
         nextBorders = { ...prev.borders, windowMountSize: { allCm: 0 } }
+      }
+      // Re-validate enum selections whose option-level visibleWhen
+      // depends on a value that just changed (e.g. moulding options
+      // cascade on frameType). Without this, switching the parent
+      // leaves a stale child id whose option is filtered out of the
+      // dropdown but still rendered in the summary panel.
+      const probe: WizardConfig = { ...prev, values: nextValues, borders: nextBorders }
+      for (const dim of catalog.dimensions) {
+        if (dim.kind !== 'enum') continue
+        const current = nextValues[dim.id]
+        if (!current) continue
+        const opt = dim.options.find((o) => o.id === current)
+        if (opt && isOptionVisible(opt, probe)) continue
+        const replacement =
+          dim.options.find((o) => o.isDefault && isOptionVisible(o, probe)) ??
+          dim.options.find((o) => isOptionVisible(o, probe))
+        if (replacement) nextValues[dim.id] = replacement.id
+        else delete nextValues[dim.id]
       }
       return { ...prev, values: nextValues, borders: nextBorders }
     })
@@ -227,37 +230,22 @@ export const PrintWizard = ({
 
   const canContinue = true
 
-  // Pre-fetch quote on every (config, country) change. Without a
-  // country the server returns just the artwork line — shipping + tax
-  // appear once a destination is set on the checkout step.
-  //
-  // We deliberately KEEP the previous quote visible while the new one
-  // is in flight. Clearing it on every keystroke makes the price flash
-  // between "€X" → "…" → "€Y" as the buyer drags a slider.
-  const [quote, setQuote] = useState<Quote | null>(null)
-  const [quoteLoading, setQuoteLoading] = useState(false)
-  useEffect(() => {
-    let cancelled = false
-    setQuoteLoading(true)
-    getProviderQuote(catalog.providerId, {
-      config,
-      country,
-      artistPriceCents: artwork.printPriceCents,
-    })
-      .then((q) => {
-        if (cancelled) return
-        setQuote(q)
-        setQuoteLoading(false)
-      })
-      .catch((err) => {
-        if (cancelled) return
-        console.warn('[PrintWizard] quote failed:', err)
-        setQuoteLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [catalog.providerId, config, country, artwork.printPriceCents])
+  // Synchronous price compute. The quote function is pure math (no DB,
+  // no fetch, no secrets) — running it client-side gives the buyer an
+  // instant price update on every config change, no round-trip, no
+  // debounce, no cancellation chain. The server re-runs this exact
+  // function at payment-intent creation so a tampered client price
+  // never reaches Stripe.
+  const quote: Quote = useMemo(
+    () =>
+      getProviderQuote(catalog.providerId, {
+        config,
+        country,
+        artistPriceCents: artwork.printPriceCents,
+      }),
+    [catalog.providerId, config, country, artwork.printPriceCents],
+  )
+  const quoteLoading = false
 
   const handleAddToCart = () => {
     // Stash everything downstream needs so checkout doesn't have to
@@ -331,13 +319,7 @@ export const PrintWizard = ({
           restrictions={restrictions}
           recommendations={recommendations}
         />
-        <Scene
-          imageUrl={artwork.imageUrl}
-          catalog={catalog}
-          config={config}
-          imageAspectRatio={aspectRatio}
-          configReady
-        />
+        <Scene imageUrl={artwork.imageUrl} catalog={catalog} config={config} configReady />
         <SummaryPanel
           artwork={artwork}
           catalog={catalog}
@@ -390,11 +372,10 @@ export const PrintWizard = ({
 /**
  * Reconstruct a partial config from URL params. Accept a param only
  * when its key matches a catalog dimension id AND its value is a
- * valid option for that dimension (or 'portrait'/'landscape' for the
- * orientation dim). This protects against stale URLs from a different
- * config that doesn't fit the current catalog — e.g. a stale URL
- * `size=60x80` getting merged into a new catalog where size is
- * custom-only and `60x80` resolves to nothing.
+ * valid option for that dimension. This protects against stale URLs
+ * from a different config that doesn't fit the current catalog — e.g.
+ * a stale URL `size=60x80` getting merged into a new catalog where
+ * size is custom-only and `60x80` resolves to nothing.
  *
  * Also parses `customSize=WxH` (custom W×H in cm) and any border-
  * kind dimension's numeric value, so the buyer's full configuration
@@ -429,8 +410,6 @@ function readConfigFromParams(
       if (dim.options.some((o) => o.id === value)) values[key] = value
     } else if (dim.kind === 'size') {
       if (dim.options.some((o) => o.id === value)) values[key] = value
-    } else if (dim.kind === 'orientation') {
-      if (value === 'portrait' || value === 'landscape') values[key] = value
     } else if (dim.kind === 'border') {
       const cm = Number(value)
       if (Number.isFinite(cm) && cm >= dim.minCm && cm <= dim.maxCm) {

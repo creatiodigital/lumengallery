@@ -17,6 +17,12 @@ interface SizeSchemaProps {
    *  in cm. Rendered as a WHITE sheet layer OUTSIDE the image — the
    *  buyer's print size is the image, the paper sheet is bigger. */
   paperBorderCm?: number
+  /** Floating-frame only: visible backboard border extending past the
+   *  paper sheet on every side, in cm. Rendered as a coloured layer
+   *  between the paper and the frame so the schema differentiates
+   *  Floating from Standard (which has a passepartout instead). */
+  backboardBorderCm?: number
+  backboardColorHex?: string
 }
 
 /**
@@ -41,15 +47,22 @@ export const SizeSchema = ({
   showFrame,
   imageUrl,
   paperBorderCm = 0,
+  backboardBorderCm = 0,
+  backboardColorHex = '#f6f3ec',
 }: SizeSchemaProps) => {
   const effectivePaperBorder = Math.max(paperBorderCm, 0)
   const effectiveMatting = showFrame ? mattingBorderCm : 0
   const effectiveFrame = showFrame ? moldingWidthCm : 0
+  const effectiveBackboard = showFrame ? Math.max(backboardBorderCm, 0) : 0
 
   const paperWidthCm = printWidthCm + effectivePaperBorder * 2
   const paperHeightCm = printHeightCm + effectivePaperBorder * 2
-  const matWidthCm = paperWidthCm + effectiveMatting * 2
-  const matHeightCm = paperHeightCm + effectiveMatting * 2
+  // Floating frame: backboard sits between the paper and the moulding.
+  // Standard frame: backboard is 0, mat takes its place.
+  const backboardWidthCm = paperWidthCm + effectiveBackboard * 2
+  const backboardHeightCm = paperHeightCm + effectiveBackboard * 2
+  const matWidthCm = backboardWidthCm + effectiveMatting * 2
+  const matHeightCm = backboardHeightCm + effectiveMatting * 2
   const overallWidthCm = matWidthCm + effectiveFrame * 2
   const overallHeightCm = matHeightCm + effectiveFrame * 2
 
@@ -75,24 +88,29 @@ export const SizeSchema = ({
   const MIN_FRAME_PX = 3
   const MIN_MAT_PX = 3
   const MIN_PAPER_PX = 3
+  const MIN_BACKBOARD_PX = 3
   const rawScale = Math.min(availableW, availableH) / Math.max(overallWidthCm, overallHeightCm)
   const frameW = effectiveFrame > 0 ? Math.max(effectiveFrame * rawScale, MIN_FRAME_PX) : 0
   const matBorderW = effectiveMatting > 0 ? Math.max(effectiveMatting * rawScale, MIN_MAT_PX) : 0
+  const backboardW =
+    effectiveBackboard > 0 ? Math.max(effectiveBackboard * rawScale, MIN_BACKBOARD_PX) : 0
   const paperBorderW =
     effectivePaperBorder > 0 ? Math.max(effectivePaperBorder * rawScale, MIN_PAPER_PX) : 0
 
   // Re-fit the print (image) so the exaggerated borders still leave room
   // inside the viewBox. The image itself stays proportional to real
   // dimensions, only the surrounding layers are nudged up to a min size.
-  const borderPx = (frameW + matBorderW + paperBorderW) * 2
+  const borderPx = (frameW + matBorderW + backboardW + paperBorderW) * 2
   const longestPrintCm = Math.max(printWidthCm, printHeightCm)
   const printScale = (Math.min(availableW, availableH) - borderPx) / longestPrintCm
   const printW = printWidthCm * printScale
   const printH = printHeightCm * printScale
   const paperW = printW + paperBorderW * 2
   const paperH = printH + paperBorderW * 2
-  const matW = paperW + matBorderW * 2
-  const matH = paperH + matBorderW * 2
+  const backboardSchemaW = paperW + backboardW * 2
+  const backboardSchemaH = paperH + backboardW * 2
+  const matW = backboardSchemaW + matBorderW * 2
+  const matH = backboardSchemaH + matBorderW * 2
   const outerW = matW + frameW * 2
   const outerH = matH + frameW * 2
 
@@ -101,14 +119,21 @@ export const SizeSchema = ({
   const outerY = (VIEWBOX_H - outerH) / 2
   const matX = outerX + frameW
   const matY = outerY + frameW
-  const paperX = matX + matBorderW
-  const paperY = matY + matBorderW
+  const backboardX = matX + matBorderW
+  const backboardY = matY + matBorderW
+  const paperX = backboardX + backboardW
+  const paperY = backboardY + backboardW
   const printX = paperX + paperBorderW
   const printY = paperY + paperBorderW
 
   // "Outer" arrows are shown when any layer surrounds the image — frame,
-  // mat, or paper border. Otherwise the diagram is just the bare image.
-  const hasOuter = showFrame || effectiveMatting > 0 || effectivePaperBorder > 0
+  // mat, backboard, or paper border. Otherwise the diagram is just the
+  // bare image.
+  const hasOuter =
+    showFrame ||
+    effectiveMatting > 0 ||
+    effectiveBackboard > 0 ||
+    effectivePaperBorder > 0
 
   return (
     <div className={styles.schemaWrapper}>
@@ -132,6 +157,20 @@ export const SizeSchema = ({
         {/* Mat (passepartout) */}
         {showFrame && effectiveMatting > 0 && (
           <rect x={matX} y={matY} width={matW} height={matH} fill={mattingColorHex} />
+        )}
+
+        {/* Backboard (Floating frames only). Coloured sheet that
+            extends past the paper on every side, behind the print. */}
+        {effectiveBackboard > 0 && (
+          <rect
+            x={backboardX}
+            y={backboardY}
+            width={backboardSchemaW}
+            height={backboardSchemaH}
+            fill={backboardColorHex}
+            stroke="#d0d0d0"
+            strokeWidth={0.5}
+          />
         )}
 
         {/* Paper sheet — white border extending around the image. Visible

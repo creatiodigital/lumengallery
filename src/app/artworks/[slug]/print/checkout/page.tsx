@@ -33,6 +33,9 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
 
   if (!artwork || !artwork.imageUrl) notFound()
   if (!artwork.printEnabled || !artwork.printPriceCents) notFound()
+  // Stay in sync with the wizard entry — no original dims means we
+  // can't compute a sharp print ceiling, so the print flow is closed.
+  if (!artwork.originalWidth || !artwork.originalHeight) notFound()
 
   const initialCountry = pickString(sp.country) ?? ''
   const artistName = `${artwork.user.name} ${artwork.user.lastName}`
@@ -40,8 +43,8 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
   // Load catalog for the country dropdown — every supported destination
   // is offered. Buyer picks here (no longer pre-locked from the wizard).
   const catalog = await loadProviderCatalog('printspace', {
-    imageWidthPx: artwork.originalWidth ?? 1000,
-    imageHeightPx: artwork.originalHeight ?? 1000,
+    imageWidthPx: artwork.originalWidth,
+    imageHeightPx: artwork.originalHeight,
   })
 
   return (
@@ -52,8 +55,8 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
         artistName,
         year: artwork.year ?? undefined,
         imageUrl: artwork.imageUrl,
-        originalWidthPx: artwork.originalWidth ?? 1000,
-        originalHeightPx: artwork.originalHeight ?? 1000,
+        originalWidthPx: artwork.originalWidth,
+        originalHeightPx: artwork.originalHeight,
         printPriceCents: artwork.printPriceCents,
       }}
       providerId="printspace"

@@ -260,20 +260,16 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
     }
   }
 
-  // Store file locally and create preview (actual upload happens on save)
+  // Store file locally and create preview (actual upload happens on save).
+  // For TIFFs the uploader supplies a pre-decoded JPEG preview URL since
+  // the browser can't render TIFF in <img>; we use that instead of the
+  // raw blob URL so the user actually sees the artwork before saving.
   const handleImageUpload = useCallback(
-    async (file: File) => {
-      // Revoke old preview URL if exists
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
-
-      // Create local preview
-      const newPreviewUrl = URL.createObjectURL(file)
+    async (file: File, externalPreviewUrl?: string) => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+      const newPreviewUrl = externalPreviewUrl ?? URL.createObjectURL(file)
       setPreviewUrl(newPreviewUrl)
       setPendingFile(file)
-
-      // Clear pending removal since we have a new file
       setPendingImageRemoval(false)
     },
     [previewUrl],

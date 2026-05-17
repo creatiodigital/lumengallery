@@ -103,9 +103,10 @@ export const useResizeArtwork = (
 
         const alignedPairs: TAlignmentPair[] = []
 
-        // Proportional resize with Shift key OR sizeLocked checkbox (only for corner handles)
+        // Proportional resize with Shift key OR sizeLocked checkbox
         const sizeLocked = sizeLockedById[artworkId] ?? false
-        if ((moveEvent.shiftKey || sizeLocked) && isCornerResize) {
+        const proportional = moveEvent.shiftKey || sizeLocked
+        if (proportional && isCornerResize) {
           // Calculate scale factor based on diagonal movement for smooth proportional resize
           // Determine the direction signs based on which corner handle is being dragged
           const xSign = direction.includes('left') ? -1 : 1
@@ -159,6 +160,29 @@ export const useResizeArtwork = (
                 alignedPairs.push({ from: artworkId, to: otherPos.artworkId, direction: 'bottom' })
               }
             }
+          }
+        } else if (proportional) {
+          // Side-handle proportional resize: scale the perpendicular axis
+          // around the original center so the artwork stays anchored to the
+          // edge opposite the handle being dragged.
+          if (direction.includes('right')) {
+            newWidth = Math.max(5, initialWidth + deltaX)
+            newHeight = Math.max(5, newWidth / aspectRatio)
+            newY = initialY + (initialHeight - newHeight) / 2
+          } else if (direction.includes('left')) {
+            newWidth = Math.max(5, initialWidth - deltaX)
+            newHeight = Math.max(5, newWidth / aspectRatio)
+            newX = initialX + (initialWidth - newWidth)
+            newY = initialY + (initialHeight - newHeight) / 2
+          } else if (direction.includes('bottom')) {
+            newHeight = Math.max(5, initialHeight + deltaY)
+            newWidth = Math.max(5, newHeight * aspectRatio)
+            newX = initialX + (initialWidth - newWidth) / 2
+          } else if (direction.includes('top')) {
+            newHeight = Math.max(5, initialHeight - deltaY)
+            newWidth = Math.max(5, newHeight * aspectRatio)
+            newY = initialY + (initialHeight - newHeight)
+            newX = initialX + (initialWidth - newWidth) / 2
           }
         } else {
           // Original non-proportional resize logic

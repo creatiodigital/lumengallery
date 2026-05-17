@@ -24,8 +24,6 @@ interface PreviewArtworkProps {
   imageUrl: string
   catalog: Catalog
   config: WizardConfig
-  /** Pixel aspect ratio of the artwork. > 1 = landscape → size swaps. */
-  imageAspectRatio: number
 }
 
 const ARTWORK_Z = 0.012
@@ -48,7 +46,6 @@ export const PreviewArtwork = ({
   imageUrl,
   catalog,
   config,
-  imageAspectRatio,
 }: PreviewArtworkProps) => {
   // Hooks must be called unconditionally on every render. Anything we
   // need before the `effectiveSize` early-return below has to be
@@ -56,9 +53,6 @@ export const PreviewArtwork = ({
   // shifts when `effectiveSize` flips between null and not-null and
   // state corrupts.
   const visuals = collectVisualHints(catalog, config)
-  const displayIsLandscape = config.values.orientation === 'landscape'
-  const imageIsLandscape = imageAspectRatio > 1
-  const textureNeedsRotation = imageIsLandscape !== displayIsLandscape
 
   const frameHex = visuals.frameColorHex ?? DEFAULT_FRAME_HEX
   const frameRoughness = visuals.frameRoughness ?? DEFAULT_FRAME_ROUGHNESS
@@ -70,9 +64,9 @@ export const PreviewArtwork = ({
     texture.wrapT = RepeatWrapping
     texture.anisotropy = 8
     texture.center.set(0.5, 0.5)
-    texture.rotation = textureNeedsRotation ? Math.PI / 2 : 0
+    texture.rotation = 0
     texture.needsUpdate = true
-  }, [texture, textureNeedsRotation])
+  }, [texture])
 
   const frameMaterial = useMemo(
     () =>
@@ -98,10 +92,10 @@ export const PreviewArtwork = ({
   const paperRoughness = visuals.paperRoughness ?? DEFAULT_PAPER_ROUGHNESS
   const matHex = visuals.matColorHex ?? DEFAULT_MAT_HEX
 
-  // Sizes are declared portrait. The frame follows the buyer's chosen
-  // orientation — flip width/height when they pick landscape.
-  const widthM = (displayIsLandscape ? effectiveSize.heightCm : effectiveSize.widthCm) / 100
-  const heightM = (displayIsLandscape ? effectiveSize.widthCm : effectiveSize.heightCm) / 100
+  // Sizes are stored in the artwork's natural orientation — render the
+  // plane at exactly those dimensions, no orientation flipping.
+  const widthM = effectiveSize.widthCm / 100
+  const heightM = effectiveSize.heightCm / 100
 
   // Unframed: print + optional paper border. No frame chrome. The
   // paper sheet sits behind the print, extending outward by the
