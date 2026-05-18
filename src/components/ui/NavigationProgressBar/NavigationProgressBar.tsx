@@ -83,7 +83,7 @@ export function NavigationProgressBar() {
     }
 
     // Capture phase so we still see the click if a downstream handler
-    // (e.g. Swiper's slide-click logic) calls stopPropagation in bubble.
+    // calls stopPropagation in bubble.
     document.addEventListener('click', onClick, { capture: true })
     return () => document.removeEventListener('click', onClick, { capture: true })
   }, [])

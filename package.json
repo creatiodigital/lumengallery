@@ -1,6 +1,6 @@
 {
   "name": "the-art-room",
-  "version": "3.7.8",
+  "version": "3.7.9",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
@@ -69,7 +69,6 @@
     "resend": "^6.9.3",
     "sharp": "^0.34.5",
     "stripe": "^22.0.1",
-    "swiper": "^12.1.2",
     "three": "^0.175.0",
     "three-stdlib": "^2.36.1",
     "utif": "^3.1.0",
