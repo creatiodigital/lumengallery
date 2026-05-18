@@ -16,6 +16,7 @@ type Slide = {
   subtitle: string
   title: string
   meta: string
+  textColor?: string
 }
 
 type SlideshowProps = {
@@ -52,7 +53,7 @@ export const Slideshow = ({ slides }: SlideshowProps) => {
                 style={{ backgroundImage: `url(${slide.imageUrl})` }}
               />
               <div className={styles.container}>
-                <div className={styles.content}>
+                <div className={styles.content} style={{ color: slide.textColor || '#ffffff' }}>
                   {slide.meta && (
                     <Text as="p" size="sm" className={styles.meta}>
                       {slide.meta}

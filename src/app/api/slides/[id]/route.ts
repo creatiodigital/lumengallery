@@ -34,7 +34,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     const { id } = await params
     const body = await request.json()
-    const { imageUrl, title, subtitle, meta, exhibitionUrl, order, isActive } = body
+    const { imageUrl, title, subtitle, meta, exhibitionUrl, order, isActive, textColor } = body
 
     const slide = await prisma.slide.update({
       where: { id },
@@ -46,6 +46,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         exhibitionUrl,
         order,
         isActive,
+        ...(textColor ? { textColor } : {}),
       },
     })
 

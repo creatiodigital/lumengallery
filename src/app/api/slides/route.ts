@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     if (authError) return authError
 
     const body = await request.json()
-    const { imageUrl, title, subtitle, meta, exhibitionUrl, order, isActive } = body
+    const { imageUrl, title, subtitle, meta, exhibitionUrl, order, isActive, textColor } = body
 
     // Get max order if not provided
     let slideOrder = order
@@ -45,6 +45,7 @@ export async function POST(request: Request) {
         exhibitionUrl,
         order: slideOrder,
         isActive: isActive ?? true,
+        ...(textColor ? { textColor } : {}),
       },
     })
 

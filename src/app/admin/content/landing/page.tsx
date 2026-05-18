@@ -22,6 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import { Button } from '@/components/ui/Button'
+import { ColorPicker } from '@/components/ui/ColorPicker'
 import { ImageUploader } from '@/components/ui/ImageUploader'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
@@ -40,6 +41,7 @@ type Slide = {
   meta: string
   exhibitionUrl: string
   isActive: boolean
+  textColor: string
 }
 
 type SortableSlideItemProps = {
@@ -144,6 +146,7 @@ export default function LandingContentPage() {
       meta: '',
       exhibitionUrl: '',
       isActive: true,
+      textColor: '#ffffff',
     })
     setIsNewSlide(true)
     setUploadError(null)
@@ -400,6 +403,12 @@ export default function LandingContentPage() {
                 size="medium"
                 value={editingSlide.exhibitionUrl}
                 onChange={(e) => updateField('exhibitionUrl', e.target.value)}
+              />
+
+              <label className={styles.label}>Text color</label>
+              <ColorPicker
+                textColor={editingSlide.textColor || '#ffffff'}
+                onColorSelect={(color) => updateField('textColor', color)}
               />
             </div>
 

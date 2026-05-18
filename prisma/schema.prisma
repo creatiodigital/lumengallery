@@ -508,6 +508,10 @@ model Slide {
   meta          String // e.g. "7 NOV 2025 - 17 JAN 2026    NEW YORK"
   exhibitionUrl String
   isActive      Boolean  @default(true)
+  // Hex color for the overlaid title/subtitle/meta text. Lets the
+  // admin pick a contrasting color per slide so light or busy images
+  // don't lose the text. Defaults to #ffffff (the previous behavior).
+  textColor     String   @default("#ffffff")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

@@ -32,6 +32,7 @@ const getSlides = unstable_cache(
       meta: slide.meta,
       title: slide.title,
       subtitle: slide.subtitle,
+      textColor: slide.textColor,
     }))
   },
   ['homepage-slides'],
