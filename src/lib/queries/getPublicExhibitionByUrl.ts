@@ -34,6 +34,7 @@ const getCachedExhibition = (url: string) =>
                   originalHeight: true,
                   artworkType: true,
                   hiddenFromExhibition: true,
+                  order: true,
                 },
               },
             },
@@ -42,7 +43,7 @@ const getCachedExhibition = (url: string) =>
       })
     },
     [`exhibition-public-${url}`],
-    { tags: [`exhibition-${url}`], revalidate: 3600 },
+    { tags: [`exhibition-${url}`, 'exhibitions', 'artworks'], revalidate: 3600 },
   )()
 
 export type PublicExhibitionArtwork = {
@@ -120,6 +121,7 @@ export async function getPublicExhibitionByUrl(url: string): Promise<PublicExhib
         originalWidth: true,
         originalHeight: true,
         hiddenFromExhibition: true,
+        order: true,
       },
     })
     const liveById = Object.fromEntries(live.map((a) => [a.id, a]))
@@ -160,10 +162,19 @@ export async function getPublicExhibitionByUrl(url: string): Promise<PublicExhib
         const liveArtwork = liveById[artwork.id]
         return !liveArtwork?.hiddenFromExhibition
       })
+      // Sort by the artist's library order so reordering in the dashboard
+      // propagates here without needing to republish the snapshot. Items
+      // no longer in the live DB sink to the bottom.
+      .sort(
+        (a, b) =>
+          (liveById[a.id]?.order ?? Number.POSITIVE_INFINITY) -
+          (liveById[b.id]?.order ?? Number.POSITIVE_INFINITY),
+      )
   } else {
     artworks = exhibition.exhibitionArtworks
       .map((ea) => ea.artwork)
       .filter((a) => !a.hiddenFromExhibition && a.artworkType === 'image')
+      .sort((a, b) => a.order - b.order)
       .map((a) => ({
         id: a.id,
         slug: a.slug,

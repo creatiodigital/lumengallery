@@ -1,3 +1,4 @@
+import { revalidateTag } from 'next/cache'
 import { NextResponse } from 'next/server'
 
 import { getEffectiveUserId } from '@/lib/authUtils'
@@ -37,6 +38,11 @@ export async function POST(request: Request) {
         }),
       ),
     )
+
+    // Bust the public surfaces that read Artwork.order so the artist's
+    // reorder appears immediately instead of waiting for the 1h cache TTL.
+    revalidateTag('artworks', 'default')
+    revalidateTag('exhibitions', 'default')
 
     return NextResponse.json({ success: true })
   } catch (error) {

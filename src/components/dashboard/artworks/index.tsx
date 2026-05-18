@@ -333,6 +333,10 @@ export const ArtworkLibraryPage = () => {
 
   // Filter artworks based on selected type and search query
   const filteredArtworks = artworks.filter((artwork) => {
+    // Shapes are a 2D-canvas / wallview construct, never user-managed
+    // content. Hide them from the main library regardless of the type
+    // filter (they still load in the wallview's MediaLibrary).
+    if (artwork.artworkType === 'shape') return false
     // Type filter
     if (typeFilter !== 'all' && artwork.artworkType !== typeFilter) {
       return false
