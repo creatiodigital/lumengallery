@@ -100,6 +100,10 @@
 .title {
   position: relative;
   color: inherit;
+  // Tighten vertical rhythm for titles that wrap to multiple lines.
+  // The default huge-size line-height left too much air between
+  // wrapped artist-name lines.
+  line-height: 1.05;
 }
 
 .subtitle {
