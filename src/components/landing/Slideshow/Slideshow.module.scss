@@ -7,6 +7,14 @@
   overflow: hidden;
   margin-bottom: var(--space-6);
 
+  // Mobile: block all interaction (swipe / tap / pagination clicks /
+  // slide link). Carousel just auto-rotates. Swipe handlers on mobile
+  // were intercepting vertical scroll and getting "stuck" mid-slide.
+  // Autoplay is JS-driven so it keeps running.
+  @media (max-width: 767px) {
+    pointer-events: none;
+  }
+
   @include breakpoint(md) {
     height: 600px;
   }
