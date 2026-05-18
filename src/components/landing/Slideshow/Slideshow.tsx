@@ -32,13 +32,6 @@ export const Slideshow = ({ slides }: SlideshowProps) => {
         slidesPerView={1}
         loop
         speed={800}
-        // Slides are 100% width and the height is CSS-driven, so we don't
-        // need Swiper to re-measure during every resize tick. Both defaults
-        // (updateOnWindowResize, resizeObserver) cause the carousel to
-        // flash on every pixel of a drag-resize. Disabling both makes the
-        // resize smooth and costs us nothing for this layout.
-        updateOnWindowResize={false}
-        resizeObserver={false}
         autoplay={{
           delay: 5000,
           disableOnInteraction: false,
