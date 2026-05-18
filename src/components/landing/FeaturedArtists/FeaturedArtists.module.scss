@@ -46,6 +46,10 @@
   flex-direction: column;
 }
 
+.artistName {
+  line-height: 1;
+}
+
 .biography {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);

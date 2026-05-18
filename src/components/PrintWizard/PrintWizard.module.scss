@@ -101,6 +101,9 @@
     border-right: none;
     border-bottom: 1px solid var(--color-border-light);
     order: 2;
+    // Page scrolls on mobile (no internal panel scroll), so the
+    // desktop tooltip-clearance bottom padding becomes dead space.
+    padding-bottom: var(--space-6);
   }
 }
 
@@ -753,7 +756,8 @@
 
   @media (max-width: 900px) {
     border-left: none;
-    border-top: 1px solid var(--color-border-light);
+    // No border-top here — .stepsPanel's mobile border-bottom already
+    // draws the boundary; having both produces a doubled line.
     order: 3;
   }
 }
