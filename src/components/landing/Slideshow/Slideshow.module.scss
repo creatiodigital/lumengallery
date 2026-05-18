@@ -7,10 +7,6 @@
   overflow: hidden;
   margin-bottom: var(--space-6);
 
-  // Mobile: block all interaction (swipe / tap / pagination clicks /
-  // slide link). Carousel just auto-rotates. Swipe handlers on mobile
-  // were intercepting vertical scroll and getting "stuck" mid-slide.
-  // Autoplay is JS-driven so it keeps running.
   @media (max-width: 767px) {
     pointer-events: none;
   }
@@ -25,14 +21,8 @@
   }
 }
 
-.swiper {
-  width: 100%;
-  height: 100%;
-}
-
 .slide {
   display: block;
-  position: relative;
   width: 100%;
   height: 100%;
   text-decoration: none;
@@ -49,11 +39,8 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  will-change: transform;
-  backface-visibility: hidden;
+  object-fit: cover;
+  object-position: center;
 }
 
 .container {
@@ -85,9 +72,6 @@
 
 .meta {
   position: relative;
-  // color + border follow the parent .content's inline `color`, set
-  // per-slide from Slide.textColor (defaults to #ffffff). currentColor
-  // ties the underline border to the same value.
   color: inherit;
   text-transform: uppercase;
   letter-spacing: var(--space-1);
@@ -100,10 +84,7 @@
 .title {
   position: relative;
   color: inherit;
-  // Tighten vertical rhythm for titles that wrap to multiple lines.
-  // The default huge-size line-height left too much air between
-  // wrapped artist-name lines.
-  line-height: 1.05;
+  line-height: 1;
 }
 
 .subtitle {
@@ -112,13 +93,10 @@
   margin-top: var(--space-2);
 }
 
-.paginationContainer {
-  position: absolute;
-  bottom: var(--space-4);
+.dots {
   left: 0;
   right: 0;
-  z-index: 10;
-  width: 100%;
+  transform: none;
   max-width: var(--header-max-width);
   margin: 0 auto;
   padding: 0 var(--space-6);
@@ -127,22 +105,4 @@
     bottom: var(--space-6);
     padding: 0 var(--site-padding);
   }
-}
-
-.pagination {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.bullet {
-  width: var(--space-1);
-  height: var(--space-1);
-  background: var(--color-white);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.bulletActive {
-  background: var(--color-black);
 }
