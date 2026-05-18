@@ -66,3 +66,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 })
   }
 }
+
+// DELETE - Remove the slide's image (clears imageUrl + removes R2 object).
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+
+    const slide = await prisma.slide.findUnique({ where: { id } })
+    if (!slide) {
+      return NextResponse.json({ error: 'Slide not found' }, { status: 404 })
+    }
+
+    if (slide.imageUrl) {
+      try {
+        await deleteFromR2(slide.imageUrl)
+      } catch (error) {
+        console.warn('Failed to delete slide image from R2:', error)
+      }
+    }
+
+    await prisma.slide.update({ where: { id }, data: { imageUrl: '' } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('[DELETE /api/slides/[id]/image] error:', error)
+    return NextResponse.json({ error: 'Failed to remove image' }, { status: 500 })
+  }
+}

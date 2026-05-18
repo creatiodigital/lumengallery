@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
@@ -22,7 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 import { Button } from '@/components/ui/Button'
-import { FileInput } from '@/components/ui/FileInput'
+import { ImageUploader } from '@/components/ui/ImageUploader'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Text } from '@/components/ui/Typography'
@@ -103,8 +103,8 @@ export default function LandingContentPage() {
   const [isNewSlide, setIsNewSlide] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Slide | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Redirect non-admins
   useEffect(() => {
@@ -146,67 +146,95 @@ export default function LandingContentPage() {
       isActive: true,
     })
     setIsNewSlide(true)
+    setUploadError(null)
   }
 
   const handleEditSlide = (slide: Slide) => {
     setEditingSlide(slide)
     setIsNewSlide(false)
+    setUploadError(null)
   }
 
-  const handleUploadImage = async (file: File, slideId: string) => {
+  const uploadImageToSlide = useCallback(async (file: File, slideId: string) => {
     setUploading(true)
+    setUploadError(null)
     try {
       const formData = new FormData()
       formData.append('image', file)
-
       const response = await fetch(`/api/slides/${slideId}/image`, {
         method: 'POST',
         body: formData,
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        setEditingSlide((prev) => (prev ? { ...prev, imageUrl: data.url } : null))
-      } else {
-        console.error('Upload failed:', await response.text())
+      const data = await response.json()
+      if (!response.ok) {
+        setUploadError(data.error || 'Failed to upload image')
+        return
       }
+      setEditingSlide((prev) => (prev ? { ...prev, imageUrl: data.url } : null))
     } catch (error) {
       console.error('Error uploading image:', error)
+      setUploadError('Failed to upload image')
     } finally {
       setUploading(false)
     }
-  }
+  }, [])
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !editingSlide) return
-
-    // For new slides, save first to get an ID
-    if (isNewSlide && !editingSlide.id) {
-      setSaving(true)
-      try {
-        const response = await fetch('/api/slides', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(editingSlide),
-        })
-        const savedSlide = await response.json()
-        setEditingSlide(savedSlide)
-        setIsNewSlide(false)
-        await handleUploadImage(file, savedSlide.id)
-        await fetchSlides()
-      } catch (error) {
-        console.error('Error creating slide:', error)
-      } finally {
-        setSaving(false)
+  // ImageUploader's onUpload. For a brand-new slide we need a DB row to
+  // attach the R2 image to, so create the slide first (empty fields are
+  // fine — the user fills them in via the form and clicks Save).
+  const handleSlideUpload = useCallback(
+    async (file: File) => {
+      if (!editingSlide) return
+      if (isNewSlide && !editingSlide.id) {
+        setSaving(true)
+        setUploadError(null)
+        try {
+          const response = await fetch('/api/slides', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(editingSlide),
+          })
+          const savedSlide = await response.json()
+          if (!response.ok) {
+            setUploadError(savedSlide.error || 'Failed to create slide')
+            return
+          }
+          setEditingSlide(savedSlide)
+          setIsNewSlide(false)
+          await uploadImageToSlide(file, savedSlide.id)
+          await fetchSlides()
+        } catch (error) {
+          console.error('Error creating slide:', error)
+          setUploadError('Failed to create slide')
+        } finally {
+          setSaving(false)
+        }
+      } else {
+        await uploadImageToSlide(file, editingSlide.id)
       }
-    } else {
-      await handleUploadImage(file, editingSlide.id)
-    }
+    },
+    [editingSlide, isNewSlide, uploadImageToSlide, fetchSlides],
+  )
 
-    // Reset file input
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
+  const handleSlideImageRemove = useCallback(async () => {
+    if (!editingSlide?.id || !editingSlide.imageUrl) return
+    setUploading(true)
+    setUploadError(null)
+    try {
+      const response = await fetch(`/api/slides/${editingSlide.id}/image`, { method: 'DELETE' })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        setUploadError(data.error || 'Failed to remove image')
+        return
+      }
+      setEditingSlide((prev) => (prev ? { ...prev, imageUrl: '' } : null))
+    } catch (error) {
+      console.error('Error removing image:', error)
+      setUploadError('Failed to remove image')
+    } finally {
+      setUploading(false)
+    }
+  }, [editingSlide?.id, editingSlide?.imageUrl])
 
   const handleSaveSlide = async () => {
     if (!editingSlide) return
@@ -325,29 +353,14 @@ export default function LandingContentPage() {
 
             <div className={styles.section}>
               <label className={styles.label}>Image</label>
-              <FileInput
-                ref={fileInputRef}
-                id="landing-slide-image"
-                accept="image/*"
-                onChange={handleFileSelect}
+              <ImageUploader
+                imageUrl={editingSlide.imageUrl || null}
+                onUpload={handleSlideUpload}
+                onRemove={editingSlide.id ? handleSlideImageRemove : undefined}
+                uploading={uploading}
+                error={uploadError}
+                aspectRatio="16 / 9"
               />
-              <div className={styles.uploadArea} onClick={() => fileInputRef.current?.click()}>
-                {uploading ? (
-                  <Text font="dashboard" as="p" className={styles.uploadText}>
-                    Uploading...
-                  </Text>
-                ) : editingSlide.imageUrl ? (
-                  <img
-                    src={editingSlide.imageUrl}
-                    alt="Slide preview"
-                    className={styles.uploadPreview}
-                  />
-                ) : (
-                  <Text font="dashboard" as="p" className={styles.uploadText}>
-                    Click to upload image
-                  </Text>
-                )}
-              </div>
 
               <label className={styles.label} htmlFor="title">
                 Title
