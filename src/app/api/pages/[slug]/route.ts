@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server'
-import { unstable_cache, revalidateTag } from 'next/cache'
+import { unstable_cache, revalidateTag, revalidatePath } from 'next/cache'
 
 import { requireAdmin } from '@/lib/authUtils'
 import prisma from '@/lib/prisma'
 
 type RouteParams = { params: Promise<{ slug: string }> }
+
+// CMS slugs are statically prerendered under different route paths, so
+// revalidating the data tag alone doesn't refresh the published page.
+// We also revalidate the route path so admin edits go live immediately.
+const SLUG_TO_PATH: Record<string, string> = {
+  privacy: '/privacy-policy',
+  terms: '/terms-and-conditions',
+  'sale-terms': '/terms-of-sale',
+  accessibility: '/accessibility-policy',
+  prints: '/prints',
+}
 
 // GET page content by slug (public)
 export async function GET(_request: Request, { params }: RouteParams) {
@@ -59,8 +70,11 @@ export async function PUT(request: Request, { params }: RouteParams) {
       create: { slug, title, content },
     })
 
-    // Revalidate cache for this page
+    // Revalidate the data cache and the prerendered route so the edit
+    // shows immediately instead of waiting for the 24h ISR window.
     revalidateTag(`page-${slug}`, 'default')
+    const path = SLUG_TO_PATH[slug]
+    if (path) revalidatePath(path)
 
     return NextResponse.json(page)
   } catch (error) {
