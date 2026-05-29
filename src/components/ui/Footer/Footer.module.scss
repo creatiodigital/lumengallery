@@ -69,7 +69,8 @@
     gap: var(--space-8);
   }
 
-  a {
+  a,
+  button {
     color: var(--color-text-primary);
     font-size: var(--text-xs-mobile);
     letter-spacing: 1px;
@@ -86,6 +87,15 @@
     &:hover {
       text-decoration: none;
     }
+  }
+
+  // The "Cookie Settings" trigger is a <button> (it opens the banner) but
+  // must look identical to the sibling policy links.
+  button {
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
   }
 }
 

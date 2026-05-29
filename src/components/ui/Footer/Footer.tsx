@@ -6,6 +6,8 @@ import Monogram from '@/icons/monogram.svg'
 
 import { Text } from '@/components/ui/Typography'
 
+import { openCookieSettings } from '@/lib/consent'
+
 import styles from './Footer.module.scss'
 
 export const Footer = () => {
@@ -22,6 +24,9 @@ export const Footer = () => {
           <Link href="/terms-of-sale">Online Terms of Sale</Link>
           <Link href="/privacy-policy">Privacy Policy</Link>
           <Link href="/accessibility-policy">Accessibility Policy</Link>
+          <button type="button" onClick={openCookieSettings} className={styles.cookieSettings}>
+            Cookie Settings
+          </button>
         </nav>
       </div>
       <Text as="p" size="sm" font="serif" className={styles.copyright}>
