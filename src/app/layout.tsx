@@ -13,6 +13,7 @@ import {
   wallFont6,
 } from '@/app/fonts'
 import StoreProvider from '@/app/storeProvider'
+import { GoogleAnalytics } from '@/components/analytics'
 import { AuthProvider } from '@/components/providers/AuthProvider'
 import { ImageProtection } from '@/components/providers/ImageProtection'
 import { CookieBanner } from '@/components/ui/CookieBanner'
@@ -98,6 +99,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <Analytics />
         <SpeedInsights />
         <CookieBanner />
+        <GoogleAnalytics />
       </body>
     </html>
   )

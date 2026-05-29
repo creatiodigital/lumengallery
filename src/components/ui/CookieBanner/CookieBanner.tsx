@@ -6,43 +6,66 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
 
-import styles from './CookieBanner.module.scss'
+import { getConsent, setConsent, OPEN_COOKIE_SETTINGS_EVENT } from '@/lib/consent'
 
-const STORAGE_KEY = 'cookie-consent'
+import styles from './CookieBanner.module.scss'
 
 export const CookieBanner = () => {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (!stored) setVisible(true)
+    // Show on first visit (no decision stored yet).
+    if (getConsent() === null) setVisible(true)
+
+    // Allow the footer "Cookie settings" link to re-open the banner.
+    const handleOpen = () => setVisible(true)
+    window.addEventListener(OPEN_COOKIE_SETTINGS_EVENT, handleOpen)
+    return () => window.removeEventListener(OPEN_COOKIE_SETTINGS_EVENT, handleOpen)
   }, [])
 
-  const handleDismiss = () => {
-    window.localStorage.setItem(STORAGE_KEY, 'dismissed')
+  const decide = (analytics: boolean) => {
+    setConsent(analytics)
     setVisible(false)
   }
 
   if (!visible) return null
 
   return (
-    <div className={styles.banner} role="region" aria-label="Cookie notice" aria-live="polite">
+    <div className={styles.banner} role="region" aria-label="Cookie consent">
       <Text as="p" size="sm" className={styles.text}>
-        <strong className={styles.brand}>The Art Room</strong> uses cookies to improve user
-        experience.{' '}
-        <Link href="/privacy-policy" className={styles.link}>
-          Click to learn more
+        <strong className={styles.brand}>The Art Room</strong> uses analytics cookies to understand
+        how the gallery is explored and improve your experience. Declining won&apos;t affect your
+        visit.{' '}
+        {/* Opens in a new tab so the policy is readable without dismissing this notice. */}
+        <Link
+          href="/privacy-policy"
+          className={styles.link}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Privacy Policy
         </Link>
       </Text>
-      <Button
-        variant="ghost"
-        size="smallSquared"
-        icon="close"
-        onClick={handleDismiss}
-        aria-label="Dismiss cookie notice"
-        className={styles.dismiss}
-      />
+      <div className={styles.actions}>
+        <Button
+          variant="primary"
+          size="regularSquared"
+          fullWidth
+          onClick={() => decide(true)}
+          aria-label="Accept analytics cookies"
+        >
+          Accept
+        </Button>
+        <Button
+          variant="secondary"
+          size="regularSquared"
+          fullWidth
+          onClick={() => decide(false)}
+          aria-label="Decline analytics cookies"
+        >
+          Decline
+        </Button>
+      </div>
     </div>
   )
 }

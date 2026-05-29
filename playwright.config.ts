@@ -75,7 +75,7 @@ const emailSkipEnv: Record<string, string> = sendEmails
 // big refactors, `'use client'` ↔ server-component conversions, dep
 // upgrades, or anything that changes module loading. The dev server's
 // loader is more forgiving than Vercel's serverless runtime; this mode
-// catches the class of regression that 500'd prod on LG-112. Each run
+// catches the class of regression that 500'd prod on AR-112. Each run
 // adds ~30–60s for the build.
 //
 // Caveats when E2E_PROD_BUILD=true:
@@ -85,6 +85,13 @@ const emailSkipEnv: Record<string, string> = sendEmails
 //   - AUTH_TRUST_HOST=true is required to let NextAuth issue sessions
 //     on localhost in prod mode (UntrustedHost otherwise).
 const prodBuild = process.env.E2E_PROD_BUILD === 'true'
+
+// Optional: pass a GA4 Measurement ID through to the test server so the
+// cookie-consent spec can exercise the full Consent Mode path. Unset by
+// default — the spec's GA assertions skip when GA isn't loaded.
+const gaEnv: Record<string, string> = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+  ? { NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID }
+  : {}
 
 export default defineConfig({
   testDir: './e2e',
@@ -128,6 +135,8 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: prodBuild ? 180_000 : 120_000,
-    env: prodBuild ? { ...emailSkipEnv, AUTH_TRUST_HOST: 'true' } : emailSkipEnv,
+    env: prodBuild
+      ? { ...emailSkipEnv, ...gaEnv, AUTH_TRUST_HOST: 'true' }
+      : { ...emailSkipEnv, ...gaEnv },
   },
 })

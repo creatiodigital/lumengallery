@@ -1,44 +1,45 @@
 .banner {
   position: fixed;
-  bottom: var(--space-4);
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 9999;
 
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-3);
 
-  max-width: calc(100% - var(--space-8));
-  width: max-content;
+  width: calc(100% - var(--space-8));
+  max-width: 420px;
 
-  background: var(--color-text-primary);
-  color: var(--color-white);
-  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  // White card; the border + shadow keep it distinct from the white site.
+  background: var(--color-white);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-default);
+  padding: var(--space-6);
   border-radius: var(--radius-sm);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
 }
 
 .text {
   margin: 0;
-  color: var(--color-white);
+  color: var(--color-text-primary);
+  line-height: 1.6;
 }
 
 .brand {
-  color: var(--color-white);
   font-weight: var(--font-bold);
 }
 
 .link {
-  color: var(--color-white);
+  color: var(--color-text-primary);
   text-decoration: underline;
+  white-space: nowrap;
 }
 
-.dismiss {
-  color: var(--color-white);
-
-  &:hover {
-    color: var(--color-white);
-    background: none;
-  }
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }

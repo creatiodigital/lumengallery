@@ -19,6 +19,11 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: 0,
 
+  // Drop errors whose top frame is Google Analytics / Tag Manager. These are
+  // third-party scripts blocked by ad-blockers or failing on flaky networks —
+  // unactionable noise, not bugs in our code.
+  denyUrls: [/googletagmanager\.com/i, /google-analytics\.com/i],
+
   // Filter out noise from bots, browser extensions, and unactionable WebGL errors
   beforeSend(event) {
     // Ignore errors from bots/crawlers — they can't run WebGL
@@ -43,7 +48,34 @@ Sentry.init({
       return null
     }
 
+    // Google Analytics / gtag noise: ad-blocker blocks, failed script loads,
+    // or errors thrown inside Google's own code. denyUrls above catches most,
+    // but messages/frames without a clean top URL are filtered here too.
+    const gaPattern = /gtag|googletagmanager|google[\s-]?analytics|analytics\.google/i
+    if (gaPattern.test(message)) {
+      return null
+    }
+    const frames = event.exception?.values?.[0]?.stacktrace?.frames ?? []
+    if (
+      frames.some((frame) =>
+        /googletagmanager\.com|google-analytics\.com/i.test(frame.filename ?? ''),
+      )
+    ) {
+      return null
+    }
+
     return event
+  },
+
+  // The console logging integration forwards warn/error logs to Sentry. Drop
+  // any that mention Google Analytics so blocked/failed gtag requests don't
+  // surface as log noise either.
+  beforeSendLog(log) {
+    const message = String(log.message ?? '')
+    if (/gtag|googletagmanager|google[\s-]?analytics|analytics\.google/i.test(message)) {
+      return null
+    }
+    return log
   },
 })
 
