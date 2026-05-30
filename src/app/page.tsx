@@ -102,7 +102,7 @@ export default async function Home() {
 
   return (
     <main id="main-content" className={styles.home}>
-      <Header />
+      <Header borderless />
 
       <Text as="h1" className={styles.srOnly}>
         The Art Room
