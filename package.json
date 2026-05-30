@@ -1,6 +1,6 @@
 {
   "name": "the-art-room",
-  "version": "3.8.0",
+  "version": "3.8.1",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
@@ -19,6 +19,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:send-emails": "E2E_SEND_EMAILS=true playwright test",
+    "test:e2e:stripe": "playwright test stripe",
+    "test:e2e:cms": "E2E_PROD_BUILD=true playwright test cms-pages",
     "test:e2e:prod-build": "E2E_PROD_BUILD=true playwright test",
     "test:e2e:install": "playwright install chromium",
     "prepare": "husky"
