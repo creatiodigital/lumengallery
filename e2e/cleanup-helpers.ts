@@ -97,8 +97,7 @@ export async function restoreArtworkPrintOptions(
     await prisma.artwork.update({
       where: { slug },
       data: {
-        printOptions:
-          previous === null ? Prisma.DbNull : (previous as Prisma.InputJsonValue),
+        printOptions: previous === null ? Prisma.DbNull : (previous as Prisma.InputJsonValue),
       },
     })
   } catch (err) {
