@@ -2,11 +2,11 @@ import { Prisma } from '@/generated/prisma/client'
 import prisma from '@/lib/prisma'
 
 /**
- * Write-helpers used ONLY by full-flow e2e tests that exercise the
- * buyer + admin pipelines end-to-end, or by specs that seed a known
- * fixture state to make their assertion meaningful (see
- * print-restrictions-printspace.spec). Keep them out of `db-helpers`
- * to preserve that module's read-only contract.
+ * Write-helpers used by the Stripe specs: cleaning up any PrintOrder row
+ * a webhook may have created (the delete helpers), and seeding a known
+ * `Artwork.printOptions` state so the restriction-clash contract test is
+ * meaningful (the set/restore helpers). These are the only e2e helpers
+ * that write.
  *
  * Cleanup helpers (delete*, restore*) are best-effort — they log but
  * never throw so they can run in `finally` blocks without masking the
@@ -97,8 +97,7 @@ export async function restoreArtworkPrintOptions(
     await prisma.artwork.update({
       where: { slug },
       data: {
-        printOptions:
-          previous === null ? Prisma.DbNull : (previous as Prisma.InputJsonValue),
+        printOptions: previous === null ? Prisma.DbNull : (previous as Prisma.InputJsonValue),
       },
     })
   } catch (err) {
