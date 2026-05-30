@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { unstable_cache, revalidateTag } from 'next/cache'
+import { unstable_cache, revalidateTag, revalidatePath } from 'next/cache'
 
 import { requireAdmin } from '@/lib/authUtils'
+import { PAGE_ROUTE_BY_SLUG } from '@/lib/cms/pageRoutes'
 import prisma from '@/lib/prisma'
 
 type RouteParams = { params: Promise<{ slug: string }> }
@@ -59,8 +60,15 @@ export async function PUT(request: Request, { params }: RouteParams) {
       create: { slug, title, content },
     })
 
-    // Revalidate cache for this page
+    // Purge both caches the page can be served from:
+    //  - revalidateTag: the GET /api/pages/[slug] data cache (tagged).
+    //  - revalidatePath: the statically-prerendered public page's Full
+    //    Route Cache. The public page reads getStaticPageContent directly
+    //    (untagged), so the tag alone never purges it — this is what made
+    //    edits invisible in prod until a redeploy. Slug ≠ route, so map it.
     revalidateTag(`page-${slug}`, 'default')
+    const route = PAGE_ROUTE_BY_SLUG[slug]
+    if (route) revalidatePath(route)
 
     return NextResponse.json(page)
   } catch (error) {

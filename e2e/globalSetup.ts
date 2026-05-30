@@ -21,6 +21,15 @@ import { getAdminCredentials, getArtistCredentials, signInThroughUi } from './au
  * The folder is gitignored (.gitignore: /e2e/.auth/).
  */
 async function globalSetup(_config: FullConfig) {
+  // Auth-free runs (e.g. the prod-build CMS/render smoke) set this to skip
+  // the admin/artist UI login. In a production build NODE_ENV is
+  // 'production', which bypasses SKIP_LOGIN_OTP and makes the localhost UI
+  // login unreliable — and those runs touch no authed specs anyway.
+  if (process.env.E2E_SKIP_AUTH === '1') {
+    console.log('[globalSetup] E2E_SKIP_AUTH=1 — skipping login (no authed specs in this run)')
+    return
+  }
+
   const authDir = path.join(__dirname, '.auth')
   if (!fs.existsSync(authDir)) fs.mkdirSync(authDir, { recursive: true })
 

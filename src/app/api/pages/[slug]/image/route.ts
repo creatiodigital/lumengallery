@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { revalidateTag } from 'next/cache'
+import { revalidateTag, revalidatePath } from 'next/cache'
 
 import { requireAdmin } from '@/lib/authUtils'
+import { PAGE_ROUTE_BY_SLUG } from '@/lib/cms/pageRoutes'
 import { MAX_UPLOAD_SIZE } from '@/lib/imageConfig'
 import { processImage, isValidImageType } from '@/lib/imageProcessor'
 import prisma from '@/lib/prisma'
@@ -69,6 +70,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     revalidateTag(`page-${slug}`, 'default')
+    const route = PAGE_ROUTE_BY_SLUG[slug]
+    if (route) revalidatePath(route)
     return NextResponse.json({ url })
   } catch (error) {
     console.error('[POST /api/pages/[slug]/image] error:', error)
@@ -102,6 +105,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     })
 
     revalidateTag(`page-${slug}`, 'default')
+    const route = PAGE_ROUTE_BY_SLUG[slug]
+    if (route) revalidatePath(route)
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('[DELETE /api/pages/[slug]/image] error:', error)

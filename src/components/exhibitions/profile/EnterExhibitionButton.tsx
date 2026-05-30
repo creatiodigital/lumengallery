@@ -15,7 +15,7 @@ interface EnterExhibitionButtonProps {
 // Carved out as a client island so the surrounding profile page can
 // stay a server component. The only client-side work here is the
 // sessionStorage write that lets the visit page know we came from a
-// gallery / profile context (for return-URL behaviour).
+// gallery / profile context (for return-URL behavior).
 export const EnterExhibitionButton = ({
   artistSlug,
   exhibitionSlug,
