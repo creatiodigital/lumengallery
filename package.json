@@ -20,7 +20,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:send-emails": "E2E_SEND_EMAILS=true playwright test",
     "test:e2e:stripe": "playwright test stripe",
-    "test:e2e:cms": "E2E_PROD_BUILD=true playwright test cms-pages",
+    "test:e2e:cms": "E2E_PROD_BUILD=true E2E_SKIP_AUTH=1 playwright test cms-pages",
     "test:e2e:prod-build": "E2E_PROD_BUILD=true playwright test",
     "test:e2e:install": "playwright install chromium",
     "prepare": "husky"
