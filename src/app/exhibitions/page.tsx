@@ -1,4 +1,3 @@
-import { unstable_cache } from 'next/cache'
 import type { Metadata } from 'next'
 
 import { ExhibitionsPage } from '@/components/exhibitions'
@@ -10,35 +9,34 @@ export const metadata: Metadata = {
     'Browse current and past virtual exhibitions at The Art Room. Experience contemporary art in immersive 3D gallery spaces.',
 }
 
+// Render per request and read straight from the DB so publish/unpublish and
+// edits show immediately. No data cache.
+export const dynamic = 'force-dynamic'
+
 // Same public filter the API applies for unauthenticated visitors:
-// hide unpublished + admin/superAdmin-owned exhibitions. Tag matches
-// the existing 'exhibitions' invalidation in the write paths.
-const getPublicExhibitions = unstable_cache(
-  () =>
-    prisma.exhibition.findMany({
-      where: {
-        published: true,
-        user: { userType: { notIn: ['admin', 'superAdmin'] } },
-      },
-      select: {
-        id: true,
-        mainTitle: true,
-        url: true,
-        status: true,
-        featuredImageUrl: true,
-        user: {
-          select: {
-            name: true,
-            lastName: true,
-            handler: true,
-          },
+// hide unpublished + admin/superAdmin-owned exhibitions.
+const getPublicExhibitions = () =>
+  prisma.exhibition.findMany({
+    where: {
+      published: true,
+      user: { userType: { notIn: ['admin', 'superAdmin'] } },
+    },
+    select: {
+      id: true,
+      mainTitle: true,
+      url: true,
+      status: true,
+      featuredImageUrl: true,
+      user: {
+        select: {
+          name: true,
+          lastName: true,
+          handler: true,
         },
       },
-      orderBy: { createdAt: 'desc' },
-    }),
-  ['exhibitions-public-list'],
-  { tags: ['exhibitions'], revalidate: 3600 },
-)
+    },
+    orderBy: { createdAt: 'desc' },
+  })
 
 const Exhibitions = async () => {
   const exhibitions = await getPublicExhibitions()

@@ -105,18 +105,20 @@ const ArtworkPanel = () => {
     let originalWidth: number
     let originalHeight: number
 
-    // Priority 1: Get dimensions from pending upload (freshly dropped)
+    // Priority 1: a freshly dropped file that isn't on the canvas yet — its
+    // local preview is the full-resolution original, so its dimensions match
+    // what's currently painted.
     const pendingDimensions = getOriginalDimensions(currentArtworkId)
     if (pendingDimensions) {
       originalWidth = pendingDimensions.width
       originalHeight = pendingDimensions.height
     }
-    // Priority 2: Get dimensions from artwork data (stored in DB)
-    else if (artwork?.originalWidth && artwork?.originalHeight) {
-      originalWidth = artwork.originalWidth
-      originalHeight = artwork.originalHeight
-    }
-    // Priority 3: Load dynamically from image URL as fallback
+    // Priority 2: a saved image — measure the WEB image that's actually
+    // rendered, not the print-master dimensions. The canvas paints `imageUrl`
+    // with `background-size: cover`, which crops to the element's ratio. The
+    // master and the web-optimized WebP differ by the sub-pixel rounding of
+    // the resize, so using the master ratio leaves a thin strip of a bordered
+    // image clipped. Measuring the rendered WebP makes the match exact.
     else if (artwork?.imageUrl) {
       try {
         const img = new Image()

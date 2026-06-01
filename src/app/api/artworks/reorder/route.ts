@@ -1,4 +1,3 @@
-import { revalidateTag } from 'next/cache'
 import { NextResponse } from 'next/server'
 
 import { getEffectiveUserId } from '@/lib/authUtils'
@@ -18,31 +17,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'artworkIds must be an array' }, { status: 400 })
     }
 
-    // Verify all artworks belong to this user
-    const artworks = await prisma.artwork.findMany({
-      where: { id: { in: artworkIds } },
-      select: { id: true, userId: true },
-    })
-
-    const allOwned = artworks.every((a) => a.userId === userId)
-    if (!allOwned) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Update each artwork's order based on its position in the array
+    // Persist the new order. `updateMany` scoped to { id, userId } both
+    // enforces ownership per-row AND is resilient to ids that are no longer
+    // in the DB (a stale client list): a missing or foreign id updates zero
+    // rows instead of throwing P2025 and rolling the whole transaction back.
+    // The previous code used `update`, which threw on the first stale id and
+    // 500'd, so the new order was never saved.
     await prisma.$transaction(
       artworkIds.map((id, index) =>
-        prisma.artwork.update({
-          where: { id },
+        prisma.artwork.updateMany({
+          where: { id, userId },
           data: { order: index },
         }),
       ),
     )
-
-    // Bust the public surfaces that read Artwork.order so the artist's
-    // reorder appears immediately instead of waiting for the 1h cache TTL.
-    revalidateTag('artworks', 'default')
-    revalidateTag('exhibitions', 'default')
 
     return NextResponse.json({ success: true })
   } catch (error) {

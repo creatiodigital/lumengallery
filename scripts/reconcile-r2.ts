@@ -64,14 +64,7 @@ async function collectReferencedKeys(): Promise<Set<string>> {
   // Keep this list in sync with schema.prisma — any new *Url column
   // that targets R2 needs to be added here or its files become
   // orphan candidates on the next run.
-  const [
-    artworks,
-    users,
-    orders,
-    exhibitions,
-    slides,
-    pages,
-  ] = await Promise.all([
+  const [artworks, users, orders, exhibitions, slides, pages] = await Promise.all([
     prisma.artwork.findMany({
       select: { imageUrl: true, originalImageUrl: true, soundUrl: true, videoUrl: true },
     }),

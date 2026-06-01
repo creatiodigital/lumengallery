@@ -1,50 +1,46 @@
-import { unstable_cache } from 'next/cache'
-
 import prisma from '@/lib/prisma'
 
-const getCachedExhibition = (url: string) =>
-  unstable_cache(
-    async () => {
-      return prisma.exhibition.findUnique({
-        where: { url },
+// No data cache: read straight from the DB so library reordering and artwork
+// metadata edits propagate to the public exhibition page immediately. The
+// page that calls this is force-dynamic. The 3D scene is still frozen via the
+// exhibition's publishedSnapshot — only live metadata/order is enriched below.
+const getExhibition = (url: string) =>
+  prisma.exhibition.findUnique({
+    where: { url },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          lastName: true,
+          handler: true,
+          biography: true,
+        },
+      },
+      exhibitionArtworks: {
         include: {
-          user: {
+          artwork: {
             select: {
               id: true,
+              slug: true,
               name: true,
-              lastName: true,
-              handler: true,
-              biography: true,
-            },
-          },
-          exhibitionArtworks: {
-            include: {
-              artwork: {
-                select: {
-                  id: true,
-                  slug: true,
-                  name: true,
-                  title: true,
-                  author: true,
-                  year: true,
-                  technique: true,
-                  dimensions: true,
-                  imageUrl: true,
-                  originalWidth: true,
-                  originalHeight: true,
-                  artworkType: true,
-                  hiddenFromExhibition: true,
-                  order: true,
-                },
-              },
+              title: true,
+              author: true,
+              year: true,
+              technique: true,
+              dimensions: true,
+              imageUrl: true,
+              originalWidth: true,
+              originalHeight: true,
+              artworkType: true,
+              hiddenFromExhibition: true,
+              order: true,
             },
           },
         },
-      })
+      },
     },
-    [`exhibition-public-${url}`],
-    { tags: [`exhibition-${url}`, 'exhibitions', 'artworks'], revalidate: 3600 },
-  )()
+  })
 
 export type PublicExhibitionArtwork = {
   id: string
@@ -93,7 +89,7 @@ export type PublicExhibition = {
  * they're only consumed by the /visit route.
  */
 export async function getPublicExhibitionByUrl(url: string): Promise<PublicExhibition | null> {
-  const exhibition = await getCachedExhibition(url)
+  const exhibition = await getExhibition(url)
   if (!exhibition || !exhibition.published) return null
 
   const snapshot = exhibition.publishedSnapshot as Record<string, unknown> | null

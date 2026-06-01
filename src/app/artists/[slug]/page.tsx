@@ -1,58 +1,54 @@
 import { notFound } from 'next/navigation'
-import { unstable_cache } from 'next/cache'
 import type { Metadata } from 'next'
 
 import { ArtistProfilePage } from '@/components/artists/profile'
 import prisma from '@/lib/prisma'
 
-// Cache tag matches /api/artists/[slug] so existing revalidateTag
-// invalidations cover both surfaces.
-const getCachedArtistFull = (slug: string) =>
-  unstable_cache(
-    () =>
-      prisma.user.findFirst({
-        where: { handler: slug, published: true },
+// Render per request and read straight from the DB so artist edits, new
+// exhibitions and featured-artwork changes appear immediately. No data cache.
+export const dynamic = 'force-dynamic'
+
+const getArtistFull = (slug: string) =>
+  prisma.user.findFirst({
+    where: { handler: slug, published: true },
+    select: {
+      id: true,
+      name: true,
+      lastName: true,
+      handler: true,
+      biography: true,
+      profileImageUrl: true,
+      exhibitions: {
+        where: { published: true },
         select: {
           id: true,
-          name: true,
-          lastName: true,
+          mainTitle: true,
+          url: true,
           handler: true,
-          biography: true,
-          profileImageUrl: true,
-          exhibitions: {
-            where: { published: true },
-            select: {
-              id: true,
-              mainTitle: true,
-              url: true,
-              handler: true,
-              featuredImageUrl: true,
-              shortDescription: true,
-            },
-            orderBy: { createdAt: 'desc' },
-          },
-          artworks: {
-            where: { artworkType: 'image', featured: true },
-            select: {
-              id: true,
-              slug: true,
-              name: true,
-              title: true,
-              author: true,
-              year: true,
-              technique: true,
-              dimensions: true,
-              imageUrl: true,
-              originalWidth: true,
-              originalHeight: true,
-            },
-            orderBy: { order: 'asc' },
-          },
+          featuredImageUrl: true,
+          shortDescription: true,
         },
-      }),
-    [`artist-page-full-${slug}`],
-    { tags: [`artist-${slug}`, 'artists', 'exhibitions', 'artworks'], revalidate: 3600 },
-  )()
+        orderBy: { createdAt: 'desc' },
+      },
+      artworks: {
+        where: { artworkType: 'image', featured: true },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          title: true,
+          author: true,
+          year: true,
+          technique: true,
+          dimensions: true,
+          imageUrl: true,
+          originalWidth: true,
+          originalHeight: true,
+        },
+        orderBy: { order: 'asc' },
+      },
+    },
+  })
 
 interface ArtistProfileProps {
   params: Promise<{ slug: string }>
@@ -95,7 +91,7 @@ const ArtistProfile = async ({ params }: ArtistProfileProps) => {
   // One round-trip instead of three: artist + their published exhibitions
   // + their featured image-type artworks. The previous /api/artists,
   // /api/exhibitions, /api/artworks waterfall is collapsed here.
-  const artist = await getCachedArtistFull(slug)
+  const artist = await getArtistFull(slug)
 
   if (!artist) notFound()
 

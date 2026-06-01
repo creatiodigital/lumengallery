@@ -130,10 +130,7 @@ export const SizeSchema = ({
   // mat, backboard, or paper border. Otherwise the diagram is just the
   // bare image.
   const hasOuter =
-    showFrame ||
-    effectiveMatting > 0 ||
-    effectiveBackboard > 0 ||
-    effectivePaperBorder > 0
+    showFrame || effectiveMatting > 0 || effectiveBackboard > 0 || effectivePaperBorder > 0
 
   return (
     <div className={styles.schemaWrapper}>
