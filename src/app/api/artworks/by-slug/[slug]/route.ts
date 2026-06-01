@@ -1,55 +1,45 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { unstable_cache } from 'next/cache'
 
 import prisma from '@/lib/prisma'
-
-const getCachedArtworkBySlug = (slug: string) =>
-  unstable_cache(
-    async () => {
-      const artwork = await prisma.artwork.findUnique({
-        where: { slug },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              lastName: true,
-              handler: true,
-            },
-          },
-        },
-      })
-
-      if (!artwork) return null
-
-      return {
-        artwork: {
-          id: artwork.id,
-          slug: artwork.slug,
-          name: artwork.name,
-          title: artwork.title,
-          author: artwork.author,
-          year: artwork.year,
-          technique: artwork.technique,
-          dimensions: artwork.dimensions,
-          description: artwork.description,
-          imageUrl: artwork.imageUrl,
-          printEnabled: artwork.printEnabled,
-          printPriceCents: artwork.printPriceCents,
-        },
-        artist: artwork.user,
-      }
-    },
-    [`artwork-by-slug-${slug}`],
-    { tags: [`artwork-slug-${slug}`], revalidate: 3600 },
-  )()
 
 export async function GET(_request: NextRequest, context: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await context.params
 
-    const data = await getCachedArtworkBySlug(slug)
+    const artwork = await prisma.artwork.findUnique({
+      where: { slug },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            lastName: true,
+            handler: true,
+          },
+        },
+      },
+    })
+
+    const data = artwork
+      ? {
+          artwork: {
+            id: artwork.id,
+            slug: artwork.slug,
+            name: artwork.name,
+            title: artwork.title,
+            author: artwork.author,
+            year: artwork.year,
+            technique: artwork.technique,
+            dimensions: artwork.dimensions,
+            description: artwork.description,
+            imageUrl: artwork.imageUrl,
+            printEnabled: artwork.printEnabled,
+            printPriceCents: artwork.printPriceCents,
+          },
+          artist: artwork.user,
+        }
+      : null
 
     if (!data) {
       return NextResponse.json({ error: 'Artwork not found' }, { status: 404 })

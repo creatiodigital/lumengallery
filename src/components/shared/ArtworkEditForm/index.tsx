@@ -792,9 +792,8 @@ export const ArtworkEditForm = ({
                         >
                           This range is the maximum we can print sharply for{' '}
                           <strong>this specific artwork</strong> — the higher the resolution of the
-                          file you uploaded, the bigger the max. Buyers pick any custom size in
-                          this range; the other side auto-locks to your artwork&apos;s aspect
-                          ratio.
+                          file you uploaded, the bigger the max. Buyers pick any custom size in this
+                          range; the other side auto-locks to your artwork&apos;s aspect ratio.
                         </p>
                         <table
                           style={{

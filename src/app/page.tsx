@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { unstable_cache } from 'next/cache'
 
 import { Header } from '@/components/ui/Header'
 import { Footer } from '@/components/ui/Footer'
@@ -19,72 +18,64 @@ export const metadata: Metadata = {
     'Explore curated virtual exhibitions in immersive 3D gallery spaces. Discover contemporary art beyond immediacy.',
 }
 
-const getSlides = unstable_cache(
-  async () => {
-    const slidesData = await prisma.slide.findMany({
-      where: { isActive: true },
-      orderBy: { order: 'asc' },
-    })
-    return slidesData.map((slide) => ({
-      id: slide.id,
-      imageUrl: slide.imageUrl,
-      exhibitionUrl: slide.exhibitionUrl,
-      meta: slide.meta,
-      title: slide.title,
-      subtitle: slide.subtitle,
-      textColor: slide.textColor,
-    }))
-  },
-  ['homepage-slides'],
-  { tags: ['homepage'], revalidate: 3600 },
-)
+// Render per request and read straight from the DB so admin edits (slides,
+// exhibitions, featured artists) appear immediately. No data cache.
+export const dynamic = 'force-dynamic'
 
-const getExhibitions = unstable_cache(
-  async () => {
-    const exhibitionData = await prisma.exhibition.findMany({
-      where: {
-        status: 'current',
-        published: true,
-      },
-      include: {
-        user: {
-          select: {
-            name: true,
-            lastName: true,
-            handler: true,
-          },
+const getSlides = async () => {
+  const slidesData = await prisma.slide.findMany({
+    where: { isActive: true },
+    orderBy: { order: 'asc' },
+  })
+  return slidesData.map((slide) => ({
+    id: slide.id,
+    imageUrl: slide.imageUrl,
+    exhibitionUrl: slide.exhibitionUrl,
+    meta: slide.meta,
+    title: slide.title,
+    subtitle: slide.subtitle,
+    textColor: slide.textColor,
+  }))
+}
+
+const getExhibitions = async () => {
+  const exhibitionData = await prisma.exhibition.findMany({
+    where: {
+      status: 'current',
+      published: true,
+    },
+    include: {
+      user: {
+        select: {
+          name: true,
+          lastName: true,
+          handler: true,
         },
       },
-      orderBy: { createdAt: 'desc' },
-      take: 6,
-    })
-    return exhibitionData as unknown as ExhibitionWithUser[]
-  },
-  ['homepage-exhibitions'],
-  { tags: ['homepage', 'exhibitions'], revalidate: 3600 },
-)
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 6,
+  })
+  return exhibitionData as unknown as ExhibitionWithUser[]
+}
 
-const getFeaturedArtists = unstable_cache(
-  async () => {
-    return prisma.user.findMany({
-      where: {
-        isFeatured: true,
-        published: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        lastName: true,
-        handler: true,
-        biography: true,
-        profileImageUrl: true,
-      },
-      orderBy: { name: 'asc' },
-    })
-  },
-  ['homepage-featured-artists'],
-  { tags: ['homepage', 'artists'], revalidate: 3600 },
-)
+const getFeaturedArtists = async () => {
+  return prisma.user.findMany({
+    where: {
+      isFeatured: true,
+      published: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      lastName: true,
+      handler: true,
+      biography: true,
+      profileImageUrl: true,
+    },
+    orderBy: { name: 'asc' },
+  })
+}
 
 type ExhibitionWithUser = {
   id: string

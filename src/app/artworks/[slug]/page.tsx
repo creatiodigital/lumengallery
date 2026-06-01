@@ -1,45 +1,41 @@
 import { notFound } from 'next/navigation'
-import { unstable_cache } from 'next/cache'
 import type { Metadata } from 'next'
 
 import { ArtworkDetailPage } from '@/components/artwork/detail'
 import prisma from '@/lib/prisma'
 
-// Same cache tag the /api/artworks/by-slug route uses — existing
-// revalidateTag calls in write paths invalidate both surfaces.
-const getCachedArtwork = (slug: string) =>
-  unstable_cache(
-    () =>
-      prisma.artwork.findUnique({
-        where: { slug },
+// Render per request and read straight from the DB so artwork edits appear
+// immediately. No data cache.
+export const dynamic = 'force-dynamic'
+
+const getArtwork = (slug: string) =>
+  prisma.artwork.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      title: true,
+      author: true,
+      year: true,
+      technique: true,
+      dimensions: true,
+      description: true,
+      imageUrl: true,
+      originalWidth: true,
+      originalHeight: true,
+      printEnabled: true,
+      printPriceCents: true,
+      user: {
         select: {
           id: true,
-          slug: true,
           name: true,
-          title: true,
-          author: true,
-          year: true,
-          technique: true,
-          dimensions: true,
-          description: true,
-          imageUrl: true,
-          originalWidth: true,
-          originalHeight: true,
-          printEnabled: true,
-          printPriceCents: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              lastName: true,
-              handler: true,
-            },
-          },
+          lastName: true,
+          handler: true,
         },
-      }),
-    [`artwork-page-by-slug-${slug}`],
-    { tags: [`artwork-slug-${slug}`], revalidate: 3600 },
-  )()
+      },
+    },
+  })
 
 interface ArtworkPageProps {
   params: Promise<{ slug: string }>
@@ -82,7 +78,7 @@ export async function generateMetadata({ params }: ArtworkPageProps): Promise<Me
 const ArtworkPage = async ({ params }: ArtworkPageProps) => {
   const { slug } = await params
 
-  const artwork = await getCachedArtwork(slug)
+  const artwork = await getArtwork(slug)
   if (!artwork) notFound()
 
   const { user, ...artworkData } = artwork

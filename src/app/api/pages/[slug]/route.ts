@@ -1,41 +1,31 @@
 import { NextResponse } from 'next/server'
-import { unstable_cache, revalidateTag, revalidatePath } from 'next/cache'
 
 import { requireAdmin } from '@/lib/authUtils'
-import { PAGE_ROUTE_BY_SLUG } from '@/lib/cms/pageRoutes'
 import prisma from '@/lib/prisma'
 
 type RouteParams = { params: Promise<{ slug: string }> }
 
-// GET page content by slug (public)
+// GET page content by slug (public) — read fresh so the admin editor always
+// reflects the latest save.
 export async function GET(_request: Request, { params }: RouteParams) {
   try {
     const { slug } = await params
 
-    const getCachedPage = unstable_cache(
-      async () => {
-        let page = await prisma.pageContent.findUnique({
-          where: { slug },
-        })
+    let page = await prisma.pageContent.findUnique({
+      where: { slug },
+    })
 
-        // Create page with default content if it doesn't exist
-        if (!page) {
-          page = await prisma.pageContent.create({
-            data: {
-              slug,
-              title: formatSlugToTitle(slug),
-              content: '<p>Content coming soon...</p>',
-            },
-          })
-        }
+    // Create page with default content if it doesn't exist
+    if (!page) {
+      page = await prisma.pageContent.create({
+        data: {
+          slug,
+          title: formatSlugToTitle(slug),
+          content: '<p>Content coming soon...</p>',
+        },
+      })
+    }
 
-        return page
-      },
-      [`page-${slug}`],
-      { tags: [`page-${slug}`], revalidate: 86400 },
-    )
-
-    const page = await getCachedPage()
     return NextResponse.json(page)
   } catch (error) {
     console.error('Error fetching page:', error)
@@ -60,15 +50,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
       create: { slug, title, content },
     })
 
-    // Purge both caches the page can be served from:
-    //  - revalidateTag: the GET /api/pages/[slug] data cache (tagged).
-    //  - revalidatePath: the statically-prerendered public page's Full
-    //    Route Cache. The public page reads getStaticPageContent directly
-    //    (untagged), so the tag alone never purges it — this is what made
-    //    edits invisible in prod until a redeploy. Slug ≠ route, so map it.
-    revalidateTag(`page-${slug}`, 'default')
-    const route = PAGE_ROUTE_BY_SLUG[slug]
-    if (route) revalidatePath(route)
+    // No cache to bust: the public content pages and the editor's GET both
+    // read fresh from the DB now, so the save is visible on the next request.
 
     return NextResponse.json(page)
   } catch (error) {

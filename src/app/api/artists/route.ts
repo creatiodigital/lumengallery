@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { unstable_cache, revalidateTag, revalidatePath } from 'next/cache'
+import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs'
 
 import prisma from '@/lib/prisma'
 import { generateProvisionalPassword, validatePassword } from '@/utils/password'
 
-const getCachedArtists = unstable_cache(
-  async () => {
-    return prisma.user.findMany({
+// GET all artists — read fresh so new/edited artists appear immediately.
+export async function GET() {
+  try {
+    const artists = await prisma.user.findMany({
       where: { userType: 'artist', published: true },
       select: {
         id: true,
@@ -20,15 +21,6 @@ const getCachedArtists = unstable_cache(
       },
       orderBy: { name: 'asc' },
     })
-  },
-  ['artists-list'],
-  { tags: ['artists'], revalidate: 3600 },
-)
-
-// GET all artists
-export async function GET() {
-  try {
-    const artists = await getCachedArtists()
     return NextResponse.json(artists)
   } catch (error) {
     console.error('[GET /api/artists] error:', error)
@@ -83,8 +75,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Revalidate caches
-    revalidateTag('artists', 'default')
+    // Refresh the homepage's featured-artists strip.
     revalidatePath('/')
 
     return NextResponse.json(

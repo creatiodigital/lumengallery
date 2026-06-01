@@ -68,7 +68,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 }
 
 // DELETE - Remove the slide's image (clears imageUrl + removes R2 object).
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params
 
