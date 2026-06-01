@@ -3,11 +3,11 @@ import type { Metadata } from 'next'
 import { PrivacyPage } from '@/components/privacy'
 import { getStaticPageContent } from '@/lib/queries/getStaticPageContent'
 
-// Render per request and read straight from the DB so admin edits appear
-// immediately. Verified on staging: server-side <RichText> (isomorphic-
-// dompurify) renders at runtime without the AR-112 500 — the artwork and
-// exhibition pages already do the same in prod. No cache, no revalidation.
-export const dynamic = 'force-dynamic'
+// ISR so admin edits show without a redeploy. `revalidatePath` (in the pages
+// API) only refreshes a route that opts into ISR via `revalidate`; a fully
+// static page is an immutable asset Vercel won't purge on demand. 1h is the
+// background fallback. NOT force-dynamic (runtime render 500s in prod — AR-112).
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: { absolute: 'The Art Room Privacy Policy' },
