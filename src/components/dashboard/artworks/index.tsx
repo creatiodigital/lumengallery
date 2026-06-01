@@ -357,7 +357,11 @@ export const ArtworkLibraryPage = () => {
   // /api/artworks endpoint already returns rows in that order, so we
   // just preserve the filter's pass-through.
   const sortedArtworks = filteredArtworks
-  const dragEnabled = typeFilter === 'all' && debouncedSearch.length === 0
+  // Drag-reorder is available on the All tab AND inside any type filter, so an
+  // artist can reorder one media type (e.g. 39 images) without the other types
+  // as noise. Disabled only while searching — search results are a scattered
+  // subset, not a coherent reorderable list.
+  const dragEnabled = debouncedSearch.length === 0
 
   // Fetch artworks
   const fetchArtworks = useCallback(async () => {
@@ -452,11 +456,24 @@ export const ArtworkLibraryPage = () => {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const oldIndex = artworks.findIndex((a) => a.id === active.id)
-    const newIndex = artworks.findIndex((a) => a.id === over.id)
+    // Reorder within the VISIBLE list — which may be a single media type's
+    // subset when a filter is active.
+    const visible = sortedArtworks
+    const oldIndex = visible.findIndex((a) => a.id === active.id)
+    const newIndex = visible.findIndex((a) => a.id === over.id)
     if (oldIndex === -1 || newIndex === -1) return
 
-    const next = arrayMove(artworks, oldIndex, newIndex)
+    const newVisible = arrayMove(visible, oldIndex, newIndex)
+
+    // Slot preservation: rebuild the full library order. The visible items take
+    // their new order in the slots they already occupied; every other item
+    // (other media types, hidden shapes) stays exactly where it is. So
+    // reordering the images alone leaves text/sound/video untouched, and the
+    // new order still reads correctly on the All tab.
+    const visibleIds = new Set(visible.map((a) => a.id))
+    let vi = 0
+    const next = artworks.map((a) => (visibleIds.has(a.id) ? newVisible[vi++] : a))
+
     setArtworks(next)
 
     try {
