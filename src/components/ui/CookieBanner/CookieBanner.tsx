@@ -35,8 +35,7 @@ export const CookieBanner = () => {
       <Text as="p" size="sm" className={styles.text}>
         <strong className={styles.brand}>The Art Room</strong> uses analytics cookies to understand
         how the gallery is explored and improve your experience. Declining won&apos;t affect your
-        visit.{' '}
-        {/* Opens in a new tab so the policy is readable without dismissing this notice. */}
+        visit. {/* Opens in a new tab so the policy is readable without dismissing this notice. */}
         <Link
           href="/privacy-policy"
           className={styles.link}

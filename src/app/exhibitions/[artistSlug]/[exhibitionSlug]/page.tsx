@@ -5,6 +5,11 @@ import { ExhibitionProfilePage } from '@/components/exhibitions/profile'
 import { getPublicExhibitionByUrl } from '@/lib/queries/getPublicExhibitionByUrl'
 import prisma from '@/lib/prisma'
 
+// Render per request and read straight from the DB so artwork reordering and
+// metadata edits show immediately (the 3D scene itself still comes from the
+// published snapshot). No data cache.
+export const dynamic = 'force-dynamic'
+
 interface ExhibitionProfileProps {
   params: Promise<{ artistSlug: string; exhibitionSlug: string }>
 }

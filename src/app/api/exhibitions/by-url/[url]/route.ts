@@ -1,51 +1,46 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { unstable_cache } from 'next/cache'
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 
-// Cached query for public exhibition data (snapshot path)
-const getCachedExhibition = (url: string) =>
-  unstable_cache(
-    async () => {
-      return prisma.exhibition.findUnique({
-        where: { url },
+// Public exhibition read (snapshot path). No data cache: read fresh so edits
+// and reordering reflect immediately. The 3D scene still comes from the
+// exhibition's publishedSnapshot below; only live metadata is enriched.
+const getExhibition = (url: string) =>
+  prisma.exhibition.findUnique({
+    where: { url },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          lastName: true,
+          handler: true,
+          biography: true,
+        },
+      },
+      exhibitionArtworks: {
         include: {
-          user: {
+          artwork: {
             select: {
               id: true,
+              slug: true,
               name: true,
-              lastName: true,
-              handler: true,
-              biography: true,
-            },
-          },
-          exhibitionArtworks: {
-            include: {
-              artwork: {
-                select: {
-                  id: true,
-                  slug: true,
-                  name: true,
-                  title: true,
-                  author: true,
-                  year: true,
-                  technique: true,
-                  dimensions: true,
-                  imageUrl: true,
-                  artworkType: true,
-                  hiddenFromExhibition: true,
-                },
-              },
+              title: true,
+              author: true,
+              year: true,
+              technique: true,
+              dimensions: true,
+              imageUrl: true,
+              artworkType: true,
+              hiddenFromExhibition: true,
             },
           },
         },
-      })
+      },
     },
-    [`exhibition-by-url-${url}`],
-    { tags: [`exhibition-${url}`], revalidate: 3600 },
-  )()
+  })
 
 export async function GET(_req: NextRequest, context: { params: Promise<{ url: string }> }) {
   try {
@@ -57,8 +52,8 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ url: s
       return getEditModeResponse(url)
     }
 
-    // Public view → use cached data
-    const exhibition = await getCachedExhibition(url)
+    // Public view → fresh read
+    const exhibition = await getExhibition(url)
 
     if (!exhibition) {
       return NextResponse.json({ error: 'Exhibition not found' }, { status: 404 })

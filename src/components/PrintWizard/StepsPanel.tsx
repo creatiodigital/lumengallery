@@ -1017,8 +1017,8 @@ const CustomSizeInputs = ({
       </div>
       {aspectLocked && (
         <p className={styles.customSizeHint}>
-          Height and width are locked to this artwork&apos;s aspect ratio — change either, the
-          other follows. This artwork can be printed at any size in the range above.
+          Height and width are locked to this artwork&apos;s aspect ratio — change either, the other
+          follows. This artwork can be printed at any size in the range above.
         </p>
       )}
     </div>

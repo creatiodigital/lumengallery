@@ -42,11 +42,7 @@ const DEFAULT_MAT_HEX = '#f6f3ec'
  * component (Standard / Box / Floating). Print-only (`format` ≠
  * `framing`) renders the paper print without any frame chrome.
  */
-export const PreviewArtwork = ({
-  imageUrl,
-  catalog,
-  config,
-}: PreviewArtworkProps) => {
+export const PreviewArtwork = ({ imageUrl, catalog, config }: PreviewArtworkProps) => {
   // Hooks must be called unconditionally on every render. Anything we
   // need before the `effectiveSize` early-return below has to be
   // computed and hooked-into here, otherwise React's hook order

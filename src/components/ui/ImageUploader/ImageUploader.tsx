@@ -178,7 +178,11 @@ async function getTiffDimensions(file: File): Promise<{ width: number; height: n
       const type = eView.getUint16(off + 2, le)
       const valueOffset = off + 8
       const value =
-        type === 3 ? eView.getUint16(valueOffset, le) : type === 4 ? eView.getUint32(valueOffset, le) : 0
+        type === 3
+          ? eView.getUint16(valueOffset, le)
+          : type === 4
+            ? eView.getUint32(valueOffset, le)
+            : 0
       if (tag === 256) width = value
       else if (tag === 257) height = value
       if (width && height) break
@@ -303,7 +307,7 @@ export const ImageUploader = ({
         const lowerName = file.name.toLowerCase()
         const isTiff =
           file.type === 'image/tiff' || lowerName.endsWith('.tif') || lowerName.endsWith('.tiff')
-        const previewUrl = isTiff ? (await getTiffPreviewUrl(file)) ?? undefined : undefined
+        const previewUrl = isTiff ? ((await getTiffPreviewUrl(file)) ?? undefined) : undefined
         await onUpload(file, previewUrl)
       } finally {
         setPreparing(false)
