@@ -400,8 +400,14 @@ export const ArtworkEditForm = ({
   const [clientMeta, setClientMeta] = useState<ImageMeta | null>(null)
   const [showPrintInfoModal, setShowPrintInfoModal] = useState(false)
 
-  // Server meta takes priority over client-detected meta
-  const imageMeta = serverMeta ?? clientMeta
+  // A freshly picked file reports a real byte size; the CDN-image probe
+  // reports 0. So when the artist has just chosen a replacement (before
+  // saving), prefer that file's metadata — otherwise the "Original file"
+  // line and the print check keep showing the stale saved-original until save.
+  const pendingClientMeta = clientMeta && clientMeta.sizeBytes > 0 ? clientMeta : null
+
+  // Priority: a pending pick > the saved original (server) > CDN-probed meta.
+  const imageMeta = pendingClientMeta ?? serverMeta ?? clientMeta
 
   // TPS supports custom sizes (aspect-locked), so eligibility is
   // sample-based: walk a series of long-edge values, find any that
@@ -749,7 +755,7 @@ export const ArtworkEditForm = ({
                 onUpload={onImageUpload}
                 onRemove={onImageRemove}
                 onMetaChange={handleImageMetaChange}
-                displayMeta={serverMeta}
+                displayMeta={pendingClientMeta ?? serverMeta}
                 uploading={uploading}
                 loadingText={loadingText}
                 aspectRatio="1 / 1"
