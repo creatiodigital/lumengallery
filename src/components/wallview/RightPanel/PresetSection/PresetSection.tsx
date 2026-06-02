@@ -102,6 +102,12 @@ const PresetSection = ({ presetType }: PresetSectionProps) => {
         typeof artwork.passepartoutThickness === 'object'
           ? (artwork.passepartoutThickness?.value ?? 0.3)
           : (artwork.passepartoutThickness ?? 0.3),
+      // Border (white paper margin around image)
+      showPaperBorder: artwork.showPaperBorder ?? false,
+      paperBorderSize:
+        typeof artwork.paperBorderSize === 'object'
+          ? (artwork.paperBorderSize?.value ?? 0)
+          : (artwork.paperBorderSize ?? 0),
       // Support
       showSupport: artwork.showSupport ?? false,
       supportThickness:

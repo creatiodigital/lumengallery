@@ -59,6 +59,9 @@ export async function POST(request: Request) {
         passepartoutSize: body.passepartoutSize != null ? Number(body.passepartoutSize) : 10,
         passepartoutThickness:
           body.passepartoutThickness != null ? Number(body.passepartoutThickness) : 0.3,
+        // Border (white paper margin around image)
+        showPaperBorder: body.showPaperBorder ?? false,
+        paperBorderSize: body.paperBorderSize != null ? Number(body.paperBorderSize) : 0,
         // Support
         showSupport: body.showSupport ?? false,
         supportThickness: body.supportThickness != null ? Number(body.supportThickness) : 2.0,
