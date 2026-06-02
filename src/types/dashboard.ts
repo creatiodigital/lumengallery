@@ -6,6 +6,7 @@ export type TSpaceOption = {
 export type TDashboardState = {
   isEditMode: boolean
   isArtworkPanelOpen: boolean
+  isArtworkModalOpen: boolean
   isLightingPanelOpen: boolean
   isFloorPanelOpen: boolean
   isCameraPanelOpen: boolean
