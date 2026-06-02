@@ -2,7 +2,6 @@
 
 import { useRef, useMemo, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { useRouter } from 'next/navigation'
 
 import { X } from 'lucide-react'
 
@@ -10,8 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
 import { RichText } from '@/components/ui/RichText'
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
-import { getCameraState } from '@/components/scene/controls/MainCamera/MainCamera'
-import { hideArtworkPanel } from '@/redux/slices/dashboardSlice'
+import { hideArtworkPanel, openArtworkModal } from '@/redux/slices/dashboardSlice'
 import type { RootState } from '@/redux/store'
 import type { TArtwork } from '@/types/artwork'
 
@@ -19,7 +17,6 @@ import styles from './ArtworkPanel.module.scss'
 
 const ArtworkPanel = () => {
   const dispatch = useDispatch()
-  const router = useRouter()
   const panelRef = useRef(null)
   const selectedSceneArtworkId = useSelector((state: RootState) => state.scene.currentArtworkId)
   const byId = useSelector((state: RootState) => state.artworks.byId)
@@ -43,19 +40,10 @@ const ArtworkPanel = () => {
 
   const handleViewDetails = () => {
     if (!selectedArtwork?.id) return
-    // Save the actual camera position so we can restore it on return
-    const cameraState = getCameraState()
-    if (cameraState) {
-      try {
-        sessionStorage.setItem('the-art-room:camera-state', JSON.stringify(cameraState))
-      } catch {
-        // sessionStorage not available, ignore
-      }
-    }
-    try {
-      sessionStorage.setItem('the-art-room:internal-nav', JSON.stringify({ from: 'exhibition' }))
-    } catch {}
-    router.push(`/artworks/${selectedArtwork.slug}`)
+    // Open the in-exhibition modal over the live scene and close the sidebar beneath it,
+    // so dismissing the modal returns to a clean scene with no sidebar lingering.
+    dispatch(hideArtworkPanel())
+    dispatch(openArtworkModal())
   }
 
   return (

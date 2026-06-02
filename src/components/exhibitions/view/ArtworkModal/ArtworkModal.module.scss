@@ -1,0 +1,40 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--color-white);
+  overflow-y: auto;
+
+  // Resize safety: never show the modal at mobile widths.
+  @media (max-width: 1023px) {
+    display: none;
+  }
+}
+
+.close {
+  position: fixed;
+  top: var(--space-6);
+  right: var(--space-6);
+  // Below the InquireSidebar (z-index 1000) so it doesn't show a second X over the
+  // sidebar's own CLOSE; still paints above the (non-positioned) artwork body.
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-primary);
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.25fr) 1fr;
+  gap: var(--space-10);
+  // Top gap ≈ site header height (space-7 padding + ~32px logo), so the artwork
+  // isn't flush against the window top — mirrors the standalone page's header space.
+  padding: 88px var(--space-10) var(--space-10);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  width: 100%;
+}

@@ -21,6 +21,7 @@ import { getProviderQuote } from '@/lib/print-providers/quote'
 
 import { OrderSummary } from '../OrderSummary'
 import { clearPrintSession } from '../clearPrintSession'
+import { consumePrintReturnUrl } from '../printReturnUrl'
 
 import { createPaymentIntent } from './createPaymentIntent'
 
@@ -241,7 +242,7 @@ export const PrintCheckout = ({
 
   const handleClose = () => {
     clearPrintSession(artwork.slug)
-    router.push('/prints')
+    router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
   }
 
   const backToWizard = () => {

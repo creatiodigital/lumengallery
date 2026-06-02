@@ -34,6 +34,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
             dimensions: artwork.dimensions,
             description: artwork.description,
             imageUrl: artwork.imageUrl,
+            originalWidth: artwork.originalWidth,
+            originalHeight: artwork.originalHeight,
             printEnabled: artwork.printEnabled,
             printPriceCents: artwork.printPriceCents,
           },
