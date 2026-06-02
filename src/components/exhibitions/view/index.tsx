@@ -27,6 +27,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { useLoadExhibitionArtworks } from '@/hooks/useLoadExhibitionArtworks'
 import { useGetExhibitionByUrlQuery } from '@/redux/slices/exhibitionApi'
 import { setExhibition } from '@/redux/slices/exhibitionSlice'
+import { closeArtworkModal } from '@/redux/slices/dashboardSlice'
 import { hidePlaceholders, resetScene } from '@/redux/slices/sceneSlice'
 import { resetWallView } from '@/redux/slices/wallViewSlice'
 import type { AppDispatch, RootState } from '@/redux/store'
@@ -489,6 +490,11 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
     if (!hasResetRef.current) {
       dispatch(resetWallView())
       dispatch(resetScene())
+      // Close any stale artwork modal: isArtworkModalOpen lives in dashboardSlice and is
+      // only cleared by the modal's own Close. Leaving via Order Print (router.push) leaves
+      // it true, and Redux survives client navigation — so without this, the first
+      // double-click after re-entering would render the modal instead of the sidebar.
+      dispatch(closeArtworkModal())
       // Note: Do NOT call resetArtworks() here - artworks should persist across
       // same-exhibition navigation (e.g., when viewing artwork details and returning).
       // The useLoadExhibitionArtworks hook handles loading artworks when needed.
