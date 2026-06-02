@@ -17,7 +17,7 @@ texture cache, plus camera-state save/restore and `internal-nav` sessionStorage 
 to paper over the unmount.
 
 "A page that looks like a modal" is the wrong architecture. A real in-app modal rendered
-*over* the still-mounted exhibition removes the whole class of problem: dismiss is
+_over_ the still-mounted exhibition removes the whole class of problem: dismiss is
 instant because nothing ever unmounted.
 
 ## Goals

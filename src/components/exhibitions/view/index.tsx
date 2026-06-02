@@ -465,7 +465,6 @@ const NavigationHelpModal = ({ hidden, exhibitionId, artworksReady }: Navigation
   )
 }
 
-
 export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionViewPageProps) => {
   const dispatch = useDispatch<AppDispatch>()
   const hasResetRef = useRef(false)

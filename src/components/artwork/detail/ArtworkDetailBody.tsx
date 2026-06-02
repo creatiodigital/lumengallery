@@ -93,7 +93,11 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
           </Text>
         )}
         {!isRichTextEmpty(artwork.description) && (
-          <RichText content={artwork.description!} variant="compact" className={styles.description} />
+          <RichText
+            content={artwork.description!}
+            variant="compact"
+            className={styles.description}
+          />
         )}
         <Button
           variant="secondary"

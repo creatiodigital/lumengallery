@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { X } from 'lucide-react'
 
-import { ArtworkDetailBody, type Artwork, type Artist } from '@/components/artwork/detail/ArtworkDetailBody'
+import {
+  ArtworkDetailBody,
+  type Artwork,
+  type Artist,
+} from '@/components/artwork/detail/ArtworkDetailBody'
 import { Button } from '@/components/ui/Button'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'

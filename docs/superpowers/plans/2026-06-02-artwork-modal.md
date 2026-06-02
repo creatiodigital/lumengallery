@@ -38,6 +38,7 @@
 ## Task 1: Redux flag for the modal
 
 **Files:**
+
 - Modify: `src/types/dashboard.ts`
 - Modify: `src/factories/dashboardFactory.ts`
 - Modify: `src/redux/slices/dashboardSlice.ts`
@@ -47,8 +48,8 @@
 In `src/types/dashboard.ts`, add `isArtworkModalOpen` right after `isArtworkPanelOpen`:
 
 ```ts
-  isArtworkPanelOpen: boolean
-  isArtworkModalOpen: boolean
+isArtworkPanelOpen: boolean
+isArtworkModalOpen: boolean
 ```
 
 - [ ] **Step 2: Default it in the factory**
@@ -94,6 +95,7 @@ git commit -m "AR-124: add isArtworkModalOpen redux flag + open/close actions"
 `useIsMobile` is currently defined inline in `ExhibitionViewPage` (`src/components/exhibitions/view/index.tsx:465`). The modal needs the same 1024px threshold, so extract it.
 
 **Files:**
+
 - Create: `src/hooks/useIsMobile.ts`
 - Modify: `src/components/exhibitions/view/index.tsx`
 
@@ -128,6 +130,7 @@ export const useIsMobile = (breakpoint = 1024): boolean => {
 - [ ] **Step 2: Use it in ExhibitionViewPage**
 
 In `src/components/exhibitions/view/index.tsx`:
+
 1. Delete the inline `const useIsMobile = (breakpoint = 1024) => { … }` definition (around line 465-476).
 2. Add the import near the other hook imports:
 
@@ -154,6 +157,7 @@ git commit -m "AR-124: extract useIsMobile into a shared hook"
 ## Task 3: Add image dimensions to the by-slug API
 
 **Files:**
+
 - Modify: `src/app/api/artworks/by-slug/[slug]/route.ts`
 
 - [ ] **Step 1: Include the fields in the response**
@@ -189,6 +193,7 @@ git commit -m "AR-124: return originalWidth/Height from by-slug artwork API"
 Extract the body that is currently duplicated in both branches of `src/components/artwork/detail/index.tsx`. Switch the image to a raw `<img>` (cache hit from the scene's texture) and compute the Share URL from the slug.
 
 **Files:**
+
 - Create: `src/components/artwork/detail/ArtworkDetailBody.tsx`
 
 - [ ] **Step 1: Create the component**
@@ -290,7 +295,11 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
           </Text>
         )}
         {!isRichTextEmpty(artwork.description) && (
-          <RichText content={artwork.description!} variant="compact" className={styles.description} />
+          <RichText
+            content={artwork.description!}
+            variant="compact"
+            className={styles.description}
+          />
         )}
         <Button
           variant="secondary"
@@ -363,6 +372,7 @@ git commit -m "AR-124: extract shared ArtworkDetailBody (raw img, slug-based sha
 ## Task 5: Simplify the standalone route + drop dead styles
 
 **Files:**
+
 - Modify: `src/components/artwork/detail/index.tsx`
 - Modify: `src/components/artwork/detail/ArtworkDetail.module.scss`
 
@@ -415,6 +425,7 @@ git commit -m "AR-124: standalone artwork page uses shared body; remove fake-mod
 ## Task 6: Redux → body shape mapper
 
 **Files:**
+
 - Create: `src/components/exhibitions/view/ArtworkModal/mapReduxArtwork.ts`
 
 - [ ] **Step 1: Create the mapper**
@@ -468,6 +479,7 @@ git commit -m "AR-124: add Redux→body artwork mapper for instant modal paint"
 ## Task 7: Create `ArtworkModal`
 
 **Files:**
+
 - Create: `src/components/exhibitions/view/ArtworkModal/ArtworkModal.tsx`
 - Create: `src/components/exhibitions/view/ArtworkModal/ArtworkModal.module.scss`
 
@@ -525,7 +537,11 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { X } from 'lucide-react'
 
-import { ArtworkDetailBody, type Artwork, type Artist } from '@/components/artwork/detail/ArtworkDetailBody'
+import {
+  ArtworkDetailBody,
+  type Artwork,
+  type Artist,
+} from '@/components/artwork/detail/ArtworkDetailBody'
 import { Button } from '@/components/ui/Button'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
@@ -628,6 +644,7 @@ git commit -m "AR-124: add ArtworkModal (instant paint + backfill, esc/scroll-lo
 ## Task 8: Render the modal in the exhibition view
 
 **Files:**
+
 - Modify: `src/components/exhibitions/view/index.tsx`
 
 - [ ] **Step 1: Import the modal + select the flag**
@@ -649,8 +666,12 @@ const isArtworkModalOpen = useSelector((state: RootState) => state.dashboard.isA
 In the desktop `return (...)` block, render the modal next to the panel (after the `{isArtworkPanelOpen && <ArtworkPanel />}` line, ≈ line 606):
 
 ```tsx
-      {isArtworkPanelOpen && <ArtworkPanel />}
-      {isArtworkModalOpen && <ArtworkModal />}
+{
+  isArtworkPanelOpen && <ArtworkPanel />
+}
+{
+  isArtworkModalOpen && <ArtworkModal />
+}
 ```
 
 - [ ] **Step 3: Verify**
@@ -670,6 +691,7 @@ git commit -m "AR-124: render ArtworkModal in the exhibition view when open"
 ## Task 9: Rewire "View Details" → open modal, close sidebar
 
 **Files:**
+
 - Modify: `src/components/editview/ArtworkPanel/ArtworkPanel.tsx`
 
 - [ ] **Step 1: Replace the navigation handler**
@@ -686,13 +708,13 @@ import { hideArtworkPanel, openArtworkModal } from '@/redux/slices/dashboardSlic
 3. Replace the entire `handleViewDetails` function (currently lines ~44-59, which saves camera state + `internal-nav` and `router.push`) with:
 
 ```ts
-  const handleViewDetails = () => {
-    if (!selectedArtwork?.id) return
-    // Open the in-exhibition modal over the live scene and close the sidebar beneath it,
-    // so dismissing the modal returns to a clean scene with no sidebar lingering.
-    dispatch(hideArtworkPanel())
-    dispatch(openArtworkModal())
-  }
+const handleViewDetails = () => {
+  if (!selectedArtwork?.id) return
+  // Open the in-exhibition modal over the live scene and close the sidebar beneath it,
+  // so dismissing the modal returns to a clean scene with no sidebar lingering.
+  dispatch(hideArtworkPanel())
+  dispatch(openArtworkModal())
+}
 ```
 
 `setCurrentArtwork` already holds the selected artwork id (set on double-click), and the modal reads `state.scene.currentArtworkId`, so no extra dispatch is needed. If `useRouter`/`router` is now unused, delete its import and the `const router = useRouter()` line.
@@ -703,6 +725,7 @@ Run: `pnpm typecheck && pnpm lint`
 Expected: exit 0 (watch for an unused-`router`/`useRouter` lint error — delete if flagged).
 
 Then `pnpm dev`, open `/exhibitions/john-doe/landscapes/visit` (with a saved exhibition where "Show information in exhibition" is on), double-click an artwork → sidebar opens → click **View Details**:
+
 - The sidebar closes and the full-screen modal opens over the scene **instantly**, image already visible (no flash).
 - The 3D scene is NOT reloaded (no blank/reload).
 - Press **Esc** and click the **X** — both close instantly; the camera is exactly where it was.
@@ -723,6 +746,7 @@ git commit -m "AR-124: View Details opens the modal and closes the sidebar (no n
 Now that the scene never unmounts, the camera-state machinery is dead.
 
 **Files:**
+
 - Modify: `src/components/scene/controls/MainCamera/MainCamera.tsx`
 
 - [ ] **Step 1: Remove the restore effect**
@@ -734,16 +758,16 @@ In `src/components/scene/controls/MainCamera/MainCamera.tsx`, delete the entire 
 Delete the `currentCameraState` declaration (lines ~98-102) and the `export const getCameraState = () => currentCameraState` (line ~105). Then delete the per-frame write block (lines ~513-522):
 
 ```ts
-    // Track camera state for save/restore on artwork detail navigation
-    currentCameraState = {
-      position: { x: cam.position.x, y: cam.position.y, z: cam.position.z },
-      quaternion: {
-        x: cam.quaternion.x,
-        y: cam.quaternion.y,
-        z: cam.quaternion.z,
-        w: cam.quaternion.w,
-      },
-    }
+// Track camera state for save/restore on artwork detail navigation
+currentCameraState = {
+  position: { x: cam.position.x, y: cam.position.y, z: cam.position.z },
+  quaternion: {
+    x: cam.quaternion.x,
+    y: cam.quaternion.y,
+    z: cam.quaternion.z,
+    w: cam.quaternion.w,
+  },
+}
 ```
 
 If `useLayoutEffect` is no longer used anywhere in the file after Step 1, remove it from the React import.
@@ -756,6 +780,7 @@ Expected: exit 0. There should be **no** remaining references to `getCameraState
 ```bash
 grep -rn "getCameraState\|the-art-room:camera-state" src
 ```
+
 Expected: no matches.
 
 Then `pnpm dev` and confirm the exhibition still loads with the correct initial camera placement, and walking around still works.
@@ -783,6 +808,7 @@ Expected: exit 0.
 ```bash
 grep -rn "the-art-room:internal-nav" src
 ```
+
 Expected: matches ONLY in `src/components/exhibitions/profile/EnterExhibitionButton.tsx` and `src/components/exhibitions/view/index.tsx` (the exhibition-entry flow). NO matches in `artwork/detail/index.tsx` or `ArtworkPanel.tsx`.
 
 - [ ] **Step 3: Production build (SSR/RSC safety — this touches the import graph)**
