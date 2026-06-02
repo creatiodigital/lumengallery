@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
 import { InquireSidebar } from '@/components/ui/InquireSidebar'
 import { Share } from '@/components/ui/Share'
+import { setPrintReturnUrl } from '@/components/checkout/printReturnUrl'
 import { isRichTextEmpty } from '@/lib/textUtils'
 
 import styles from './ArtworkDetail.module.scss'
@@ -108,7 +109,12 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
             label="Order Print"
             icon="arrowRight"
             size="bigSquared"
-            onClick={() => router.push(`/artworks/${artwork.slug}/print`)}
+            onClick={() => {
+              // Remember where we came from (exhibition visit URL when opened from the
+              // modal, or this artwork page) so the print flow's Close returns here.
+              setPrintReturnUrl(artwork.slug, window.location.pathname)
+              router.push(`/artworks/${artwork.slug}/print`)
+            }}
             className={styles.inquireButton}
           />
         ) : null}
