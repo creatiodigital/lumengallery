@@ -93,6 +93,10 @@ model ArtworkPreset {
   passepartoutSize      Float   @default(10)
   passepartoutThickness Float   @default(0.6)
 
+  // Border (white paper margin around image)
+  showPaperBorder Boolean @default(false)
+  paperBorderSize Float   @default(0)
+
   // Support
   showSupport      Boolean @default(false)
   supportThickness Float   @default(2.0)

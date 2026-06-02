@@ -41,43 +41,135 @@ const ImagePlaceholder = ({ width, height }: { width: number; height: number }) 
   </mesh>
 )
 
-// Custom hook to load blob URLs directly with TextureLoader
-const useBlobTexture = (url: string): Texture | null => {
-  const [texture, setTexture] = useState<Texture | null>(null)
+// Bounded, reference-counted in-memory cache of decoded artwork textures,
+// keyed by image URL.
+//
+// Purpose: keep textures resident across a scene unmount/remount — e.g. when a
+// visitor opens an artwork detail page and navigates back, the exhibition scene
+// remounts from scratch. Without this, every image refetches/decodes/uploads and
+// briefly shows the gray placeholder (the "blank flash"). With it, the hook
+// returns the existing texture synchronously, so the image is there immediately.
+//
+// Memory-safe for large exhibitions (many images, plus video/sound elsewhere):
+//  - Reference-counted: a texture currently on screen (refs > 0) is NEVER
+//    disposed, so visible artwork can't break.
+//  - Pruning runs only when NEW textures load (i.e. entering a different
+//    exhibition), never when leaving — so the round-trip to an artwork page and
+//    back disposes nothing, even for a huge exhibition.
+//  - When a load pushes the cache past MAX_RETAINED_TEXTURES, the least-recently
+//    -used UNMOUNTED textures (refs === 0, e.g. left over from a previous
+//    exhibition) are disposed, freeing their GPU memory.
+//  - In-memory only (gone on a hard refresh) and keyed by URL, so it can never
+//    serve a stale image — a re-uploaded image gets a new URL = cache miss.
+type TextureCacheEntry = { texture: Texture; refs: number }
+const MAX_RETAINED_TEXTURES = 48
+const textureCache = new Map<string, TextureCacheEntry>()
+
+const configureTexture = (texture: Texture) => {
+  texture.colorSpace = SRGBColorSpace
+  texture.anisotropy = 4
+  texture.minFilter = LinearMipmapLinearFilter
+  texture.generateMipmaps = true
+}
+
+// Re-insert so this entry counts as most-recently-used (Map keeps insertion order).
+const touchTexture = (url: string, entry: TextureCacheEntry) => {
+  textureCache.delete(url)
+  textureCache.set(url, entry)
+}
+
+// Dispose least-recently-used, currently-unmounted textures until within budget.
+// Called only on new loads, so leaving an exhibition never triggers disposal.
+const pruneTextureCache = () => {
+  if (textureCache.size <= MAX_RETAINED_TEXTURES) return
+  for (const [url, entry] of textureCache) {
+    if (textureCache.size <= MAX_RETAINED_TEXTURES) break
+    if (entry.refs === 0) {
+      entry.texture.dispose()
+      textureCache.delete(url)
+    }
+  }
+}
+
+// Acquire a cached texture, marking one active on-screen reference. Null on miss.
+const acquireTexture = (url: string): Texture | null => {
+  const entry = textureCache.get(url)
+  if (!entry) return null
+  entry.refs += 1
+  touchTexture(url, entry)
+  return entry.texture
+}
+
+// Store a freshly loaded texture. `active` = the requesting component is still
+// mounted. Returns the canonical texture (handles concurrent load races).
+const storeTexture = (url: string, texture: Texture, active: boolean): Texture => {
+  const existing = textureCache.get(url)
+  if (existing) {
+    if (texture !== existing.texture) texture.dispose() // lost a race; drop the dup
+    if (active) existing.refs += 1
+    touchTexture(url, existing)
+    return existing.texture
+  }
+  textureCache.set(url, { texture, refs: active ? 1 : 0 })
+  pruneTextureCache()
+  return texture
+}
+
+// Release one on-screen reference. Does not dispose — pruning handles that on the
+// next load, so leaving a scene never frees textures we may immediately return to.
+const releaseTexture = (url: string) => {
+  const entry = textureCache.get(url)
+  if (entry) entry.refs = Math.max(0, entry.refs - 1)
+}
+
+// Shared texture loader for both blob: and regular URLs, with ref-counted caching.
+const useCachedTexture = (url: string, accept: (u: string) => boolean): Texture | null => {
+  const [texture, setTexture] = useState<Texture | null>(() =>
+    url && accept(url) ? (textureCache.get(url)?.texture ?? null) : null,
+  )
 
   useEffect(() => {
-    if (!url || !url.startsWith('blob:')) {
+    if (!url || !accept(url)) {
       setTexture(null)
       return
     }
 
+    const cached = acquireTexture(url)
+    if (cached) {
+      setTexture(cached)
+      return () => releaseTexture(url)
+    }
+
+    let active = true
     const loader = new TextureLoader()
     loader.load(
       url,
-      (loadedTexture) => {
-        loadedTexture.colorSpace = SRGBColorSpace
-        loadedTexture.anisotropy = 4
-        loadedTexture.minFilter = LinearMipmapLinearFilter
-        loadedTexture.generateMipmaps = true
-        setTexture(loadedTexture)
+      (loaded) => {
+        configureTexture(loaded)
+        const stored = storeTexture(url, loaded, active)
+        if (active) setTexture(stored)
       },
       undefined,
       (error) => {
-        console.warn('Failed to load blob texture:', error)
-        setTexture(null)
+        console.warn('Failed to load texture:', url, error)
+        if (active) setTexture(null)
       },
     )
 
     return () => {
-      if (texture) {
-        texture.dispose()
-      }
+      active = false
+      releaseTexture(url)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url])
+  }, [url, accept])
 
   return texture
 }
+
+const isBlobUrl = (url: string) => url.startsWith('blob:')
+const isNonEmptyUrl = (url: string) => url !== ''
+
+// Custom hook to load blob URLs directly with TextureLoader
+const useBlobTexture = (url: string): Texture | null => useCachedTexture(url, isBlobUrl)
 
 // Apply "background-size: cover" style UV mapping to a texture.
 // Crops and centers the texture so it fills the plane without distortion.
@@ -118,49 +210,7 @@ const BlobImage = ({ url, width, height }: ArtworkImageProps) => {
 }
 
 // Custom hook to load regular URL textures with error handling
-const useRegularTexture = (url: string): Texture | null => {
-  const [texture, setTexture] = useState<Texture | null>(null)
-
-  useEffect(() => {
-    if (!url || url === '') {
-      setTexture(null)
-      return
-    }
-
-    let disposed = false
-    const loader = new TextureLoader()
-
-    loader.load(
-      url,
-      (loadedTexture) => {
-        if (!disposed) {
-          loadedTexture.colorSpace = SRGBColorSpace
-          loadedTexture.anisotropy = 4
-          loadedTexture.minFilter = LinearMipmapLinearFilter
-          loadedTexture.generateMipmaps = true
-          setTexture(loadedTexture)
-        }
-      },
-      undefined,
-      (error) => {
-        console.warn('Failed to load image texture:', url, error)
-        if (!disposed) {
-          setTexture(null)
-        }
-      },
-    )
-
-    return () => {
-      disposed = true
-      if (texture) {
-        texture.dispose()
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url])
-
-  return texture
-}
+const useRegularTexture = (url: string): Texture | null => useCachedTexture(url, isNonEmptyUrl)
 
 // Component for regular URL images (uses custom loader with error handling)
 const RegularImage = ({ url, width, height }: ArtworkImageProps) => {

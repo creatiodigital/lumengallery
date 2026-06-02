@@ -97,6 +97,10 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
           body.passepartoutThickness != null
             ? Number(body.passepartoutThickness)
             : preset.passepartoutThickness,
+        // Border (white paper margin around image)
+        showPaperBorder: body.showPaperBorder ?? preset.showPaperBorder,
+        paperBorderSize:
+          body.paperBorderSize != null ? Number(body.paperBorderSize) : preset.paperBorderSize,
         // Support
         showSupport: body.showSupport ?? preset.showSupport,
         supportThickness:

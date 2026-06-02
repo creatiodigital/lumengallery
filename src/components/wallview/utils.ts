@@ -22,7 +22,7 @@ export const cmEventToMeters = (
 
 /**
  * Compute the visual bounding rect of an artwork, including its
- * frame and passepartout borders (which grow outward from the image).
+ * frame, passepartout, and paper borders (which grow outward from the image).
  * For rotated shapes, computes the axis-aligned bounding box (AABB).
  *
  * Returns { x, y, width, height } in 2D wall-view pixel units.
@@ -41,7 +41,11 @@ export const getVisualBounds = (
     artwork?.showPassepartout && artwork?.imageUrl && artwork?.passepartoutSize?.value
       ? artwork.passepartoutSize.value * scaleMul
       : 0
-  const totalBorder = frameBorder + ppBorder
+  const paperBorder =
+    artwork?.showPaperBorder && artwork?.imageUrl && artwork?.paperBorderSize?.value
+      ? artwork.paperBorderSize.value * scaleMul
+      : 0
+  const totalBorder = frameBorder + ppBorder + paperBorder
 
   let w = pos.width2d + totalBorder * 2
   let h = pos.height2d + totalBorder * 2
