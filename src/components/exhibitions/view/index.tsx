@@ -21,6 +21,7 @@ import {
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 import Monogram from '@/icons/monogram.svg'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
+import { ArtworkModal } from '@/components/exhibitions/view/ArtworkModal/ArtworkModal'
 import { Scene } from '@/components/scene'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useLoadExhibitionArtworks } from '@/hooks/useLoadExhibitionArtworks'
@@ -470,6 +471,7 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
   const searchParams = useSearchParams()
   const previewToken = searchParams.get('preview') || undefined
   const isArtworkPanelOpen = useSelector((state: RootState) => state.dashboard.isArtworkPanelOpen)
+  const isArtworkModalOpen = useSelector((state: RootState) => state.dashboard.isArtworkModalOpen)
   const isMobile = useIsMobile()
 
   const {
@@ -592,6 +594,7 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
       <LoadingOverlay />
       {exhibition && <Scene hideLoader />}
       {isArtworkPanelOpen && <ArtworkPanel />}
+      {isArtworkModalOpen && <ArtworkModal />}
     </>
   )
 }
