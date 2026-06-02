@@ -67,7 +67,16 @@ export const ArtworkModal = () => {
   const artist: Artist = fetched?.artist ?? base.artist
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Artwork detail">
+    <div
+      className={styles.overlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Artwork detail"
+      // Marks this overlay so the 3D scene's global wheel handler ignores wheel events
+      // here (see MainCamera onWheel) — lets the modal content and the InquireSidebar
+      // inside it scroll independently instead of the scene swallowing the scroll.
+      data-panel-overlay
+    >
       <Button
         variant="ghost"
         className={styles.close}
