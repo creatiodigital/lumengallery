@@ -27,6 +27,8 @@ type TPreset = {
   passepartoutColor: string
   passepartoutSize: number
   passepartoutThickness: number
+  showPaperBorder: boolean
+  paperBorderSize: number
   showSupport: boolean
   supportThickness: number
   supportColor: string
@@ -150,6 +152,13 @@ export function applyPresetToArtwork(
   applyProp('passepartoutThickness', {
     label: String(preset.passepartoutThickness),
     value: preset.passepartoutThickness,
+  })
+
+  // Border (white paper margin around image)
+  applyProp('showPaperBorder', preset.showPaperBorder)
+  applyProp('paperBorderSize', {
+    label: String(preset.paperBorderSize),
+    value: preset.paperBorderSize,
   })
 
   // Support
