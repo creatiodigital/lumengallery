@@ -139,7 +139,10 @@ back to 800×800.
 - Remove camera-state **restore** in
   `src/components/scene/controls/MainCamera/MainCamera.tsx` (the `useLayoutEffect` that
   reads `the-art-room:camera-state`).
-- Remove all `the-art-room:internal-nav` usage.
+- Remove **only the artwork-detail** `the-art-room:internal-nav` usage (the write in
+  `ArtworkPanel` and the read in `artwork/detail/index.tsx`). **Preserve** the unrelated
+  exhibition-entry flow that reuses the same key (`EnterExhibitionButton.tsx` writes it;
+  `ExhibitionViewPage` reads it on mount).
 - Remove now-dead styles from `ArtworkDetail.module.scss` (`minimalHeader`, `logo`,
   `closeButton`, `page`, `content`) unless reused by the modal overlay; add modal overlay
   styles.
