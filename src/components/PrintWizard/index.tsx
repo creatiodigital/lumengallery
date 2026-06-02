@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { Modal } from '@/components/ui/Modal'
 import { clearPrintSession } from '@/components/checkout/clearPrintSession'
+import { consumePrintReturnUrl } from '@/components/checkout/printReturnUrl'
 import Logo from '@/icons/logo.svg'
 import Monogram from '@/icons/monogram.svg'
 
@@ -297,7 +298,7 @@ export const PrintWizard = ({
           variant="ghost"
           onClick={() => {
             clearPrintSession(artwork.slug)
-            router.push('/prints')
+            router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
           }}
           label="CLOSE"
           iconRight={<Icon name="close" size={16} />}

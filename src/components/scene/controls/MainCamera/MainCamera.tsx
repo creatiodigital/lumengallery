@@ -95,15 +95,6 @@ const FOCUS_MIN_DISTANCE = 0.4 // Minimum distance from artwork
 // Ease-out cubic: smooth deceleration, reaches target exactly at t=1
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3)
 
-// Module-level camera state — updated every frame, readable by ArtworkPanel before navigation
-let currentCameraState: {
-  position: { x: number; y: number; z: number }
-  quaternion: { x: number; y: number; z: number; w: number }
-} | null = null
-
-/** Returns the current camera position + quaternion snapshot (or null if scene not mounted) */
-export const getCameraState = () => currentCameraState
-
 const MainCamera = () => {
   const [, setTick] = useState(0)
   const dispatch = useDispatch()
@@ -152,26 +143,6 @@ const MainCamera = () => {
 
   // Get camera ref for immediate positioning before first paint
   const camera = useThree((state) => state.camera) as PerspectiveCamera
-
-  // Restore camera from sessionStorage (returning from artwork detail) — highest priority
-  useLayoutEffect(() => {
-    if (initialPositionSet.current) return
-    try {
-      const saved = sessionStorage.getItem('the-art-room:camera-state')
-      if (saved) {
-        sessionStorage.removeItem('the-art-room:camera-state')
-        const { position: p, quaternion: q } = JSON.parse(saved)
-        if (p && q) {
-          camera.position.set(p.x, p.y, p.z)
-          camera.quaternion.set(q.x, q.y, q.z, q.w)
-          camera.updateProjectionMatrix()
-          initialPositionSet.current = true
-        }
-      }
-    } catch {
-      // sessionStorage not available or invalid data, fall through to normal init
-    }
-  }, [camera])
 
   // Set camera position immediately when GLB data arrives — before paint, no visible jump
   useLayoutEffect(() => {
@@ -508,17 +479,6 @@ const MainCamera = () => {
       )
     ) {
       cam.position.add(moveVector)
-    }
-
-    // Track camera state for save/restore on artwork detail navigation
-    currentCameraState = {
-      position: { x: cam.position.x, y: cam.position.y, z: cam.position.z },
-      quaternion: {
-        x: cam.quaternion.x,
-        y: cam.quaternion.y,
-        z: cam.quaternion.z,
-        w: cam.quaternion.w,
-      },
     }
 
     if (mouseState.current) {

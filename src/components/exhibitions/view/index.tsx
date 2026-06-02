@@ -21,10 +21,13 @@ import {
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 import Monogram from '@/icons/monogram.svg'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
+import { ArtworkModal } from '@/components/exhibitions/view/ArtworkModal/ArtworkModal'
 import { Scene } from '@/components/scene'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { useLoadExhibitionArtworks } from '@/hooks/useLoadExhibitionArtworks'
 import { useGetExhibitionByUrlQuery } from '@/redux/slices/exhibitionApi'
 import { setExhibition } from '@/redux/slices/exhibitionSlice'
+import { closeArtworkModal } from '@/redux/slices/dashboardSlice'
 import { hidePlaceholders, resetScene } from '@/redux/slices/sceneSlice'
 import { resetWallView } from '@/redux/slices/wallViewSlice'
 import type { AppDispatch, RootState } from '@/redux/store'
@@ -462,26 +465,13 @@ const NavigationHelpModal = ({ hidden, exhibitionId, artworksReady }: Navigation
   )
 }
 
-const useIsMobile = (breakpoint = 1024) => {
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < breakpoint,
-  )
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < breakpoint)
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [breakpoint])
-
-  return isMobile
-}
-
 export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionViewPageProps) => {
   const dispatch = useDispatch<AppDispatch>()
   const hasResetRef = useRef(false)
   const searchParams = useSearchParams()
   const previewToken = searchParams.get('preview') || undefined
   const isArtworkPanelOpen = useSelector((state: RootState) => state.dashboard.isArtworkPanelOpen)
+  const isArtworkModalOpen = useSelector((state: RootState) => state.dashboard.isArtworkModalOpen)
   const isMobile = useIsMobile()
 
   const {
@@ -499,6 +489,11 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
     if (!hasResetRef.current) {
       dispatch(resetWallView())
       dispatch(resetScene())
+      // Close any stale artwork modal: isArtworkModalOpen lives in dashboardSlice and is
+      // only cleared by the modal's own Close. Leaving via Order Print (router.push) leaves
+      // it true, and Redux survives client navigation — so without this, the first
+      // double-click after re-entering would render the modal instead of the sidebar.
+      dispatch(closeArtworkModal())
       // Note: Do NOT call resetArtworks() here - artworks should persist across
       // same-exhibition navigation (e.g., when viewing artwork details and returning).
       // The useLoadExhibitionArtworks hook handles loading artworks when needed.
@@ -604,6 +599,7 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
       <LoadingOverlay />
       {exhibition && <Scene hideLoader />}
       {isArtworkPanelOpen && <ArtworkPanel />}
+      {isArtworkModalOpen && <ArtworkModal />}
     </>
   )
 }

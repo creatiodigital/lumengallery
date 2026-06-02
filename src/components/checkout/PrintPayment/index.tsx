@@ -13,6 +13,7 @@ import type { ProviderId } from '@/lib/print-providers'
 
 import type { CheckoutArtwork } from '../PrintCheckout'
 import { clearPrintSession } from '../clearPrintSession'
+import { consumePrintReturnUrl } from '../printReturnUrl'
 
 import { PaymentForm } from './PaymentForm'
 import type { StashedPayment } from './types'
@@ -72,7 +73,7 @@ export const PrintPayment = ({ artwork, providerId, country }: PrintPaymentProps
 
   const handleClose = () => {
     clearPrintSession(artwork.slug)
-    router.push('/prints')
+    router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
   }
 
   const bounceBackToCheckout = () => {
