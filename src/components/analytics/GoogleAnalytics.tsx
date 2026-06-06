@@ -14,6 +14,10 @@ import Script from 'next/script'
  *   who already accepted are measured immediately.
  */
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
+// Deployed build the client booted. Sent as a GA4 param so any metric can be
+// segmented by app version (register `app_version` as a custom dimension in GA4
+// to report on it). Lets us see if traffic is coming from a stale/cached build.
+const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || 'dev'
 
 export const GoogleAnalytics = () => {
   if (!GA_MEASUREMENT_ID) return null
@@ -41,7 +45,7 @@ export const GoogleAnalytics = () => {
                 gtag('consent', 'update', { analytics_storage: 'granted' });
               }
             } catch (e) {}
-            gtag('config', '${GA_MEASUREMENT_ID}');
+            gtag('config', '${GA_MEASUREMENT_ID}', { app_version: '${BUILD_ID}' });
           `,
         }}
       />

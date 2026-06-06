@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+import { captureError } from '@/lib/observability/captureError'
 
 // No data cache: read straight from the DB so library reordering and artwork
 // metadata edits propagate to the public exhibition page immediately. The
@@ -89,6 +90,25 @@ export type PublicExhibition = {
  * they're only consumed by the /visit route.
  */
 export async function getPublicExhibitionByUrl(url: string): Promise<PublicExhibition | null> {
+  // Report DB/read failures with flow context — they'd otherwise bubble to the
+  // Next error boundary (a 500 page) with no operator signal. Re-throw so the
+  // route's existing notFound/error handling is unchanged. (Observability
+  // hardening for launch — see project_observability_instrumentation_map.)
+  try {
+    return await loadPublicExhibition(url)
+  } catch (error) {
+    captureError(error, {
+      flow: 'content',
+      stage: 'get-public-exhibition',
+      level: 'error',
+      fingerprint: ['content:get-public-exhibition-failed'],
+      extra: { url },
+    })
+    throw error
+  }
+}
+
+async function loadPublicExhibition(url: string): Promise<PublicExhibition | null> {
   const exhibition = await getExhibition(url)
   if (!exhibition || !exhibition.published) return null
 

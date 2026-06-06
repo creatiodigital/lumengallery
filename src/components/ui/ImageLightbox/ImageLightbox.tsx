@@ -4,6 +4,7 @@ import { useEffect, useCallback } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
+import { reportImageError } from '@/lib/observability/reportImageError'
 
 import styles from './ImageLightbox.module.scss'
 
@@ -60,6 +61,7 @@ export const ImageLightbox = ({ imageUrl, alt, caption, onClose }: ImageLightbox
         onContextMenu={(e) => e.preventDefault()}
         onDragStart={(e) => e.preventDefault()}
         draggable={false}
+        onError={() => reportImageError(imageUrl, { surface: 'lightbox', alt })}
         style={{ userSelect: 'none', WebkitTouchCallout: 'none' }}
       />
       {caption && (

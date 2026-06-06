@@ -14,7 +14,17 @@ export const PrintsBanner = ({ imageUrl, alt }: Props) => {
 
   return (
     <div className={styles.banner}>
-      <Image src={imageUrl} alt={alt} fill priority sizes="100vw" className={styles.bannerImage} />
+      {/* unoptimized: serve the already-optimized R2/CDN .webp directly; the
+          Vercel optimizer's cold re-encode broke images on first load (AR-125). */}
+      <Image
+        src={imageUrl}
+        alt={alt}
+        fill
+        priority
+        unoptimized
+        sizes="100vw"
+        className={styles.bannerImage}
+      />
     </div>
   )
 }

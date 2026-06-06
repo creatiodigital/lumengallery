@@ -10,6 +10,8 @@ type Flow =
   | 'upload' // File uploads (artwork images, signatures)
   | 'stripe' // Stripe client calls (paymentIntents.*, transfers.*, refunds.*)
   | 'cron' // Scheduled jobs (reconciliation, etc.)
+  | 'content' // Public content reads (exhibition/artwork queries for display)
+  | 'image' // Image load failures on display surfaces (client-side)
 
 export type CaptureContext = {
   /** Broad business domain — groups related errors in Sentry filters. */

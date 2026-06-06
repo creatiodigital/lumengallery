@@ -75,6 +75,9 @@ export const OrderSummary = ({
             alt={artwork.title}
             width={72}
             height={72}
+            // Skip the Vercel optimizer (already-optimized R2/CDN .webp); cold
+            // re-encodes broke images on first load (AR-125).
+            unoptimized
             className={`${styles.summaryThumb}${thumbRotated ? ` ${styles.summaryThumbRotated}` : ''}`}
           />
         )}
