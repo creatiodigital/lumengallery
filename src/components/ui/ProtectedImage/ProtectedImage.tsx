@@ -3,6 +3,7 @@
 import Image, { type ImageProps } from 'next/image'
 
 import { isSafeImageSrc } from '@/lib/imageSafety'
+import { reportImageError } from '@/lib/observability/reportImageError'
 
 import styles from './ProtectedImage.module.scss'
 
@@ -22,6 +23,12 @@ export const ProtectedImage = ({
   wrapperClassName,
   fill,
   className,
+  // Default to skipping the Vercel /_next/image optimizer. Our sources are
+  // already-optimized .webp on an immutable R2/CDN; re-fetching + re-encoding
+  // them on a cold transform is what caused images to break on first load and
+  // only appear after a refresh (AR-125). Callers can still pass unoptimized={false}.
+  unoptimized = true,
+  onError,
   ...props
 }: ProtectedImageProps) => {
   const wrapperStyle = fill ? styles.fill : styles.wrapper
@@ -42,7 +49,21 @@ export const ProtectedImage = ({
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
     >
-      <Image {...props} fill={fill} className={className} draggable={false} />
+      <Image
+        {...props}
+        fill={fill}
+        unoptimized={unoptimized}
+        className={className}
+        draggable={false}
+        onError={(e) => {
+          // Broken images don't throw — report so we see them in Sentry (AR-125).
+          reportImageError(props.src as string, {
+            surface: 'protected-image',
+            alt: typeof props.alt === 'string' ? props.alt : undefined,
+          })
+          onError?.(e)
+        }}
+      />
     </div>
   )
 }

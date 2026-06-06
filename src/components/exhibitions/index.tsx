@@ -47,6 +47,9 @@ const ExhibitionCard = ({
             src={exhibition.featuredImageUrl}
             alt={exhibition.mainTitle}
             fill
+            // Skip the Vercel optimizer: source is already-optimized .webp on an
+            // immutable R2/CDN; cold re-encodes broke images on first load (AR-125).
+            unoptimized
             sizes="(max-width: 768px) 100vw, 55vw"
             className={styles.image}
             priority={priority}

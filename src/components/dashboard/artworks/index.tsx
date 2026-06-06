@@ -183,6 +183,9 @@ function ArtworkCard({
             alt={artwork.title || 'Artwork'}
             width={60}
             height={60}
+            // Skip the Vercel optimizer (already-optimized R2/CDN .webp); cold
+            // re-encodes broke images on first load (AR-125).
+            unoptimized
             className={styles.thumbnail}
           />
         ) : artwork.artworkType === 'video' && artwork.videoUrl ? (

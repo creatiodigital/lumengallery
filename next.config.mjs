@@ -3,6 +3,13 @@ import { withSentryConfig } from '@sentry/nextjs'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ['@prisma/client', '@prisma/client-runtime-utils'],
+  // Stamp the deployed commit SHA into the client bundle so a running tab knows
+  // which build it booted. Compared against the server's live SHA (/api/version)
+  // to detect users stuck on a stale/cached version. Vercel sets
+  // VERCEL_GIT_COMMIT_SHA at build; 'dev' locally.
+  env: {
+    NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || 'dev',
+  },
   images: {
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
@@ -92,6 +99,11 @@ const nextConfig = {
 }
 
 export default withSentryConfig(nextConfig, {
+  // Proxy client-side Sentry events through our own domain instead of
+  // *.ingest.sentry.io, which ad blockers / privacy extensions / Brave block.
+  // Without this, a large share of browser errors silently never arrive.
+  tunnelRoute: '/monitoring',
+
   // Upload source maps for readable stack traces in Sentry
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,

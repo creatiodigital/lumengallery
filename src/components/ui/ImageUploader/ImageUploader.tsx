@@ -392,7 +392,10 @@ export const ImageUploader = ({
       {imageUrl ? (
         // Image preview state
         <div className={styles.preview} style={boxStyle}>
-          <Image src={imageUrl} alt="Uploaded image" fill style={{ objectFit }} />
+          {/* unoptimized: src is a local blob: preview or an already-optimized
+              R2/CDN .webp — no value in the Vercel optimizer, and its cold
+              re-encode broke remote previews on first load (AR-125). */}
+          <Image src={imageUrl} alt="Uploaded image" fill unoptimized style={{ objectFit }} />
           {onRemove && (
             <Button
               variant="ghost"

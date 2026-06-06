@@ -281,7 +281,9 @@ const PrintAndPaperSection = ({
         label: option.label,
         tooltip: optionTooltip(option),
         tooltipImage: option.tooltipImageUrl ? (
-          <Image src={option.tooltipImageUrl} alt="" width={220} height={220} />
+          // unoptimized: catalog image; skip the Vercel optimizer whose cold
+          // re-encode broke images on first load (AR-125).
+          <Image src={option.tooltipImageUrl} alt="" width={220} height={220} unoptimized />
         ) : undefined,
       })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -301,7 +303,8 @@ const PrintAndPaperSection = ({
           label: option.label,
           tooltip: optionTooltip(option, isRecommended),
           tooltipImage: option.tooltipImageUrl ? (
-            <Image src={option.tooltipImageUrl} alt="" width={220} height={220} />
+            // unoptimized: catalog image; skip the Vercel optimizer (AR-125).
+            <Image src={option.tooltipImageUrl} alt="" width={220} height={220} unoptimized />
           ) : undefined,
           badge: isRecommended ? (
             <Icon name="check-circle" size={16} aria-label="Recommended by the artist" />
@@ -556,7 +559,9 @@ const EnumDropdown = ({
         label: option.label,
         tooltip: optionTooltip(option),
         tooltipImage: option.tooltipImageUrl ? (
-          <Image src={option.tooltipImageUrl} alt="" width={220} height={220} />
+          // unoptimized: catalog image; skip the Vercel optimizer whose cold
+          // re-encode broke images on first load (AR-125).
+          <Image src={option.tooltipImageUrl} alt="" width={220} height={220} unoptimized />
         ) : undefined,
       })),
     [filtered],
@@ -741,7 +746,9 @@ const EnumDimensionSection = ({
         label: option.label,
         tooltip: optionTooltip(option),
         tooltipImage: option.tooltipImageUrl ? (
-          <Image src={option.tooltipImageUrl} alt="" width={220} height={220} />
+          // unoptimized: catalog image; skip the Vercel optimizer whose cold
+          // re-encode broke images on first load (AR-125).
+          <Image src={option.tooltipImageUrl} alt="" width={220} height={220} unoptimized />
         ) : undefined,
       })),
     [filtered],
@@ -1086,7 +1093,14 @@ function optionTooltip(option: Option, recommended?: boolean): ReactNode {
     <>
       {option.tooltipHeaderImageUrl && (
         <div className={styles.tooltipHeaderImage}>
-          <Image src={option.tooltipHeaderImageUrl} alt="" width={640} height={360} sizes="320px" />
+          <Image
+            src={option.tooltipHeaderImageUrl}
+            alt=""
+            width={640}
+            height={360}
+            sizes="320px"
+            unoptimized
+          />
         </div>
       )}
       <p>

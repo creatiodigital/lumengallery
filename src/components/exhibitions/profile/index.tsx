@@ -77,6 +77,11 @@ export const ExhibitionProfilePage = ({
                 alt={exhibition.mainTitle}
                 fill
                 priority
+                // Skip the Vercel /_next/image optimizer: the source is an
+                // already-optimized .webp on an immutable R2/CDN. Re-encoding it
+                // on a cold transform is what made images break on first load
+                // and only show after a refresh (AR-125).
+                unoptimized
                 sizes="(max-width: 768px) 100vw, 66vw"
                 className={styles.heroImage}
               />

@@ -18,6 +18,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider'
 import { ImageProtection } from '@/components/providers/ImageProtection'
 import { CookieBanner } from '@/components/ui/CookieBanner'
 import { NavigationProgressBar } from '@/components/ui/NavigationProgressBar'
+import { VersionGuard } from '@/components/observability/VersionGuard'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import '@/styles/globals.scss'
@@ -100,6 +101,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <SpeedInsights />
         <CookieBanner />
         <GoogleAnalytics />
+        <VersionGuard />
       </body>
     </html>
   )
