@@ -73,6 +73,9 @@ export const PrintConfirmation = ({ artwork, paymentIntentId, status }: PrintCon
               alt={artwork.title}
               width={120}
               height={120}
+              // Skip the Vercel optimizer (already-optimized R2/CDN .webp); cold
+              // re-encodes broke images on first load (AR-125).
+              unoptimized
               className={styles.thumb}
             />
           )}

@@ -10,6 +10,7 @@ import { InquireSidebar } from '@/components/ui/InquireSidebar'
 import { Share } from '@/components/ui/Share'
 import { setPrintReturnUrl } from '@/components/checkout/printReturnUrl'
 import { isRichTextEmpty } from '@/lib/textUtils'
+import { reportImageError } from '@/lib/observability/reportImageError'
 
 import styles from './ArtworkDetail.module.scss'
 
@@ -138,6 +139,12 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
             className={styles.image}
             crossOrigin="anonymous"
             decoding="async"
+            onError={() =>
+              reportImageError(artwork.imageUrl, {
+                surface: 'artwork-detail',
+                alt: displayTitle || undefined,
+              })
+            }
           />
         )}
       </div>

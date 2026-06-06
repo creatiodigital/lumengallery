@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import c from 'classnames'
 import { Text } from '@/components/ui/Typography'
+import { reportImageError } from '@/lib/observability/reportImageError'
 
 import styles from './Slideshow.module.scss'
 
@@ -46,6 +47,7 @@ export const Slideshow = ({ slides, interval = 5000 }: SlideshowProps) => {
             alt=""
             className={styles.background}
             loading={index === 0 ? 'eager' : 'lazy'}
+            onError={() => reportImageError(slide.imageUrl, { surface: 'home-slideshow' })}
           />
           <div className={styles.container}>
             <div className={styles.content} style={{ color: slide.textColor || '#ffffff' }}>
