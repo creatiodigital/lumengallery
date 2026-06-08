@@ -3,7 +3,8 @@ import { revalidateTag } from 'next/cache'
 import type { NextRequest } from 'next/server'
 import { deleteFromR2 } from '@/lib/r2'
 
-import { requireOwnership } from '@/lib/authUtils'
+import { isAdminOrAbove, requireOwnership } from '@/lib/authUtils'
+import { saveLimitedVariants, type IncomingVariant } from '@/lib/editions/saveLimitedVariants'
 import { TPS_FRAME_TYPES, TPS_PAPERS, TPS_WINDOW_MOUNTS } from '@/lib/print-providers/printspace'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 import { Prisma } from '@/generated/prisma'
@@ -77,6 +78,24 @@ function sanitizePrintRecommendations(
   return out.length === 0 ? null : { paper: out }
 }
 
+// Coerce raw JSON variant rows from the dashboard into the typed shape
+// `saveLimitedVariants` validates. Numbers come over the wire as strings
+// from the form inputs; everything is re-validated server-side.
+function parseIncomingVariants(raw: unknown[]): IncomingVariant[] {
+  return raw.map((item) => {
+    const v = (item ?? {}) as Record<string, unknown>
+    return {
+      id: typeof v.id === 'string' && v.id.length > 0 ? v.id : undefined,
+      name: typeof v.name === 'string' ? v.name : '',
+      paperId: typeof v.paperId === 'string' ? v.paperId : '',
+      widthCm: Number(v.widthCm),
+      heightCm: Number(v.heightCm),
+      borderCm: Number(v.borderCm),
+      editionSize: Number(v.editionSize),
+    }
+  })
+}
+
 // The exhibition profile API (/api/exhibitions/by-url/[url]) caches its
 // merged snapshot+live response under `exhibition-${url}` with a 1-hour
 // revalidate window. Artwork edits (title, image, etc.) would otherwise
@@ -99,6 +118,11 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
     const artwork = await prisma.artwork.findUnique({
       where: { id },
+      include: {
+        limitedVariants: {
+          orderBy: { order: 'asc' },
+        },
+      },
     })
 
     if (!artwork) {
@@ -120,11 +144,20 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     // Verify ownership
     const existing = await prisma.artwork.findUnique({
       where: { id },
-      select: { userId: true, title: true, slug: true },
+      select: {
+        userId: true,
+        title: true,
+        slug: true,
+        editionType: true,
+        editionLocked: true,
+        originalWidth: true,
+        originalHeight: true,
+      },
     })
     if (!existing) return NextResponse.json({ error: 'Artwork not found' }, { status: 404 })
-    const { error: authError } = await requireOwnership(existing.userId)
+    const { error: authError, session } = await requireOwnership(existing.userId)
     if (authError) return authError
+    const requesterIsAdmin = isAdminOrAbove(session?.user?.userType)
 
     const body = await request.json()
 
@@ -182,6 +215,29 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         ? Math.round(parsedEditionTotal)
         : null
 
+    // Edition type — the canonical open/limited switch. One-way door:
+    // once an artwork is locked (a variant has been published) it can
+    // never revert to 'open'. Defaults to the stored value when the body
+    // doesn't carry it.
+    const requestedEditionType =
+      body.editionType === 'limited' || body.editionType === 'open'
+        ? body.editionType
+        : existing.editionType
+    // Once an artwork is locked ("Start selling"), the artist can't change
+    // the edition type — only an admin can (after unblocking). Block any
+    // edition-type change by a non-admin on a locked artwork.
+    if (
+      existing.editionLocked &&
+      requestedEditionType !== existing.editionType &&
+      !requesterIsAdmin
+    ) {
+      return NextResponse.json(
+        { error: 'This artwork is locked for sale. Only an admin can change its edition type.' },
+        { status: 409 },
+      )
+    }
+    const editionType = requestedEditionType
+
     // Sanitize artist-set printing restrictions.
     const printOptions = sanitizePrintOptions(body.printOptions)
     // Sanitize recommendations — depends on restrictions to enforce the
@@ -207,6 +263,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       featured: body.featured === true || body.featured === 'true',
       printEnabled: body.printEnabled === true || body.printEnabled === 'true',
       printPriceCents,
+      editionType,
       printEditionLimited,
       printEditionTotal,
       // Prisma's nullable-Json update slot doesn't accept a bare `null`
@@ -229,6 +286,24 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
             body.hiddenFromExhibition === true || body.hiddenFromExhibition === 'true',
         },
       })
+
+      // Reconcile limited-edition variants (draft create/update/delete).
+      // Publishing — which materialises edition numbers and locks the
+      // artwork — is a separate explicit action (POST .../publish-edition).
+      if (editionType === 'limited' && Array.isArray(body.limitedVariants)) {
+        const incoming = parseIncomingVariants(body.limitedVariants)
+        const saved = await saveLimitedVariants({
+          artworkId: id,
+          artworkPixels: {
+            widthPx: existing.originalWidth ?? 0,
+            heightPx: existing.originalHeight ?? 0,
+          },
+          variants: incoming,
+        })
+        if (!saved.ok) {
+          return NextResponse.json({ error: saved.error }, { status: 400 })
+        }
+      }
 
       // Bust caches that include this artwork's data. `page-prints` and
       // `artworks` are global listing tags — without busting them, the

@@ -26,6 +26,9 @@ import {
 import { getPrintLongEdgeBounds } from '@/lib/print-providers/printspace'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 
+import type { LimitedVariantView } from '@/lib/editions/types'
+
+import { LimitedWizard } from './LimitedWizard'
 import { Scene } from './Scene'
 import { StepsPanel } from './StepsPanel'
 import { SummaryPanel } from './SummaryPanel'
@@ -41,11 +44,15 @@ export type WizardArtwork = {
   originalWidthPx: number
   originalHeightPx: number
   printPriceCents: number
-  /** Limited-edition flag. When true the intro modal surfaces the
-   *  edition size; the public artwork page also displays it. */
+  /** 'open' (configurable) or 'limited' (pre-defined variants). Drives
+   *  which wizard the dispatcher renders. Defaults to open. */
+  editionType?: 'open' | 'limited'
+  /** Published limited-edition variants with live stock. Only used when
+   *  `editionType === 'limited'`. */
+  variants?: LimitedVariantView[]
+  /** Legacy limited-edition flag (superseded by editionType). */
   editionLimited?: boolean
-  /** Total prints in the series. Meaningful only when
-   *  `editionLimited` is true; null when not yet set. */
+  /** Legacy series size (superseded by per-variant editionSize). */
   editionTotal?: number | null
 }
 
@@ -59,12 +66,19 @@ interface PrintWizardProps {
   recommendations: PrintRecommendations | null
 }
 
-export const PrintWizard = ({
-  artwork,
-  catalog,
-  restrictions,
-  recommendations,
-}: PrintWizardProps) => {
+/**
+ * Dispatcher: limited-edition artworks get the constrained variant-picker
+ * wizard; everything else gets the full configurable open-edition wizard.
+ * The buyer never chooses — the artwork's `editionType` decides.
+ */
+export const PrintWizard = (props: PrintWizardProps) => {
+  if (props.artwork.editionType === 'limited') {
+    return <LimitedWizard artwork={props.artwork} catalog={props.catalog} />
+  }
+  return <OpenWizard {...props} />
+}
+
+const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWizardProps) => {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -343,12 +357,6 @@ export const PrintWizard = ({
               <strong>{artwork.artistName}</strong> will ship with:
             </p>
             <ul className={styles.introList}>
-              <li>
-                A <strong>Certificate of Authenticity</strong>.
-              </li>
-              <li>
-                The <strong>Artist&apos;s Signature</strong>.
-              </li>
               <li>
                 Your print, <strong>made to order</strong> — produced on demand, hand-inspected, and
                 finished individually by a specialist fine-art print lab on archival giclée or

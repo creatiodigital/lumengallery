@@ -12,6 +12,8 @@ import {
   populateFormData,
 } from '@/components/shared/ArtworkEditForm'
 import type { Artwork, ArtworkFormData } from '@/components/shared/ArtworkEditForm'
+import { isAdminOrAbove } from '@/lib/authUtils'
+import type { LimitedVariantDraft } from '@/lib/editions/types'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 
 type ArtworkEditPageProps = {
@@ -137,6 +139,51 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
   const handlePrintRecommendationsChange = (next: PrintRecommendations | null) => {
     setFormData((prev) => ({ ...prev, printRecommendations: next }))
   }
+
+  const handleEditionTypeChange = (next: 'open' | 'limited') => {
+    setFormData((prev) => ({ ...prev, editionType: next }))
+  }
+
+  const handleVariantsChange = (next: LimitedVariantDraft[]) => {
+    setFormData((prev) => ({ ...prev, limitedVariants: next }))
+  }
+
+  const isAdmin = isAdminOrAbove(session?.user?.userType)
+
+  // "Ready to Sell" — artist confirms the artwork is good to sell. Warns,
+  // then locks the edition config (and publishes limited variants).
+  const handleReadyToSell = useCallback(async () => {
+    const confirmed = window.confirm(
+      'Mark this artwork as ready to sell?\n\nOnce confirmed, you can’t change the edition type unless an admin unblocks it. Save any pending changes first.',
+    )
+    if (!confirmed) return
+    try {
+      const res = await fetch(`/api/artworks/${artworkId}/publish-edition`, { method: 'POST' })
+      if (res.ok) {
+        setFormData((prev) => ({ ...prev, editionLocked: true }))
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Failed to mark ready to sell.')
+      }
+    } catch {
+      setError('Failed to mark ready to sell.')
+    }
+  }, [artworkId])
+
+  // Admin-only: unblock a locked artwork so its config is editable again.
+  const handleUnblock = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/artworks/${artworkId}/unblock-edition`, { method: 'POST' })
+      if (res.ok) {
+        setFormData((prev) => ({ ...prev, editionLocked: false }))
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'Failed to unblock artwork.')
+      }
+    } catch {
+      setError('Failed to unblock artwork.')
+    }
+  }, [artworkId])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -456,6 +503,11 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
         onFormChange={handleChange}
         onPrintOptionsChange={handlePrintOptionsChange}
         onPrintRecommendationsChange={handlePrintRecommendationsChange}
+        onEditionTypeChange={handleEditionTypeChange}
+        onVariantsChange={handleVariantsChange}
+        isAdmin={isAdmin}
+        onReadyToSell={handleReadyToSell}
+        onUnblock={handleUnblock}
         onImageUpload={handleImageUpload}
         onImageRemove={handleRemoveImage}
         onSoundUpload={handleSoundUpload}

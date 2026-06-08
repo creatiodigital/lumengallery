@@ -178,12 +178,23 @@ model Artwork {
   printEnabled    Boolean @default(false)
   printPriceCents Int?
 
-  // Limited-edition flag + total number of prints in the series.
-  // When `printEditionLimited` is true, the buyer's wizard surfaces a
-  // "limited edition of N" note and the public artwork page can
-  // display the series size. `printEditionTotal` is meaningful only
-  // when `printEditionLimited` is true; nullable so the form can
-  // distinguish "not set" from a deliberate value.
+  // Edition model. `editionType` is the canonical, mutually-exclusive
+  // switch between the two TPS fulfillment paths:
+  //   'open'    → TPS "Order Prints": the full configurable wizard
+  //               (any size, all framing, full paper set).
+  //   'limited' → TPS "Sell as Print" / Manual Dropship: print-only,
+  //               numbered, pre-defined `limitedVariants`.
+  // One-way door: 'open' → 'limited' is allowed once, but never back.
+  // `editionLocked` flips true the moment a variant is published (and
+  // edition numbers are materialised); from then the type and the
+  // published variants' size/editionSize are frozen.
+  editionType   String  @default("open")
+  editionLocked Boolean @default(false)
+
+  // Legacy limited-edition flags, superseded by `editionType` +
+  // `limitedVariants`. Kept for back-compat; no longer written by new
+  // code. Existing flag-limited artworks stay on the open path until
+  // re-saved with variants.
   printEditionLimited Boolean @default(false)
   printEditionTotal   Int?
 
@@ -192,7 +203,7 @@ model Artwork {
   // When null / missing / field missing, all options from the catalog
   // are offered. Each dimension is validated server-side at
   // PaymentIntent creation.
-  printOptions    Json?
+  printOptions Json?
 
   // Soft "recommended by the artist" markers — distinct from the
   // hard restriction list above. Shape: { paper: string[] } (paper
@@ -203,9 +214,87 @@ model Artwork {
 
   exhibitionArtworks ExhibitionArtwork[]
   printOrders        PrintOrder[]
+  limitedVariants    LimitedVariant[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// One pre-defined offering of a LIMITED-edition artwork. A limited
+// artwork has 1 mandatory + up to 3 optional variants (max 4). Each
+// variant is its OWN independent edition with its own numbering
+// sequence (e.g. "Small" 1/50, "Medium" 1/40). The buyer simply picks
+// a variant — no per-print configuration. Limited variants are always
+// print-only (never framed); the edition number prints bottom-left in
+// the border margin. Sizes must be DISTINCT within an artwork because
+// TPS keys edition identity on the unframed print size.
+model LimitedVariant {
+  id        String  @id @default(uuid())
+  artworkId String
+  artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  name        String // free title, e.g. "Small"
+  paperId     String // TPS paper id (validated against TPS_PAPERS)
+  printTypeId String // 'giclee' | 'ctype', derived from the paper
+  widthCm     Float // locked to the artwork's aspect ratio
+  heightCm    Float
+  borderCm    Float  @default(0) // uniform paper border (holds the number)
+  editionSize Int // this variant's own edition size, e.g. 50
+
+  // A variant is published once its edition numbers are materialised.
+  // Publishing locks the parent artwork (`editionLocked`) and freezes
+  // this variant's size/editionSize. `order` keeps the mandatory
+  // variant first (0) and orders the optional ones.
+  published Boolean @default(false)
+  order     Int     @default(0)
+
+  editionNumbers EditionNumber[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Distinct print size per artwork (TPS edition-identity rule).
+  @@unique([artworkId, widthCm, heightCm])
+  @@index([artworkId])
+}
+
+// One row per individual numbered print in a variant's edition (1..N).
+// This table is our AUTHORITATIVE edition ledger — TPS is mirrored by
+// hand from it, never the reverse. Rows are pre-materialised when the
+// variant is published so the `@@unique([variantId, number])` constraint
+// is the atomic oversell gate. State machine:
+//   available → reserved (at Stripe PI create)
+//   reserved  → reserved+orderId bound (at auth / order creation)
+//   reserved  → sold (at capture / admin markPlaced)
+//   reserved/sold → available (released on cancel / fail / expiry / reject)
+model EditionNumber {
+  id        String         @id @default(uuid())
+  variantId String
+  variant   LimitedVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  number Int // 1..editionSize; printed as "number/editionSize"
+
+  // 'available' | 'reserved' | 'sold'
+  state String @default("available")
+
+  // The Stripe PI that currently holds this number while reserved/sold;
+  // cleared on release. Bound to a PrintOrder at auth.
+  paymentIntentId String?
+  orderId         String?     @unique
+  order           PrintOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  buyerEmail String? // denormalised snapshot for the ledger view
+  reservedAt DateTime?
+  soldAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Hard oversell gate: one row per (variant, number); never reused.
+  @@unique([variantId, number])
+  // "Next available number" query + reservation lookups.
+  @@index([variantId, state])
+  @@index([paymentIntentId])
 }
 
 model PrintOrder {
@@ -243,21 +332,24 @@ model PrintOrder {
   trackingUrl       String?
   shippedAt         DateTime?
 
-  // Public R2 URL of the generated certificate of authenticity PDF that
-  // ships with this order. Null until the cert has been rendered and
-  // uploaded.
-  certificateUrl String?
-
   // Stripe Connect transfer to the artist (null until admin releases payout).
   // 'pending' | 'paid' | 'reversed'
   transferId     String?
   transferStatus String?
   paidOutAt      DateTime?
 
+  // Limited-edition fulfillment: timestamp set when the admin has
+  // manually mirrored this order's edition number as "sold" in TPS's
+  // Manage Edition modal. Our `EditionNumber` ledger is authoritative;
+  // this just records that the by-hand TPS step is done. Null for open
+  // editions and for limited orders not yet mirrored.
+  tpsEditionMirroredAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events PrintOrderEvent[]
+  events        PrintOrderEvent[]
+  editionNumber EditionNumber?
 
   @@index([artistUserId])
   @@index([paymentStatus, fulfillmentStatus, transferStatus])
@@ -521,14 +613,14 @@ model Slide {
 }
 
 model PageContent {
-  id        String   @id @default(uuid())
-  slug      String   @unique // "about", "terms", "privacy", "accessibility", "prints"
-  title     String
-  content   String // HTML from TipTap
+  id             String   @id @default(uuid())
+  slug           String   @unique // "about", "terms", "privacy", "accessibility", "prints"
+  title          String
+  content        String // HTML from TipTap
   // Top banner image. Currently only used by the "prints" page; other
   // pages leave it null. Stored as an R2 public URL.
   bannerImageUrl String?
-  updatedAt DateTime @updatedAt
+  updatedAt      DateTime @updatedAt
 }
 
 model WallGuide {

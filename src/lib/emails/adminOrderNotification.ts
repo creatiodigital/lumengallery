@@ -100,7 +100,7 @@ export async function sendAdminOrderNotification(
           <table style="border-collapse:collapse;font-size:14px;">${attrRows}</table>
 
           <p style="margin:20px 0 0 0;font-size:13px;color:#666;">
-            Print asset and certificate are available in the admin order page above. They are
+            The print asset is available in the admin order page above. It is
             never linked from email — the original artwork is sale-sensitive content.
           </p>
 

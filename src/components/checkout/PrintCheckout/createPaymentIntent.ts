@@ -13,6 +13,12 @@ import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { getVatRate } from '@/lib/print-providers/printspace/pricing'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import type { PrintRestrictions } from '@/lib/print-providers/types'
+import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
+import {
+  reserveNextEditionNumber,
+  attachPaymentIntentToReservation,
+} from '@/lib/editions/reserveEditionNumber'
+import { releaseEditionNumberById } from '@/lib/editions/releaseEditionNumber'
 import { captureError } from '@/lib/observability/captureError'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
@@ -35,8 +41,14 @@ export type CreatePaymentIntentInput = {
   /** Server-resolved provider for this artwork. Client passes it back
    *  so we can dispatch quotes against the correct adapter. */
   providerId: ProviderId
-  /** Provider-agnostic buyer config (the wizard's full state). */
+  /** Provider-agnostic buyer config (the wizard's full state). For a
+   *  limited edition this is ignored — the server rebuilds it from the
+   *  chosen variant. */
   config: WizardConfig
+  /** For a LIMITED-edition artwork: the variant the buyer picked. The
+   *  server pins the config + reserves an edition number from it. Must
+   *  be absent for open editions. */
+  variantId?: string
   address: ShippingAddress
 }
 
@@ -122,7 +134,7 @@ function isKnownProvider(id: unknown): id is ProviderId {
 export async function createPaymentIntent(
   input: CreatePaymentIntentInput,
 ): Promise<CreatePaymentIntentResult> {
-  const { artworkSlug, providerId, config, address } = input
+  const { artworkSlug, providerId, config, variantId, address } = input
 
   // ── Defensive input validation ──────────────────────────────
   // These run BEFORE we hit the DB / catalog / Stripe. A malformed
@@ -212,6 +224,18 @@ export async function createPaymentIntent(
       printOptions: true,
       originalWidth: true,
       originalHeight: true,
+      editionType: true,
+      limitedVariants: {
+        where: { published: true },
+        select: {
+          id: true,
+          paperId: true,
+          printTypeId: true,
+          widthCm: true,
+          heightCm: true,
+          borderCm: true,
+        },
+      },
     },
   })
   if (!artwork) {
@@ -219,6 +243,26 @@ export async function createPaymentIntent(
   }
   if (!artwork.printEnabled || !artwork.printPriceCents) {
     return { ok: false, error: 'This artwork is not currently available as a print.' }
+  }
+
+  // ── Open vs limited fork ────────────────────────────────────────
+  // For a limited edition we IGNORE the client config entirely and pin
+  // the canonical config from the chosen (published) variant. For an
+  // open edition a supplied variantId is a tamper signal.
+  const isLimited = artwork.editionType === 'limited'
+  let effectiveConfig: WizardConfig = config
+  let pinnedVariant: (typeof artwork.limitedVariants)[number] | null = null
+  if (isLimited) {
+    if (!variantId) {
+      return { ok: false, error: 'Please choose a size for this limited edition.' }
+    }
+    pinnedVariant = artwork.limitedVariants.find((v) => v.id === variantId) ?? null
+    if (!pinnedVariant) {
+      return { ok: false, error: 'That edition variant is no longer available.' }
+    }
+    effectiveConfig = variantToWizardConfig(pinnedVariant)
+  } else if (variantId) {
+    return { ok: false, error: 'Invalid request. Please reload and try again.' }
   }
 
   // Defend against a wizard that had stale restrictions: if the artist
@@ -243,7 +287,7 @@ export async function createPaymentIntent(
   // combination — catches stale URLs where the wizard's selection no
   // longer satisfies the provider's per-SKU shipsTo rules.
   const availability = buildAvailability(catalog)
-  if (!configShipsTo(catalog, config, address.countryCode, availability)) {
+  if (!configShipsTo(catalog, effectiveConfig, address.countryCode, availability)) {
     return {
       ok: false,
       error:
@@ -252,14 +296,18 @@ export async function createPaymentIntent(
     }
   }
 
-  const restrictions = (artwork.printOptions as PrintRestrictions | null) ?? null
-  const clash = findConfigRestrictionClash(catalog, config, restrictions)
-  if (clash) {
-    return {
-      ok: false,
-      error:
-        `The ${clash.dimensionLabel.toLowerCase()} you chose isn't available for this artwork any more. ` +
-        'Please go back to the print options and pick a different one.',
+  // Artist restrictions are an open-edition concept; a limited variant is
+  // server-pinned so it can't clash. Only check for open editions.
+  if (!isLimited) {
+    const restrictions = (artwork.printOptions as PrintRestrictions | null) ?? null
+    const clash = findConfigRestrictionClash(catalog, effectiveConfig, restrictions)
+    if (clash) {
+      return {
+        ok: false,
+        error:
+          `The ${clash.dimensionLabel.toLowerCase()} you chose isn't available for this artwork any more. ` +
+          'Please go back to the print options and pick a different one.',
+      }
     }
   }
 
@@ -267,7 +315,7 @@ export async function createPaymentIntent(
   const galleryCents = Math.round(artistCents * GALLERY_MARKUP_RATE)
 
   const quote = getProviderQuote(providerId, {
-    config,
+    config: effectiveConfig,
     country: address.countryCode,
     artistPriceCents: artistCents,
   })
@@ -315,13 +363,38 @@ export async function createPaymentIntent(
       JSON.stringify({
         artworkId: artwork.id,
         providerId,
-        config,
+        config: effectiveConfig,
+        variantId: variantId ?? null,
         address,
         totalCents,
         currency,
       }),
     )
     .digest('hex')
+
+  // Reserve an edition number for a limited order BEFORE opening the PI.
+  // Stripe mints the PI id, so we reserve first then attach it. On a
+  // sold-out variant we stop here; on Stripe failure (catch) we release.
+  let reservedNumberId: string | null = null
+  const editionMetadata: Record<string, string> = {}
+  if (isLimited && pinnedVariant) {
+    const reserved = await reserveNextEditionNumber({
+      variantId: pinnedVariant.id,
+      buyerEmail: address.email,
+    })
+    if (!reserved.ok) {
+      if (reserved.reason === 'sold_out') {
+        return { ok: false, error: 'This edition has just sold out.' }
+      }
+      return { ok: false, error: 'That edition variant is no longer available.' }
+    }
+    reservedNumberId = reserved.numberId
+    editionMetadata.editionType = 'limited'
+    editionMetadata.variantId = pinnedVariant.id
+    editionMetadata.editionNumberId = reserved.numberId
+    editionMetadata.editionNumber = String(reserved.number)
+    editionMetadata.editionSize = String(reserved.editionSize)
+  }
 
   try {
     const pi = await stripe.paymentIntents.create(
@@ -352,11 +425,11 @@ export async function createPaymentIntent(
           artworkId: artwork.id,
           artistUserId: artwork.userId,
           providerId,
-          // Wizard config as a JSON blob — provider-agnostic. Stripe
-          // metadata values are strings up to 500 chars; a typical
-          // WizardConfig is ~200–400 chars (a dozen short ids + a
-          // small customSize/borders shape), so it fits comfortably.
-          wizardConfig: JSON.stringify(config),
+          // Wizard config as a JSON blob — provider-agnostic. For a
+          // limited edition this is the server-pinned variant config.
+          // Stripe metadata values are strings up to 500 chars; a typical
+          // WizardConfig is ~200–400 chars, so it fits comfortably.
+          wizardConfig: JSON.stringify(effectiveConfig),
           countryCode: address.countryCode,
           customerEmail: address.email,
           // Per-line breakdown for the admin order page. "Production"
@@ -366,13 +439,30 @@ export async function createPaymentIntent(
           artistCents: String(artistCents),
           galleryCents: String(galleryCents),
           customerVatCents: String(customerVatCents),
+          // Limited-edition fields (empty object spread for open editions).
+          ...editionMetadata,
         },
       },
       { idempotencyKey },
     )
 
     if (!pi.client_secret) {
+      if (reservedNumberId) await releaseEditionNumberById(reservedNumberId)
       return { ok: false, error: 'Payment could not be initialized. Please try again.' }
+    }
+
+    // Bind our reserved number to this PI. On an idempotent replay Stripe
+    // returns the ORIGINAL pi (with the original edition number in its
+    // metadata) and ignores our new params — so if the PI already carries
+    // a DIFFERENT editionNumberId, release the surplus number we just
+    // reserved and let the original stand.
+    if (reservedNumberId) {
+      const piEditionNumberId = pi.metadata?.editionNumberId
+      if (piEditionNumberId && piEditionNumberId !== reservedNumberId) {
+        await releaseEditionNumberById(reservedNumberId)
+      } else {
+        await attachPaymentIntentToReservation(reservedNumberId, pi.id)
+      }
     }
 
     return {
@@ -390,6 +480,8 @@ export async function createPaymentIntent(
       },
     }
   } catch (err) {
+    // Stripe failed after we reserved — return the number to the pool.
+    if (reservedNumberId) await releaseEditionNumberById(reservedNumberId)
     console.error('[createPaymentIntent] Stripe failed:', err)
     captureError(err, {
       flow: 'payment',

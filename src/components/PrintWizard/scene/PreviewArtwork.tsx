@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, TextureLoader } from 'three'
 import { useLoader } from '@react-three/fiber'
+import { Text } from '@react-three/drei'
 
 import {
   type Catalog,
@@ -24,7 +25,14 @@ interface PreviewArtworkProps {
   imageUrl: string
   catalog: Catalog
   config: WizardConfig
+  /** Limited editions only: "1/50" rendered bottom-left on the print face. */
+  editionLabel?: string
 }
+
+// Caveat hand for the edition number — matches theprintspace's on-print
+// numbering. Drop a Caveat .ttf at this path in public/fonts; troika
+// falls back to its default font if it's missing.
+const EDITION_FONT_URL = '/fonts/caveat-regular.ttf'
 
 const ARTWORK_Z = 0.012
 
@@ -42,7 +50,12 @@ const DEFAULT_MAT_HEX = '#f6f3ec'
  * component (Standard / Box / Floating). Print-only (`format` ≠
  * `framing`) renders the paper print without any frame chrome.
  */
-export const PreviewArtwork = ({ imageUrl, catalog, config }: PreviewArtworkProps) => {
+export const PreviewArtwork = ({
+  imageUrl,
+  catalog,
+  config,
+  editionLabel,
+}: PreviewArtworkProps) => {
   // Hooks must be called unconditionally on every render. Anything we
   // need before the `effectiveSize` early-return below has to be
   // computed and hooked-into here, otherwise React's hook order
@@ -110,6 +123,20 @@ export const PreviewArtwork = ({ imageUrl, catalog, config }: PreviewArtworkProp
           texture={texture}
           roughness={paperRoughness}
         />
+        {/* Limited-edition number — bottom-left, in the paper margin just
+            below the image, in the Caveat hand it ships with. */}
+        {editionLabel && paperBorderM > 0 && (
+          <Text
+            font={EDITION_FONT_URL}
+            color="#111111"
+            anchorX="left"
+            anchorY="middle"
+            fontSize={Math.min(paperBorderM * 0.5, heightM * 0.06)}
+            position={[-widthM / 2, -(heightM / 2 + paperBorderM * 0.5), 0.002]}
+          >
+            {editionLabel}
+          </Text>
+        )}
       </group>
     )
   }

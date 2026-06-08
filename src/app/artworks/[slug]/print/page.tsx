@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { PrintWizard } from '@/components/PrintWizard'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
+import type { LimitedVariantView } from '@/lib/editions/types'
 import prisma from '@/lib/prisma'
 
 interface PrintWizardPageProps {
@@ -33,6 +34,7 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
     where: { slug },
     include: {
       user: { select: { name: true, lastName: true } },
+      limitedVariants: { where: { published: true }, orderBy: { order: 'asc' } },
     },
   })
 
@@ -62,6 +64,34 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
   const restrictions = (artwork.printOptions as PrintRestrictions | null) ?? null
   const recommendations = (artwork.printRecommendations as PrintRecommendations | null) ?? null
 
+  // For limited editions, resolve each published variant's live stock
+  // (count of edition numbers still available) so the wizard can show
+  // remaining counts and hide sold-out variants.
+  const isLimited = artwork.editionType === 'limited'
+  let variants: LimitedVariantView[] = []
+  if (isLimited && artwork.limitedVariants.length > 0) {
+    const counts = await prisma.editionNumber.groupBy({
+      by: ['variantId'],
+      where: {
+        variantId: { in: artwork.limitedVariants.map((v) => v.id) },
+        state: 'available',
+      },
+      _count: { _all: true },
+    })
+    const remaining = new Map(counts.map((c) => [c.variantId, c._count._all]))
+    variants = artwork.limitedVariants.map((v) => ({
+      id: v.id,
+      name: v.name,
+      paperId: v.paperId,
+      printTypeId: v.printTypeId,
+      widthCm: v.widthCm,
+      heightCm: v.heightCm,
+      borderCm: v.borderCm,
+      editionSize: v.editionSize,
+      remaining: remaining.get(v.id) ?? 0,
+    }))
+  }
+
   return (
     <PrintWizard
       artwork={{
@@ -73,6 +103,8 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
         originalWidthPx,
         originalHeightPx,
         printPriceCents: artwork.printPriceCents,
+        editionType: isLimited ? 'limited' : 'open',
+        variants,
         editionLimited: artwork.printEditionLimited ?? false,
         editionTotal: artwork.printEditionTotal ?? null,
       }}

@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma'
 import type { SpecsSummary, WizardConfig } from '@/lib/print-providers'
 import { summarizeConfig } from '@/lib/print-providers'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
-import { generateAndUploadCertificate } from '@/lib/certificates/generateAndUploadCertificate'
+import { bindEditionNumberToOrder } from '@/lib/editions/reserveEditionNumber'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { sendAdminOrderNotification } from '@/lib/emails/adminOrderNotification'
 import { sendOrderPlacedEmail } from '@/lib/emails/orderPlaced'
@@ -283,6 +283,42 @@ export async function createPrintOrderFromPaymentIntent(
     return { ok: false, error: 'Database write failed.' }
   }
 
+  // Bind the reserved edition number to this order (limited editions).
+  // Idempotent — a webhook retry re-binds the same order as a no-op.
+  if (md.editionType === 'limited' && md.editionNumberId) {
+    const bound = await bindEditionNumberToOrder({
+      paymentIntentId: pi.id,
+      orderId: order.id,
+      buyerEmail,
+    })
+    if (!bound) {
+      // The reservation was released before auth landed (e.g. the auth
+      // hold raced an expiry/cancel). The buyer was still charged, so we
+      // create the order and alert the admin to reconcile the number by
+      // hand in our ledger + TPS.
+      await sendAdminCriticalAlert({
+        title: 'Paid limited-edition order has no held number',
+        problem:
+          'A limited-edition order authorized, but its reserved edition number was no longer held by this PaymentIntent (released before auth landed). The order exists but is not bound to a number.',
+        paymentIntentId: pi.id,
+        context: { orderId: order.id, variantId: md.variantId, editionNumber: md.editionNumber },
+        whatToDo: [
+          'Open the order in /admin/orders and the variant in the dashboard.',
+          'Confirm which edition number this buyer should receive (the next available).',
+          'Bind it manually in the database and mirror it as sold in TPS.',
+        ],
+      })
+    } else {
+      await logOrderEvent({
+        orderId: order.id,
+        kind: 'edition_reserved',
+        actor: 'system',
+        message: `Edition number ${md.editionNumber}/${md.editionSize} bound to order`,
+        payload: { variantId: md.variantId, number: md.editionNumber, editionSize: md.editionSize },
+      })
+    }
+  }
+
   // Buyer confirmation email — sent the first time we see this order.
   // The event log is the idempotency gate: if the webhook retries, we
   // find the prior email_sent event and skip.
@@ -325,53 +361,6 @@ export async function createPrintOrderFromPaymentIntent(
   const printImageUrl = artwork.originalImageUrl ?? artwork.imageUrl
   if (!printImageUrl) {
     return { ok: false, error: 'Artwork has no image; cannot prepare order.' }
-  }
-
-  // Generate the certificate of authenticity PDF, upload to R2, and
-  // include the public URL in the admin order page. Idempotent via the
-  // event log — if the webhook retries after a successful cert upload
-  // we reuse the stored URL instead of re-rendering.
-  let certificateUrl = order.certificateUrl
-  if (!certificateUrl) {
-    const artistName = [artwork.user?.name, artwork.user?.lastName].filter(Boolean).join(' ').trim()
-    const certRes = await generateAndUploadCertificate({
-      orderId: order.id,
-      artworkTitle: artwork.title ?? '',
-      artistName,
-      signatureImageUrl: artwork.user?.signatureUrl ?? null,
-      purchaseDate: order.createdAt,
-    })
-    if (certRes.ok) {
-      certificateUrl = certRes.url
-      await prisma.printOrder.update({
-        where: { id: order.id },
-        data: { certificateUrl: certRes.url },
-      })
-      await logOrderEvent({
-        orderId: order.id,
-        kind: 'note',
-        actor: 'system',
-        message: 'Certificate of authenticity generated',
-        payload: { url: certRes.url },
-      })
-    } else {
-      // Non-fatal: log and continue without the certificate. We'd rather
-      // create the order and ship the print than block on a cert glitch.
-      await logOrderEvent({
-        orderId: order.id,
-        kind: 'note',
-        actor: 'system',
-        message: 'Certificate generation failed (order continues without insert)',
-        payload: { error: certRes.error },
-      })
-      captureError(new Error(`Certificate generation failed: ${certRes.error}`), {
-        flow: 'cert',
-        stage: 'generate-and-upload',
-        extra: { orderId: order.id, error: certRes.error },
-        level: 'warning',
-        fingerprint: ['cert:generate-failed'],
-      })
-    }
   }
 
   // Admin order-notification email — idempotent via event log, same

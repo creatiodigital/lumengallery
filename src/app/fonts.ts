@@ -1,5 +1,17 @@
-import { Lato, EB_Garamond, Geist, Roboto, Lora, Alegreya, Manrope } from 'next/font/google'
+import { Lato, EB_Garamond, Geist, Roboto, Lora, Alegreya, Manrope, Caveat } from 'next/font/google'
 import localFont from 'next/font/local'
+
+/**
+ * Caveat — handwriting font for the limited-edition number ("1/50")
+ * rendered bottom-left on the print preview, matching theprintspace's
+ * on-print numbering style. Exposed as the `--font-caveat` CSS variable.
+ */
+export const editionNumberFont = Caveat({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-caveat',
+  display: 'swap',
+})
 
 // =============================================================================
 // MAIN TYPOGRAPHY - Change these to swap fonts across the entire site

@@ -13,6 +13,7 @@ import type { ImageMeta } from '@/components/ui/ImageUploader'
 import { Input } from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal/Modal'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
+import { SelectDropdown } from '@/components/ui/SelectDropdown'
 import { Text } from '@/components/ui/Typography'
 import {
   MIN_DPI,
@@ -20,10 +21,13 @@ import {
   TPS_PAPERS,
   TPS_WINDOW_MOUNTS,
   formatPrintSize,
+  getPrintLongEdgeBounds,
   getPrintMaxSize,
   getPrintMinSize,
 } from '@/lib/print-providers/printspace'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
+import type { LimitedVariantDraft } from '@/lib/editions/types'
+import { LimitedVariantsEditor } from './LimitedVariantsEditor'
 import {
   MAX_ARTWORK_UPLOAD_SIZE,
   MIN_ARTWORK_IMAGE_WIDTH,
@@ -68,6 +72,9 @@ export type Artwork = {
   hiddenFromExhibition: boolean
   printEnabled?: boolean
   printPriceCents?: number | null
+  editionType?: 'open' | 'limited'
+  editionLocked?: boolean
+  limitedVariants?: LimitedVariantDraft[]
   printEditionLimited?: boolean
   printEditionTotal?: number | null
   /**
@@ -100,12 +107,18 @@ export type ArtworkFormData = {
   printEnabled: boolean
   /** Euros as a string for the input field; converted to cents at submit. */
   printPriceEuros: string
-  /** Whether this artwork is a limited series — surfaces a numbered-edition
-   *  note in the buyer wizard. */
+  /** 'open' = fully configurable prints (current flow). 'limited' = numbered
+   *  edition sold via pre-defined variants only. */
+  editionType: 'open' | 'limited'
+  /** True once the artist has clicked "Ready to Sell" — the edition config
+   *  is frozen and only an admin can unblock it. */
+  editionLocked: boolean
+  /** Limited-edition variants (1 mandatory + up to 3 optional). Only used
+   *  when `editionType === 'limited'`. */
+  limitedVariants: LimitedVariantDraft[]
+  /** @deprecated legacy flag, superseded by `editionType`. */
   printEditionLimited: boolean
-  /** Total prints in the series. Empty string when unset. Number-as-string
-   *  for the input field; parsed at submit. Meaningful only when
-   *  `printEditionLimited` is true. */
+  /** @deprecated legacy field, superseded by `limitedVariants`. */
   printEditionTotal: string
   /**
    * Artist-set restrictions in canonical PrintRestrictions shape.
@@ -133,6 +146,9 @@ export const getInitialFormData = (): ArtworkFormData => ({
   hiddenFromExhibition: false,
   printEnabled: false,
   printPriceEuros: '',
+  editionType: 'open',
+  editionLocked: false,
+  limitedVariants: [],
   printEditionLimited: false,
   printEditionTotal: '',
   printOptions: null,
@@ -154,6 +170,9 @@ export const populateFormData = (data: Artwork): ArtworkFormData => ({
   printEnabled: data.printEnabled ?? false,
   printPriceEuros:
     typeof data.printPriceCents === 'number' ? (data.printPriceCents / 100).toString() : '',
+  editionType: data.editionType === 'limited' ? 'limited' : 'open',
+  editionLocked: data.editionLocked ?? false,
+  limitedVariants: data.limitedVariants ?? [],
   printEditionLimited: data.printEditionLimited ?? false,
   printEditionTotal:
     typeof data.printEditionTotal === 'number' ? String(data.printEditionTotal) : '',
@@ -181,6 +200,17 @@ type ArtworkEditFormProps = {
   onPrintOptionsChange?: (next: PrintRestrictions | null) => void
   /** Replace the whole printRecommendations object. Paper IDs only for now. */
   onPrintRecommendationsChange?: (next: PrintRecommendations | null) => void
+  /** Switch between open and limited editions. */
+  onEditionTypeChange?: (next: 'open' | 'limited') => void
+  /** Replace the whole limited-variants array (dashboard editor). */
+  onVariantsChange?: (next: LimitedVariantDraft[]) => void
+  /** True when the current viewer is an admin / superAdmin — they can
+   *  unblock a locked artwork; artists cannot. */
+  isAdmin?: boolean
+  /** "Ready to Sell" — lock the edition config (and publish variants). */
+  onReadyToSell?: () => void
+  /** Admin-only: unblock a locked artwork so its config is editable. */
+  onUnblock?: () => void
   onImageUpload: (file: File, previewUrl?: string) => Promise<void>
   onImageRemove: () => void | Promise<void>
   onSoundUpload?: (file: File) => Promise<void>
@@ -368,6 +398,11 @@ export const ArtworkEditForm = ({
   onFormChange,
   onPrintOptionsChange,
   onPrintRecommendationsChange,
+  onEditionTypeChange,
+  onVariantsChange,
+  isAdmin = false,
+  onReadyToSell,
+  onUnblock,
   onImageUpload,
   onImageRemove,
   onSoundUpload,
@@ -408,6 +443,15 @@ export const ArtworkEditForm = ({
 
   // Priority: a pending pick > the saved original (server) > CDN-probed meta.
   const imageMeta = pendingClientMeta ?? serverMeta ?? clientMeta
+
+  // Aspect ratio (width / height) + long-edge bounds for the limited-edition
+  // variant size inputs — same source the buyer wizard uses, so variant
+  // sizing behaves identically.
+  const editionAspectRatio =
+    imageMeta && imageMeta.width > 0 && imageMeta.height > 0
+      ? imageMeta.width / imageMeta.height
+      : 1
+  const editionLongEdgeBounds = getPrintLongEdgeBounds(imageMeta)
 
   // TPS supports custom sizes (aspect-locked), so eligibility is
   // sample-based: walk a series of long-edge values, find any that
@@ -612,37 +656,80 @@ export const ArtworkEditForm = ({
               </p>
 
               <div style={{ marginTop: 'var(--space-4)' }}>
-                <Checkbox
-                  checked={formData.printEditionLimited}
-                  onChange={(e) => onFormChange('printEditionLimited', e.target.checked)}
-                  label="This artwork is a limited edition"
+                <label className={dashboardStyles.field}>Edition type</label>
+                <SelectDropdown<'open' | 'limited'>
+                  options={[
+                    { value: 'open', label: 'Open Editions' },
+                    { value: 'limited', label: 'Limited Editions' },
+                  ]}
+                  value={formData.editionType}
+                  disabled={formData.editionLocked && !isAdmin}
+                  onChange={(v) => onEditionTypeChange?.(v)}
                 />
-                <div
-                  className={dashboardStyles.field}
-                  style={{ maxWidth: 240, marginTop: 'var(--space-2)' }}
-                >
-                  <label htmlFor="printEditionTotal">Total prints in the series</label>
-                  <Input
-                    id="printEditionTotal"
-                    type="text"
-                    inputMode="numeric"
-                    size="medium"
-                    value={formData.printEditionTotal}
-                    disabled={!formData.printEditionLimited}
-                    onChange={(e) =>
-                      onFormChange(
-                        'printEditionTotal',
-                        // Integer only.
-                        e.target.value.replace(/[^0-9]/g, ''),
-                      )
-                    }
-                    placeholder="50"
-                  />
-                  <p className={styles.printDisabledHint} style={{ marginTop: 'var(--space-2)' }}>
-                    When enabled, buyers see &quot;limited edition of{' '}
-                    {formData.printEditionTotal || 'N'}&quot; on the print page.
+                <p className={styles.printDisabledHint} style={{ marginTop: 'var(--space-2)' }}>
+                  {formData.editionType === 'limited'
+                    ? 'Numbered, print-only editions sold in pre-defined sizes. Buyers pick a variant — no framing or custom sizing.'
+                    : 'Fully configurable prints — buyers choose size, paper and framing. Unlimited.'}
+                </p>
+              </div>
+
+              {formData.editionType === 'limited' && (
+                <div style={{ marginTop: 'var(--space-4)' }}>
+                  <h4 className={dashboardStyles.sectionTitle}>Edition variants</h4>
+                  <p className={styles.printDisabledHint}>
+                    Define 1–4 variants. Each is its own numbered edition (e.g. “Small” 1/50). Sizes
+                    must be distinct. Once a variant is published its size and edition size are
+                    locked.
                   </p>
+                  <LimitedVariantsEditor
+                    variants={formData.limitedVariants}
+                    aspectRatio={editionAspectRatio}
+                    longEdgeBounds={editionLongEdgeBounds}
+                    onChange={(next) => onVariantsChange?.(next)}
+                    locked={formData.editionLocked && !isAdmin}
+                  />
                 </div>
+              )}
+
+              {/* Go-live lock. "Ready to Sell" freezes the edition config
+                  (artist confirmation); only an admin can unblock it. */}
+              <div style={{ marginTop: 'var(--space-5)' }}>
+                {formData.editionLocked ? (
+                  <div className={styles.printDisabledHint}>
+                    <strong>This artwork is locked for sale.</strong>{' '}
+                    {isAdmin
+                      ? 'You can unblock it to change the edition type.'
+                      : 'The edition type can no longer be changed — ask an admin to unblock it.'}
+                    {isAdmin && onUnblock && (
+                      <div style={{ marginTop: 'var(--space-2)' }}>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          label="Unblock artwork"
+                          onClick={onUnblock}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  onReadyToSell && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        label="Ready to Sell"
+                        onClick={onReadyToSell}
+                      />
+                      <p
+                        className={styles.printDisabledHint}
+                        style={{ marginTop: 'var(--space-2)' }}
+                      >
+                        Confirms this artwork is ready to sell and freezes its edition setup. Once you
+                        click, you can’t change the edition type unless an admin unblocks it.
+                      </p>
+                    </>
+                  )
+                )}
               </div>
             </>
           )}
@@ -885,11 +972,14 @@ export const ArtworkEditForm = ({
         </div>
       )}
 
-      {/* Per-artwork printing restrictions. Stored in canonical
-          PrintRestrictions shape (`{ allowed: { dimId: ids[] } }`). */}
-      {formData.artworkType === 'image' && formData.printEnabled && (
-        <div className={dashboardStyles.section}>
-          <h3 className={dashboardStyles.sectionTitle}>Printing restrictions</h3>
+      {/* Per-artwork printing restrictions. Open editions only — limited
+          editions are constrained to their pre-defined variants. Stored in
+          canonical PrintRestrictions shape (`{ allowed: { dimId: ids[] } }`). */}
+      {formData.artworkType === 'image' &&
+        formData.printEnabled &&
+        formData.editionType === 'open' && (
+          <div className={dashboardStyles.section}>
+            <h3 className={dashboardStyles.sectionTitle}>Printing restrictions</h3>
           <p className={dashboardStyles.sectionDescription}>
             Advanced — you don&apos;t need to touch this unless you have very specific reasons not
             to offer a particular paper, frame type or passepartout for this artwork.
@@ -932,13 +1022,15 @@ export const ArtworkEditForm = ({
         </div>
       )}
 
-      {/* Per-artwork paper recommendations. Soft hint — does not filter,
-          just surfaces a check-circle in the buyer's paper picker.
-          Vetoed papers are hidden so the artist can't recommend a paper
-          buyers can't pick. */}
-      {formData.artworkType === 'image' && formData.printEnabled && (
-        <div className={dashboardStyles.section}>
-          <h3 className={dashboardStyles.sectionTitle}>Printing recommendations</h3>
+      {/* Per-artwork paper recommendations. Open editions only. Soft hint —
+          does not filter, just surfaces a check-circle in the buyer's paper
+          picker. Vetoed papers are hidden so the artist can't recommend a
+          paper buyers can't pick. */}
+      {formData.artworkType === 'image' &&
+        formData.printEnabled &&
+        formData.editionType === 'open' && (
+          <div className={dashboardStyles.section}>
+            <h3 className={dashboardStyles.sectionTitle}>Printing recommendations</h3>
           <p className={dashboardStyles.sectionDescription}>
             Advanced — pick the specific paper types you&apos;d recommend for this artwork. Buyers
             see a checkmark next to your picks in the print wizard; every paper stays available
