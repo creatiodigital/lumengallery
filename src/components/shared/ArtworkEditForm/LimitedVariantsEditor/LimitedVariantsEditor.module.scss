@@ -53,6 +53,30 @@
   }
 }
 
+.sizeRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.dimsCol {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.borderField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 0 0 120px;
+
+  > span:first-child {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text-primary);
+  }
+}
+
 .error {
   margin-top: var(--space-1);
   font-size: var(--text-xs);

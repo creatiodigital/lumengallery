@@ -3,12 +3,11 @@
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { SelectDropdown, type SelectOption } from '@/components/ui/SelectDropdown'
-import { Slider } from '@/components/ui/Slider'
 import { CustomSizeInputs } from '@/components/PrintWizard/CustomSizeInputs'
 
 import { LIMITED_BORDER_MIN_CM, MAX_LIMITED_VARIANTS } from '@/lib/editions/validateVariant'
 import type { LimitedVariantDraft } from '@/lib/editions/types'
-import { TPS_BORDER_BOUNDS, TPS_PAPERS, TPS_SIZE_BOUNDS } from '@/lib/print-providers/printspace'
+import { TPS_PAPERS, TPS_SIZE_BOUNDS } from '@/lib/print-providers/printspace'
 import type { PrintLongEdgeBounds } from '@/lib/print-providers/printspace'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
@@ -123,35 +122,42 @@ export const LimitedVariantsEditor = ({
             </div>
 
             <div className={dashboardStyles.field}>
-              <label>Print size</label>
-              <CustomSizeInputs
-                custom={SIZE_CUSTOM}
-                aspectRatio={aspectRatio}
-                longEdgeBounds={longEdgeBounds}
-                customSize={{ widthCm: variant.widthCm, heightCm: variant.heightCm }}
-                disabled={rowLocked}
-                onChange={(size) => update(index, { widthCm: size.widthCm, heightCm: size.heightCm })}
-              />
-              {duplicateSize && (
-                <p className={styles.error}>
-                  Each variant must have a distinct print size — this one clashes with another.
-                </p>
-              )}
-            </div>
-
-            <div className={dashboardStyles.field}>
-              <label>
-                Border: {variant.borderCm} cm{' '}
-                <span className={styles.hint}>(holds the edition number + room to frame)</span>
-              </label>
-              <Slider
-                min={LIMITED_BORDER_MIN_CM}
-                max={TPS_BORDER_BOUNDS.maxCm}
-                step={1}
-                value={Math.max(LIMITED_BORDER_MIN_CM, variant.borderCm)}
-                disabled={rowLocked}
-                onChange={(v) => update(index, { borderCm: v })}
-              />
+              <label>Print size &amp; border (cm)</label>
+              <div className={styles.sizeRow}>
+                <div className={styles.dimsCol}>
+                  <CustomSizeInputs
+                    custom={SIZE_CUSTOM}
+                    aspectRatio={aspectRatio}
+                    longEdgeBounds={longEdgeBounds}
+                    customSize={{ widthCm: variant.widthCm, heightCm: variant.heightCm }}
+                    disabled={rowLocked}
+                    showSlider={false}
+                    onChange={(size) =>
+                      update(index, { widthCm: size.widthCm, heightCm: size.heightCm })
+                    }
+                  />
+                  {duplicateSize && (
+                    <p className={styles.error}>
+                      Each variant must have a distinct print size — this one clashes with another.
+                    </p>
+                  )}
+                </div>
+                <label className={styles.borderField}>
+                  <span>Border (cm)</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    size="medium"
+                    value={variant.borderCm ? String(variant.borderCm) : ''}
+                    disabled={rowLocked}
+                    placeholder={String(LIMITED_BORDER_MIN_CM)}
+                    onChange={(e) =>
+                      update(index, { borderCm: Number(e.target.value.replace(/[^0-9]/g, '')) || 0 })
+                    }
+                  />
+                  <span className={styles.hint}>min {LIMITED_BORDER_MIN_CM} cm, whole cm</span>
+                </label>
+              </div>
             </div>
 
             <div className={dashboardStyles.field} style={{ maxWidth: 200 }}>

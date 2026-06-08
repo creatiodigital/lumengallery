@@ -14,6 +14,7 @@
  */
 import { TPS_PAPERS, TPS_SIZE_BOUNDS, TPS_BORDER_BOUNDS } from '@/lib/print-providers/printspace/data'
 import type { TpsPrintTypeId } from '@/lib/print-providers/printspace/data'
+import { getPrintLongEdgeBounds } from '@/lib/print-providers/printspace/sizeBounds'
 
 /**
  * Minimum paper border for a limited edition, in cm. Large enough for
@@ -86,6 +87,21 @@ export function validateVariantInput(args: ValidateVariantArgs): ValidateVariant
   const variantRatio = longCm / shortCm
   if (Math.abs(variantRatio - artworkRatio) / artworkRatio > ASPECT_TOLERANCE) {
     return { ok: false, error: 'Size must match the artwork’s aspect ratio.' }
+  }
+
+  // File resolution + DPI ceiling: the variant can't be larger than the
+  // file can print sharply. Same bound the dashboard slider + buyer wizard
+  // use — enforced here so a tampered save can't exceed it either.
+  const bounds = getPrintLongEdgeBounds({ width: artwork.widthPx, height: artwork.heightPx })
+  if (!bounds) {
+    return { ok: false, error: 'This image is too low-resolution to print at any size.' }
+  }
+  // Small tolerance for cm rounding between the slider and this check.
+  if (longCm < bounds.minLongCm - 0.5 || longCm > bounds.maxLongCm + 0.5) {
+    return {
+      ok: false,
+      error: `For this file, the longest side must be between ${bounds.minLongCm.toFixed(0)} cm and ${bounds.maxLongCm.toFixed(0)} cm.`,
+    }
   }
 
   if (

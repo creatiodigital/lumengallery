@@ -12,7 +12,6 @@ import {
   populateFormData,
 } from '@/components/shared/ArtworkEditForm'
 import type { Artwork, ArtworkFormData } from '@/components/shared/ArtworkEditForm'
-import { isAdminOrAbove } from '@/lib/authUtils'
 import type { LimitedVariantDraft } from '@/lib/editions/types'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 
@@ -148,7 +147,10 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
     setFormData((prev) => ({ ...prev, limitedVariants: next }))
   }
 
-  const isAdmin = isAdminOrAbove(session?.user?.userType)
+  // Inline role check — don't import @/lib/authUtils here; it pulls in the
+  // server-only auth + prisma chain and breaks this client component.
+  const userType = session?.user?.userType
+  const isAdmin = userType === 'admin' || userType === 'superAdmin'
 
   // "Ready to Sell" — artist confirms the artwork is good to sell. Warns,
   // then locks the edition config (and publishes limited variants).

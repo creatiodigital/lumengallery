@@ -22,6 +22,9 @@ interface CustomSizeInputsProps {
   customSize: WizardConfig['customSize']
   disabled: boolean
   onChange: (size: { widthCm: number; heightCm: number }) => void
+  /** Show the long-edge slider. Default true (buyer wizard / interactive
+   *  3D). The dashboard variant editor passes false — inputs only. */
+  showSlider?: boolean
 }
 
 export const CustomSizeInputs = ({
@@ -31,6 +34,7 @@ export const CustomSizeInputs = ({
   customSize,
   disabled,
   onChange,
+  showSlider = true,
 }: CustomSizeInputsProps) => {
   // Hooks must be called unconditionally on every render. We don't
   // bail out on `!custom` until after they've been declared, so the
@@ -140,35 +144,44 @@ export const CustomSizeInputs = ({
           aria-label="Custom print width in centimeters"
         />
       </label>
-      <div className={styles.customSizeSlider}>
-        <Slider
-          min={effectiveMinLongCm}
-          max={effectiveMaxLongCm}
-          step={custom.stepCm}
-          value={Math.min(effectiveMaxLongCm, Math.max(effectiveMinLongCm, currentLongCm))}
-          disabled={disabled}
-          onChange={(v) => commitLongEdge(v)}
-          aria-label="Print size"
-        />
-        <div className={styles.customSizeRangeLabels}>
-          <span>
-            {formatPrintSize(
-              isPortrait ? effectiveMinLongCm : minShortCm,
-              isPortrait ? minShortCm : effectiveMinLongCm,
-            )}
-          </span>
-          <span>
-            {formatPrintSize(
-              isPortrait ? effectiveMaxLongCm : maxShortCm,
-              isPortrait ? maxShortCm : effectiveMaxLongCm,
-            )}
-          </span>
+      {showSlider && (
+        <div className={styles.customSizeSlider}>
+          <Slider
+            min={effectiveMinLongCm}
+            max={effectiveMaxLongCm}
+            step={custom.stepCm}
+            value={Math.min(effectiveMaxLongCm, Math.max(effectiveMinLongCm, currentLongCm))}
+            disabled={disabled}
+            onChange={(v) => commitLongEdge(v)}
+            aria-label="Print size"
+          />
+          <div className={styles.customSizeRangeLabels}>
+            <span>
+              {formatPrintSize(
+                isPortrait ? effectiveMinLongCm : minShortCm,
+                isPortrait ? minShortCm : effectiveMinLongCm,
+              )}
+            </span>
+            <span>
+              {formatPrintSize(
+                isPortrait ? effectiveMaxLongCm : maxShortCm,
+                isPortrait ? maxShortCm : effectiveMaxLongCm,
+              )}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
       {aspectLocked && (
         <p className={styles.customSizeHint}>
-          Height and width are locked to this artwork&apos;s aspect ratio — change either, the other
-          follows. This artwork can be printed at any size in the range above.
+          {showSlider
+            ? "Height and width are locked to this artwork's aspect ratio — change either, the other follows. This artwork can be printed at any size in the range above."
+            : `Locked to the artwork's aspect ratio. Printable range for this file: ${formatPrintSize(
+                isPortrait ? effectiveMinLongCm : minShortCm,
+                isPortrait ? minShortCm : effectiveMinLongCm,
+              )} – ${formatPrintSize(
+                isPortrait ? effectiveMaxLongCm : maxShortCm,
+                isPortrait ? maxShortCm : effectiveMaxLongCm,
+              )}.`}
         </p>
       )}
     </div>

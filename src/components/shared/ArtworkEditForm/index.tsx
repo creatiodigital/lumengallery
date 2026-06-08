@@ -12,8 +12,8 @@ import { ImageUploader } from '@/components/ui/ImageUploader'
 import type { ImageMeta } from '@/components/ui/ImageUploader'
 import { Input } from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal/Modal'
+import { RadioGroup } from '@/components/ui/RadioGroup'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
-import { SelectDropdown } from '@/components/ui/SelectDropdown'
 import { Text } from '@/components/ui/Typography'
 import {
   MIN_DPI,
@@ -656,11 +656,12 @@ export const ArtworkEditForm = ({
               </p>
 
               <div style={{ marginTop: 'var(--space-4)' }}>
-                <label className={dashboardStyles.field}>Edition type</label>
-                <SelectDropdown<'open' | 'limited'>
+                <label className={dashboardStyles.field}>Series type</label>
+                <RadioGroup<'open' | 'limited'>
+                  name="editionType"
                   options={[
-                    { value: 'open', label: 'Open Editions' },
-                    { value: 'limited', label: 'Limited Editions' },
+                    { value: 'open', label: 'Open Edition' },
+                    { value: 'limited', label: 'Limited Edition' },
                   ]}
                   value={formData.editionType}
                   disabled={formData.editionLocked && !isAdmin}
