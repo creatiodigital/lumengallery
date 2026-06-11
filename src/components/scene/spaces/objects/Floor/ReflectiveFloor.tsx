@@ -1,9 +1,10 @@
 import { useMemo, useRef } from 'react'
 import { useSelector } from 'react-redux'
-import { MeshReflectorMaterial, useTexture } from '@react-three/drei'
+import { MeshReflectorMaterial } from '@react-three/drei'
 import { Mesh, RepeatWrapping, SRGBColorSpace, Vector2 } from 'three'
 import type { Vector3Tuple } from 'three'
 import type { RootState } from '@/redux/store'
+import { useResilientTexture } from '@/components/scene/useResilientTexture'
 
 // Floor reflections disabled for performance
 const ENABLE_REFLECTIONS = false
@@ -155,7 +156,7 @@ Object.entries(MATERIAL_CONFIG).forEach(([material, config]) => {
   if (config.bump) paths.bumpMap = `${basePath}/${config.bump}${v}`
   if (config.metallic) paths.metalnessMap = `${basePath}/${config.metallic}${v}`
   if (config.ao) paths.aoMap = `${basePath}/${config.ao}${v}`
-  useTexture.preload(Object.values(paths))
+  useResilientTexture.preload(Object.values(paths))
 })
 
 /**
@@ -240,8 +241,10 @@ const ReflectiveFloor: React.FC<ReflectiveFloorProps> = ({
     return paths
   }, [texturePath, materialConfig])
 
-  // Load PBR textures with correct extensions per material
-  const textures = useTexture(texturePaths)
+  // Load PBR textures with correct extensions per material. Uses the
+  // resilient loader so a transient/aborted request retries and degrades
+  // gracefully instead of throwing into the Canvas and crashing the scene.
+  const textures = useResilientTexture(texturePaths)
 
   // Configure texture tiling, offset, and rotation
   useMemo(() => {

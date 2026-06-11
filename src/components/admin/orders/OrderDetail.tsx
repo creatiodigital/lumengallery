@@ -1034,29 +1034,6 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           </div>
         )}
 
-        {order.certificateUrl && (
-          <div style={{ marginTop: 12 }}>
-            <div
-              style={{
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                opacity: 0.6,
-                marginBottom: 4,
-              }}
-            >
-              Certificate of authenticity
-            </div>
-            <a
-              href={order.certificateUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: 12 }}
-            >
-              Open PDF
-            </a>
-          </div>
-        )}
       </div>
 
       {(() => {

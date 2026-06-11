@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { createPrintOrderFromPaymentIntent } from '@/lib/orders/createPrintOrderFromPaymentIntent'
 import { logOrderEvent } from '@/lib/orders/logOrderEvent'
@@ -67,6 +68,12 @@ export async function POST(req: NextRequest) {
           where: { paymentIntentId: pi.id },
           select: { id: true },
         })
+        // Return any held limited-edition number to the pool. `canceled`
+        // also fires when an auth hold expires (~7 days), so this covers
+        // the expiry case. Idempotent + a no-op for open editions.
+        await releaseEditionNumberForPaymentIntent(pi.id).catch((err) =>
+          console.warn('[stripe-webhook] release edition number failed:', err),
+        )
         await prisma.printOrder
           .updateMany({
             where: { paymentIntentId: pi.id },
@@ -92,6 +99,13 @@ export async function POST(req: NextRequest) {
           select: { id: true },
         })
         const failed = event.type === 'payment_intent.payment_failed'
+        // A hard failure releases any held edition number; 'processing'
+        // is transient so we leave the reservation in place.
+        if (failed) {
+          await releaseEditionNumberForPaymentIntent(pi.id).catch((err) =>
+            console.warn('[stripe-webhook] release edition number failed:', err),
+          )
+        }
         await prisma.printOrder
           .updateMany({
             where: { paymentIntentId: pi.id },

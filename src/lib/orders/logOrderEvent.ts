@@ -13,6 +13,11 @@ export type OrderEventKind =
   | 'email_failed'
   | 'admin_action'
   | 'note'
+  // Limited-edition ledger
+  | 'edition_reserved'
+  | 'edition_sold'
+  | 'edition_released'
+  | 'edition_mirrored'
 
 export type OrderEventActor = 'stripe' | 'system' | `admin:${string}`
 

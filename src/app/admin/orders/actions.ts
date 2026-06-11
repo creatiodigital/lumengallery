@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import { isAdminOrAbove } from '@/lib/authUtils'
 import { summarizeConfig, type SpecsSummary, type WizardConfig } from '@/lib/print-providers'
+import { TPS_PAPERS, TPS_PRINT_TYPES } from '@/lib/print-providers/printspace'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { sendAdminOrderCancelledAlert } from '@/lib/emails/adminOrderCancelled'
 import { sendArtistPayoutEmail } from '@/lib/emails/artistPayout'
@@ -11,6 +12,8 @@ import { sendOrderDeliveredEmail } from '@/lib/emails/orderDelivered'
 import { sendOrderInProductionEmail } from '@/lib/emails/orderInProduction'
 import { sendOrderShippedEmail } from '@/lib/emails/orderShipped'
 import { sendRefundIssuedEmail } from '@/lib/emails/refundIssued'
+import { markEditionNumberSold } from '@/lib/editions/reserveEditionNumber'
+import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { captureError } from '@/lib/observability/captureError'
 import { logOrderEvent } from '@/lib/orders/logOrderEvent'
 import prisma from '@/lib/prisma'
@@ -140,7 +143,18 @@ export type AdminOrderDetail = AdminOrderRow & {
   assetUrl: string | null
   /** Web-sized thumbnail for visual ID at the top of the detail page. */
   thumbnailUrl: string | null
-  certificateUrl: string | null
+  /** Limited-edition fulfillment block. Null for open editions. The admin
+   *  pastes `tpsSku` into TPS's Sell-as-Print manual order and ticks the
+   *  edition number as sold. */
+  edition: {
+    variantName: string
+    number: number
+    editionSize: number
+    state: string
+    label: string // "Small #7/50"
+    tpsSku: string // copy-ready manual-fulfillment line
+    mirroredInTpsAt: string | null
+  } | null
   events: AdminOrderEvent[]
 }
 
@@ -198,6 +212,67 @@ export async function listArtistPayouts(): Promise<
   return { ok: true, payouts }
 }
 
+export type EditionSaleRow = {
+  artworkTitle: string
+  artworkSlug: string | null
+  variantName: string
+  number: number
+  editionSize: number
+  state: string // 'reserved' | 'sold'
+  buyerName: string | null
+  buyerEmail: string | null
+  orderId: string | null
+  date: string | null
+  mirroredInTps: boolean
+}
+
+/**
+ * The limited-edition sales ledger — every reserved/sold edition number,
+ * who holds it, for which artwork + variant, and whether it's been
+ * mirrored as sold in TPS. Our authoritative record of which numbered
+ * copies are out there. Newest first.
+ */
+export async function listEditionSales(): Promise<
+  { ok: true; sales: EditionSaleRow[] } | { ok: false; error: string }
+> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const rows = await prisma.editionNumber.findMany({
+    where: { state: { in: ['reserved', 'sold'] } },
+    orderBy: [{ soldAt: 'desc' }, { reservedAt: 'desc' }],
+    take: 1000,
+    include: {
+      variant: { include: { artwork: { select: { title: true, slug: true } } } },
+      order: {
+        select: {
+          id: true,
+          buyerName: true,
+          buyerEmail: true,
+          createdAt: true,
+          tpsEditionMirroredAt: true,
+        },
+      },
+    },
+  })
+
+  const sales: EditionSaleRow[] = rows.map((r) => ({
+    artworkTitle: r.variant.artwork.title ?? '(untitled)',
+    artworkSlug: r.variant.artwork.slug,
+    variantName: r.variant.name,
+    number: r.number,
+    editionSize: r.variant.editionSize,
+    state: r.state,
+    buyerName: r.order?.buyerName ?? null,
+    buyerEmail: r.order?.buyerEmail ?? r.buyerEmail ?? null,
+    orderId: r.order?.id ?? null,
+    date: (r.soldAt ?? r.reservedAt)?.toISOString() ?? null,
+    mirroredInTps: Boolean(r.order?.tpsEditionMirroredAt),
+  }))
+
+  return { ok: true, sales }
+}
+
 export async function getOrderDetail(
   orderId: string,
 ): Promise<{ ok: true; order: AdminOrderDetail } | { ok: false; error: string }> {
@@ -226,6 +301,7 @@ export async function getOrderDetail(
         },
       },
       events: { orderBy: { at: 'desc' } },
+      editionNumber: { include: { variant: true } },
     },
   })
   if (!r) return { ok: false, error: 'Order not found.' }
@@ -244,6 +320,30 @@ export async function getOrderDetail(
     specs = summarizeConfig(catalog, r.printConfig as WizardConfig)
   } catch {
     // non-fatal
+  }
+
+  // Limited-edition fulfillment block — the copy-ready line the admin
+  // pastes into TPS's Sell-as-Print manual order, plus the number to tick
+  // as sold. Null for open editions.
+  let edition: AdminOrderDetail['edition'] = null
+  if (r.editionNumber) {
+    const en = r.editionNumber
+    const v = en.variant
+    const paperLabel = TPS_PAPERS.find((p) => p.id === v.paperId)?.label ?? v.paperId
+    const printTypeLabel = TPS_PRINT_TYPES.find((t) => t.id === v.printTypeId)?.label ?? v.printTypeId
+    const label = `${v.name} #${en.number}/${v.editionSize}`
+    const tpsSku =
+      `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm` +
+      ` + ${v.borderCm}cm border · Print Only · ${en.number}/${v.editionSize}`
+    edition = {
+      variantName: v.name,
+      number: en.number,
+      editionSize: v.editionSize,
+      state: en.state,
+      label,
+      tpsSku,
+      mirroredInTpsAt: r.tpsEditionMirroredAt?.toISOString() ?? null,
+    }
   }
 
   const order: AdminOrderDetail = {
@@ -282,7 +382,7 @@ export async function getOrderDetail(
     specs,
     assetUrl: r.artwork.originalImageUrl ?? r.artwork.imageUrl ?? null,
     thumbnailUrl: r.artwork.imageUrl ?? r.artwork.originalImageUrl ?? null,
-    certificateUrl: r.certificateUrl,
+    edition,
     events: r.events.map((e) => ({
       id: e.id,
       at: e.at.toISOString(),
@@ -549,6 +649,10 @@ export async function refundOrder(
       data: { paymentStatus: 'refunded' },
     })
 
+    // Return the edition number to the pool on refund (default policy:
+    // release + audit). Idempotent; no-op for open editions.
+    await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
+
     await logOrderEvent({
       orderId: order.id,
       kind: 'admin_action',
@@ -728,6 +832,10 @@ export async function deleteOrder(
     }
   }
 
+  // Free any held edition number before the order row goes away (the FK
+  // would null out on delete, but we also want the state reset).
+  await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
+
   try {
     await prisma.$transaction([
       prisma.printOrderEvent.deleteMany({ where: { orderId } }),
@@ -797,12 +905,63 @@ export async function markPlaced(
     data: { fulfillmentStatus: STAGE_PLACED, paymentStatus: 'succeeded' },
   })
 
+  // Confirm the held edition number as sold at capture (limited editions
+  // only; a no-op for open orders). Our ledger is authoritative — the
+  // admin still mirrors this number as sold in TPS by hand.
+  await markEditionNumberSold(order.paymentIntentId)
+  const soldNumber = await prisma.editionNumber.findUnique({
+    where: { orderId: order.id },
+    select: { number: true, variant: { select: { name: true, editionSize: true } } },
+  })
+  if (soldNumber) {
+    await logOrderEvent({
+      orderId: order.id,
+      kind: 'edition_sold',
+      actor: `admin:${guard.session.user.id}`,
+      message: `Edition ${soldNumber.variant.name} ${soldNumber.number}/${soldNumber.variant.editionSize} confirmed sold`,
+      payload: { number: soldNumber.number, editionSize: soldNumber.variant.editionSize },
+    })
+  }
+
   await logOrderEvent({
     orderId: order.id,
     kind: 'admin_action',
     actor: `admin:${guard.session.user.id}`,
     message: 'Marked placed at The Print Space (payment captured)',
     payload: {},
+  })
+
+  return { ok: true }
+}
+
+/**
+ * Admin CTA: the admin has manually mirrored this order's edition number
+ * as "sold" in TPS's Manage Edition modal. Our ledger stays the source of
+ * truth; this just records that the by-hand TPS step is done so it can't
+ * be forgotten.
+ */
+export async function markEditionMirroredInTps(
+  orderId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const en = await prisma.editionNumber.findUnique({
+    where: { orderId },
+    select: { number: true, variant: { select: { name: true, editionSize: true } } },
+  })
+  if (!en) return { ok: false, error: 'This order has no edition number to mirror.' }
+
+  await prisma.printOrder.update({
+    where: { id: orderId },
+    data: { tpsEditionMirroredAt: new Date() },
+  })
+  await logOrderEvent({
+    orderId,
+    kind: 'edition_mirrored',
+    actor: `admin:${guard.session.user.id}`,
+    message: `Edition ${en.variant.name} ${en.number}/${en.variant.editionSize} mirrored as sold in TPS`,
+    payload: { number: en.number, editionSize: en.variant.editionSize },
   })
 
   return { ok: true }
@@ -915,6 +1074,11 @@ export async function markRejected(
       : 'Marked rejected (manual refund required)',
     payload: { reason: trimmedReason, voided, priorPaymentStatus: order.paymentStatus },
   })
+
+  // Return the edition number to the pool. The print was never produced
+  // on a reject, so even a captured (sold) number is freed. Idempotent
+  // and a no-op for open editions.
+  await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
 
   await maybeSendBuyerTransitionEmail(order.id, STAGE_REJECTED, { trackingUrl: null })
 

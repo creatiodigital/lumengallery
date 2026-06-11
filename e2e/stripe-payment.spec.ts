@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 import { deletePrintOrderByPaymentIntent } from './cleanup-helpers'
+import { setupOpenFixture, teardownOpenFixture, type OpenFixture } from './edition-helpers'
 import {
   TEST_CARDS,
   buildFixturePayment,
@@ -26,12 +27,22 @@ import {
  */
 
 test.describe('Stripe payment', () => {
+  // Self-seeded throwaway OPEN artwork — independent of the shared fixture
+  // artwork's editionType (which drifts to 'limited' during limited QA).
+  let open: OpenFixture
+  test.beforeAll(async () => {
+    open = await setupOpenFixture()
+  })
+  test.afterAll(async () => {
+    await teardownOpenFixture(open)
+  })
+
   test('valid card authorizes the PaymentIntent (manual capture) and reaches confirmation', async ({
     page,
   }) => {
     test.setTimeout(120_000)
 
-    const { slug, paymentIntentId, stash } = await buildFixturePayment('happy')
+    const { slug, paymentIntentId, stash } = await buildFixturePayment('happy', open.slug)
 
     try {
       await seedPaymentSession(page, slug, stash)
@@ -60,7 +71,7 @@ test.describe('Stripe payment', () => {
   test('declined card surfaces an error and does not authorize', async ({ page }) => {
     test.setTimeout(120_000)
 
-    const { slug, paymentIntentId, stash } = await buildFixturePayment('declined')
+    const { slug, paymentIntentId, stash } = await buildFixturePayment('declined', open.slug)
 
     try {
       await seedPaymentSession(page, slug, stash)
