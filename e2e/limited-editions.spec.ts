@@ -9,6 +9,8 @@ import {
   editionNumberStates,
   setupLimitedFixture,
   teardownLimitedFixture,
+  setupOpenFixture,
+  teardownOpenFixture,
 } from './edition-helpers'
 import { buildFixtureConfig, cancelPaymentIntent, fixtureAddress } from './stripe-helpers'
 
@@ -35,18 +37,23 @@ const MINIMAL_CONFIG: WizardConfig = { values: {} }
 test.describe('Edition types — createPaymentIntent', () => {
   test.describe('Open editions', () => {
     test('a supplied variantId is rejected on an open edition', async () => {
-      const { slug, config } = await buildFixtureConfig()
+      const open = await setupOpenFixture()
+      try {
+        const { slug, config } = await buildFixtureConfig(open.slug)
 
-      const res = await createPaymentIntent({
-        artworkSlug: slug,
-        providerId: 'printspace',
-        config,
-        variantId: 'a-variant-id-that-should-not-be-here',
-        address: fixtureAddress('open-variantid'),
-      })
+        const res = await createPaymentIntent({
+          artworkSlug: slug,
+          providerId: 'printspace',
+          config,
+          variantId: 'a-variant-id-that-should-not-be-here',
+          address: fixtureAddress('open-variantid'),
+        })
 
-      expect(res.ok).toBe(false)
-      if (!res.ok) expect(res.error).toMatch(/invalid request/i)
+        expect(res.ok).toBe(false)
+        if (!res.ok) expect(res.error).toMatch(/invalid request/i)
+      } finally {
+        await teardownOpenFixture(open)
+      }
     })
   })
 

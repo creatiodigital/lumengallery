@@ -77,7 +77,13 @@ export async function setupLimitedFixture(editionSize = 5): Promise<LimitedFixtu
       heightCm,
       borderCm: 3,
       editionSize,
+      // Per-variant price + on-sale lock are required for a variant to be
+      // buyable since the 4db5892 price-validation / go-live change:
+      // createPaymentIntent refuses a variant with no `priceCents`, and
+      // reserveEditionNumber refuses one that isn't `published && blocked`.
+      priceCents: artistPriceCents,
       published: true,
+      blocked: true,
       order: 0,
     },
   })
@@ -95,6 +101,68 @@ export async function setupLimitedFixture(editionSize = 5): Promise<LimitedFixtu
     widthCm,
     heightCm,
     artistPriceCents,
+  }
+}
+
+export type OpenFixture = {
+  artworkId: string
+  slug: string
+}
+
+/**
+ * Create a published OPEN-edition print artwork as a dedicated throwaway.
+ * The open-edition specs used to read the shared fixture artwork, but that
+ * row drifts to `editionType: 'limited'` whenever someone QAs limited
+ * editions on it — silently breaking every open-edition contract test.
+ * Self-seeding a real open artwork (copying the fixture artist, pixel size
+ * and price) makes those specs hermetic: no shared-row dependency, immune
+ * to drift, and they touch no staging data. `printOptions` is left null
+ * (no restrictions) so the default config builds cleanly.
+ */
+export async function setupOpenFixture(): Promise<OpenFixture> {
+  const base = await prisma.artwork.findUnique({
+    where: { slug: fixtures.artworkSlug },
+    select: {
+      userId: true,
+      originalWidth: true,
+      originalHeight: true,
+      printPriceCents: true,
+      // Display image (NOT the original print master). The print payment /
+      // checkout pages `notFound()` without it.
+      imageUrl: true,
+    },
+  })
+  if (!base) throw new Error(`Fixture artwork "${fixtures.artworkSlug}" not found — check dev DB`)
+
+  const slug = `e2e-open-${Date.now().toString(36)}-${Math.round(Math.random() * 1e6).toString(36)}`
+  const artwork = await prisma.artwork.create({
+    data: {
+      name: 'E2E Open Edition',
+      slug,
+      title: 'E2E Open Edition',
+      userId: base.userId,
+      imageUrl: base.imageUrl,
+      originalWidth: base.originalWidth ?? 4000,
+      originalHeight: base.originalHeight ?? 3000,
+      printEnabled: true,
+      printPriceCents: base.printPriceCents ?? 10000,
+      editionType: 'open',
+    },
+    select: { id: true },
+  })
+
+  return { artworkId: artwork.id, slug }
+}
+
+/** Delete the throwaway open artwork. */
+export async function teardownOpenFixture(fixture: OpenFixture): Promise<void> {
+  try {
+    await prisma.artwork.deleteMany({ where: { id: fixture.artworkId } })
+  } catch (err) {
+    console.warn(
+      `[e2e cleanup] teardown open fixture ${fixture.slug} failed:`,
+      err instanceof Error ? err.message : err,
+    )
   }
 }
 

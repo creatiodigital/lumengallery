@@ -97,9 +97,9 @@ export interface FixtureConfig {
  * browser. Throws loudly if the fixture has drifted (not found / not
  * print-enabled) so the failure is actionable.
  */
-export async function buildFixtureConfig(): Promise<FixtureConfig> {
-  const slug = fixtures.artworkSlug
-
+export async function buildFixtureConfig(
+  slug: string = fixtures.artworkSlug,
+): Promise<FixtureConfig> {
   const artwork = await prisma.artwork.findUnique({
     where: { slug },
     select: {
@@ -143,8 +143,11 @@ export interface FixturePayment {
  * real test-mode PI) and assemble the sessionStorage stash the payment
  * page consumes.
  */
-export async function buildFixturePayment(tag: string): Promise<FixturePayment> {
-  const { slug, config, specs } = await buildFixtureConfig()
+export async function buildFixturePayment(
+  tag: string,
+  fixtureSlug: string = fixtures.artworkSlug,
+): Promise<FixturePayment> {
+  const { slug, config, specs } = await buildFixtureConfig(fixtureSlug)
   const address = fixtureAddress(tag)
 
   const res = await createPaymentIntent({
