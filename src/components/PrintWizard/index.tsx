@@ -354,20 +354,23 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
             <Monogram className={styles.introMonogram} aria-hidden="true" />
             <p id="print-intro-title" className={styles.introBody}>
               Your print of <strong>{artwork.title}</strong> by{' '}
-              <strong>{artwork.artistName}</strong> will ship with:
+              <strong>{artwork.artistName}</strong> is an <strong>open edition</strong>:
             </p>
             <ul className={styles.introList}>
               <li>
-                Your print, <strong>made to order</strong> — produced on demand, hand-inspected, and
-                finished individually by a specialist fine-art print lab on archival giclée or
-                C-Type paper.
+                <strong>Made to order</strong> on premium archival paper (giclée or C-Type),
+                hand-inspected and finished by a specialist fine-art print lab.
+              </li>
+              <li>
+                You choose the <strong>size, paper and framing</strong> — framed or print-only.
+              </li>
+              <li>
+                Comes with a <strong>Certificate of Authenticity</strong>.
               </li>
             </ul>
-            {artwork.editionLimited && artwork.editionTotal && artwork.editionTotal > 0 && (
-              <p className={styles.introEdition}>
-                This is a <strong>limited edition of {artwork.editionTotal}</strong>.
-              </p>
-            )}
+            <p className={styles.introEdition}>
+              An open edition — not numbered, and available ongoing.
+            </p>
             <div className={styles.introActions}>
               <Button variant="primary" label="Continue" onClick={dismissIntro} />
             </div>

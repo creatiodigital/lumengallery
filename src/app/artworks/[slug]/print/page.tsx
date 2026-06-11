@@ -34,7 +34,9 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
     where: { slug },
     include: {
       user: { select: { name: true, lastName: true } },
-      limitedVariants: { where: { published: true }, orderBy: { order: 'asc' } },
+      // Buyers only see published variants that are currently blocked (on
+      // sale). An admin-unblocked variant is mid-edit and paused from sale.
+      limitedVariants: { where: { published: true, blocked: true }, orderBy: { order: 'asc' } },
     },
   })
 
@@ -88,6 +90,7 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
       heightCm: v.heightCm,
       borderCm: v.borderCm,
       editionSize: v.editionSize,
+      priceCents: v.priceCents,
       remaining: remaining.get(v.id) ?? 0,
     }))
   }

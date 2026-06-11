@@ -92,6 +92,8 @@ function parseIncomingVariants(raw: unknown[]): IncomingVariant[] {
       heightCm: Number(v.heightCm),
       borderCm: Number(v.borderCm),
       editionSize: Number(v.editionSize),
+      // Artist types price in euros; persist cents. Round to avoid FP drift.
+      priceCents: Math.round(Number(v.priceEuros) * 100) || 0,
     }
   })
 }

@@ -24,29 +24,81 @@
   display: none;
 }
 
-/* Side-by-side: uploader left, print info right */
+/* Side-by-side: uploader left, print info right. Equal widths, equal
+   heights (the info card stretches to match the image). Stacks to a
+   single column at tablet + mobile. */
 .imageRow {
   display: flex;
   gap: var(--space-6);
-  align-items: flex-start;
+  align-items: stretch;
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+  }
 }
 
 .imageUploaderCol {
-  flex: 0 0 45%;
+  flex: 1 1 0;
   min-width: 0;
+  display: flex;
+
+  @media (max-width: 1024px) {
+    width: 100%;
+    flex: 1 1 auto;
+  }
 }
 
 .printInfoCol {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
+  display: flex;
+
+  @media (max-width: 1024px) {
+    width: 100%;
+    flex: 1 1 auto;
+  }
 }
 
 /* Print requirements card */
+// Artwork-wide "locked for sale" banner shown on top of the edition config.
+.editionLockedBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-badge-warning-text);
+  border-radius: var(--radius-sm);
+  background: var(--color-badge-warning-bg);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.editionLockedBadge {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--color-badge-warning-text);
+  background: var(--color-white);
+  border: 1px solid var(--color-badge-warning-text);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  line-height: 1.6;
+}
+
 .printInfoCard {
-  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   background: var(--color-surface-subtle);
+
+  // The flex gap owns the spacing between sections; drop direct-child
+  // default margins so spacing stays even (nested content keeps its own).
+  > * {
+    margin: 0;
+  }
 }
 
 .printInfoTitle {

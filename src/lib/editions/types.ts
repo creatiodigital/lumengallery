@@ -14,8 +14,17 @@ export type LimitedVariantDraft = {
   heightCm: number
   borderCm: number
   editionSize: number
-  /** True once published (size/editionSize then frozen). */
+  /** Artist's cut for this variant, as the artist types it in euros. The
+   *  server converts to cents. Derived from `priceCents` on load. */
+  priceEuros?: string
+  /** Stored cents from the DB on load (read-only here; the editor edits
+   *  `priceEuros`, which is the source of truth on save). */
+  priceCents?: number | null
+  /** True once published (edition numbers materialised). */
   published?: boolean
+  /** Per-variant lock. Only meaningful when published: true = frozen + on
+   *  sale; false = an admin unblocked it (editable + paused from sale). */
+  blocked?: boolean
 }
 
 /** A published variant as shown to the buyer, with live stock. */
@@ -28,6 +37,8 @@ export type LimitedVariantView = {
   heightCm: number
   borderCm: number
   editionSize: number
+  /** Artist's cut for this variant, in cents. */
+  priceCents: number | null
   /** Count of edition numbers still available to buy. 0 = sold out. */
   remaining: number
 }

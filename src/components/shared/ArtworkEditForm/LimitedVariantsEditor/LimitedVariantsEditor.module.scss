@@ -6,19 +6,23 @@
 }
 
 .variantCard {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-sm);
   background: var(--color-surface-subtle);
+  overflow: hidden;
 }
 
+// Clickable header — collapses/expands the variant body.
 .variantHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
 }
 
 .variantTag {
@@ -31,50 +35,41 @@
   color: var(--color-text-primary);
 }
 
-.lockBadge {
-  font-size: var(--text-xs);
-  font-weight: var(--font-medium);
-  color: var(--color-badge-warning-text);
-  background: var(--color-badge-warning-bg);
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-sm);
+// Chevron pushed to the right edge; rotates to point up when expanded.
+.chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: transform 0.15s ease;
 }
 
-.removeBtn {
-  border: none;
-  background: none;
-  color: var(--color-error-text);
-  font-size: var(--text-sm);
-  cursor: pointer;
-  padding: 0;
-
-  &:hover {
-    text-decoration: underline;
-  }
+.chevronOpen {
+  transform: rotate(180deg);
 }
 
-.sizeRow {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-
-.dimsCol {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.borderField {
+.variantBody {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  flex: 0 0 120px;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
 
-  > span:first-child {
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    color: var(--color-text-primary);
+// Two equal-width fields side by side (border + number of copies).
+.twoCol {
+  display: flex;
+  gap: var(--space-4);
+
+  > * {
+    flex: 1 1 0;
+    min-width: 0;
   }
+}
+
+.variantFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
 }
 
 .error {

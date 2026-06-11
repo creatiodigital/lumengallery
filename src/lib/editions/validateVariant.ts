@@ -37,6 +37,8 @@ export type VariantInput = {
   heightCm: number
   borderCm: number
   editionSize: number
+  /** Artist's cut for this variant, in cents. Required (> 0). */
+  priceCents: number
 }
 
 export type ValidateVariantArgs = {
@@ -117,6 +119,10 @@ export function validateVariantInput(args: ValidateVariantArgs): ValidateVariant
 
   if (!Number.isInteger(variant.editionSize) || variant.editionSize < 1) {
     return { ok: false, error: 'Edition size must be a whole number of at least 1.' }
+  }
+
+  if (!Number.isInteger(variant.priceCents) || variant.priceCents < 1) {
+    return { ok: false, error: 'Each variant needs a price greater than 0.' }
   }
 
   // Distinct print size within the artwork — TPS edition-identity rule.

@@ -240,12 +240,19 @@ model LimitedVariant {
   heightCm    Float
   borderCm    Float  @default(0) // uniform paper border (holds the number)
   editionSize Int // this variant's own edition size, e.g. 50
+  priceCents  Int? // artist's cut for THIS variant, in cents (size-based pricing)
 
   // A variant is published once its edition numbers are materialised.
   // Publishing locks the parent artwork (`editionLocked`) and freezes
   // this variant's size/editionSize. `order` keeps the mandatory
   // variant first (0) and orders the optional ones.
   published Boolean @default(false)
+  // Per-variant lock. Meaningful only once `published`: a published variant
+  // is `blocked` (frozen + on sale) until an admin unblocks it to fix a
+  // mistake. While unblocked (`blocked: false`) its fields are editable AND
+  // it's paused from sale (buyers only see `published && blocked`). Admins
+  // re-Block it when done. Sold/reserved edition numbers are never affected.
+  blocked   Boolean @default(true)
   order     Int     @default(0)
 
   editionNumbers EditionNumber[]

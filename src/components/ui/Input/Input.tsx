@@ -115,6 +115,7 @@ const Input = ({
                 variant && styles[variant],
                 { [styles.withIcon]: !!icon },
                 { [styles.withToggle]: type === 'password' && showPasswordToggle },
+                { [styles.disabled]: disabled },
               ],
           inputClassName,
         )}

@@ -21,12 +21,12 @@
 }
 
 // Custom-drawn radio — hides the native control (and its browser-blue
-// accent) and renders our own circle with the brand colour when checked.
+// accent) and renders our own circle, filled black when checked.
 .input {
   appearance: none;
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   margin: 0;
   flex-shrink: 0;
   border: 1.5px solid var(--color-border-default);
@@ -38,16 +38,16 @@
 
   &::before {
     content: '';
-    width: 10px;
-    height: 10px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: var(--color-brand);
+    background: var(--color-black);
     transform: scale(0);
     transition: transform 0.12s ease;
   }
 
   &:checked {
-    border-color: var(--color-brand);
+    border-color: var(--color-black);
   }
 
   &:checked::before {
@@ -55,7 +55,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--color-black);
     outline-offset: 2px;
   }
 }

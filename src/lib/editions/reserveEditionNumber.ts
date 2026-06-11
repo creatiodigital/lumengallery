@@ -38,9 +38,13 @@ export async function reserveNextEditionNumber(args: {
 
   const variant = await prisma.limitedVariant.findUnique({
     where: { id: variantId },
-    select: { editionSize: true, published: true },
+    select: { editionSize: true, published: true, blocked: true },
   })
-  if (!variant || !variant.published) return { ok: false, reason: 'not_found' }
+  // An unblocked variant is paused from sale (admin is editing it) — refuse
+  // reservations just like an unpublished one.
+  if (!variant || !variant.published || !variant.blocked) {
+    return { ok: false, reason: 'not_found' }
+  }
 
   // Single-statement atomic claim. The inner SELECT locks just the one
   // chosen row; concurrent callers SKIP LOCKED past it to the next.

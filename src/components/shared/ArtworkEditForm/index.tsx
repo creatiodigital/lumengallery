@@ -172,7 +172,10 @@ export const populateFormData = (data: Artwork): ArtworkFormData => ({
     typeof data.printPriceCents === 'number' ? (data.printPriceCents / 100).toString() : '',
   editionType: data.editionType === 'limited' ? 'limited' : 'open',
   editionLocked: data.editionLocked ?? false,
-  limitedVariants: data.limitedVariants ?? [],
+  limitedVariants: (data.limitedVariants ?? []).map((v) => ({
+    ...v,
+    priceEuros: typeof v.priceCents === 'number' ? (v.priceCents / 100).toString() : '',
+  })),
   printEditionLimited: data.printEditionLimited ?? false,
   printEditionTotal:
     typeof data.printEditionTotal === 'number' ? String(data.printEditionTotal) : '',
@@ -205,12 +208,19 @@ type ArtworkEditFormProps = {
   /** Replace the whole limited-variants array (dashboard editor). */
   onVariantsChange?: (next: LimitedVariantDraft[]) => void
   /** True when the current viewer is an admin / superAdmin — they can
-   *  unblock a locked artwork; artists cannot. */
+   *  unblock individual limited variants; artists cannot. */
   isAdmin?: boolean
+  /** True only for superAdmin — gates the open-edition "Unblock" control,
+   *  which reopens a locked open artwork's print setup. */
+  isSuperAdmin?: boolean
   /** "Ready to Sell" — lock the edition config (and publish variants). */
   onReadyToSell?: () => void
   /** Admin-only: unblock a locked artwork so its config is editable. */
   onUnblock?: () => void
+  /** Admin-only: take a live limited variant off sale to edit it. */
+  onUnblockVariant?: (variantId: string) => void
+  /** Put an off-sale limited variant on sale ("Ready to Sell"). */
+  onReadyToSellVariant?: (index: number) => void
   onImageUpload: (file: File, previewUrl?: string) => Promise<void>
   onImageRemove: () => void | Promise<void>
   onSoundUpload?: (file: File) => Promise<void>
@@ -401,8 +411,11 @@ export const ArtworkEditForm = ({
   onEditionTypeChange,
   onVariantsChange,
   isAdmin = false,
+  isSuperAdmin = false,
   onReadyToSell,
   onUnblock,
+  onUnblockVariant,
+  onReadyToSellVariant,
   onImageUpload,
   onImageRemove,
   onSoundUpload,
@@ -418,6 +431,9 @@ export const ArtworkEditForm = ({
   const [isDraggingVideo, setIsDraggingVideo] = useState(false)
   const [soundSizeError, setSoundSizeError] = useState<string | null>(null)
   const [videoSizeError, setVideoSizeError] = useState<string | null>(null)
+  // Silent until the artist clicks the open-edition "Ready to Sell"; then the
+  // price error shows and clears live once a valid price is entered.
+  const [triedOpenReadyToSell, setTriedOpenReadyToSell] = useState(false)
   // If server has original file info, use that directly instead of reading from CDN image
   const serverMeta = useMemo<ImageMeta | null>(() => {
     if (originalWidth && originalHeight) {
@@ -463,6 +479,28 @@ export const ArtworkEditForm = ({
   // Format check: TPS accepts JPG/PNG/TIFF. Disables the
   // "Enable print sales" toggle for legacy uploads (e.g. WebP).
   const printableFormat = isImageFormatPrintable(imageMeta?.format)
+
+  // Series-type lock. Open editions use the stored artwork-level flag (set by
+  // the artwork "Ready to Sell", reversed by admin unblock). Limited editions
+  // derive it: the open/limited radio freezes as soon as ANY variant is live
+  // (published + blocked) and re-opens once every variant is unblocked.
+  const hasLiveVariant = formData.limitedVariants.some(
+    (v) => v.published === true && v.blocked !== false,
+  )
+  const seriesTypeLocked =
+    formData.editionType === 'limited' ? hasLiveVariant : formData.editionLocked
+
+  // Open-edition price is required to go live. Silent until the artist tries to
+  // "Ready to Sell", then shows + clears live as they enter a valid price.
+  const openPriceInvalid = !formData.printPriceEuros || !(Number(formData.printPriceEuros) > 0)
+  const openPriceError = triedOpenReadyToSell && openPriceInvalid
+  const handleOpenReadyToSell = () => {
+    if (openPriceInvalid) {
+      setTriedOpenReadyToSell(true)
+      return
+    }
+    onReadyToSell?.()
+  }
 
   const handleImageMetaChange = useCallback((meta: ImageMeta | null) => {
     if (meta && meta.width > 0) {
@@ -627,33 +665,21 @@ export const ArtworkEditForm = ({
 
           {formData.printEnabled && (
             <>
-              <div
-                className={dashboardStyles.field}
-                style={{ maxWidth: 240, marginTop: 'var(--space-4)' }}
-              >
-                <label htmlFor="printPriceEuros">Your price per print (&euro;)</label>
-                <Input
-                  id="printPriceEuros"
-                  type="text"
-                  inputMode="decimal"
-                  size="medium"
-                  value={formData.printPriceEuros}
-                  onChange={(e) =>
-                    onFormChange(
-                      'printPriceEuros',
-                      // Accept both period and comma as decimal separators
-                      // (Spanish/EU users) but normalise to period — the
-                      // app's display convention is always `1234.56`.
-                      e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''),
-                    )
-                  }
-                  placeholder="100"
-                />
-              </div>
-              <p className={styles.printDisabledHint} style={{ marginTop: 'var(--space-2)' }}>
-                This is the amount you earn per print sold. Production, shipping, gallery fee and
-                VAT are added separately at checkout.
-              </p>
+              {/* Locked banner — LIMITED editions only. It explains that live
+                  variants are frozen and admins unblock them per-variant in the
+                  editor below. Open editions don't lock their config (only the
+                  series-type radio), so they show no banner. */}
+              {seriesTypeLocked && formData.editionType === 'limited' && (
+                <div className={styles.editionLockedBanner} style={{ marginTop: 'var(--space-4)' }}>
+                  <span className={styles.editionLockedBadge}>Locked</span>
+                  <div>
+                    <strong>This artwork is on sale and its series type is locked.</strong>{' '}
+                    {isAdmin
+                      ? 'Live variants are frozen — unblock an individual variant below to edit it.'
+                      : 'Variants on sale are frozen — ask an admin to unblock a variant to change it.'}
+                  </div>
+                </div>
+              )}
 
               <div style={{ marginTop: 'var(--space-4)' }}>
                 <label className={dashboardStyles.field}>Series type</label>
@@ -664,74 +690,79 @@ export const ArtworkEditForm = ({
                     { value: 'limited', label: 'Limited Edition' },
                   ]}
                   value={formData.editionType}
-                  disabled={formData.editionLocked && !isAdmin}
+                  disabled={seriesTypeLocked}
                   onChange={(v) => onEditionTypeChange?.(v)}
                 />
                 <p className={styles.printDisabledHint} style={{ marginTop: 'var(--space-2)' }}>
                   {formData.editionType === 'limited'
-                    ? 'Numbered, print-only editions sold in pre-defined sizes. Buyers pick a variant — no framing or custom sizing.'
+                    ? 'Numbered, print-only editions sold in pre-defined variants. Buyers pick a variant — no framing.'
                     : 'Fully configurable prints — buyers choose size, paper and framing. Unlimited.'}
                 </p>
               </div>
+
+              {/* Open editions: one artist price for the whole artwork. Limited
+                  editions are priced per variant (in the editor below). */}
+              {formData.editionType === 'open' && (
+                <>
+                  <div
+                    className={dashboardStyles.field}
+                    style={{ maxWidth: 240, marginTop: 'var(--space-4)' }}
+                  >
+                    <label htmlFor="printPriceEuros">Your price per print (&euro;)</label>
+                    <Input
+                      id="printPriceEuros"
+                      type="text"
+                      inputMode="decimal"
+                      size="medium"
+                      value={formData.printPriceEuros}
+                      onChange={(e) =>
+                        onFormChange(
+                          'printPriceEuros',
+                          // Accept both period and comma as decimal separators
+                          // (Spanish/EU users) but normalise to period — the
+                          // app's display convention is always `1234.56`.
+                          e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''),
+                        )
+                      }
+                      placeholder="Add your price here"
+                    />
+                    {openPriceError && (
+                      <p className={styles.sizeError}>
+                        Price is required and must be greater than 0.
+                      </p>
+                    )}
+                  </div>
+                  <p className={styles.printDisabledHint} style={{ marginTop: 'var(--space-2)' }}>
+                    This is the amount you earn per print sold. Production, shipping, gallery fee
+                    and VAT are added separately at checkout.
+                  </p>
+                </>
+              )}
 
               {formData.editionType === 'limited' && (
                 <div style={{ marginTop: 'var(--space-4)' }}>
                   <h4 className={dashboardStyles.sectionTitle}>Edition variants</h4>
                   <p className={styles.printDisabledHint}>
-                    Define 1–4 variants. Each is its own numbered edition (e.g. “Small” 1/50). Sizes
-                    must be distinct. Once a variant is published its size and edition size are
-                    locked.
+                    Define 1–4 variants. Each is its own numbered edition (e.g. “Small” 1/50) with
+                    its own size and price. Sizes must be distinct. Once you start selling, the
+                    edition is locked.
                   </p>
                   <LimitedVariantsEditor
                     variants={formData.limitedVariants}
                     aspectRatio={editionAspectRatio}
                     longEdgeBounds={editionLongEdgeBounds}
                     onChange={(next) => onVariantsChange?.(next)}
-                    locked={formData.editionLocked && !isAdmin}
+                    isAdmin={isAdmin}
+                    onUnblockVariant={onUnblockVariant}
+                    onReadyToSellVariant={onReadyToSellVariant}
                   />
                 </div>
               )}
 
-              {/* Go-live lock. "Ready to Sell" freezes the edition config
-                  (artist confirmation); only an admin can unblock it. */}
-              <div style={{ marginTop: 'var(--space-5)' }}>
-                {formData.editionLocked ? (
-                  <div className={styles.printDisabledHint}>
-                    <strong>This artwork is locked for sale.</strong>{' '}
-                    {isAdmin
-                      ? 'You can unblock it to change the edition type.'
-                      : 'The edition type can no longer be changed — ask an admin to unblock it.'}
-                    {isAdmin && onUnblock && (
-                      <div style={{ marginTop: 'var(--space-2)' }}>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          label="Unblock artwork"
-                          onClick={onUnblock}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  onReadyToSell && (
-                    <>
-                      <Button
-                        type="button"
-                        variant="primary"
-                        label="Ready to Sell"
-                        onClick={onReadyToSell}
-                      />
-                      <p
-                        className={styles.printDisabledHint}
-                        style={{ marginTop: 'var(--space-2)' }}
-                      >
-                        Confirms this artwork is ready to sell and freezes its edition setup. Once you
-                        click, you can’t change the edition type unless an admin unblocks it.
-                      </p>
-                    </>
-                  )
-                )}
-              </div>
+              {/* Limited editions publish per variant (the button lives inside
+                  each variant card above). Open editions show their
+                  "Ready to Sell" / "Unblock" control below the printing
+                  options instead — see the open-edition go-live section. */}
             </>
           )}
         </div>
@@ -871,88 +902,93 @@ export const ArtworkEditForm = ({
                     sizes will be available to buyers.
                   </p>
 
-                  {imageUrl && imageMeta ? (
-                    printMinSize ? (
-                      <>
-                        <p
-                          className={styles.printInfoText}
-                          style={{ marginBottom: 'var(--space-1)' }}
-                        >
-                          <strong>Print size range for this file:</strong>
-                        </p>
-                        <p
-                          className={styles.printInfoTextMuted}
-                          style={{ marginTop: 0, marginBottom: 'var(--space-2)' }}
-                        >
-                          This range is the maximum we can print sharply for{' '}
-                          <strong>this specific artwork</strong> — the higher the resolution of the
-                          file you uploaded, the bigger the max. Buyers pick any custom size in this
-                          range; the other side auto-locks to your artwork&apos;s aspect ratio.
-                        </p>
-                        <table
-                          style={{
-                            width: '100%',
-                            borderCollapse: 'collapse',
-                            margin: 0,
-                            fontSize: 'var(--text-xs)',
-                          }}
-                        >
-                          <thead>
-                            <tr style={{ textAlign: 'left', color: 'var(--color-text-secondary)' }}>
-                              <th
-                                style={{
-                                  padding: 'var(--space-1) var(--space-2) var(--space-1) 0',
-                                  fontWeight: 500,
-                                }}
+                  <div className={styles.printInfoBlock}>
+                    {imageUrl && imageMeta ? (
+                      printMinSize ? (
+                        <>
+                          <p
+                            className={styles.printInfoText}
+                            style={{ marginBottom: 'var(--space-1)' }}
+                          >
+                            <strong>Print size range for this file:</strong>
+                          </p>
+                          <p
+                            className={styles.printInfoTextMuted}
+                            style={{ marginTop: 0, marginBottom: 'var(--space-2)' }}
+                          >
+                            This range is the maximum we can print sharply for{' '}
+                            <strong>this specific artwork</strong> — the higher the resolution of
+                            the file you uploaded, the bigger the max. Buyers pick any custom size
+                            in this range; the other side auto-locks to your artwork&apos;s aspect
+                            ratio.
+                          </p>
+                          <table
+                            style={{
+                              width: '100%',
+                              borderCollapse: 'collapse',
+                              margin: 0,
+                              fontSize: 'var(--text-xs)',
+                            }}
+                          >
+                            <thead>
+                              <tr
+                                style={{ textAlign: 'left', color: 'var(--color-text-secondary)' }}
                               >
-                                Smallest
-                              </th>
-                              <th style={{ padding: 'var(--space-1) 0', fontWeight: 500 }}>
-                                Your max
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr style={{ borderTop: '1px solid var(--color-border-default)' }}>
-                              <td
-                                style={{
-                                  padding: 'var(--space-1) var(--space-2) var(--space-1) 0',
-                                }}
-                              >
-                                <strong>
-                                  {formatPrintSize(printMinSize.heightCm, printMinSize.widthCm)}
-                                </strong>
-                              </td>
-                              <td style={{ padding: 'var(--space-1) 0' }}>
-                                {printMaxSize ? (
+                                <th
+                                  style={{
+                                    padding: 'var(--space-1) var(--space-2) var(--space-1) 0',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Smallest
+                                </th>
+                                <th style={{ padding: 'var(--space-1) 0', fontWeight: 500 }}>
+                                  Your max
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr style={{ borderTop: '1px solid var(--color-border-default)' }}>
+                                <td
+                                  style={{
+                                    padding: 'var(--space-1) var(--space-2) var(--space-1) 0',
+                                  }}
+                                >
                                   <strong>
-                                    {formatPrintSize(printMaxSize.heightCm, printMaxSize.widthCm)}
+                                    {formatPrintSize(printMinSize.heightCm, printMinSize.widthCm)}
                                   </strong>
-                                ) : (
-                                  <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
-                                )}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </>
+                                </td>
+                                <td style={{ padding: 'var(--space-1) 0' }}>
+                                  {printMaxSize ? (
+                                    <strong>
+                                      {formatPrintSize(printMaxSize.heightCm, printMaxSize.widthCm)}
+                                    </strong>
+                                  ) : (
+                                    <span style={{ color: 'var(--color-text-secondary)' }}>—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </>
+                      ) : (
+                        <div className={styles.printStatusNotReady}>
+                          <Icon name="alert-circle" size={16} />
+                          <span>
+                            This image is {imageMeta.width} × {imageMeta.height} px — below the{' '}
+                            {MIN_DPI} DPI threshold for any sellable size. Upload a higher
+                            resolution version to enable print sales.
+                          </span>
+                        </div>
+                      )
                     ) : (
-                      <div className={styles.printStatusNotReady}>
-                        <Icon name="alert-circle" size={16} />
-                        <span>
-                          This image is {imageMeta.width} × {imageMeta.height} px — below the{' '}
-                          {MIN_DPI} DPI threshold for any sellable size. Upload a higher resolution
-                          version to enable print sales.
-                        </span>
-                      </div>
-                    )
-                  ) : (
-                    <p className={styles.printInfoTextMuted}>
-                      Upload an image to check print eligibility.
-                    </p>
-                  )}
+                      <p className={styles.printInfoTextMuted}>
+                        Upload an image to check print eligibility.
+                      </p>
+                    )}
+                  </div>
 
-                  <div style={{ marginTop: 'var(--space-3)' }}>
+                  <div>
                     <Button
                       font="dashboard"
                       variant="primary"
@@ -981,47 +1017,47 @@ export const ArtworkEditForm = ({
         formData.editionType === 'open' && (
           <div className={dashboardStyles.section}>
             <h3 className={dashboardStyles.sectionTitle}>Printing restrictions</h3>
-          <p className={dashboardStyles.sectionDescription}>
-            Advanced — you don&apos;t need to touch this unless you have very specific reasons not
-            to offer a particular paper, frame type or passepartout for this artwork.
-          </p>
-
-          <details className={styles.printRestrictions}>
-            <summary className={styles.printRestrictionsSummary}>Show options</summary>
-
-            <p className={styles.printRestrictionsIntro}>
-              We offer many printing options — to keep this simple we only let you veto the three
-              that matter most for editorial control: papers, frame types and the passepartout.
-              Everything that stays checked remains available to buyers.
+            <p className={dashboardStyles.sectionDescription}>
+              Advanced — you don&apos;t need to touch this unless you have very specific reasons not
+              to offer a particular paper, frame type or passepartout for this artwork.
             </p>
 
-            <TpsRestrictionGroup
-              title="Papers"
-              all={TPS_PAPERS.map((p) => ({ id: p.id, label: p.label }))}
-              dimensionId="paper"
-              restrictions={formData.printOptions ?? null}
-              onChange={onPrintOptionsChange}
-              allIds={TPS_PAPERS.map((p) => p.id)}
-            />
-            <TpsRestrictionGroup
-              title="Frame types"
-              all={TPS_FRAME_TYPES.map((f) => ({ id: f.id, label: f.label }))}
-              dimensionId="frameType"
-              restrictions={formData.printOptions ?? null}
-              onChange={onPrintOptionsChange}
-              allIds={TPS_FRAME_TYPES.map((f) => f.id)}
-            />
-            <TpsRestrictionGroup
-              title="Mount (Passepartout)"
-              all={TPS_WINDOW_MOUNTS.map((w) => ({ id: w.id, label: w.label }))}
-              dimensionId="windowMount"
-              restrictions={formData.printOptions ?? null}
-              onChange={onPrintOptionsChange}
-              allIds={TPS_WINDOW_MOUNTS.map((w) => w.id)}
-            />
-          </details>
-        </div>
-      )}
+            <details className={styles.printRestrictions}>
+              <summary className={styles.printRestrictionsSummary}>Show options</summary>
+
+              <p className={styles.printRestrictionsIntro}>
+                We offer many printing options — to keep this simple we only let you veto the three
+                that matter most for editorial control: papers, frame types and the passepartout.
+                Everything that stays checked remains available to buyers.
+              </p>
+
+              <TpsRestrictionGroup
+                title="Papers"
+                all={TPS_PAPERS.map((p) => ({ id: p.id, label: p.label }))}
+                dimensionId="paper"
+                restrictions={formData.printOptions ?? null}
+                onChange={onPrintOptionsChange}
+                allIds={TPS_PAPERS.map((p) => p.id)}
+              />
+              <TpsRestrictionGroup
+                title="Frame types"
+                all={TPS_FRAME_TYPES.map((f) => ({ id: f.id, label: f.label }))}
+                dimensionId="frameType"
+                restrictions={formData.printOptions ?? null}
+                onChange={onPrintOptionsChange}
+                allIds={TPS_FRAME_TYPES.map((f) => f.id)}
+              />
+              <TpsRestrictionGroup
+                title="Mount (Passepartout)"
+                all={TPS_WINDOW_MOUNTS.map((w) => ({ id: w.id, label: w.label }))}
+                dimensionId="windowMount"
+                restrictions={formData.printOptions ?? null}
+                onChange={onPrintOptionsChange}
+                allIds={TPS_WINDOW_MOUNTS.map((w) => w.id)}
+              />
+            </details>
+          </div>
+        )}
 
       {/* Per-artwork paper recommendations. Open editions only. Soft hint —
           does not filter, just surfaces a check-circle in the buyer's paper
@@ -1032,31 +1068,78 @@ export const ArtworkEditForm = ({
         formData.editionType === 'open' && (
           <div className={dashboardStyles.section}>
             <h3 className={dashboardStyles.sectionTitle}>Printing recommendations</h3>
-          <p className={dashboardStyles.sectionDescription}>
-            Advanced — pick the specific paper types you&apos;d recommend for this artwork. Buyers
-            see a checkmark next to your picks in the print wizard; every paper stays available
-            either way.
-          </p>
-
-          <details className={styles.printRestrictions}>
-            <summary className={styles.printRestrictionsSummary}>Show options</summary>
-
-            <p className={styles.printRestrictionsIntro}>
-              Recommendations are a soft hint, not a filter. Anything you check here gets a
-              checkmark in the buyer&apos;s paper picker plus a legend explaining it&apos;s your
-              recommendation for best results.
+            <p className={dashboardStyles.sectionDescription}>
+              Advanced — pick the specific paper types you&apos;d recommend for this artwork. Buyers
+              see a checkmark next to your picks in the print wizard; every paper stays available
+              either way.
             </p>
 
-            <PaperRecommendationGroup
-              papers={TPS_PAPERS.filter((p) =>
-                isTpsDimensionChecked(formData.printOptions ?? null, 'paper', p.id),
-              ).map((p) => ({ id: p.id, label: p.label }))}
-              recommendations={formData.printRecommendations ?? null}
-              onChange={onPrintRecommendationsChange}
-            />
-          </details>
-        </div>
-      )}
+            <details className={styles.printRestrictions}>
+              <summary className={styles.printRestrictionsSummary}>Show options</summary>
+
+              <p className={styles.printRestrictionsIntro}>
+                Recommendations are a soft hint, not a filter. Anything you check here gets a
+                checkmark in the buyer&apos;s paper picker plus a legend explaining it&apos;s your
+                recommendation for best results.
+              </p>
+
+              <PaperRecommendationGroup
+                papers={TPS_PAPERS.filter((p) =>
+                  isTpsDimensionChecked(formData.printOptions ?? null, 'paper', p.id),
+                ).map((p) => ({ id: p.id, label: p.label }))}
+                recommendations={formData.printRecommendations ?? null}
+                onChange={onPrintRecommendationsChange}
+              />
+            </details>
+          </div>
+        )}
+
+      {/* Open-edition go-live. Sits after the printing options because, for an
+          open edition, those options stay editable for the life of the work —
+          the ONLY thing "Ready to Sell" freezes is the series type (so an
+          on-sale open edition can't be flipped to a limited one). A superAdmin
+          can reopen it with "Unblock". */}
+      {formData.artworkType === 'image' &&
+        formData.printEnabled &&
+        formData.editionType === 'open' && (
+          <div className={dashboardStyles.section}>
+            <h3 className={dashboardStyles.sectionTitle}>Ready to sell</h3>
+            {!seriesTypeLocked ? (
+              <>
+                {onReadyToSell && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    label="Ready to Sell"
+                    onClick={handleOpenReadyToSell}
+                  />
+                )}
+                {openPriceError && (
+                  <p className={styles.sizeError}>
+                    Add your price above before putting this artwork on sale.
+                  </p>
+                )}
+                <p className={styles.printDisabledHint} style={{ marginTop: 'var(--space-2)' }}>
+                  Confirms this artwork is ready to sell. This locks the series type to “Open” — you
+                  can’t switch it to a limited edition afterwards. Your price and printing options
+                  stay editable.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className={styles.printDisabledHint} style={{ margin: 0 }}>
+                  This open edition is on sale — its series type is locked. Price and printing
+                  options remain editable.
+                </p>
+                {isSuperAdmin && onUnblock && (
+                  <div style={{ marginTop: 'var(--space-2)' }}>
+                    <Button type="button" variant="secondary" label="Unblock" onClick={onUnblock} />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
       {/* Sound Upload Section - only for sound type */}
       {formData.artworkType === 'sound' && (

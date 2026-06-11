@@ -93,10 +93,12 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
         ? getProviderQuote(catalog.providerId, {
             config,
             country,
-            artistPriceCents: artwork.printPriceCents,
+            // Limited editions price per variant; fall back to the artwork
+            // price only if a variant somehow lacks its own.
+            artistPriceCents: selected?.priceCents ?? artwork.printPriceCents,
           })
         : null,
-    [config, country, catalog.providerId, artwork.printPriceCents],
+    [config, country, catalog.providerId, selected?.priceCents, artwork.printPriceCents],
   )
 
   // Per-variant price for the picker cards (same pre-country basis the
@@ -108,7 +110,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
         priceCents: getProviderQuote(catalog.providerId, {
           config: variantToWizardConfig(v),
           country,
-          artistPriceCents: artwork.printPriceCents,
+          artistPriceCents: v.priceCents ?? artwork.printPriceCents,
         }).subtotalCents,
       })),
     [available, country, catalog.providerId, artwork.printPriceCents],
@@ -211,23 +213,23 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
             <Monogram className={styles.introMonogram} aria-hidden="true" />
             <p id="print-intro-title" className={styles.introBody}>
               <strong>{artwork.title}</strong> by <strong>{artwork.artistName}</strong> is a{' '}
-              <strong>limited edition</strong>. Each copy is:
+              <strong>limited edition</strong>. Every print in this edition is:
             </p>
             <ul className={styles.introList}>
               <li>
-                <strong>Numbered</strong> (e.g. 1/{selected.editionSize}) on the front, bottom-left.
+                <strong>Hand-numbered</strong> (e.g. 1/{selected.editionSize}) just below the image,
+                and <strong>signed by the artist</strong>.
               </li>
               <li>
-                Shipped <strong>unframed</strong> — rolled or flat — so it arrives safely and you can
-                frame it your way.
+                Sold <strong>unframed</strong> — all our limited editions ship unframed on premium
+                archival paper, so you can frame it your way.
               </li>
               <li>
-                Printed on <strong>premium archival paper</strong> by a specialist fine-art lab, with
-                a certificate of authenticity.
+                Accompanied by a <strong>Certificate of Authenticity</strong>.
               </li>
             </ul>
             <p className={styles.introEdition}>
-              Once an edition sells out, it&apos;s closed for good.
+              Once the edition sells out, it&apos;s closed for good.
             </p>
             <div className={styles.introActions}>
               <Button variant="primary" label="Continue" onClick={dismissIntro} />

@@ -234,6 +234,7 @@ export async function createPaymentIntent(
           widthCm: true,
           heightCm: true,
           borderCm: true,
+          priceCents: true,
         },
       },
     },
@@ -241,7 +242,12 @@ export async function createPaymentIntent(
   if (!artwork) {
     return { ok: false, error: 'Artwork not found.' }
   }
-  if (!artwork.printEnabled || !artwork.printPriceCents) {
+  if (!artwork.printEnabled) {
+    return { ok: false, error: 'This artwork is not currently available as a print.' }
+  }
+  // Open editions need an artwork-level price; limited editions are priced
+  // per variant (checked after the variant is resolved below).
+  if (artwork.editionType !== 'limited' && !artwork.printPriceCents) {
     return { ok: false, error: 'This artwork is not currently available as a print.' }
   }
 
@@ -259,6 +265,9 @@ export async function createPaymentIntent(
     pinnedVariant = artwork.limitedVariants.find((v) => v.id === variantId) ?? null
     if (!pinnedVariant) {
       return { ok: false, error: 'That edition variant is no longer available.' }
+    }
+    if (!pinnedVariant.priceCents) {
+      return { ok: false, error: 'That edition variant is not currently available.' }
     }
     effectiveConfig = variantToWizardConfig(pinnedVariant)
   } else if (variantId) {
@@ -311,7 +320,9 @@ export async function createPaymentIntent(
     }
   }
 
-  const artistCents = artwork.printPriceCents
+  // Limited editions use the chosen variant's price; open editions use the
+  // single artwork price. Both are guaranteed non-null by the checks above.
+  const artistCents = isLimited ? pinnedVariant!.priceCents! : artwork.printPriceCents!
   const galleryCents = Math.round(artistCents * GALLERY_MARKUP_RATE)
 
   const quote = getProviderQuote(providerId, {
