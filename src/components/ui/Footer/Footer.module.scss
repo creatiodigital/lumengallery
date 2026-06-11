@@ -37,7 +37,10 @@
 }
 
 .monogram {
-  width: 40px;
+  // New brand monogram.svg bakes ~11% whitespace into its viewBox, so the
+  // visible circle renders ~22% smaller than the old asset at the same width.
+  // Sized up from 40px to keep the rendered circle at its previous ~40px.
+  width: 51px;
   height: auto;
   color: var(--color-brand);
   overflow: visible;

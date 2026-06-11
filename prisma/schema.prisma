@@ -339,6 +339,11 @@ model PrintOrder {
   trackingUrl       String?
   shippedAt         DateTime?
 
+  // DEPRECATED — no longer read/written by AR-126 code. Kept ONLY so the
+  // schema stays additive against prod, where `main` still reads/writes it.
+  // Drop this column (schema + DB) in a follow-up once AR-126 is live on prod.
+  certificateUrl String?
+
   // Stripe Connect transfer to the artist (null until admin releases payout).
   // 'pending' | 'paid' | 'reversed'
   transferId     String?
