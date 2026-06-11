@@ -392,10 +392,15 @@ export const ImageUploader = ({
       {imageUrl ? (
         // Image preview state
         <div className={styles.preview} style={boxStyle}>
-          {/* unoptimized: src is a local blob: preview or an already-optimized
-              R2/CDN .webp — no value in the Vercel optimizer, and its cold
-              re-encode broke remote previews on first load (AR-125). */}
-          <Image src={imageUrl} alt="Uploaded image" fill unoptimized style={{ objectFit }} />
+          {/* Inset wrapper gives the image breathing room from the wrapper
+              edges. `fill` fills its nearest positioned ancestor, so the
+              padding lives here (not on .preview, where fill would ignore it). */}
+          <div className={styles.previewImageInset}>
+            {/* unoptimized: src is a local blob: preview or an already-optimized
+                R2/CDN .webp — no value in the Vercel optimizer, and its cold
+                re-encode broke remote previews on first load (AR-125). */}
+            <Image src={imageUrl} alt="Uploaded image" fill unoptimized style={{ objectFit }} />
+          </div>
           {onRemove && (
             <Button
               variant="ghost"
@@ -412,6 +417,21 @@ export const ImageUploader = ({
               <span>{preparing ? 'Preparing preview…' : loadingText}</span>
             </div>
           )}
+          {/* Original-file meta, below the image, inside the wrapper. */}
+          {(() => {
+            const meta = displayMeta ?? imageMeta
+            if (!meta || meta.width <= 0) return null
+            return (
+              <div className={styles.imageMeta}>
+                {displayMeta && <span className={styles.imageMetaLabel}>Original file:</span>}
+                <span>
+                  {meta.height} × {meta.width} px
+                </span>
+                <span>{meta.format}</span>
+                {meta.sizeBytes > 0 && <span>{formatFileSize(meta.sizeBytes)}</span>}
+              </div>
+            )
+          })()}
         </div>
       ) : (
         // Dropzone state
@@ -448,22 +468,6 @@ export const ImageUploader = ({
           )}
         </div>
       )}
-
-      {/* Image metadata — prefer displayMeta (server-known original) over internal CDN meta */}
-      {(() => {
-        const meta = displayMeta ?? imageMeta
-        if (!meta || !imageUrl || meta.width <= 0) return null
-        return (
-          <div className={styles.imageMeta}>
-            {displayMeta && <span className={styles.imageMetaLabel}>Original file:</span>}
-            <span>
-              {meta.height} × {meta.width} px
-            </span>
-            <span>{meta.format}</span>
-            {meta.sizeBytes > 0 && <span>{formatFileSize(meta.sizeBytes)}</span>}
-          </div>
-        )
-      })()}
 
       {sizeError && <div className={styles.sizeError}>{sizeError}</div>}
       {resolutionError && <div className={styles.sizeError}>{resolutionError}</div>}

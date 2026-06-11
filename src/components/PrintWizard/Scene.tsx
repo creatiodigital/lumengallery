@@ -19,6 +19,8 @@ interface SceneProps {
   config: WizardConfig
   /** Hide the artwork + frame until a destination is chosen. */
   configReady: boolean
+  /** Limited editions only: "1/50" rendered bottom-left on the print. */
+  editionLabel?: string
 }
 
 // Tilt slider range — in degrees. Bounded so the camera stays close
@@ -28,7 +30,7 @@ const MAX_TILT_DEG = 35
 // recentering hit-the-tick easy without needing pixel precision.
 const SNAP_TO_ZERO_DEG = 2
 
-export const Scene = ({ imageUrl, catalog, config, configReady }: SceneProps) => {
+export const Scene = ({ imageUrl, catalog, config, configReady, editionLabel }: SceneProps) => {
   // Conscious-act control: buyer drags the slider to tilt the scene
   // and inspect the frame's depth profile. No mouse-orbit, no auto
   // rotation — the head-on view stays the default for sizing reads.
@@ -89,7 +91,12 @@ export const Scene = ({ imageUrl, catalog, config, configReady }: SceneProps) =>
 
             <Suspense fallback={null}>
               {configReady && (
-                <PreviewArtwork imageUrl={imageUrl} catalog={catalog} config={config} />
+                <PreviewArtwork
+                  imageUrl={imageUrl}
+                  catalog={catalog}
+                  config={config}
+                  editionLabel={editionLabel}
+                />
               )}
             </Suspense>
           </group>

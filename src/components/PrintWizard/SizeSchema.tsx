@@ -23,6 +23,9 @@ interface SizeSchemaProps {
    *  Floating from Standard (which has a passepartout instead). */
   backboardBorderCm?: number
   backboardColorHex?: string
+  /** Limited editions only: the number ("1/50") printed bottom-left in
+   *  the paper margin, in the Caveat hand it ships with. Absent = nothing. */
+  editionLabel?: string
 }
 
 /**
@@ -49,6 +52,7 @@ export const SizeSchema = ({
   paperBorderCm = 0,
   backboardBorderCm = 0,
   backboardColorHex = '#f6f3ec',
+  editionLabel,
 }: SizeSchemaProps) => {
   const effectivePaperBorder = Math.max(paperBorderCm, 0)
   const effectiveMatting = showFrame ? mattingBorderCm : 0
@@ -209,6 +213,24 @@ export const SizeSchema = ({
             height={printH}
             preserveAspectRatio="xMidYMid meet"
           />
+        )}
+
+        {/* Limited-edition number — bottom-left, in the paper margin just
+            below the image, in the Caveat hand it ships with. */}
+        {editionLabel && paperBorderW > 0 && (
+          <text
+            x={printX}
+            y={printY + printH + Math.min(paperBorderW * 0.7, paperBorderW - 1)}
+            textAnchor="start"
+            dominantBaseline="alphabetic"
+            fill="#111111"
+            style={{
+              fontFamily: 'var(--font-caveat), cursive',
+              fontSize: Math.max(6, Math.min(paperBorderW * 0.55, printH * 0.12)),
+            }}
+          >
+            {editionLabel}
+          </text>
         )}
 
         {/* ── Outer width label (top) ─────────────────────────── */}

@@ -1,0 +1,341 @@
+'use client'
+
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+
+import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { SelectDropdown, type SelectOption } from '@/components/ui/SelectDropdown'
+import { CustomSizeInputs } from '@/components/PrintWizard/CustomSizeInputs'
+
+import { LIMITED_BORDER_MIN_CM, MAX_LIMITED_VARIANTS } from '@/lib/editions/validateVariant'
+import type { LimitedVariantDraft } from '@/lib/editions/types'
+import { TPS_PAPERS, TPS_SIZE_BOUNDS } from '@/lib/print-providers/printspace'
+import type { PrintLongEdgeBounds } from '@/lib/print-providers/printspace'
+
+import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
+import styles from './LimitedVariantsEditor.module.scss'
+
+const PAPER_OPTIONS: SelectOption[] = TPS_PAPERS.map((p) => ({ value: p.id, label: p.label }))
+
+// Aspect-locked custom-size bounds for a variant — identical clamps to the
+// buyer wizard (same TPS limits, aspect locked to the artwork).
+const SIZE_CUSTOM = {
+  minCm: TPS_SIZE_BOUNDS.minCm,
+  maxCm: TPS_SIZE_BOUNDS.maxCm,
+  stepCm: TPS_SIZE_BOUNDS.stepCm,
+  aspectLocked: true as const,
+}
+
+type Props = {
+  variants: LimitedVariantDraft[]
+  aspectRatio: number
+  longEdgeBounds: PrintLongEdgeBounds | null
+  onChange: (next: LimitedVariantDraft[]) => void
+  /** Admin / superAdmin — only they can take a live variant off sale (Unblock). */
+  isAdmin?: boolean
+  /** Admin-only: take a live variant off sale to edit it (`blocked: false`). */
+  onUnblockVariant?: (variantId: string) => void
+  /** Put an off-sale variant on sale ("Ready to Sell"). Saves the form, then
+   *  publishes a draft (materialises its edition) or resumes a previously
+   *  unblocked variant. */
+  onReadyToSellVariant?: (index: number) => void
+}
+
+/**
+ * Flexible editor for a limited edition's variants: one mandatory variant
+ * plus an "Add variant" CTA up to MAX_LIMITED_VARIANTS. No empty rows —
+ * the artist only ever sees the variants they've added. Published variants
+ * are locked (size + edition size frozen once numbers can sell).
+ */
+export const LimitedVariantsEditor = ({
+  variants,
+  aspectRatio,
+  longEdgeBounds,
+  onChange,
+  isAdmin = false,
+  onUnblockVariant,
+  onReadyToSellVariant,
+}: Props) => {
+  const keyFor = (v: LimitedVariantDraft, i: number) => v.id ?? `new-${i}`
+  // A variant with nothing worth summarising still needs its fields visible.
+  const isEmpty = (v: LimitedVariantDraft) => !v.name && !(v.widthCm > 0) && !v.priceEuros
+  // Expanded state per row. Variants default collapsed to a compact summary
+  // list; only empty/incomplete ones start open so required fields aren't hidden.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {}
+    variants.forEach((v, i) => {
+      init[keyFor(v, i)] = isEmpty(v)
+    })
+    return init
+  })
+  const toggle = (k: string) => setExpanded((e) => ({ ...e, [k]: !e[k] }))
+
+  // Per-variant "tried to go live" flag. Validation is silent until the artist
+  // clicks "Ready to Sell"; then required-field errors show for that card and
+  // clear live as each field is fixed (the gallery form-validation convention).
+  const [triedReadyToSell, setTriedReadyToSell] = useState<Record<string, boolean>>({})
+
+  const update = (index: number, patch: Partial<LimitedVariantDraft>) => {
+    onChange(variants.map((v, i) => (i === index ? { ...v, ...patch } : v)))
+  }
+
+  const add = () => {
+    if (variants.length >= MAX_LIMITED_VARIANTS) return
+    // The new row is appended at the current length — open it for editing.
+    setExpanded((e) => ({ ...e, [`new-${variants.length}`]: true }))
+    onChange([
+      ...variants,
+      {
+        name: '',
+        paperId: TPS_PAPERS[0].id,
+        widthCm: 0,
+        heightCm: 0,
+        borderCm: LIMITED_BORDER_MIN_CM,
+        editionSize: 50,
+        priceEuros: '',
+      },
+    ])
+  }
+
+  const remove = (index: number) => {
+    onChange(variants.filter((_, i) => i !== index))
+  }
+
+  // Duplicate-size detection (TPS keys edition identity on print size).
+  const sizeKey = (v: LimitedVariantDraft) => `${v.widthCm}x${v.heightCm}`
+  const seen = new Map<string, number>()
+  variants.forEach((v) => {
+    if (v.widthCm > 0 && v.heightCm > 0) seen.set(sizeKey(v), (seen.get(sizeKey(v)) ?? 0) + 1)
+  })
+  const isDuplicate = (v: LimitedVariantDraft) =>
+    v.widthCm > 0 && v.heightCm > 0 && (seen.get(sizeKey(v)) ?? 0) > 1
+
+  // Required-field validation for going live — mirrors the server's
+  // validateVariantInput so the artist never hits a blind 400. Aspect /
+  // resolution bounds are already enforced by CustomSizeInputs, so here we only
+  // guard presence + the simple numeric minimums.
+  const fieldErrorsOf = (v: LimitedVariantDraft) => ({
+    name: !v.name.trim() ? 'Name is required.' : null,
+    size: !(v.widthCm > 0 && v.heightCm > 0) ? 'Set a print size.' : null,
+    border: !(v.borderCm >= LIMITED_BORDER_MIN_CM)
+      ? `Border must be at least ${LIMITED_BORDER_MIN_CM} cm.`
+      : null,
+    editionSize: !(Number.isInteger(v.editionSize) && v.editionSize >= 1)
+      ? 'Enter how many copies (at least 1).'
+      : null,
+    price:
+      !v.priceEuros || !(Number(v.priceEuros) > 0)
+        ? 'Price is required and must be greater than 0.'
+        : null,
+  })
+  const variantHasErrors = (v: LimitedVariantDraft) =>
+    isDuplicate(v) || Object.values(fieldErrorsOf(v)).some((e) => e !== null)
+
+  return (
+    <div className={styles.editor}>
+      {variants.map((variant, index) => {
+        // Everything keys off one fact: a variant is LIVE (on sale) only while
+        // it's published AND blocked. Live variants are frozen and can be taken
+        // off sale (Unblock). Off-sale variants — a draft, or a published one an
+        // admin has unblocked — are editable and show both "Ready to Sell" (put
+        // on sale) and "Delete variant". This is purely per-variant; no variant
+        // is special, and the other variants' state never affects this card.
+        const isLive = variant.published === true && variant.blocked !== false
+        const variantLocked = isLive
+        // Take a live variant off sale to fix it — admin only.
+        const showUnblock = isAdmin && isLive
+        // Off-sale variants can be put on sale and deleted.
+        const showReadyToSell = !isLive && !!onReadyToSellVariant
+        const showDelete = !isLive
+        const duplicateSize = isDuplicate(variant)
+        const key = keyFor(variant, index)
+        const isOpen = !!expanded[key]
+
+        const fieldErrors = fieldErrorsOf(variant)
+        // Show a field's error only once the artist has tried to go live.
+        const tried = !!triedReadyToSell[key]
+        const errFor = (field: keyof typeof fieldErrors) => (tried ? fieldErrors[field] : null)
+
+        // Putting one variant on sale saves the WHOLE form, so every variant
+        // must be valid. Validate all on click; if any fail, reveal their errors
+        // (expand the cards) and don't proceed — no blind 400.
+        const handleReadyToSell = () => {
+          const invalidKeys = variants
+            .map((v, i) => [keyFor(v, i), variantHasErrors(v)] as const)
+            .filter(([, bad]) => bad)
+            .map(([k]) => k)
+          if (invalidKeys.length > 0) {
+            const flags = Object.fromEntries(invalidKeys.map((k) => [k, true]))
+            setTriedReadyToSell((t) => ({ ...t, ...flags }))
+            setExpanded((e) => ({ ...e, ...flags }))
+            return
+          }
+          onReadyToSellVariant?.(index)
+        }
+
+        return (
+          <div key={key} className={styles.variantCard}>
+            <button
+              type="button"
+              className={styles.variantHeader}
+              onClick={() => toggle(key)}
+              aria-expanded={isOpen}
+            >
+              <span className={styles.variantTag}>{variant.name || `Variant ${index + 1}`}</span>
+              <ChevronDown
+                size={16}
+                strokeWidth={ICON_STROKE_WIDTH}
+                className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
+                aria-hidden
+              />
+            </button>
+
+            {isOpen && (
+              <div className={styles.variantBody}>
+                <div className={dashboardStyles.field}>
+                  <label>Name</label>
+                  <Input
+                    type="text"
+                    size="medium"
+                    value={variant.name}
+                    disabled={variantLocked}
+                    placeholder="e.g. Small"
+                    onChange={(e) => update(index, { name: e.target.value })}
+                  />
+                  {errFor('name') && <p className={styles.error}>{errFor('name')}</p>}
+                </div>
+
+                <div className={dashboardStyles.field}>
+                  <label>Paper</label>
+                  <SelectDropdown<string>
+                    options={PAPER_OPTIONS}
+                    value={variant.paperId}
+                    disabled={variantLocked}
+                    onChange={(v) => update(index, { paperId: v })}
+                  />
+                </div>
+
+                <div className={dashboardStyles.field}>
+                  <label>Print size (cm)</label>
+                  <CustomSizeInputs
+                    custom={SIZE_CUSTOM}
+                    aspectRatio={aspectRatio}
+                    longEdgeBounds={longEdgeBounds}
+                    customSize={{ widthCm: variant.widthCm, heightCm: variant.heightCm }}
+                    disabled={variantLocked}
+                    showSlider={false}
+                    onChange={(size) =>
+                      update(index, { widthCm: size.widthCm, heightCm: size.heightCm })
+                    }
+                  />
+                  {errFor('size') && <p className={styles.error}>{errFor('size')}</p>}
+                  {duplicateSize && (
+                    <p className={styles.error}>
+                      Each variant must have a distinct print size — this one clashes with another.
+                    </p>
+                  )}
+                </div>
+
+                {/* Border + number of copies — one row, 50% each. */}
+                <div className={styles.twoCol}>
+                  <div className={dashboardStyles.field}>
+                    <label>Border (cm)</label>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      size="medium"
+                      value={variant.borderCm ? String(variant.borderCm) : ''}
+                      disabled={variantLocked}
+                      onChange={(e) =>
+                        update(index, {
+                          borderCm: Number(e.target.value.replace(/[^0-9]/g, '')) || 0,
+                        })
+                      }
+                    />
+                    <span className={styles.hint}>min {LIMITED_BORDER_MIN_CM} cm, whole cm</span>
+                    {errFor('border') && <p className={styles.error}>{errFor('border')}</p>}
+                  </div>
+                  <div className={dashboardStyles.field}>
+                    <label>Number of copies</label>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      size="medium"
+                      value={variant.editionSize ? String(variant.editionSize) : ''}
+                      disabled={variantLocked}
+                      onChange={(e) =>
+                        update(index, {
+                          editionSize: Number(e.target.value.replace(/[^0-9]/g, '')) || 0,
+                        })
+                      }
+                    />
+                    <span className={styles.hint}>How many numbered prints exist.</span>
+                    {errFor('editionSize') && (
+                      <p className={styles.error}>{errFor('editionSize')}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className={dashboardStyles.field} style={{ maxWidth: 240 }}>
+                  <label>Your price for this variant (&euro;)</label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    size="medium"
+                    value={variant.priceEuros ?? ''}
+                    disabled={variantLocked}
+                    placeholder="Add your price here"
+                    onChange={(e) =>
+                      update(index, {
+                        priceEuros: e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''),
+                      })
+                    }
+                  />
+                  <span className={styles.hint}>What you earn per print of this variant</span>
+                  {errFor('price') && <p className={styles.error}>{errFor('price')}</p>}
+                </div>
+
+                {(showUnblock || showReadyToSell || showDelete) && (
+                  <div className={styles.variantFooter}>
+                    {/* Off-sale variant (draft or admin-unblocked): put it on sale. */}
+                    {showReadyToSell && (
+                      <Button type="button" variant="primary" onClick={handleReadyToSell}>
+                        Ready to Sell
+                      </Button>
+                    )}
+                    {/* Live variant: take it off sale to edit it — admin only. */}
+                    {showUnblock && variant.id && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => onUnblockVariant?.(variant.id as string)}
+                      >
+                        Unblock
+                      </Button>
+                    )}
+                    {showDelete && (
+                      <Button type="button" variant="danger" onClick={() => remove(index)}>
+                        Delete variant
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* Adding is bounded only by the max — with per-variant publishing the
+          artist can keep adding (and going live with) new variants even after
+          earlier ones are on sale. */}
+      {variants.length < MAX_LIMITED_VARIANTS && (
+        <Button type="button" variant="secondary" onClick={add}>
+          + Add variant
+        </Button>
+      )}
+    </div>
+  )
+}

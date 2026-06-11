@@ -34,6 +34,8 @@ interface SummaryPanelProps {
   canContinue: boolean
   configReady: boolean
   onAddToCart: () => void
+  /** Limited editions only: "1/50" rendered on the preview. */
+  editionLabel?: string
 }
 
 const regionNames =
@@ -52,6 +54,7 @@ export const SummaryPanel = ({
   canContinue,
   configReady,
   onAddToCart,
+  editionLabel,
 }: SummaryPanelProps) => {
   // Effective print size — preset OR custom. Drives schema + label.
   // Sizes are stored in the artwork's natural orientation; the schema
@@ -126,6 +129,7 @@ export const SummaryPanel = ({
             paperBorderCm={borderCm}
             backboardBorderCm={backboardBorderCm}
             backboardColorHex={backboardColorHex}
+            editionLabel={editionLabel}
           />
         </div>
       )}

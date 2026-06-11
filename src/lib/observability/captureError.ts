@@ -6,7 +6,6 @@ type Flow =
   | 'webhook' // Incoming webhooks from Stripe
   | 'admin' // Admin-initiated actions (refund, payout release)
   | 'email' // Outbound transactional email (Resend)
-  | 'cert' // Certificate-of-authenticity PDF generation / upload
   | 'upload' // File uploads (artwork images, signatures)
   | 'stripe' // Stripe client calls (paymentIntents.*, transfers.*, refunds.*)
   | 'cron' // Scheduled jobs (reconciliation, etc.)

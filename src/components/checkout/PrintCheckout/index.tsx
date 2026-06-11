@@ -121,6 +121,9 @@ type WizardHandoff = {
   country: string
   quote: Quote
   specs: SpecsSummary
+  /** Set only for limited editions — the chosen variant. The server pins
+   *  the config from it and reserves an edition number. */
+  variantId?: string
 }
 
 export const PrintCheckout = ({
@@ -369,6 +372,7 @@ export const PrintCheckout = ({
         artworkSlug: artwork.slug,
         providerId: handoff.providerId,
         config: handoff.config,
+        variantId: handoff.variantId,
         address: submitted,
       })
       if (!res.ok) {
