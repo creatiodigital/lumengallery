@@ -117,12 +117,12 @@
 
 .email {
   font-family: var(--font-serif);
-  font-size: var(--text-xl-mobile);
+  font-size: var(--text-lg-mobile);
   color: var(--color-text-primary);
   text-decoration: none;
 
   @include breakpoint(lg) {
-    font-size: var(--text-2xl);
+    font-size: var(--text-xl);
   }
 
   &:hover {

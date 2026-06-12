@@ -310,7 +310,7 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
                       alt={artwork.title}
                       width={80}
                       height={80}
-                      style={{ objectFit: 'cover' }}
+                      style={{ height: 80, width: 'auto' }}
                     />
                   </div>
                   <div className={styles.artworkInfo}>
