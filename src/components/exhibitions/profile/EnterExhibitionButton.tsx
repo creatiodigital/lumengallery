@@ -1,9 +1,6 @@
 'use client'
 
-import { ArrowRight } from 'lucide-react'
-
 import { Button } from '@/components/ui/Button'
-import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 
 interface EnterExhibitionButtonProps {
   artistSlug: string
@@ -38,10 +35,10 @@ export const EnterExhibitionButton = ({
     >
       <Button
         variant="primary"
-        size="regularSquared"
+        size="bigSquared"
         label="Enter Virtual Exhibition"
         href={visitUrl}
-        iconLeft={<ArrowRight size={16} strokeWidth={ICON_STROKE_WIDTH} />}
+        icon="arrowRight"
         className={className}
       />
     </div>

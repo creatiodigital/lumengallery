@@ -28,7 +28,9 @@ export const ContactPage = () => {
             <Text as="span" size="xs" className={styles.label}>
               LOCATIONS
             </Text>
-            <Text className={styles.value}>Madrid &nbsp;&nbsp;&nbsp; Vienna</Text>
+            <Text font="serif" className={styles.value}>
+              Madrid &nbsp;&nbsp;&nbsp; Vienna
+            </Text>
           </div>
         </div>
 

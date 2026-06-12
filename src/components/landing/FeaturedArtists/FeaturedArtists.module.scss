@@ -22,6 +22,18 @@
   padding: var(--space-6) 0;
   border-bottom: 1px solid var(--color-border-default);
 
+  // Last visual row carries no divider: the last item (both layouts), and on
+  // the two-column layout also the left item of the final row when present.
+  &:last-child {
+    border-bottom: none;
+  }
+
+  @media (min-width: 1024px) {
+    &:nth-child(odd):nth-last-child(-n + 2) {
+      border-bottom: none;
+    }
+  }
+
   &:hover {
     text-decoration: none;
   }

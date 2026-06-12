@@ -32,7 +32,7 @@
 }
 
 .logo {
-  width: 160px;
+  width: var(--logo-width);
   height: auto;
   color: var(--color-brand);
   overflow: visible;
