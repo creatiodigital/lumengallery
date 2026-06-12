@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/Checkbox'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Select } from '@/components/ui/Select'
 import { Text } from '@/components/ui/Typography'
-import { spaceConfigs, type SpaceKey } from '@/components/scene/constants'
+import { getSpaceConfig, type SpaceKey } from '@/components/scene/constants'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { convert2DTo3D } from '@/components/wallview/utils'
 import { useArtworkDetails } from '@/components/wallview/RightPanel/hooks/useArtworkDetails'
@@ -54,8 +54,7 @@ const ArtisticText = ({ disabled }: { disabled?: boolean }) => {
 
   // Bounding data for 2D→3D coordinate conversion
   const spaceId = useSelector((state: RootState) => state.exhibition.spaceId) as SpaceKey | null
-  const gltfPath =
-    spaceConfigs[spaceId || 'paris']?.gltfPath || '/assets/spaces/paris/paris10.glb?v=2'
+  const gltfPath = getSpaceConfig(spaceId || 'paris').gltfPath
   const { nodes } = useGLTF(gltfPath) as unknown as { nodes: Record<string, Mesh> }
   const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes as Record<string, Mesh>, currentWallId)

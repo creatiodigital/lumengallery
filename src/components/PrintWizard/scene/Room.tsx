@@ -2,7 +2,7 @@
 
 /**
  * Minimal backdrop: a single frontal wall plane.
- * Kept deliberately simple — furniture/props can be added later.
+ * Kept deliberately simple.
  */
 export const Room = () => {
   return (

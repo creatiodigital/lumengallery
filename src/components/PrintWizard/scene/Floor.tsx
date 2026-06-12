@@ -4,7 +4,9 @@ import { useMemo } from 'react'
 import { useTexture } from '@react-three/drei'
 import { RepeatWrapping, SRGBColorSpace, Vector2 } from 'three'
 
-const BASE = '/assets/materials/parquet'
+import { assetUrl } from '@/lib/assetUrl'
+
+const BASE = assetUrl('/assets/materials/parquet')
 
 // Preload so the texture is ready when the wizard first mounts.
 useTexture.preload([

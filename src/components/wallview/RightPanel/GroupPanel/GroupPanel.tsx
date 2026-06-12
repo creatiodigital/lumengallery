@@ -10,7 +10,7 @@ import { Mesh } from 'three'
 import { Button } from '@/components/ui/Button'
 import { NumberInput } from '@/components/ui/NumberInput'
 import { Text } from '@/components/ui/Typography'
-import { spaceConfigs, type SpaceKey } from '@/components/scene/constants'
+import { getSpaceConfig, type SpaceKey } from '@/components/scene/constants'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { cmEventToMeters } from '@/components/wallview/utils'
 
@@ -49,8 +49,7 @@ const GroupPanel = () => {
   const spaceId = useSelector((state: RootState) => state.exhibition.spaceId) as SpaceKey | null
   const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
 
-  const gltfPath =
-    spaceConfigs[spaceId || 'paris']?.gltfPath || '/assets/spaces/paris/paris10.glb?v=2'
+  const gltfPath = getSpaceConfig(spaceId || 'paris').gltfPath
   const { nodes } = useGLTF(gltfPath) as unknown as {
     nodes: Record<string, Mesh>
   }

@@ -73,8 +73,6 @@ export type SpaceConfig = {
   displayName: string
   /** Path to GLTF model */
   gltfPath: string
-  /** Thumbnail for space selector */
-  thumbnailUrl?: string
   /** Ref counts for this space */
   refs: SpaceRefsCount
   /** Number of placeholder positions */

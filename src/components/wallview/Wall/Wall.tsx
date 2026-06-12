@@ -21,7 +21,7 @@ import { DistanceLines } from '@/components/wallview/DistanceLines'
 import { SelectionBox } from '@/components/wallview/SelectionBox'
 import { WALL_SCALE } from '@/components/wallview/constants'
 import { convert2DTo3D, getVisualBounds } from '@/components/wallview/utils'
-import { spaceConfigs, type SpaceKey } from '@/components/scene/constants'
+import { getSpaceConfig, type SpaceKey } from '@/components/scene/constants'
 import { updateArtworkPosition, pushToHistory } from '@/redux/slices/exhibitionSlice'
 import { setShiftKeyDown } from '@/redux/slices/wallViewSlice'
 import { setWallCoordinates, setWallDimensions } from '@/redux/slices/wallViewSlice'
@@ -35,8 +35,7 @@ import styles from './Wall.module.scss'
 export const Wall = () => {
   // Use exhibition spaceId to load the correct GLB for this exhibition
   const spaceId = useSelector((state: RootState) => state.exhibition.spaceId) as SpaceKey | null
-  const gltfPath =
-    spaceConfigs[spaceId || 'paris']?.gltfPath || '/assets/spaces/paris/paris10.glb?v=2'
+  const gltfPath = getSpaceConfig(spaceId || 'paris').gltfPath
   const { nodes } = useGLTF(gltfPath) as unknown as {
     nodes: Record<string, Mesh>
   }

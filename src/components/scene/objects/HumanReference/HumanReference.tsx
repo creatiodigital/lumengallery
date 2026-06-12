@@ -6,8 +6,9 @@ import { useGLTF } from '@react-three/drei'
 import { useSelector } from 'react-redux'
 
 import type { RootState } from '@/redux/store'
+import { assetUrl } from '@/lib/assetUrl'
 
-const HUMAN_MODEL_PATH = '/assets/human.glb'
+const HUMAN_MODEL_PATH = assetUrl('/assets/human.glb')
 
 const HumanReference = () => {
   const isHumanVisible = useSelector((state: RootState) => state.scene.isHumanVisible)
