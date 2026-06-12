@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic'
 
 import type { SpaceConfig } from './spaces/types'
+import { assetUrl } from '@/lib/assetUrl'
 
 // =============================================================================
 // Space Registry
@@ -21,8 +22,7 @@ export type SpaceKey = 'paris' | 'madrid'
 export const spaceConfigs: Record<SpaceKey, SpaceConfig> = {
   paris: {
     displayName: 'Paris',
-    gltfPath: '/assets/spaces/paris/paris18.glb',
-    thumbnailUrl: '/assets/thumbnails/paris.jpg',
+    gltfPath: assetUrl('/assets/spaces/paris/paris18.glb'),
     refs: {
       walls: 3, // wall0 + radiator0 + invisibleDoor0
       windows: 2,
@@ -32,8 +32,7 @@ export const spaceConfigs: Record<SpaceKey, SpaceConfig> = {
   },
   madrid: {
     displayName: 'Madrid',
-    gltfPath: '/assets/spaces/madrid/madrid9.glb',
-    thumbnailUrl: '/assets/thumbnails/madrid.jpg',
+    gltfPath: assetUrl('/assets/spaces/madrid/madrid9.glb'),
     refs: {
       walls: 2, // wall0 + invisibleDoor0
       windows: 2,
@@ -63,13 +62,3 @@ export const getSpaceConfig = (spaceId: string): SpaceConfig => {
   const key = spaceId as SpaceKey
   return spaceConfigs[key] || spaceConfigs['paris']
 }
-
-/**
- * Get all available space options for UI.
- */
-export const getSpaceOptions = () =>
-  Object.entries(spaceConfigs).map(([key, config]) => ({
-    value: key as SpaceKey,
-    label: config.displayName,
-    thumbnailUrl: config.thumbnailUrl,
-  }))

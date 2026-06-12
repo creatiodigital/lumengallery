@@ -22,6 +22,7 @@ import { showArtworkPanel } from '@/redux/slices/dashboardSlice'
 import { setCurrentArtwork, setFocusTarget } from '@/redux/slices/sceneSlice'
 import type { RootState } from '@/redux/store'
 import type { RuntimeArtwork } from '@/utils/artworkTransform'
+import { assetUrl } from '@/lib/assetUrl'
 
 type DisplayProps = {
   artwork: RuntimeArtwork
@@ -488,9 +489,9 @@ const Display = ({ artwork }: DisplayProps) => {
 
   useEffect(() => {
     const loader = new TextureLoader()
-    const diffuse = loader.load('/assets/materials/plastic-frame/diffuse.jpg')
-    const normal = loader.load('/assets/materials/plastic-frame/normal.jpg')
-    const roughnessMap = loader.load('/assets/materials/plastic-frame/roughness.jpg')
+    const diffuse = loader.load(assetUrl('/assets/materials/plastic-frame/diffuse.jpg'))
+    const normal = loader.load(assetUrl('/assets/materials/plastic-frame/normal.jpg'))
+    const roughnessMap = loader.load(assetUrl('/assets/materials/plastic-frame/roughness.jpg'))
 
     ;[diffuse, normal, roughnessMap].forEach((tex) => {
       tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
@@ -517,16 +518,11 @@ const Display = ({ artwork }: DisplayProps) => {
   useEffect(() => {
     // Determine which wood folder to load based on frameMaterial
     const woodFolder = frameMaterial?.startsWith('wood') ? frameMaterial : 'wood-dark'
+    const woodBase = assetUrl(`/assets/materials/wooden-frame-${woodFolder.replace('wood-', '')}`)
     const loader = new TextureLoader()
-    const diffuse = loader.load(
-      `/assets/materials/wooden-frame-${woodFolder.replace('wood-', '')}/diffuse.jpg?v=2`,
-    )
-    const normal = loader.load(
-      `/assets/materials/wooden-frame-${woodFolder.replace('wood-', '')}/normal.jpg?v=2`,
-    )
-    const roughnessMap = loader.load(
-      `/assets/materials/wooden-frame-${woodFolder.replace('wood-', '')}/roughness.jpg?v=2`,
-    )
+    const diffuse = loader.load(`${woodBase}/diffuse.jpg?v=2`)
+    const normal = loader.load(`${woodBase}/normal.jpg?v=2`)
+    const roughnessMap = loader.load(`${woodBase}/roughness.jpg?v=2`)
 
     ;[diffuse, normal, roughnessMap].forEach((tex) => {
       tex.wrapS = tex.wrapT = 1000 // RepeatWrapping

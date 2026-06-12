@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { EditView } from '@/components/editview'
 import { LoadingBar } from '@/components/ui/LoadingBar'
 import { useGLTF } from '@react-three/drei'
+import { spaceConfigs } from '@/components/scene/constants'
 import { useLoadExhibitionArtworks } from '@/hooks/useLoadExhibitionArtworks'
 import { resetArtworks } from '@/redux/slices/artworkSlice'
 import { useGetExhibitionByUrlQuery } from '@/redux/slices/exhibitionApi'
@@ -54,7 +55,7 @@ export const ExhibitionEditPage = ({
       dispatch(resetWizard())
 
       // Clear GLTF cache for space types
-      useGLTF.clear('/assets/spaces/paris/paris10.glb?v=2')
+      Object.values(spaceConfigs).forEach((config) => useGLTF.clear(config.gltfPath))
 
       hasResetRef.current = exhibitionSlug
       // Reset restored state ref when exhibition changes

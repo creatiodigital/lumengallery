@@ -2,13 +2,15 @@ import { useTexture } from '@react-three/drei'
 import { RepeatWrapping, SRGBColorSpace, CanvasTexture, Texture } from 'three'
 import { useMemo } from 'react'
 
+import { assetUrl } from '@/lib/assetUrl'
+
 /**
  * Paper material presets.
  * Each preset defines PBR texture paths and material parameters.
  * The textures live under /assets/materials/paper/ (user-provided PBR set).
  */
 
-const PAPER_TEXTURE_BASE = '/assets/materials/paper'
+const PAPER_TEXTURE_BASE = assetUrl('/assets/materials/paper')
 
 export interface PaperMaterialConfig {
   roughness: number

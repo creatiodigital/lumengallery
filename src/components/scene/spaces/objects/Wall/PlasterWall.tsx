@@ -1,6 +1,8 @@
 import { useTexture } from '@react-three/drei'
 import { Mesh, BufferGeometry, RepeatWrapping, SRGBColorSpace, DoubleSide } from 'three'
 
+import { assetUrl } from '@/lib/assetUrl'
+
 interface PlasterWallProps {
   i: number
   wallRef: React.Ref<Mesh>
@@ -18,7 +20,7 @@ const PlasterWall: React.FC<PlasterWallProps> = ({
   i,
   wallRef,
   geometry,
-  texturePath = '/assets/materials/plaster',
+  texturePath = assetUrl('/assets/materials/plaster'),
   textureRepeat = 2,
 }) => {
   // Load textures (diffuse + AO for visual depth)
