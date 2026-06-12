@@ -24,12 +24,13 @@ import { useAmbientLight } from '@/hooks/useAmbientLight'
 import { addWall, setInitialCameraFromNode } from '@/redux/slices/sceneSlice'
 import type { RootState } from '@/redux/store'
 import type { TArtwork } from '@/types/artwork'
+import { assetUrl } from '@/lib/assetUrl'
 
 import { Lights } from './lights'
 
 // Preload baked textures at module scope to avoid Loader setState-during-render warnings
-useTexture.preload('/assets/spaces/paris/textures/bw2.jpg')
-useTexture.preload('/assets/spaces/paris/textures/bc2.jpg')
+useTexture.preload(assetUrl('/assets/spaces/paris/textures/bw2.jpg'))
+useTexture.preload(assetUrl('/assets/spaces/paris/textures/bc2.jpg'))
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -49,7 +50,7 @@ type ParisSpaceProps = React.ComponentProps<'group'> & {
 }
 
 const ParisSpace: React.FC<ParisSpaceProps> = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
-  const { nodes } = useGLTF('/assets/spaces/paris/paris18.glb') as unknown as GLTFResult
+  const { nodes } = useGLTF(assetUrl('/assets/spaces/paris/paris18.glb')) as unknown as GLTFResult
 
   const dispatch = useDispatch()
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
@@ -65,8 +66,8 @@ const ParisSpace: React.FC<ParisSpaceProps> = ({ wallRefs, windowRefs, glassRefs
   const ceilingColor = useSelector((state: RootState) => state.exhibition.ceilingColor ?? '#ffffff')
 
   // Load external baked textures
-  const wallTexture = useTexture('/assets/spaces/paris/textures/bw2.jpg')
-  const ceilingTexture = useTexture('/assets/spaces/paris/textures/bc2.jpg')
+  const wallTexture = useTexture(assetUrl('/assets/spaces/paris/textures/bw2.jpg'))
+  const ceilingTexture = useTexture(assetUrl('/assets/spaces/paris/textures/bc2.jpg'))
 
   // Configure textures
   useMemo(() => {

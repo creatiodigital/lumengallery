@@ -8,7 +8,7 @@ import { Mesh } from 'three'
 import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { Text } from '@/components/ui/Typography'
-import { spaceConfigs, type SpaceKey } from '@/components/scene/constants'
+import { getSpaceConfig, type SpaceKey } from '@/components/scene/constants'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { pushToHistory } from '@/redux/slices/exhibitionSlice'
 import type { RootState, AppDispatch } from '@/redux/store'
@@ -39,8 +39,7 @@ const PresetSection = ({ presetType }: PresetSectionProps) => {
 
   // Get bounding data for convert2DTo3D
   const spaceId = useSelector((state: RootState) => state.exhibition.spaceId) as SpaceKey | null
-  const gltfPath =
-    spaceConfigs[spaceId || 'paris']?.gltfPath || '/assets/spaces/paris/paris10.glb?v=2'
+  const gltfPath = getSpaceConfig(spaceId || 'paris').gltfPath
   const { nodes } = useGLTF(gltfPath) as unknown as { nodes: Record<string, Mesh> }
   const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
   const boundingData = useBoundingData(nodes as Record<string, Mesh>, currentWallId)

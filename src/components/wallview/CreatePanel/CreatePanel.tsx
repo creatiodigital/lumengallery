@@ -7,7 +7,7 @@ import { Mesh } from 'three'
 
 import { Button } from '@/components/ui/Button'
 import { Tooltip } from '@/components/ui/Tooltip'
-import { spaceConfigs, type SpaceKey } from '@/components/scene/constants'
+import { getSpaceConfig, type SpaceKey } from '@/components/scene/constants'
 import { useBoundingData } from '@/components/wallview/hooks/useBoundingData'
 import { useCreateArtwork } from '@/components/wallview/hooks/useCreateArtwork'
 import { useAddExistingArtwork } from '@/components/wallview/hooks/useAddExistingArtwork'
@@ -22,8 +22,7 @@ export const CreatePanel = () => {
   // Use exhibition spaceId to load the correct GLB for this exhibition
   const spaceId = useSelector((state: RootState) => state.exhibition.spaceId) as SpaceKey | null
   const currentWallId = useSelector((state: RootState) => state.wallView.currentWallId)
-  const gltfPath =
-    spaceConfigs[spaceId || 'paris']?.gltfPath || '/assets/spaces/paris/paris10.glb?v=2'
+  const gltfPath = getSpaceConfig(spaceId || 'paris').gltfPath
   const { nodes } = useGLTF(gltfPath) as unknown as {
     nodes: Record<string, Mesh>
   }

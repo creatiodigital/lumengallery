@@ -5,6 +5,7 @@ import { Mesh, RepeatWrapping, SRGBColorSpace, Vector2 } from 'three'
 import type { Vector3Tuple } from 'three'
 import type { RootState } from '@/redux/store'
 import { useResilientTexture } from '@/components/scene/useResilientTexture'
+import { assetUrl } from '@/lib/assetUrl'
 
 // Floor reflections disabled for performance
 const ENABLE_REFLECTIONS = false
@@ -146,7 +147,7 @@ const MATERIAL_CONFIG: Record<
 // Preload all floor textures at module scope so useTexture doesn't trigger
 // loading manager state updates during render (fixes Loader setState warning)
 Object.entries(MATERIAL_CONFIG).forEach(([material, config]) => {
-  const basePath = `/assets/materials/${material}`
+  const basePath = assetUrl(`/assets/materials/${material}`)
   const v = `?v=${TEXTURE_VERSION}`
   const paths: Record<string, string> = {
     map: `${basePath}/${config.diffuse}${v}`,
@@ -214,7 +215,7 @@ const ReflectiveFloor: React.FC<ReflectiveFloorProps> = ({
 
   // Get material config for dynamic texture paths
   const materialConfig = MATERIAL_CONFIG[validMaterial]
-  const texturePath = `/assets/materials/${validMaterial}`
+  const texturePath = assetUrl(`/assets/materials/${validMaterial}`)
 
   // Build texture paths (metallic, normal, and ao are optional) — memoized to avoid
   // unstable references that cause useTexture to re-trigger loading on every render

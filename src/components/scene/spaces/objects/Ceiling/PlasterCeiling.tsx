@@ -1,6 +1,8 @@
 import { useTexture } from '@react-three/drei'
 import { BufferGeometry, RepeatWrapping, SRGBColorSpace, Vector2, DoubleSide } from 'three'
 
+import { assetUrl } from '@/lib/assetUrl'
+
 interface PlasterCeilingProps {
   geometry: BufferGeometry
   texturePath?: string
@@ -13,7 +15,7 @@ interface PlasterCeilingProps {
  */
 const PlasterCeiling: React.FC<PlasterCeilingProps> = ({
   geometry,
-  texturePath = '/assets/materials/plaster',
+  texturePath = assetUrl('/assets/materials/plaster'),
   textureRepeat = 2,
   color = '#ffffff',
 }) => {

@@ -7,6 +7,7 @@ import { Tooltip } from '@/components/ui/Tooltip'
 import type { TArtwork } from '@/types/artwork'
 
 import { WALL_SCALE } from '@/components/wallview/constants'
+import { assetUrl } from '@/lib/assetUrl'
 
 import styles from './ArtisticVideo.module.scss'
 
@@ -74,6 +75,9 @@ const ArtisticVideo = ({ artwork }: ArtisticVideoProps) => {
   // The display image: poster → video first frame → none
   const displayImageUrl = imageUrl || videoFrameUrl
 
+  const frameFolder = (frameMaterial === 'wood' ? 'wood-dark' : (frameMaterial ?? 'wood-dark')).replace('wood-', '')
+  const frameTextureUrl = assetUrl(`/assets/materials/wooden-frame-${frameFolder}/diffuse.jpg`)
+
   return (
     <div
       className={styles.frame}
@@ -100,7 +104,7 @@ const ArtisticVideo = ({ artwork }: ArtisticVideoProps) => {
               inset: '-50%',
               width: '200%',
               height: '200%',
-              backgroundImage: `url('/assets/materials/wooden-frame-${(frameMaterial === 'wood' ? 'wood-dark' : (frameMaterial ?? 'wood-dark')).replace('wood-', '')}/diffuse.jpg')`,
+              backgroundImage: `url('${frameTextureUrl}')`,
               backgroundSize: `${(frameTextureScale ?? 2) * 25}%`,
               backgroundPosition: '50% 50%',
               backgroundRepeat: 'repeat',

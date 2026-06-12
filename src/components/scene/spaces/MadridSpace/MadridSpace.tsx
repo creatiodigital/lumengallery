@@ -22,12 +22,13 @@ import { useAmbientLight } from '@/hooks/useAmbientLight'
 import { addWall, setInitialCameraFromNode } from '@/redux/slices/sceneSlice'
 import type { RootState } from '@/redux/store'
 import type { TArtwork } from '@/types/artwork'
+import { assetUrl } from '@/lib/assetUrl'
 
 import { Lights } from './lights'
 
 // Preload baked textures at module scope to avoid Loader setState-during-render warnings
-useTexture.preload('/assets/spaces/madrid/textures/mwall2.jpg')
-useTexture.preload('/assets/spaces/madrid/textures/mceiling2.jpg')
+useTexture.preload(assetUrl('/assets/spaces/madrid/textures/mwall2.jpg'))
+useTexture.preload(assetUrl('/assets/spaces/madrid/textures/mceiling2.jpg'))
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -47,7 +48,7 @@ type MadridSpaceProps = React.ComponentProps<'group'> & {
 }
 
 const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
-  const { nodes } = useGLTF('/assets/spaces/madrid/madrid9.glb') as unknown as GLTFResult
+  const { nodes } = useGLTF(assetUrl('/assets/spaces/madrid/madrid9.glb')) as unknown as GLTFResult
 
   const dispatch = useDispatch()
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
@@ -60,8 +61,8 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
   const ceilingColor = useSelector((state: RootState) => state.exhibition.ceilingColor ?? '#ffffff')
 
   // Load external baked textures
-  const wallTexture = useTexture('/assets/spaces/madrid/textures/mwall2.jpg')
-  const ceilingTexture = useTexture('/assets/spaces/madrid/textures/mceiling2.jpg')
+  const wallTexture = useTexture(assetUrl('/assets/spaces/madrid/textures/mwall2.jpg'))
+  const ceilingTexture = useTexture(assetUrl('/assets/spaces/madrid/textures/mceiling2.jpg'))
 
   // Configure textures
   useMemo(() => {
