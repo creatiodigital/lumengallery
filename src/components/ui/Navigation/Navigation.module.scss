@@ -91,7 +91,7 @@
   align-items: center;
 
   svg {
-    width: 180px;
+    width: var(--logo-width);
     height: auto;
     color: var(--color-brand);
   }
