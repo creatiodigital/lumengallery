@@ -1057,7 +1057,25 @@ export async function refundOrder(
   const reason = (opts.reason ?? '').trim()
   if (!reason) return { ok: false, error: 'A reason is required for the audit log.' }
 
-  const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
+  const order = await prisma.printOrder.findUnique({
+    where: { id: orderId },
+    include: {
+      // Cart line items carry the per-artist payouts (PrintOrderItem.transferId
+      // / transferStatus). A whole-order refund must claw back any already-sent
+      // Stripe transfers so the gallery isn't left covering the artists' cuts.
+      // Empty for legacy single-print orders (items.length === 0), whose payout
+      // lives on the header and is intentionally NOT auto-reversed here.
+      items: {
+        select: {
+          id: true,
+          transferId: true,
+          transferStatus: true,
+          artistCents: true,
+          artistUserId: true,
+        },
+      },
+    },
+  })
   if (!order) return { ok: false, error: 'Order not found.' }
   if (order.paymentStatus === 'refunded') {
     return { ok: false, error: 'Order is already refunded.' }
@@ -1070,6 +1088,9 @@ export async function refundOrder(
   }
 
   try {
+    // 1) Make the buyer whole FIRST — one PaymentIntent covers the whole cart.
+    // Doing this before any transfer reversal guarantees the buyer is refunded
+    // even if a later clawback fails (reversals are non-fatal, see below).
     if (order.paymentStatus === 'authorized') {
       await stripe.paymentIntents.cancel(order.paymentIntentId, {
         cancellation_reason: 'requested_by_customer',
@@ -1085,6 +1106,80 @@ export async function refundOrder(
       )
     }
 
+    // 2) Reverse cart line transfers. For a CART order (items.length > 0) each
+    // line was paid to its artist independently, so we claw back each
+    // already-sent Stripe transfer here. Single-print orders skip this block
+    // entirely (their header transfer is left as-is — see payoutAlreadyReleased
+    // below) preserving the legacy behaviour exactly.
+    const reversedItemIds: string[] = []
+    const manualClawbackItemIds: string[] = []
+    const reversalFailures: { orderItemId: string; transferId: string; error: string }[] = []
+
+    for (const item of order.items) {
+      // 'paid' = a real Stripe transfer was sent → reverse it on Stripe.
+      if (item.transferStatus === 'paid' && item.transferId) {
+        try {
+          await stripe.transfers.createReversal(
+            item.transferId,
+            { metadata: { orderId: order.id, orderItemId: item.id, adminReason: reason.slice(0, 500) } },
+            // Per-item idempotency so retrying a refund never double-reverses
+            // a line (or collides with another line's reversal).
+            { idempotencyKey: `reversal:${item.id}` },
+          )
+          await prisma.printOrderItem.update({
+            where: { id: item.id },
+            data: { transferStatus: 'reversed' },
+          })
+          reversedItemIds.push(item.id)
+        } catch (reversalErr) {
+          // Non-fatal: capture, record, and keep going. The buyer refund (above)
+          // and the edition release / refunded state (below) MUST still complete
+          // even if a single clawback fails — the admin reconciles the rest.
+          const errMsg =
+            reversalErr instanceof Error ? reversalErr.message : String(reversalErr)
+          reversalFailures.push({
+            orderItemId: item.id,
+            transferId: item.transferId,
+            error: errMsg,
+          })
+          console.error(
+            `[refundOrder] reversal failed order=${order.id} item=${item.id} transfer=${item.transferId}:`,
+            reversalErr,
+          )
+          captureError(reversalErr, {
+            flow: 'admin',
+            stage: 'refund-order-reverse-transfer',
+            extra: {
+              orderId: order.id,
+              orderItemId: item.id,
+              transferId: item.transferId,
+              artistUserId: item.artistUserId,
+              amountCents: item.artistCents,
+            },
+            level: 'error',
+            fingerprint: ['admin:refund-reversal-failed'],
+          })
+        }
+      } else if (item.transferStatus === 'paid_manual') {
+        // Off-Stripe payout — there's nothing for Stripe to reverse. Flag it so
+        // the admin claws the money back by hand; we don't touch the item here.
+        manualClawbackItemIds.push(item.id)
+        await logOrderEvent({
+          orderId: order.id,
+          kind: 'admin_action',
+          actor: `admin:${adminId}`,
+          message: 'Manual clawback required (off-Stripe artist payout)',
+          payload: {
+            orderItemId: item.id,
+            artistUserId: item.artistUserId,
+            amountCents: item.artistCents,
+            reason,
+          },
+        })
+      }
+    }
+
+    // 3) Mark refunded + release edition numbers (unchanged for both shapes).
     await prisma.printOrder.update({
       where: { id: order.id },
       data: { paymentStatus: 'refunded' },
@@ -1102,7 +1197,15 @@ export async function refundOrder(
       payload: {
         reason,
         amountCents: order.totalCents,
+        // Legacy single-print header payout flag — unchanged. For carts the
+        // header transfer is deprecated, so this is effectively about the
+        // single-print path; the cart clawback detail lives in the fields below.
         payoutAlreadyReleased: !!order.transferId,
+        // Exactly what was clawed back (cart orders): Stripe reversals applied,
+        // off-Stripe lines needing a by-hand clawback, and any reversal failures.
+        reversedItemIds,
+        manualClawbackItemIds,
+        ...(reversalFailures.length > 0 ? { reversalFailures } : {}),
       },
     })
 

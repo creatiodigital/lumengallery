@@ -86,8 +86,11 @@ const buildLifecycle = (order: {
   // Cart orders pay per item — "Artist paid" is reached only when every line
   // is paid (header paidOutAt is never stamped for carts). Legacy single-print
   // orders use the header paidOutAt as before.
+  // A reversed (clawed-back) line keeps its stale paidOutAt, so don't count it
+  // as paid — otherwise a refunded order could still show "Artists paid".
   const paidReached = order.isCart
-    ? order.items.length > 0 && order.items.every((it) => !!it.paidOutAt)
+    ? order.items.length > 0 &&
+      order.items.every((it) => !!it.paidOutAt && it.transferStatus !== 'reversed')
     : !!order.paidOutAt
   return [
     { label: 'New', reached: true },
@@ -133,6 +136,17 @@ const eventDot = (kind: string): DotColor => {
 // artist independently (per-item Stripe Connect transfer), so each line
 // carries its own payout state.
 const ItemPayoutStatus = ({ item }: { item: AdminOrderItem }) => {
+  // A clawed-back line keeps its (stale) paidOutAt, so check 'reversed' FIRST —
+  // otherwise the paidOutAt branch would render it as still 'Paid' on a refunded
+  // order, which is misleading. The reversal date is on the order's event log.
+  if (item.transferStatus === 'reversed') {
+    return (
+      <span style={{ fontSize: 'var(--text-xs)' }}>
+        <Dot color="red" />
+        Reversed (refunded)
+      </span>
+    )
+  }
   if (item.paidOutAt) {
     const isManual = item.transferStatus === 'paid_manual'
     return (
@@ -773,7 +787,9 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         <div className={dashboardStyles.section}>
           <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>Pay the artists</h2>
           {(() => {
-            const paidCount = order.items.filter((it) => it.paidOutAt).length
+            const paidCount = order.items.filter(
+              (it) => it.paidOutAt && it.transferStatus !== 'reversed',
+            ).length
             const allPaid = paidCount === order.items.length
             const partly = paidCount > 0 && !allPaid
             return (
