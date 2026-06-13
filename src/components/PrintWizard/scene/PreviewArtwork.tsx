@@ -39,7 +39,8 @@ const ARTWORK_Z = 0.012
 // Sane fallbacks if the catalog's option visuals don't carry a hint.
 const DEFAULT_MOULDING_WIDTH_CM = 2.0
 const DEFAULT_MOULDING_DEPTH_CM = 2.2
-const DEFAULT_FRAME_HEX = '#0b0b0b'
+// Default frame = "White — Thin" moulding (#f2f2f2), matching the TPS catalog.
+const DEFAULT_FRAME_HEX = '#f2f2f2'
 const DEFAULT_FRAME_ROUGHNESS = 0.4
 const DEFAULT_PAPER_ROUGHNESS = 0.7
 const DEFAULT_MAT_HEX = '#f6f3ec'

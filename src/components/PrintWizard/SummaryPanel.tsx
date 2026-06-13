@@ -99,7 +99,7 @@ export const SummaryPanel = ({
   const showFrame = visuals.framed === true
   const moldingWidthCm = showFrame ? (visuals.mouldingWidthCm ?? 2.0) : 0
   const mattingBorderCm = showFrame ? matCm : 0
-  const moldingColorHex = visuals.frameColorHex ?? '#0b0b0b'
+  const moldingColorHex = visuals.frameColorHex ?? '#f2f2f2'
   const mattingColorHex = visuals.matColorHex ?? '#f6f3ec'
 
   // Floating frame uses a coloured backboard instead of a passepartout —

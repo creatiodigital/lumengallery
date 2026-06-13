@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { Button } from '@/components/ui/Button'
+import { CartIcon } from '@/components/cart/CartIcon'
 import { Icon } from '@/components/ui/Icon'
 import { Modal } from '@/components/ui/Modal'
 import { clearPrintSession } from '@/components/checkout/clearPrintSession'
@@ -31,6 +32,8 @@ import { getProviderQuote } from '@/lib/print-providers/quote'
 import type { LimitedVariantView } from '@/lib/editions/types'
 
 import { LimitedWizard } from './LimitedWizard'
+import { CartAddedModal } from './CartAddedModal'
+import { EditionBadge } from './EditionBadge'
 import { Scene } from './Scene'
 import { StepsPanel } from './StepsPanel'
 import { SummaryPanel } from './SummaryPanel'
@@ -161,28 +164,11 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
     }
   }, [hasSeed, artwork.slug])
 
-  // Quality-reassurance modal. Shown once per artwork — once the buyer
-  // dismisses it, the localStorage flag suppresses it on subsequent
-  // visits to the same artwork's wizard. Initialise closed on SSR to
-  // avoid a hydration mismatch; open in an effect on mount.
-  const introSeenKey = `print-intro-seen:${artwork.slug}`
+  // Edition-details modal — opened ONLY when the buyer clicks "See Details" on
+  // the persistent edition badge. No auto-show: the badge keeps the edition
+  // type visible at all times, without interrupting the buyer.
   const [introOpen, setIntroOpen] = useState(false)
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(introSeenKey) === 'true') return
-    } catch {
-      // localStorage unavailable — fall through and just show it.
-    }
-    setIntroOpen(true)
-  }, [introSeenKey])
-  const dismissIntro = () => {
-    setIntroOpen(false)
-    try {
-      localStorage.setItem(introSeenKey, 'true')
-    } catch {
-      // Non-fatal — buyer will just see it again next time.
-    }
-  }
+  const dismissIntro = () => setIntroOpen(false)
 
   const updateConfig = (patch: Record<string, string>) => {
     setConfig((prev) => {
@@ -266,6 +252,7 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
   const quoteLoading = false
 
   const { addItem } = useCart()
+  const [cartAddedOpen, setCartAddedOpen] = useState(false)
 
   const close = () => {
     clearPrintSession(artwork.slug)
@@ -290,6 +277,7 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
         specsSummary: summarizeConfig(catalog, config),
       }),
     )
+    setCartAddedOpen(true)
   }
 
   return (
@@ -299,17 +287,21 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
           <Logo className={styles.logo} />
         </Link>
         <span />
-        <Button
-          variant="ghost"
-          onClick={close}
-          label="CLOSE"
-          iconRight={<Icon name="close" size={16} />}
-          className={styles.closeButton}
-          aria-label="Close wizard"
-        />
+        <div className={styles.headerActions}>
+          <CartIcon />
+          <Button
+            variant="ghost"
+            onClick={close}
+            label="CLOSE"
+            iconRight={<Icon name="close" size={16} />}
+            className={styles.closeButton}
+            aria-label="Close wizard"
+          />
+        </div>
       </header>
 
       <main className={styles.body}>
+        <EditionBadge editionType="open" onDetails={() => setIntroOpen(true)} />
         <StepsPanel
           catalog={catalog}
           config={config}
@@ -336,31 +328,52 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
         />
       </main>
 
+      {cartAddedOpen && (
+        <CartAddedModal onClose={() => setCartAddedOpen(false)} onContinueShopping={close} />
+      )}
+
       {introOpen && (
         <Modal onClose={dismissIntro} titleId="print-intro-title">
           <div className={styles.introModal}>
             <Monogram className={styles.introMonogram} aria-hidden="true" />
-            <p id="print-intro-title" className={styles.introBody}>
+            <p id="print-intro-title" className={styles.detailLead}>
               Your print of <strong>{artwork.title}</strong> by{' '}
-              <strong>{artwork.artistName}</strong> is an <strong>open edition</strong>:
+              <strong>{artwork.artistName}</strong> is an <strong>open edition</strong> — made to
+              order, with no fixed run and no edition limit.
             </p>
-            <ul className={styles.introList}>
+            <p className={styles.detailSubhead}>The print</p>
+            <ul className={styles.detailList}>
               <li>
                 <strong>Made to order</strong> on premium archival paper (giclée or C-Type),
                 hand-inspected and finished by a specialist fine-art print lab.
               </li>
               <li>
-                You choose the <strong>size, paper and framing</strong> — framed or print-only.
+                <strong>Fully configurable</strong> — choose your size, paper and framing (framed or
+                print-only).
               </li>
               <li>
-                Comes with a <strong>Certificate of Authenticity</strong>.
+                <strong>Not numbered</strong> and not a limited run — available on an ongoing basis.
               </li>
             </ul>
-            <p className={styles.introEdition}>
-              An open edition — not numbered, and available ongoing.
+            <p className={styles.detailSubhead}>Good to know</p>
+            <ul className={styles.detailList}>
+              <li>
+                <strong>No purchase limits</strong> — order as many as you like.
+              </li>
+              <li>
+                Final <strong>VAT</strong> is calculated when you confirm your delivery address at
+                checkout.
+              </li>
+            </ul>
+            <p className={styles.detailTerms}>
+              Please read our{' '}
+              <Link href="/terms-of-sale" target="_blank" rel="noopener noreferrer">
+                full terms of sale
+              </Link>
+              .
             </p>
             <div className={styles.introActions}>
-              <Button variant="primary" label="Continue" onClick={dismissIntro} />
+              <Button variant="primary" label="Close" onClick={dismissIntro} />
             </div>
           </div>
         </Modal>
