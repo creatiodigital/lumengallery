@@ -12,6 +12,8 @@ import { consumePrintReturnUrl } from '@/components/checkout/printReturnUrl'
 import Logo from '@/icons/logo.svg'
 import Monogram from '@/icons/monogram.svg'
 
+import { buildCartItem } from '@/lib/cart/buildCartItem'
+import { useCart } from '@/lib/cart/useCart'
 import { type Catalog, type Quote, summarizeConfig } from '@/lib/print-providers'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
@@ -82,10 +84,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
 
   const selected = available.find((v) => v.id === selectedVariantId) ?? available[0] ?? null
 
-  const config = useMemo(
-    () => (selected ? variantToWizardConfig(selected) : null),
-    [selected],
-  )
+  const config = useMemo(() => (selected ? variantToWizardConfig(selected) : null), [selected])
 
   const quote: Quote | null = useMemo(
     () =>
@@ -116,43 +115,59 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
     [available, country, catalog.providerId, artwork.printPriceCents],
   )
 
+  const { addItem } = useCart()
+  const [addError, setAddError] = useState<string | null>(null)
+
+  // Clear any stale add error when the buyer switches variant — the previous
+  // sold-out message no longer applies to the new selection.
+  useEffect(() => {
+    setAddError(null)
+  }, [selectedVariantId])
+
   const close = () => {
     clearPrintSession(artwork.slug)
     router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!selected || !config || !quote) return
-    const specs = summarizeConfig(catalog, config)
+
+    setAddError(null)
+
+    // `addItem` reserves the edition number server-side BEFORE committing the
+    // line; on sold-out / insufficient stock it throws so we surface a
+    // friendly message and leave the cart untouched. Re-throw so SummaryPanel
+    // does not flip to its "added" state.
     try {
-      sessionStorage.setItem(
-        `print-quote:${artwork.slug}`,
-        JSON.stringify({
+      await addItem(
+        buildCartItem({
+          artwork: {
+            id: artwork.id,
+            slug: artwork.slug,
+            title: artwork.title,
+            artistName: artwork.artistName,
+            thumbnailUrl: artwork.imageUrl,
+          },
           providerId: catalog.providerId,
-          config,
-          country,
-          quote,
-          specs,
+          editionType: 'limited',
           variantId: selected.id,
+          config,
+          quote,
+          artistCents: selected.priceCents ?? artwork.printPriceCents,
+          specsSummary: summarizeConfig(catalog, config),
         }),
       )
-    } catch {
-      // Non-fatal — checkout re-quotes.
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : ''
+      setAddError(
+        reason === 'SOLD_OUT'
+          ? 'This edition just sold out.'
+          : reason.startsWith('ONLY ')
+            ? `Sorry, only ${reason.slice('ONLY '.length).replace(' LEFT', '')} left in this edition.`
+            : 'Could not add to cart. Please try again.',
+      )
+      throw error
     }
-    const params = new URLSearchParams()
-    for (const [key, value] of Object.entries(config.values)) params.set(key, value)
-    if (config.customSize) {
-      params.set('customSize', `${config.customSize.widthCm}x${config.customSize.heightCm}`)
-    }
-    if (config.borders) {
-      for (const [borderId, b] of Object.entries(config.borders)) {
-        params.set(borderId, String(b.allCm))
-      }
-    }
-    if (country) params.set('country', country)
-    params.set('provider', catalog.providerId)
-    params.set('variantId', selected.id)
-    router.push(`/artworks/${artwork.slug}/print/checkout?${params.toString()}`)
   }
 
   return (
@@ -191,13 +206,14 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
               artwork={artwork}
               catalog={catalog}
               config={config}
-              country={country}
               quote={quote}
               quoteLoading={false}
               canContinue
               configReady
               onAddToCart={handleAddToCart}
+              onContinueShopping={close}
               editionLabel={`1/${selected.editionSize}`}
+              addError={addError}
             />
           </>
         ) : (

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import c from 'classnames'
 
+import { CartIcon } from '@/components/cart/CartIcon'
 import { Navigation } from '@/components/ui/Navigation'
 import Logo from '@/icons/logo.svg'
 
@@ -21,6 +22,7 @@ export const Header = ({ borderless = false }: HeaderProps) => {
           <Logo className={styles.logo} />
         </Link>
         <Navigation />
+        <CartIcon />
       </div>
     </header>
   )

@@ -12,6 +12,8 @@ import { consumePrintReturnUrl } from '@/components/checkout/printReturnUrl'
 import Logo from '@/icons/logo.svg'
 import Monogram from '@/icons/monogram.svg'
 
+import { buildCartItem } from '@/lib/cart/buildCartItem'
+import { useCart } from '@/lib/cart/useCart'
 import {
   type Catalog,
   type PrintRecommendations,
@@ -36,6 +38,7 @@ import { SummaryPanel } from './SummaryPanel'
 import styles from './PrintWizard.module.scss'
 
 export type WizardArtwork = {
+  id: string
   slug: string
   title: string
   artistName: string
@@ -227,9 +230,9 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
 
   // Country lives on the checkout step. If the buyer already picked one
   // there and bounced back to the wizard via the URL-seeded path, it
-  // persists via the wizard handoff stash so the summary reflects the
-  // choice (Shipping to: <country> + real shipping line). On fresh
-  // entry (no URL seed) we ignore the stash — that's an abandon-restart.
+  // persists via the wizard handoff stash so it feeds getProviderQuote.
+  // On fresh entry (no URL seed) we ignore the stash — that's an
+  // abandon-restart.
   const [country] = useState<string>(() => {
     if (!hasSeed) return ''
     if (typeof window === 'undefined') return ''
@@ -262,43 +265,31 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
   )
   const quoteLoading = false
 
-  const handleAddToCart = () => {
-    // Stash everything downstream needs so checkout doesn't have to
-    // re-fetch the catalog or re-quote on every render. Country is
-    // forwarded if the buyer already picked it; otherwise empty and
-    // checkout asks for it.
-    const specs = summarizeConfig(catalog, config)
-    if (quote) {
-      try {
-        sessionStorage.setItem(
-          `print-quote:${artwork.slug}`,
-          JSON.stringify({
-            providerId: catalog.providerId,
-            config,
-            country,
-            quote,
-            specs,
-          }),
-        )
-      } catch {
-        // Non-fatal — checkout will re-fetch.
-      }
-    }
-    const params = new URLSearchParams()
-    for (const [key, value] of Object.entries(config.values)) {
-      params.set(key, value)
-    }
-    if (config.customSize) {
-      params.set('customSize', `${config.customSize.widthCm}x${config.customSize.heightCm}`)
-    }
-    if (config.borders) {
-      for (const [borderId, b] of Object.entries(config.borders)) {
-        params.set(borderId, String(b.allCm))
-      }
-    }
-    if (country) params.set('country', country)
-    params.set('provider', catalog.providerId)
-    router.push(`/artworks/${artwork.slug}/print/checkout?${params.toString()}`)
+  const { addItem } = useCart()
+
+  const close = () => {
+    clearPrintSession(artwork.slug)
+    router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
+  }
+
+  const handleAddToCart = async () => {
+    await addItem(
+      buildCartItem({
+        artwork: {
+          id: artwork.id,
+          slug: artwork.slug,
+          title: artwork.title,
+          artistName: artwork.artistName,
+          thumbnailUrl: artwork.imageUrl,
+        },
+        providerId: catalog.providerId,
+        editionType: 'open',
+        config,
+        quote,
+        artistCents: artwork.printPriceCents,
+        specsSummary: summarizeConfig(catalog, config),
+      }),
+    )
   }
 
   return (
@@ -310,10 +301,7 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
         <span />
         <Button
           variant="ghost"
-          onClick={() => {
-            clearPrintSession(artwork.slug)
-            router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
-          }}
+          onClick={close}
           label="CLOSE"
           iconRight={<Icon name="close" size={16} />}
           className={styles.closeButton}
@@ -339,12 +327,12 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
           artwork={artwork}
           catalog={catalog}
           config={config}
-          country={country}
           quote={quote}
           quoteLoading={quoteLoading}
           canContinue={canContinue}
           configReady
           onAddToCart={handleAddToCart}
+          onContinueShopping={close}
         />
       </main>
 

@@ -98,6 +98,7 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
   return (
     <PrintWizard
       artwork={{
+        id: artwork.id,
         slug: artwork.slug ?? slug,
         title: artwork.title ?? artwork.name,
         artistName,
