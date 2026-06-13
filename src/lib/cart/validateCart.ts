@@ -18,6 +18,7 @@ import type { ProviderId, WizardConfig } from '@/lib/print-providers'
 import { getVatRate } from '@/lib/print-providers/printspace/pricing'
 import { validateAndPriceItem } from '@/lib/checkout/validateAndPriceItem'
 import type { ItemPricing } from '@/lib/checkout/validateAndPriceItem'
+import { sanitizeAndValidateAddress } from '@/lib/checkout/sanitizeAndValidateAddress'
 import type { ShippingAddress } from '@/components/checkout/PrintCheckout/createPaymentIntent'
 
 /**
@@ -43,6 +44,14 @@ export type CartLikeItem = {
 export type CartTotals = {
   perItem: Array<{
     lineId: string
+    /** Identity the webhook (Task 9) needs to build PrintOrderItem rows.
+     *  Carried through from validateAndPriceItem. */
+    artworkId: string
+    artistUserId: string
+    /** Server-pinned config (for a limited line this is the variant's
+     *  canonical config, NOT the client's). Persisted as PendingCart
+     *  printConfig so the webhook records what was actually ordered. */
+    effectiveConfig: WizardConfig
     lineProductionCents: number
     lineArtistCents: number
     lineGalleryCents: number
@@ -66,11 +75,30 @@ export async function validateCart(
     return { ok: false, failures: [{ lineId: '', error: 'Your cart is empty.' }] }
   }
 
+  // Address tamper defense at the boundary — mutates `address` in place with
+  // sanitized values so the same object, when handed onward by
+  // createCartPaymentIntent, reaches Stripe + PendingCart already cleaned. A
+  // malformed payload is a tamper signal (validateCart is a server action via
+  // validateCartAction / createCartPaymentIntent), so we return a generic
+  // order-level failure rather than naming which check tripped.
+  if (!sanitizeAndValidateAddress(address).ok) {
+    return {
+      ok: false,
+      failures: [{ lineId: '', error: 'Invalid request. Please reload and try again.' }],
+    }
+  }
+
   // Validate + price every line. Run sequentially: validateAndPriceItem
   // hits the DB + catalog, and carts are small; keeping it ordered also
   // makes the failure list deterministic.
   const failures: CartValidationFailure[] = []
-  const priced: Array<{ item: CartLikeItem; pricing: ItemPricing }> = []
+  const priced: Array<{
+    item: CartLikeItem
+    pricing: ItemPricing
+    artworkId: string
+    artistUserId: string
+    effectiveConfig: WizardConfig
+  }> = []
 
   for (const item of items) {
     // Quantity is client-supplied (the cart lives in localStorage) and is
@@ -96,7 +124,13 @@ export async function validateCart(
       failures.push({ lineId: item.lineId, error: result.error })
       continue
     }
-    priced.push({ item, pricing: result.pricing })
+    priced.push({
+      item,
+      pricing: result.pricing,
+      artworkId: result.artworkId,
+      artistUserId: result.artistUserId,
+      effectiveConfig: result.effectiveConfig,
+    })
   }
 
   if (failures.length > 0) {
@@ -107,8 +141,11 @@ export async function validateCart(
   // artwork line ONLY (shipping-free by contract — see validateAndPriceItem),
   // so itemsPreTaxCents below holds artwork-only subtotals and the single
   // consolidated shipping line is added exactly once into the taxable base.
-  const perItem = priced.map(({ item, pricing }) => ({
+  const perItem = priced.map(({ item, pricing, artworkId, artistUserId, effectiveConfig }) => ({
     lineId: item.lineId,
+    artworkId,
+    artistUserId,
+    effectiveConfig,
     lineProductionCents: pricing.productionCents * item.quantity,
     lineArtistCents: pricing.artistCents * item.quantity,
     lineGalleryCents: pricing.galleryCents * item.quantity,

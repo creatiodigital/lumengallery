@@ -17,8 +17,11 @@ import { formatEuro } from '@/lib/print-providers'
 import { getCountryName } from '@/lib/print-providers/dialCodes'
 import type { ShippingAddress } from '@/components/checkout/PrintCheckout/createPaymentIntent'
 
+import { CartConfirmation } from './CartConfirmation'
+import { CartPayment } from './CartPayment'
 import { createCartPaymentIntent } from './createCartPaymentIntent'
 import { validateCartAction } from './validateCartAction'
+import { verifyCartPaymentAction } from './verifyCartPaymentAction'
 
 import styles from './CartCheckout.module.scss'
 
@@ -35,7 +38,7 @@ const toCartLikeItem = (item: CartItem): CartLikeItem => ({
   quantity: item.quantity,
 })
 
-type Step = 'address' | 'review'
+type Step = 'address' | 'review' | 'payment' | 'confirmation'
 
 // Mirror the cart page heartbeat so an engaged buyer's limited-edition hold
 // doesn't lapse while they fill in the address / review the order. Well under
@@ -44,7 +47,7 @@ type Step = 'address' | 'review'
 const HOLD_HEARTBEAT_MS = 5 * 60 * 1000
 
 export const CartCheckout = () => {
-  const { items, extendHolds } = useCart()
+  const { items, extendHolds, clear } = useCart()
 
   // Keep limited-edition holds alive on the checkout surface too. Without this
   // a buyer could sit on /checkout past the TTL and only discover the loss at
@@ -65,9 +68,17 @@ export const CartCheckout = () => {
     return () => window.clearInterval(id)
   }, [hasLimitedHolds])
 
+  // Becomes true the moment payment is authorized (no-redirect path) or a 3DS
+  // return is verified. Suppresses the empty-cart view after clear() empties
+  // the cart, so the confirmation step renders instead.
+  const paidRef = useRef(false)
   const [step, setStep] = useState<Step>('address')
   const [address, setAddress] = useState<ShippingAddress | null>(null)
   const [totals, setTotals] = useState<CartTotals | null>(null)
+  // Set once createCartPaymentIntent succeeds; drives the Stripe Elements
+  // mount on the payment step.
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   // Order-level error (e.g. empty cart, ceiling). Per-line failures are kept
   // separately so we can attach the message to the offending line.
@@ -76,7 +87,39 @@ export const CartCheckout = () => {
   const [lineErrors, setLineErrors] = useState<Record<string, string>>({})
   const [payError, setPayError] = useState<string | null>(null)
 
-  if (items.length === 0) {
+  // 3DS return path. When a card needs authentication, Stripe redirects to
+  // return_url (/checkout) with ?payment_intent=... Verify it server-side
+  // (never trust redirect_status), then clear the cart and land on the
+  // confirmation step. Runs once on mount; the URL param presence gates it so
+  // a normal /checkout visit is unaffected.
+  const handledReturnRef = useRef(false)
+  useEffect(() => {
+    if (handledReturnRef.current) return
+    handledReturnRef.current = true
+    const params = new URLSearchParams(window.location.search)
+    const returnedPi = params.get('payment_intent')
+    if (!returnedPi) return
+    void (async () => {
+      const result = await verifyCartPaymentAction(returnedPi)
+      if (!result.ok) {
+        // Auth failed / unknown PI — drop the buyer back to the address step
+        // with a retry message rather than a false success.
+        setPayError('Payment could not be completed. Please try again.')
+        return
+      }
+      paidRef.current = true
+      setPaymentIntentId(result.paymentIntentId)
+      setStep('confirmation')
+      await clear()
+      // Strip the Stripe params so a refresh doesn't re-trigger this path.
+      window.history.replaceState(null, '', '/checkout')
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // After a successful payment the cart is emptied — but we must keep showing
+  // the confirmation, not the "empty cart" view. paidRef gates that.
+  if (items.length === 0 && !paidRef.current) {
     return (
       <PageLayout>
         <PageHeader pageTitle="Checkout" />
@@ -125,29 +168,66 @@ export const CartCheckout = () => {
     setStep('address')
     setTotals(null)
     setPayError(null)
+    // Discard any PI created for the old address. A later proceed re-runs
+    // createCartPaymentIntent — identical inputs return the same PI
+    // (idempotent), different inputs mint a new one; the abandoned PI's auth
+    // expires/cancels via Stripe.
+    setClientSecret(null)
+    setPaymentIntentId(null)
   }
 
-  // SEAM → AR-129 Task 8. Today createCartPaymentIntent throws; we surface a
-  // friendly message rather than crash. Task 8 swaps the body for a real
-  // PaymentIntent and routes the buyer to the payment step.
+  // Return from the payment step to the review step without discarding the PI
+  // (the same clientSecret remounts on a re-proceed). "Change address" is the
+  // path that resets the PI.
+  const handleBackToReview = () => {
+    setStep('review')
+    setPayError(null)
+  }
+
   const handleProceedToPayment = async () => {
     if (!address) return
     setSubmitting(true)
     setPayError(null)
     try {
       const result = await createCartPaymentIntent({
-        items: items.map(toCartLikeItem),
+        // The PI call needs each limited line's client-held edition numbers
+        // so it can reuse them instead of minting fresh stock; carry them
+        // through (toCartLikeItem deliberately drops them for the cheaper
+        // address-step revalidation).
+        items: items.map((item) => ({
+          ...toCartLikeItem(item),
+          editionNumberIds: item.editionNumberIds,
+        })),
         address,
       })
-      // Unreachable until Task 8 returns ok:true — the stub throws.
       if (!result.ok) {
+        // Sold-out / validation failure: surface inline and send the buyer
+        // back to the address step where the per-line cart context shows
+        // which item is the problem.
         setPayError(result.error)
+        setStep('address')
+        return
       }
+      setClientSecret(result.clientSecret)
+      setPaymentIntentId(result.paymentIntentId)
+      setTotals(result.totals)
+      setStep('payment')
     } catch {
-      setPayError('Payment is not available yet. Please try again later.')
+      setPayError('Payment is not available right now. Please try again later.')
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // Card authorized (manual capture → requires_capture). Mark paid BEFORE
+  // clearing so the empty-cart guard yields to the confirmation step, then
+  // clear the cart. clear() releases only still-unattached holds; this cart's
+  // numbers now carry the PI, so releaseCartHolds no-ops on them — correct.
+  const handlePaymentSuccess = (confirmedPaymentIntentId: string) => {
+    paidRef.current = true
+    setPaymentIntentId(confirmedPaymentIntentId)
+    setStep('confirmation')
+    void clear()
   }
 
   return (
@@ -174,6 +254,14 @@ export const CartCheckout = () => {
               <Text as="p" size="sm" className={styles.orderError}>
                 Some items in your order are no longer available. Please update your cart and try
                 again.
+              </Text>
+            )}
+            {/* Payment-side failures route the buyer back here (sold-out at the
+                PI call, or a failed 3DS return) — surface the message so it's
+                not lost on the address step. */}
+            {payError && (
+              <Text as="p" size="sm" className={styles.orderError}>
+                {payError}
               </Text>
             )}
           </div>
@@ -261,9 +349,6 @@ export const CartCheckout = () => {
               </Text>
             )}
 
-            {/* SEAM → AR-129 Task 8: wire this to the real cart PaymentIntent.
-                Today createCartPaymentIntent throws and we show payError. Do
-                NOT ship cart checkout to users until Task 8 lands. */}
             <Button
               variant="primary"
               size="bigSquared"
@@ -277,6 +362,20 @@ export const CartCheckout = () => {
             />
           </div>
         </div>
+      )}
+
+      {step === 'payment' && totals && address && clientSecret && (
+        <CartPayment
+          clientSecret={clientSecret}
+          totals={totals}
+          address={address}
+          onSuccess={handlePaymentSuccess}
+          onBack={handleBackToReview}
+        />
+      )}
+
+      {step === 'confirmation' && paymentIntentId && (
+        <CartConfirmation paymentIntentId={paymentIntentId} />
       )}
     </PageLayout>
   )

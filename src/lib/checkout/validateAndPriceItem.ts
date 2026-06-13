@@ -70,7 +70,15 @@ export type ItemPricing = {
 }
 
 export type ItemValidationResult =
-  | { ok: true; pricing: ItemPricing; effectiveConfig: WizardConfig }
+  | {
+      ok: true
+      pricing: ItemPricing
+      effectiveConfig: WizardConfig
+      /** Identity the webhook (Task 9) needs to build a PrintOrderItem row.
+       *  Additive — the single-print path doesn't read these. */
+      artworkId: string
+      artistUserId: string
+    }
   | { ok: false; error: string }
 
 /**
@@ -226,6 +234,8 @@ export async function validateAndPriceItem(
   return {
     ok: true,
     effectiveConfig,
+    artworkId: artwork.id,
+    artistUserId: artwork.userId,
     pricing: {
       artistCents,
       galleryCents,

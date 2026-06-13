@@ -421,6 +421,37 @@ model PrintOrderItem {
   @@index([transferStatus])
 }
 
+// Server-side staging row for a multi-item cart checkout (AR-129). Stripe
+// metadata can't hold a multi-item cart (500-char limit), so the validated
+// line items + computed money are persisted here keyed by the PaymentIntent
+// id at PI-creation time. The Stripe webhook reads this row to build the
+// PrintOrder + PrintOrderItem rows, then deletes it. A row left behind means
+// the buyer never authorized — safe to sweep later.
+model PendingCart {
+  id              String @id @default(uuid())
+  paymentIntentId String @unique
+
+  buyerEmail      String
+  buyerName       String
+  shippingAddress Json // ShippingAddress snapshot
+  country         String
+
+  // Validated line items (artworkId, artistUserId, printConfig, quantity,
+  // per-line money, and held editionNumberIds for limited lines) — the
+  // authoritative source the webhook builds PrintOrderItem rows from.
+  items Json
+
+  // Order rollups in cents (recomputed server-side at PI creation).
+  totalCents       Int
+  shippingCents    Int
+  customerVatCents Int
+  currency         String @default("eur")
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // Append-only audit trail for everything that happens to a PrintOrder.
 // Every webhook, every API call we make, every admin action emits a row.
 // Used for debugging, incident review, and rendering the order timeline
