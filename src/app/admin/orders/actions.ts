@@ -909,8 +909,12 @@ export async function markPlaced(
   // only; a no-op for open orders). Our ledger is authoritative — the
   // admin still mirrors this number as sold in TPS by hand.
   await markEditionNumberSold(order.paymentIntentId)
-  const soldNumber = await prisma.editionNumber.findUnique({
-    where: { orderId: order.id },
+  // Resolve the order's edition number for the timeline event. Single-print
+  // orders bind via the deprecated EditionNumber.orderId; cart orders bind
+  // via EditionNumber.orderItem.orderId (orderId stays null). Match either
+  // so the 'edition_sold' event fires for both paths.
+  const soldNumber = await prisma.editionNumber.findFirst({
+    where: { OR: [{ orderId: order.id }, { orderItem: { orderId: order.id } }] },
     select: { number: true, variant: { select: { name: true, editionSize: true } } },
   })
   if (soldNumber) {
@@ -946,8 +950,11 @@ export async function markEditionMirroredInTps(
   const guard = await requireAdminSession()
   if (!guard.ok) return guard
 
-  const en = await prisma.editionNumber.findUnique({
-    where: { orderId },
+  // Single-print orders bind via the deprecated EditionNumber.orderId; cart
+  // orders bind via EditionNumber.orderItem.orderId (orderId stays null).
+  // Match either so the mirror step works for both paths.
+  const en = await prisma.editionNumber.findFirst({
+    where: { OR: [{ orderId }, { orderItem: { orderId } }] },
     select: { number: true, variant: { select: { name: true, editionSize: true } } },
   })
   if (!en) return { ok: false, error: 'This order has no edition number to mirror.' }

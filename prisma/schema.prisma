@@ -289,8 +289,11 @@ model EditionNumber {
   // The Stripe PI that currently holds this number while reserved/sold;
   // cleared on release. Bound to a PrintOrderItem at auth (cart flow).
   paymentIntentId String?
-  orderItemId     String?         @unique
-  orderItem       PrintOrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  // NOT @unique: a PrintOrderItem with quantity > 1 (e.g. buying #29 and #30
+  // of a limited edition) owns MULTIPLE EditionNumbers — this is the "many"
+  // side of PrintOrderItem.editionNumbers (one-to-many).
+  orderItemId String?
+  orderItem   PrintOrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
 
   // DEPRECATED (AR-129) — single-print one-to-one link to PrintOrder. Cart
   // flow uses orderItemId. Kept additively until the AR-129 cleanup task.
