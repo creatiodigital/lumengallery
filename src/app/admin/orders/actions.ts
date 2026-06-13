@@ -44,6 +44,9 @@ export type AdminOrderRow = {
   transferStatus: string | null
   paidOutAt: string | null
   latestEvent: { kind: string; message: string | null; at: string } | null
+  /** Number of PrintOrderItem line rows. 0 = legacy single-print order
+   *  (data on the header), > 0 = cart order. */
+  itemCount: number
 }
 
 async function requireAdminSession() {
@@ -80,6 +83,7 @@ export async function listOrders(): Promise<
         take: 1,
         select: { kind: true, message: true, at: true },
       },
+      _count: { select: { items: true } },
     },
   })
 
@@ -114,6 +118,7 @@ export async function listOrders(): Promise<
     latestEvent: r.events[0]
       ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
       : null,
+    itemCount: r._count.items,
   }))
 
   return { ok: true, orders }
@@ -128,6 +133,36 @@ export type AdminOrderEvent = {
   payload: unknown
 }
 
+/** One line of a multi-item (cart) order, sourced from PrintOrderItem.
+ *  The authoritative per-line data for cart orders. Empty on legacy
+ *  single-print orders. */
+export type AdminOrderItem = {
+  id: string
+  artworkTitle: string
+  artworkSlug: string | null
+  artistName: string
+  quantity: number
+  productionCents: number
+  artistCents: number
+  galleryCents: number
+  /** Per-item Stripe Connect payout (cart orders pay each artist
+   *  independently, so an order can be partly paid out). */
+  transferId: string | null
+  transferStatus: string | null
+  paidOutAt: string | null
+  /** Display-only spec rows derived from this line's printConfig + the
+   *  live catalog. Empty fallback on any catalog/summarize failure. */
+  specsSummary: SpecsSummary
+  /** Edition labels like ['29/50', '30/50'] for limited lines; empty for
+   *  open editions. */
+  editionLabels: string[]
+  /** Copy-ready TPS manual-fulfillment lines, one per numbered copy on a
+   *  limited line (e.g. ['Giclée · ... · 29/50', '... · 30/50']). Empty for
+   *  open editions. Mirrors the legacy single-print `edition.tpsSku` so the
+   *  admin gets the same paste-ready line per cart item. */
+  tpsSkus: string[]
+}
+
 export type AdminOrderDetail = AdminOrderRow & {
   shippingAddress: unknown
   printConfig: unknown
@@ -135,6 +170,13 @@ export type AdminOrderDetail = AdminOrderRow & {
   productionShippingCents: number
   galleryCents: number
   customerVatCents: number
+  /** True when the order has PrintOrderItem rows (cart order). The UI
+   *  branches on this: cart → line-items table; legacy → single artwork
+   *  + config block. */
+  isCart: boolean
+  /** Per-line items for cart orders; empty array for legacy single-print
+   *  orders (all data is on the header fields above). */
+  items: AdminOrderItem[]
   /** Server-rendered spec rows (Print type / Paper / Frame / Glass / etc.)
    *  derived from `printConfig` + the catalog. The admin pastes these
    *  into theprintspace's "Order Prints" form. */
@@ -159,6 +201,12 @@ export type AdminOrderDetail = AdminOrderRow & {
 }
 
 export type AdminPayoutRow = {
+  /** Stable React key. Per-order for legacy header payouts, per-item for
+   *  cart payouts (so one cart order can contribute several rows). transferId
+   *  is unsuitable as a key because manual payouts leave it null. */
+  rowKey: string
+  /** 'header' = legacy single-print order payout; 'item' = one cart line. */
+  source: 'header' | 'item'
   orderId: string
   paidOutAt: string
   artistName: string
@@ -174,29 +222,63 @@ export type AdminPayoutRow = {
 
 /**
  * Returns every released artist payout, newest first. Used by the
- * /admin/payouts page for tax/accounting records. Only includes orders
- * where `transferId` is non-null (i.e. money has actually moved).
+ * /admin/payouts page for tax/accounting records.
+ *
+ * UNION of two sources, one AdminPayoutRow per actual payout:
+ *   - legacy single-print orders, where the payout is stamped on the
+ *     PrintOrder header, and
+ *   - cart orders, where each PrintOrderItem is paid independently and the
+ *     payout is stamped per line.
+ *
+ * "Money actually moved" = paidOutAt set. This is the universal paid signal
+ * for both Stripe Connect transfers (transferId set) and out-of-band manual
+ * payments (transferStatus 'paid_manual', transferId null), so manual
+ * payouts stay listed as before. Cart orders may contribute several rows —
+ * one per paid line.
+ *
+ * The two sources are over-fetched (PAYOUT_PAGE each) then merged, globally
+ * re-sorted by paidOutAt, and sliced to PAYOUT_PAGE so the result is a TRUE
+ * global newest-N — never a per-source cutoff that could drop a recent payout
+ * from one source while showing an older one from the other.
  */
+const PAYOUT_PAGE = 500
 export async function listArtistPayouts(): Promise<
   { ok: true; payouts: AdminPayoutRow[] } | { ok: false; error: string }
 > {
   const guard = await requireAdminSession()
   if (!guard.ok) return guard
 
-  const rows = await prisma.printOrder.findMany({
-    // Both Stripe Connect transfers and out-of-band manual payments
-    // stamp paidOutAt — that's the universal "the artist has been paid"
-    // signal. transferId only tracks the Stripe path.
-    where: { paidOutAt: { not: null } },
+  // Legacy header payouts (single-print orders only). paidOutAt covers both
+  // the Stripe path (transferId set) and manual payouts (transferId null) —
+  // identical to the prior behaviour so nothing single-print regresses.
+  // `items: none` excludes cart orders so we never list a cart's deprecated
+  // header rollup alongside its authoritative per-item rows.
+  const headerRows = await prisma.printOrder.findMany({
+    where: { paidOutAt: { not: null }, items: { none: {} } },
     orderBy: { paidOutAt: 'desc' },
-    take: 500,
+    take: PAYOUT_PAGE,
     include: {
       artwork: { select: { title: true, slug: true } },
       artistUser: { select: { name: true, lastName: true, email: true } },
     },
   })
 
-  const payouts: AdminPayoutRow[] = rows.map((r) => ({
+  // Per-item payouts for cart orders. Each paid line is its own payout
+  // (Stripe transfer or manual), keyed off the same paidOutAt signal.
+  const itemRows = await prisma.printOrderItem.findMany({
+    where: { paidOutAt: { not: null } },
+    orderBy: { paidOutAt: 'desc' },
+    take: PAYOUT_PAGE,
+    include: {
+      order: { select: { currency: true } },
+      artwork: { select: { title: true, slug: true } },
+      artistUser: { select: { name: true, lastName: true, email: true } },
+    },
+  })
+
+  const headerPayouts: AdminPayoutRow[] = headerRows.map((r) => ({
+    rowKey: `header:${r.id}`,
+    source: 'header',
     orderId: r.id,
     paidOutAt: (r.paidOutAt ?? r.updatedAt).toISOString(),
     artistName: `${r.artistUser.name} ${r.artistUser.lastName}`.trim(),
@@ -209,10 +291,37 @@ export async function listArtistPayouts(): Promise<
     transferStatus: r.transferStatus,
   }))
 
+  const itemPayouts: AdminPayoutRow[] = itemRows.map((it) => ({
+    rowKey: `item:${it.id}`,
+    source: 'item',
+    orderId: it.orderId,
+    paidOutAt: (it.paidOutAt ?? it.updatedAt).toISOString(),
+    artistName: `${it.artistUser.name} ${it.artistUser.lastName}`.trim(),
+    artistEmail: it.artistUser.email ?? null,
+    artworkTitle: it.artwork.title ?? it.artwork.slug ?? '(untitled)',
+    artworkSlug: it.artwork.slug,
+    amountCents: it.artistCents,
+    currency: it.order.currency,
+    transferId: it.transferId,
+    transferStatus: it.transferStatus,
+  }))
+
+  // Merge, globally re-sort, then slice to a true global newest-N. Slicing
+  // after the merged sort (rather than relying on each source's own take)
+  // guarantees the cutoff is global: if one source has > PAYOUT_PAGE rows we
+  // still drop only the genuinely-oldest payouts across both sources.
+  const payouts = [...headerPayouts, ...itemPayouts]
+    .sort((a, b) => Date.parse(b.paidOutAt) - Date.parse(a.paidOutAt))
+    .slice(0, PAYOUT_PAGE)
+
   return { ok: true, payouts }
 }
 
 export type EditionSaleRow = {
+  /** EditionNumber PK — globally unique per numbered copy. Stable React key
+   *  that never collides even when a multi-item cart holds two different
+   *  variants sharing a name + number (variant names are non-unique). */
+  id: string
   artworkTitle: string
   artworkSlug: string | null
   variantName: string
@@ -238,37 +347,51 @@ export async function listEditionSales(): Promise<
   const guard = await requireAdminSession()
   if (!guard.ok) return guard
 
+  // An EditionNumber is bound to a sale via EITHER the legacy single-print
+  // path (orderId → order, AR-129-deprecated) OR the cart path
+  // (orderItemId → orderItem → order). Cover both: select the parent order
+  // through whichever link is present so the ledger lists every reserved/sold
+  // number for both order shapes.
+  const orderSelect = {
+    id: true,
+    buyerName: true,
+    buyerEmail: true,
+    createdAt: true,
+    tpsEditionMirroredAt: true,
+  } as const
+
   const rows = await prisma.editionNumber.findMany({
     where: { state: { in: ['reserved', 'sold'] } },
     orderBy: [{ soldAt: 'desc' }, { reservedAt: 'desc' }],
     take: 1000,
     include: {
       variant: { include: { artwork: { select: { title: true, slug: true } } } },
-      order: {
-        select: {
-          id: true,
-          buyerName: true,
-          buyerEmail: true,
-          createdAt: true,
-          tpsEditionMirroredAt: true,
-        },
-      },
+      order: { select: orderSelect },
+      orderItem: { select: { order: { select: orderSelect } } },
     },
   })
 
-  const sales: EditionSaleRow[] = rows.map((r) => ({
-    artworkTitle: r.variant.artwork.title ?? '(untitled)',
-    artworkSlug: r.variant.artwork.slug,
-    variantName: r.variant.name,
-    number: r.number,
-    editionSize: r.variant.editionSize,
-    state: r.state,
-    buyerName: r.order?.buyerName ?? null,
-    buyerEmail: r.order?.buyerEmail ?? r.buyerEmail ?? null,
-    orderId: r.order?.id ?? null,
-    date: (r.soldAt ?? r.reservedAt)?.toISOString() ?? null,
-    mirroredInTps: Boolean(r.order?.tpsEditionMirroredAt),
-  }))
+  const sales: EditionSaleRow[] = rows.map((r) => {
+    // Resolve the parent order from whichever binding path is present:
+    // legacy single-print uses r.order; cart uses r.orderItem.order.
+    const order = r.order ?? r.orderItem?.order ?? null
+    return {
+      id: r.id,
+      artworkTitle: r.variant.artwork.title ?? '(untitled)',
+      artworkSlug: r.variant.artwork.slug,
+      variantName: r.variant.name,
+      number: r.number,
+      editionSize: r.variant.editionSize,
+      state: r.state,
+      buyerName: order?.buyerName ?? null,
+      // Cart rows denormalise buyerEmail onto the EditionNumber; prefer the
+      // resolved order's email, fall back to the row snapshot.
+      buyerEmail: order?.buyerEmail ?? r.buyerEmail ?? null,
+      orderId: order?.id ?? null,
+      date: (r.soldAt ?? r.reservedAt)?.toISOString() ?? null,
+      mirroredInTps: Boolean(order?.tpsEditionMirroredAt),
+    }
+  })
 
   return { ok: true, sales }
 }
@@ -302,6 +425,31 @@ export async function getOrderDetail(
       },
       events: { orderBy: { at: 'desc' } },
       editionNumber: { include: { variant: true } },
+      items: {
+        orderBy: { createdAt: 'asc' },
+        include: {
+          artwork: { select: { title: true, slug: true, imageUrl: true } },
+          artistUser: { select: { name: true, lastName: true } },
+          editionNumbers: {
+            orderBy: { number: 'asc' },
+            select: {
+              number: true,
+              state: true,
+              variant: {
+                select: {
+                  name: true,
+                  paperId: true,
+                  printTypeId: true,
+                  widthCm: true,
+                  heightCm: true,
+                  borderCm: true,
+                  editionSize: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   })
   if (!r) return { ok: false, error: 'Order not found.' }
@@ -346,6 +494,57 @@ export async function getOrderDetail(
     }
   }
 
+  // Per-line items for cart orders. Empty for legacy single-print orders
+  // (items.length === 0), in which case the UI uses the header fields. Each
+  // item's specsSummary is derived display-only from its own printConfig +
+  // the live catalog, falling back to an empty array on any failure (mirrors
+  // the header `specs` behaviour above).
+  const items: AdminOrderItem[] = await Promise.all(
+    r.items.map(async (it) => {
+      let specsSummary: SpecsSummary = []
+      try {
+        const catalog = await loadProviderCatalog('printspace', {
+          imageWidthPx: 1000,
+          imageHeightPx: 1000,
+        })
+        specsSummary = summarizeConfig(catalog, it.printConfig as WizardConfig)
+      } catch {
+        // non-fatal
+      }
+      // One copy-ready TPS Sell-as-Print line per numbered copy on this line,
+      // mirroring the legacy single-print `edition.tpsSku` so the admin gets
+      // the same paste-ready string for every limited cart item. Empty for
+      // open editions (no edition numbers).
+      const tpsSkus = it.editionNumbers.map((en) => {
+        const v = en.variant
+        const paperLabel = TPS_PAPERS.find((p) => p.id === v.paperId)?.label ?? v.paperId
+        const printTypeLabel =
+          TPS_PRINT_TYPES.find((t) => t.id === v.printTypeId)?.label ?? v.printTypeId
+        return (
+          `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm` +
+          ` + ${v.borderCm}cm border · Print Only · ${en.number}/${v.editionSize}`
+        )
+      })
+      return {
+        id: it.id,
+        artworkTitle: it.artwork.title ?? it.artwork.slug ?? '(untitled)',
+        artworkSlug: it.artwork.slug,
+        artistName: `${it.artistUser.name} ${it.artistUser.lastName}`.trim(),
+        quantity: it.quantity,
+        productionCents: it.productionCents,
+        artistCents: it.artistCents,
+        galleryCents: it.galleryCents,
+        transferId: it.transferId,
+        transferStatus: it.transferStatus,
+        paidOutAt: it.paidOutAt?.toISOString() ?? null,
+        specsSummary,
+        editionLabels: it.editionNumbers.map((en) => `${en.number}/${en.variant.editionSize}`),
+        tpsSkus,
+      }
+    }),
+  )
+  const isCart = items.length > 0
+
   const order: AdminOrderDetail = {
     id: r.id,
     paymentIntentId: r.paymentIntentId,
@@ -373,12 +572,15 @@ export async function getOrderDetail(
     latestEvent: r.events[0]
       ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
       : null,
+    itemCount: items.length,
     shippingAddress: r.shippingAddress,
     printConfig: r.printConfig,
     productionCents: r.productionCents,
     productionShippingCents: r.productionShippingCents,
     galleryCents: r.galleryCents,
     customerVatCents: r.customerVatCents,
+    isCart,
+    items,
     specs,
     assetUrl: r.artwork.originalImageUrl ?? r.artwork.imageUrl ?? null,
     thumbnailUrl: r.artwork.imageUrl ?? r.artwork.originalImageUrl ?? null,
@@ -430,9 +632,19 @@ export async function releasePayout(
         select: { stripeAccountId: true, stripeOnboardingComplete: true, name: true, email: true },
       },
       artwork: { select: { title: true, slug: true } },
+      _count: { select: { items: true } },
     },
   })
   if (!order) return { ok: false, error: 'Order not found.' }
+
+  // Defense-in-depth: the header payout pays the header rollup artistCents
+  // (Σ all artists' cuts) to the header artistUserId (the FIRST item's artist
+  // only) for a cart order — a cross-artist mispayment. The UI hides this
+  // block for carts, but this server action is directly invocable. Cart
+  // orders MUST be paid per line via releaseItemPayout.
+  if (order._count.items > 0) {
+    return { ok: false, error: 'Cart order — pay each item via the per-item payout.' }
+  }
 
   if (order.paymentStatus !== 'succeeded') {
     return { ok: false, error: `Payment not succeeded (status: ${order.paymentStatus}).` }
@@ -547,8 +759,18 @@ export async function markPaidManually(
   const method = (opts.method ?? '').trim()
   if (!method) return { ok: false, error: 'A payment method is required (e.g. SEPA, Wise).' }
 
-  const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
+  const order = await prisma.printOrder.findUnique({
+    where: { id: orderId },
+    include: { _count: { select: { items: true } } },
+  })
   if (!order) return { ok: false, error: 'Order not found.' }
+
+  // Defense-in-depth: same cross-artist mispayment risk as releasePayout —
+  // the header amount/artist are deprecated rollups for carts. Record manual
+  // payouts per line via markItemPaidManually instead.
+  if (order._count.items > 0) {
+    return { ok: false, error: 'Cart order — record each item via the per-item payout.' }
+  }
 
   if (order.paymentStatus !== 'succeeded') {
     return { ok: false, error: `Payment not succeeded (status: ${order.paymentStatus}).` }
@@ -590,6 +812,225 @@ export async function markPaidManually(
       note: opts.note?.trim() || undefined,
       amountCents: order.artistCents,
       currency: order.currency,
+    },
+  })
+
+  return { ok: true }
+}
+
+/**
+ * Per-item version of `releasePayout` for cart orders. Each PrintOrderItem
+ * is a separate artist's share, so a mixed-artist cart is paid out line by
+ * line and an order can be partly paid out.
+ *
+ * Mirrors `releasePayout`'s guards exactly, sourced from the parent order
+ * (payment succeeded + fulfillment Complete) and the line item (no existing
+ * transferId, artist onboarded, amount > 0). On success it stamps the
+ * PrintOrderItem (not the header) and logs a 'payout_released' event on the
+ * parent order so the timeline shows each artist being paid.
+ */
+export async function releaseItemPayout(
+  orderItemId: string,
+): Promise<{ ok: true; transferId: string } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const item = await prisma.printOrderItem.findUnique({
+    where: { id: orderItemId },
+    include: {
+      order: {
+        select: {
+          id: true,
+          paymentStatus: true,
+          fulfillmentStatus: true,
+          paymentIntentId: true,
+          currency: true,
+        },
+      },
+      artistUser: {
+        select: { stripeAccountId: true, stripeOnboardingComplete: true, name: true, email: true },
+      },
+      artwork: { select: { title: true, slug: true } },
+    },
+  })
+  if (!item) return { ok: false, error: 'Order item not found.' }
+
+  const order = item.order
+  // Same payout preconditions as the header path — the gate lives on the
+  // parent order (the buyer paid once, the order was delivered once).
+  if (order.paymentStatus !== 'succeeded') {
+    return { ok: false, error: `Payment not succeeded (status: ${order.paymentStatus}).` }
+  }
+  if (order.fulfillmentStatus !== STAGE_COMPLETE) {
+    return {
+      ok: false,
+      error: `Order is "${order.fulfillmentStatus ?? 'pending'}"; wait until Complete before releasing.`,
+    }
+  }
+  if (item.transferId) {
+    return { ok: false, error: `Item payout already released (${item.transferId}).` }
+  }
+  const artistAccountId = item.artistUser.stripeAccountId
+  if (!artistAccountId || !item.artistUser.stripeOnboardingComplete) {
+    return { ok: false, error: 'Artist has not completed Stripe Connect onboarding.' }
+  }
+  if (item.artistCents <= 0) {
+    return { ok: false, error: 'Artist amount is zero.' }
+  }
+
+  const artworkTitle = item.artwork.title ?? item.artwork.slug ?? '(untitled)'
+
+  try {
+    const transfer = await stripe.transfers.create(
+      {
+        amount: item.artistCents,
+        currency: order.currency,
+        destination: artistAccountId,
+        transfer_group: order.paymentIntentId,
+        description: `Artist payout for order ${order.id} item ${item.id}`,
+        metadata: {
+          orderId: order.id,
+          orderItemId: item.id,
+          paymentIntentId: order.paymentIntentId,
+        },
+      },
+      // Per-item idempotency key so paying one line never collides with
+      // another line (or the legacy header payout key).
+      { idempotencyKey: `payout:item:${item.id}` },
+    )
+
+    await prisma.printOrderItem.update({
+      where: { id: item.id },
+      data: {
+        transferId: transfer.id,
+        transferStatus: 'paid',
+        paidOutAt: new Date(),
+      },
+    })
+
+    await logOrderEvent({
+      orderId: order.id,
+      kind: 'payout_released',
+      actor: `admin:${guard.session.user.id}`,
+      message: `Payout released to ${`${item.artistUser.name ?? ''}`.trim() || 'artist'} for "${artworkTitle}"`,
+      payload: {
+        orderItemId: item.id,
+        transferId: transfer.id,
+        amountCents: item.artistCents,
+        currency: order.currency,
+        artworkTitle,
+      },
+    })
+
+    if (item.artistUser.email) {
+      const emailRes = await sendArtistPayoutEmail({
+        to: item.artistUser.email,
+        artistFirstName: item.artistUser.name ?? '',
+        artworkTitle,
+        amountCents: item.artistCents,
+        currency: order.currency,
+        transferId: transfer.id,
+      })
+      await logOrderEvent({
+        orderId: order.id,
+        kind: emailRes.ok ? 'email_sent' : 'email_failed',
+        actor: 'system',
+        message: 'artist_payout',
+        payload: emailRes.ok
+          ? { to: item.artistUser.email, orderItemId: item.id, resendId: emailRes.id }
+          : { to: item.artistUser.email, orderItemId: item.id, error: emailRes.error },
+      })
+    }
+
+    return { ok: true, transferId: transfer.id }
+  } catch (err) {
+    console.error(`[releaseItemPayout] item=${item.id} failed:`, err)
+    captureError(err, {
+      flow: 'admin',
+      stage: 'release-item-payout',
+      extra: {
+        orderId: order.id,
+        orderItemId: item.id,
+        artistUserId: item.artistUserId,
+        artistAccountId,
+        amountCents: item.artistCents,
+      },
+      level: 'error',
+      fingerprint: ['admin:release-item-payout-failed'],
+    })
+    return { ok: false, error: 'Stripe transfer failed. Check server logs.' }
+  }
+}
+
+/**
+ * Per-item version of `markPaidManually` for cart orders. Records an
+ * off-Stripe payout for a single line (Wise, SEPA, etc.): stamps the
+ * PrintOrderItem's `paidOutAt` + `transferStatus = 'paid_manual'`, no
+ * Stripe call. transferId stays null. Same gating as `releaseItemPayout`.
+ */
+export async function markItemPaidManually(
+  orderItemId: string,
+  opts: { method: string; reference?: string; note?: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const method = (opts.method ?? '').trim()
+  if (!method) return { ok: false, error: 'A payment method is required (e.g. SEPA, Wise).' }
+
+  const item = await prisma.printOrderItem.findUnique({
+    where: { id: orderItemId },
+    include: {
+      order: { select: { id: true, paymentStatus: true, fulfillmentStatus: true, currency: true } },
+      artwork: { select: { title: true, slug: true } },
+    },
+  })
+  if (!item) return { ok: false, error: 'Order item not found.' }
+
+  const order = item.order
+  if (order.paymentStatus !== 'succeeded') {
+    return { ok: false, error: `Payment not succeeded (status: ${order.paymentStatus}).` }
+  }
+  if (order.fulfillmentStatus !== STAGE_COMPLETE) {
+    return {
+      ok: false,
+      error: `Order is "${order.fulfillmentStatus ?? 'pending'}"; wait until Complete before recording a payout.`,
+    }
+  }
+  if (item.paidOutAt) {
+    return {
+      ok: false,
+      error: item.transferId
+        ? `Already paid via Stripe (${item.transferId}).`
+        : 'Already marked paid manually.',
+    }
+  }
+  if (item.artistCents <= 0) {
+    return { ok: false, error: 'Artist amount is zero.' }
+  }
+
+  await prisma.printOrderItem.update({
+    where: { id: item.id },
+    data: {
+      transferStatus: 'paid_manual',
+      paidOutAt: new Date(),
+    },
+  })
+
+  const artworkTitle = item.artwork.title ?? item.artwork.slug ?? '(untitled)'
+  await logOrderEvent({
+    orderId: order.id,
+    kind: 'admin_action',
+    actor: `admin:${guard.session.user.id}`,
+    message: `Marked item paid manually via ${method} for "${artworkTitle}"`,
+    payload: {
+      orderItemId: item.id,
+      method,
+      reference: opts.reference?.trim() || undefined,
+      note: opts.note?.trim() || undefined,
+      amountCents: item.artistCents,
+      currency: order.currency,
+      artworkTitle,
     },
   })
 

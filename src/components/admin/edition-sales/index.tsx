@@ -91,7 +91,7 @@ export const AdminEditionSales = () => {
               </thead>
               <tbody>
                 {sales.map((s) => (
-                  <tr key={`${s.orderId ?? 'na'}-${s.variantName}-${s.number}`}>
+                  <tr key={s.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
                     <td>
                       {s.artworkSlug ? (

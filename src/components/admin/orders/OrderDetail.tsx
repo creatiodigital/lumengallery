@@ -17,14 +17,17 @@ import {
   deleteOrder,
   getOrderDetail,
   markDelivered,
+  markItemPaidManually,
   markPaidManually,
   markPlaced,
   markRejected,
   markShipped,
   markStarted,
   refundOrder,
+  releaseItemPayout,
   releasePayout,
   type AdminOrderDetail as Detail,
+  type AdminOrderItem,
 } from '@/app/admin/orders/actions'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
@@ -73,15 +76,26 @@ const TERMINAL_STAGES = new Set(['Complete', 'Rejected'])
 // `paidOutAt` (set when the artist payout — Stripe transfer or
 // manual — has actually fired). Off-ramp `Rejected` is rendered
 // separately, not as part of this trail.
-const buildLifecycle = (order: { fulfillmentStatus: string | null; paidOutAt: string | null }) => {
+const buildLifecycle = (order: {
+  fulfillmentStatus: string | null
+  paidOutAt: string | null
+  isCart: boolean
+  items: AdminOrderItem[]
+}) => {
   const fIdx = ['Placed', 'Started', 'Shipped', 'Complete'].indexOf(order.fulfillmentStatus ?? '')
+  // Cart orders pay per item — "Artist paid" is reached only when every line
+  // is paid (header paidOutAt is never stamped for carts). Legacy single-print
+  // orders use the header paidOutAt as before.
+  const paidReached = order.isCart
+    ? order.items.length > 0 && order.items.every((it) => !!it.paidOutAt)
+    : !!order.paidOutAt
   return [
     { label: 'New', reached: true },
     { label: 'At TPS', reached: fIdx >= 0 },
     { label: 'In production', reached: fIdx >= 1 },
     { label: 'Shipped', reached: fIdx >= 2 },
     { label: 'Delivered', reached: fIdx >= 3 },
-    { label: 'Artist paid', reached: !!order.paidOutAt },
+    { label: order.isCart ? 'Artists paid' : 'Artist paid', reached: paidReached },
   ]
 }
 
@@ -104,9 +118,273 @@ const CopyButton = ({ value, label }: { value: string; label?: string }) => {
 
 const eventDot = (kind: string): DotColor => {
   if (kind.endsWith('_failed') || kind === 'auth_canceled') return 'red'
-  if (kind === 'captured' || kind === 'auth_received' || kind === 'email_sent') return 'green'
+  if (
+    kind === 'captured' ||
+    kind === 'auth_received' ||
+    kind === 'email_sent' ||
+    kind === 'payout_released'
+  )
+    return 'green'
   if (kind === 'admin_action') return 'blue'
   return 'grey'
+}
+
+// Per-line payout status pill for cart orders. Cart orders pay each
+// artist independently (per-item Stripe Connect transfer), so each line
+// carries its own payout state.
+const ItemPayoutStatus = ({ item }: { item: AdminOrderItem }) => {
+  if (item.paidOutAt) {
+    const isManual = item.transferStatus === 'paid_manual'
+    return (
+      <span style={{ fontSize: 'var(--text-xs)' }}>
+        <Dot color="green" />
+        Paid {formatDateTime(item.paidOutAt)}
+        {isManual ? ' (manual)' : ''}
+      </span>
+    )
+  }
+  return (
+    <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>
+      <Dot color="grey" />
+      Not paid
+    </span>
+  )
+}
+
+// Line-items table for cart (multi-item) orders. Authoritative per-line
+// data comes from PrintOrderItem (money, payout, edition numbers); the
+// header columns are deprecated rollups. Legacy single-print orders never
+// render this — they use the single artwork/config blocks instead.
+const LineItemsTable = ({ items }: { items: AdminOrderItem[] }) => (
+  <table className={dashboardStyles.table}>
+    <thead>
+      <tr>
+        <th>Artwork</th>
+        <th>Specs</th>
+        <th>Qty</th>
+        <th>Editions</th>
+        <th>Production</th>
+        <th>Artist cut</th>
+        <th>Gallery cut</th>
+        <th>Payout</th>
+      </tr>
+    </thead>
+    <tbody>
+      {items.map((it) => (
+        <tr key={it.id}>
+          <td>
+            <div>{it.artworkTitle}</div>
+            <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7, marginTop: 2 }}>
+              {it.artistName}
+            </div>
+          </td>
+          <td style={{ fontSize: 'var(--text-xs)' }}>
+            {it.specsSummary.length > 0
+              ? it.specsSummary.map((s) => (
+                  <div key={s.id}>
+                    <span style={{ opacity: 0.6 }}>{s.label}:</span> {s.value}
+                  </div>
+                ))
+              : '—'}
+          </td>
+          <td>{it.quantity}</td>
+          <td style={{ fontSize: 'var(--text-xs)' }}>
+            {it.editionLabels.length > 0 ? it.editionLabels.join(', ') : '—'}
+          </td>
+          <td style={{ whiteSpace: 'nowrap' }}>{formatEuro(it.productionCents)}</td>
+          <td style={{ whiteSpace: 'nowrap' }}>{formatEuro(it.artistCents)}</td>
+          <td style={{ whiteSpace: 'nowrap' }}>{formatEuro(it.galleryCents)}</td>
+          <td style={{ whiteSpace: 'nowrap' }}>
+            <ItemPayoutStatus item={it} />
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+)
+
+// Per-item payout control for cart orders. Cart orders pay each artist
+// independently (one Stripe Connect transfer per line), so an order can be
+// partly paid out. Each line carries its own confirm-modal + manual-payout
+// form state, mirroring the header payout block's flow. Only rendered when
+// the parent order is delivered (Complete). The server actions re-check the
+// onboarding / Complete / no-double-pay guards and surface any failure here.
+const ItemPayout = ({ item, onDone }: { item: AdminOrderItem; onDone: () => Promise<void> }) => {
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [manualOpen, setManualOpen] = useState(false)
+  const [method, setMethod] = useState('')
+  const [reference, setReference] = useState('')
+  const [note, setNote] = useState('')
+  const [manualSubmitting, setManualSubmitting] = useState(false)
+  const [manualError, setManualError] = useState<string | null>(null)
+
+  const handleStripe = useCallback(async () => {
+    setPaying(true)
+    setError(null)
+    const res = await releaseItemPayout(item.id)
+    setPaying(false)
+    if (!res.ok) {
+      setError(res.error)
+      setConfirmOpen(false)
+      return
+    }
+    setConfirmOpen(false)
+    await onDone()
+  }, [item.id, onDone])
+
+  const handleManual = useCallback(async () => {
+    setManualSubmitting(true)
+    setManualError(null)
+    const res = await markItemPaidManually(item.id, { method, reference, note })
+    setManualSubmitting(false)
+    if (!res.ok) {
+      setManualError(res.error)
+      return
+    }
+    setManualOpen(false)
+    setMethod('')
+    setReference('')
+    setNote('')
+    await onDone()
+  }, [item.id, method, reference, note, onDone])
+
+  if (item.paidOutAt) {
+    return <ItemPayoutStatus item={item} />
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Button
+          font="dashboard"
+          variant="primary"
+          size="small"
+          label={paying ? 'Paying…' : `Pay ${formatEuro(item.artistCents)} with Stripe`}
+          onClick={() => {
+            setError(null)
+            setConfirmOpen(true)
+          }}
+          disabled={paying || manualSubmitting}
+        />
+        <Button
+          font="dashboard"
+          variant="secondary"
+          size="small"
+          label="Pay manually"
+          onClick={() => {
+            setManualError(null)
+            setManualOpen(true)
+          }}
+          disabled={paying || manualSubmitting}
+        />
+      </div>
+      {error && <span style={{ color: '#b91c1c', fontSize: 'var(--text-xs)' }}>⚠️ {error}</span>}
+
+      {manualOpen && (
+        <div
+          style={{
+            padding: 12,
+            border: '1px solid rgba(0,0,0,0.15)',
+            borderRadius: 4,
+            background: '#fafafa',
+          }}
+        >
+          <p style={{ margin: '0 0 8px 0', fontSize: 'var(--text-xs)', lineHeight: 1.5 }}>
+            Record an off-Stripe payment to {item.artistName} ({formatEuro(item.artistCents)}). No
+            Stripe transfer happens; the artist is not auto-emailed.
+          </p>
+          <div style={{ marginBottom: 8 }}>
+            <Input
+              type="text"
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              placeholder="Method (SEPA, Wise, …)"
+              size="medium"
+            />
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <Input
+              type="text"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder="Reference (optional)"
+              size="medium"
+            />
+          </div>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            placeholder="Note (optional)"
+            style={{
+              width: '100%',
+              padding: 8,
+              border: '1px solid rgba(0,0,0,0.2)',
+              borderRadius: 4,
+              fontFamily: 'inherit',
+              fontSize: 13,
+              boxSizing: 'border-box',
+            }}
+          />
+          {manualError && (
+            <p style={{ margin: '8px 0 0 0', color: '#b91c1c', fontSize: 'var(--text-xs)' }}>
+              ⚠️ {manualError}
+            </p>
+          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <Button
+              font="dashboard"
+              variant="primary"
+              size="small"
+              label={manualSubmitting ? 'Saving…' : `Mark paid (${formatEuro(item.artistCents)})`}
+              onClick={handleManual}
+              disabled={manualSubmitting || method.trim().length === 0}
+            />
+            <Button
+              font="dashboard"
+              variant="secondary"
+              size="small"
+              label="Cancel"
+              onClick={() => {
+                setManualOpen(false)
+                setMethod('')
+                setReference('')
+                setNote('')
+                setManualError(null)
+              }}
+              disabled={manualSubmitting}
+            />
+          </div>
+        </div>
+      )}
+
+      {confirmOpen && (
+        <ConfirmModal
+          title="Pay this artist?"
+          message={
+            <>
+              This will transfer <strong>{formatEuro(item.artistCents)}</strong> to{' '}
+              <strong>{item.artistName}</strong>&apos;s Stripe account for{' '}
+              <strong>{item.artworkTitle}</strong>.
+              <br />
+              <br />
+              Once released, the money is on the artist&apos;s side — you can&apos;t pull it back
+              from this dashboard.
+            </>
+          }
+          confirmLabel="Yes, pay this artist"
+          cancelLabel="Cancel"
+          destructive
+          busy={paying}
+          onConfirm={handleStripe}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+    </div>
+  )
 }
 
 type Section = { title: string; rows: Array<[string, React.ReactNode]> }
@@ -361,30 +639,49 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         ],
       ],
     },
-    {
-      title: 'Artwork',
-      rows: [
-        [
-          'Artwork',
-          <>
-            {order.artwork.title ?? order.artwork.slug ?? order.artwork.id}
-            {' · '}
-            <span style={{ opacity: 0.7 }}>{order.artist.name}</span>
-          </>,
-        ],
-      ],
-    },
+    // Cart orders render a dedicated line-items table below instead of this
+    // single-artwork row; legacy single-print orders keep it.
+    ...(order.isCart
+      ? []
+      : [
+          {
+            title: 'Artwork',
+            rows: [
+              [
+                'Artwork',
+                <>
+                  {order.artwork.title ?? order.artwork.slug ?? order.artwork.id}
+                  {' · '}
+                  <span style={{ opacity: 0.7 }}>{order.artist.name}</span>
+                </>,
+              ],
+            ] as Array<[string, React.ReactNode]>,
+          },
+        ]),
     {
       title: 'Totals',
-      rows: [
-        ['Total paid by buyer', formatEuro(order.totalCents)],
-        ['Artist cut', formatEuro(order.artistCents)],
-        ['Gallery cut', formatEuro(order.galleryCents)],
-        ['Production cost', formatEuro(order.productionCents)],
-        ['Production shipping', formatEuro(order.productionShippingCents)],
-        ['Customer VAT', formatEuro(order.customerVatCents)],
-        ['Currency', order.currency.toUpperCase()],
-      ],
+      // For cart orders the per-cut amounts (artist/gallery/production) are
+      // deprecated header rollups whose authority lives on each line — they're
+      // already shown per-line in the Items table, so we omit them here to
+      // avoid showing the same money three times and only list true
+      // order-level totals. Legacy single-print orders keep the full
+      // breakdown (the header IS the authoritative source there).
+      rows: order.isCart
+        ? ([
+            ['Total paid by buyer', formatEuro(order.totalCents)],
+            ['Production shipping', formatEuro(order.productionShippingCents)],
+            ['Customer VAT', formatEuro(order.customerVatCents)],
+            ['Currency', order.currency.toUpperCase()],
+          ] as Array<[string, React.ReactNode]>)
+        : ([
+            ['Total paid by buyer', formatEuro(order.totalCents)],
+            ['Artist cut', formatEuro(order.artistCents)],
+            ['Gallery cut', formatEuro(order.galleryCents)],
+            ['Production cost', formatEuro(order.productionCents)],
+            ['Production shipping', formatEuro(order.productionShippingCents)],
+            ['Customer VAT', formatEuro(order.customerVatCents)],
+            ['Currency', order.currency.toUpperCase()],
+          ] as Array<[string, React.ReactNode]>),
     },
   ]
 
@@ -413,8 +710,16 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             Order #{order.id.slice(0, 8)}
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: 14 }}>
-            <strong>{order.artwork.title ?? '(untitled)'}</strong>
-            <span style={{ opacity: 0.6 }}> — {order.artist.name}</span>
+            {order.isCart ? (
+              <strong>
+                {order.items.length} {order.items.length === 1 ? 'print' : 'prints'}
+              </strong>
+            ) : (
+              <>
+                <strong>{order.artwork.title ?? '(untitled)'}</strong>
+                <span style={{ opacity: 0.6 }}> — {order.artist.name}</span>
+              </>
+            )}
           </p>
           <p className={dashboardStyles.sectionDescription} style={{ margin: '4px 0 0 0' }}>
             Placed {formatDateTime(order.createdAt)} ·{' '}
@@ -442,6 +747,76 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               button below to return the money.
             </p>
           </div>
+        </div>
+      )}
+
+      {order.isCart && (
+        <div className={dashboardStyles.section}>
+          <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>
+            Items ({order.items.length} {order.items.length === 1 ? 'print' : 'prints'})
+          </h2>
+          <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 12px 0' }}>
+            Per-line money and payout status are authoritative for cart orders. Each artist is paid
+            independently.
+          </p>
+          <LineItemsTable items={order.items} />
+        </div>
+      )}
+
+      {/* Per-item payouts for cart orders — surfaces once the order is
+          delivered (Complete), mirroring the header "Pay the artist" block.
+          Each line is paid independently (mixed-artist carts), so the order
+          can be "partly paid out". The header-level Pay-the-artist block
+          below is hidden for cart orders (it would pay the wrong, rolled-up
+          amount to the first artist only). */}
+      {order.isCart && order.fulfillmentStatus === 'Complete' && (
+        <div className={dashboardStyles.section}>
+          <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>Pay the artists</h2>
+          {(() => {
+            const paidCount = order.items.filter((it) => it.paidOutAt).length
+            const allPaid = paidCount === order.items.length
+            const partly = paidCount > 0 && !allPaid
+            return (
+              <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
+                Each artist is paid independently to their connected Stripe account.{' '}
+                {allPaid ? (
+                  <strong style={{ color: '#047857' }}>
+                    All {order.items.length} items paid out.
+                  </strong>
+                ) : partly ? (
+                  <strong style={{ color: '#b45309' }}>
+                    Partly paid out — {paidCount} of {order.items.length} items paid.
+                  </strong>
+                ) : (
+                  <span>None paid out yet.</span>
+                )}
+              </p>
+            )
+          })()}
+          <table className={dashboardStyles.table}>
+            <thead>
+              <tr>
+                <th>Artwork</th>
+                <th>Artist</th>
+                <th style={{ textAlign: 'right' }}>Artist cut</th>
+                <th>Payout</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.items.map((it) => (
+                <tr key={it.id}>
+                  <td>{it.artworkTitle}</td>
+                  <td>{it.artistName}</td>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    {formatEuro(it.artistCents)}
+                  </td>
+                  <td>
+                    <ItemPayout item={it} onDone={load} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -673,7 +1048,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           Stripe Connect transfer or out-of-band manual payment). The
           list page's Delivered-tab CTA navigates here so the admin
           sees full context before confirming a real money transfer. */}
-      {order.fulfillmentStatus === 'Complete' && !order.paidOutAt && (
+      {!order.isCart && order.fulfillmentStatus === 'Complete' && !order.paidOutAt && (
         <div className={dashboardStyles.section}>
           <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>Pay the artist</h2>
           <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
@@ -938,31 +1313,83 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           Paste these into theprintspace&apos;s &ldquo;Order Prints&rdquo; form.
         </p>
 
-        {order.specs.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                opacity: 0.6,
-                marginBottom: 4,
-              }}
-            >
-              Specs
-            </div>
-            <table style={{ fontSize: 13 }}>
-              <tbody>
-                {order.specs.map((s) => (
-                  <tr key={s.label}>
-                    <td style={{ padding: '2px 16px 2px 0', opacity: 0.7 }}>{s.label}</td>
-                    <td style={{ padding: '2px 0', fontFamily: 'monospace' }}>{s.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {/* Cart orders: one specs block per line (each is its own TPS order).
+            Legacy single-print orders: the single header-derived specs block. */}
+        {order.isCart
+          ? order.items.map((it) => (
+              <div key={it.id} style={{ marginBottom: 16 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    opacity: 0.6,
+                    marginBottom: 4,
+                  }}
+                >
+                  {it.artworkTitle} · {it.artistName}
+                  {it.quantity > 1 ? ` · ×${it.quantity}` : ''}
+                  {it.editionLabels.length > 0 ? ` · ${it.editionLabels.join(', ')}` : ''}
+                </div>
+                {it.specsSummary.length > 0 ? (
+                  <table style={{ fontSize: 13 }}>
+                    <tbody>
+                      {it.specsSummary.map((s) => (
+                        <tr key={s.id}>
+                          <td style={{ padding: '2px 16px 2px 0', opacity: 0.7 }}>{s.label}</td>
+                          <td style={{ padding: '2px 0', fontFamily: 'monospace' }}>{s.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>
+                    Specs unavailable — see the raw printConfig in the timeline payload.
+                  </p>
+                )}
+                {/* Copy-ready Sell-as-Print line per numbered copy (limited
+                    lines only). Mirrors the legacy single-print tpsSku so a
+                    cart's limited items are as paste-ready as the old flow. */}
+                {it.tpsSkus.length > 0 && (
+                  <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {it.tpsSkus.map((sku, i) => (
+                      <div
+                        key={i}
+                        style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
+                      >
+                        <code style={{ fontSize: 12 }}>{sku}</code>
+                        <CopyButton value={sku} label="Copy SKU" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          : order.specs.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    opacity: 0.6,
+                    marginBottom: 4,
+                  }}
+                >
+                  Specs
+                </div>
+                <table style={{ fontSize: 13 }}>
+                  <tbody>
+                    {order.specs.map((s) => (
+                      <tr key={s.label}>
+                        <td style={{ padding: '2px 16px 2px 0', opacity: 0.7 }}>{s.label}</td>
+                        <td style={{ padding: '2px 0', fontFamily: 'monospace' }}>{s.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
         <div style={{ marginBottom: 16 }}>
           <div
