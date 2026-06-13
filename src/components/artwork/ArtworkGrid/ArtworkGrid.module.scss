@@ -82,3 +82,8 @@
   margin-top: var(--space-4);
   text-decoration: none;
 }
+
+// Order Print CTA (prints page only — gated by the withOrderPrint prop).
+.orderAction {
+  margin-top: var(--space-4);
+}

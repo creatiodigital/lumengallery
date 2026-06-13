@@ -58,6 +58,45 @@
   background: var(--color-gray-10);
 }
 
+// Borderless variant: text + chevron only, no box/background, no underline.
+// Placed after .control/.controlOpen so it overrides their border/background
+// at equal-or-higher specificity.
+.controlPlain {
+  padding: var(--space-2) 0;
+  background: transparent;
+  border: none;
+
+  &:hover:not(:disabled) {
+    border: none;
+    background: transparent;
+  }
+
+  &:focus,
+  &:focus-visible {
+    border: none;
+  }
+}
+
+.controlPlain.controlOpen {
+  border: none;
+  background: transparent;
+}
+
+// Plain variant has no chevron — just the label.
+.wrapperPlain .chevron {
+  display: none;
+}
+
+// Plain menu spans the (fixed-width) wrapper and never narrower than its
+// content, so option labels don't wrap. Scoped to the plain variant.
+.wrapperPlain .menu {
+  min-width: max-content;
+}
+
+.wrapperPlain .optionLabel {
+  white-space: nowrap;
+}
+
 .controlLabel {
   flex: 1;
 }
