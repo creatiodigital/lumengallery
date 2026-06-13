@@ -1,18 +1,29 @@
+// Column template — MUST stay in sync with .tableHeader in CartPage.module.scss
+// so the header labels line up over the line cells.
 .line {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr 120px 150px 120px;
   gap: var(--space-5);
+  align-items: start;
   padding: var(--space-6) 0;
   border-bottom: 1px solid var(--color-border-light);
 
-  @media (min-width: 768px) {
-    grid-template-columns: auto 1fr auto;
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
   }
+}
+
+.item {
+  display: flex;
+  gap: var(--space-5);
+  min-width: 0;
 }
 
 .thumb {
   display: flex;
   align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .details {
@@ -33,31 +44,31 @@
   color: var(--color-text-primary);
 }
 
-.size {
-  margin: 0;
-  color: var(--color-text-primary);
-}
-
+// Keep each spec label↔value pair grouped (the SpecList rows are full-width
+// space-between; constraining the wrapper relates them).
+// Cart-scoped override of the shared SpecList: replace its full-width
+// space-between rows (which leave short values floating far from their label
+// and long values butting against it) with an aligned two-column grid —
+// labels in one column, values in the next, with a consistent gap. Element
+// selectors stay literal in CSS modules, so this only re-styles the SpecList
+// rendered inside the cart line; the shared component (admin) is untouched.
 .specs {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: var(--space-1) 0 0;
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-}
+  max-width: 420px;
+  margin-top: var(--space-1);
 
-.specRow {
-  display: flex;
-  gap: var(--space-2);
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: var(--space-6);
+    row-gap: var(--space-2);
+  }
 
-  dt {
-    color: var(--color-text-secondary);
+  dl > div {
+    display: contents;
   }
 
   dd {
     margin: 0;
-    color: var(--color-text-primary);
   }
 }
 
@@ -68,21 +79,39 @@
   color: var(--color-text-secondary);
 }
 
-.controls {
+.priceCol,
+.qtyCol,
+.totalCol {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  grid-column: 1 / -1;
-
-  @media (min-width: 768px) {
-    align-items: flex-end;
-    grid-column: auto;
-  }
+  gap: var(--space-2);
 }
 
-.unitPrice {
+.priceCol {
+  align-items: center;
+}
+
+.qtyCol {
+  align-items: center;
+}
+
+.totalCol {
+  align-items: center;
+}
+
+// Per-row column label — hidden on desktop (the table header carries them),
+// shown on mobile where each line stacks into label/value rows.
+.colLabel {
+  display: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: var(--text-xs);
   color: var(--color-text-secondary);
+}
+
+.price,
+.lineTotal {
+  color: var(--color-text-primary);
 }
 
 .stepper {
@@ -97,10 +126,20 @@
   color: var(--color-text-primary);
 }
 
-.lineTotal {
-  color: var(--color-text-primary);
-}
-
 .remove {
   color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .priceCol,
+  .qtyCol,
+  .totalCol {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .colLabel {
+    display: inline;
+  }
 }

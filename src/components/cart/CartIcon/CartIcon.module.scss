@@ -17,13 +17,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--space-6);
-  height: var(--space-6);
+  min-width: var(--space-4);
+  height: var(--space-4);
   padding: 0 var(--space-1);
   border-radius: 0;
   background: var(--color-brand);
   color: var(--color-text-inverse);
   font-family: var(--font-sans);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   line-height: 1;
 }

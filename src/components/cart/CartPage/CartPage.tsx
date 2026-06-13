@@ -61,35 +61,51 @@ export const CartPage = () => {
     <PageLayout>
       <PageHeader pageTitle="Cart" />
 
-      <div className={styles.lines}>
-        {items.map((item) => (
-          <CartLine key={item.lineId} item={item} />
-        ))}
-      </div>
-
-      <div className={styles.summary}>
-        <div className={styles.subtotalRow}>
-          <Text as="span" size="md" className={styles.subtotalLabel}>
-            Subtotal
-          </Text>
-          <Text as="span" font="serif" size="xl" className={styles.subtotalValue}>
-            {formatEuro(subtotalCents)}
-          </Text>
+      <div className={styles.cartGrid}>
+        <div className={styles.items}>
+          <div className={styles.tableHeader}>
+            <span>Item</span>
+            <span>Price</span>
+            <span>Quantity</span>
+            <span>Total</span>
+          </div>
+          {items.map((item) => (
+            <CartLine key={item.lineId} item={item} />
+          ))}
         </div>
-        <Text as="p" size="sm" className={styles.note}>
-          Shipping and taxes calculated at checkout.
-        </Text>
-        {/* TODO(AR-129 Task 7): /checkout route is built in the checkout task.
-            Until it lands this CTA dangles — do not ship the cart to users
-            without checkout in the same release. */}
-        <Button
-          variant="primary"
-          size="bigSquared"
-          fullWidth
-          href="/checkout"
-          label="Continue to checkout"
-          className={styles.cta}
-        />
+
+        <aside className={styles.summary}>
+          <Text as="h2" font="serif" size="xl" className={styles.summaryTitle}>
+            Order summary
+          </Text>
+          <div className={styles.subtotalRow}>
+            <Text as="span" size="md" className={styles.subtotalLabel}>
+              Subtotal
+            </Text>
+            <Text as="span" font="serif" size="lg" className={styles.subtotalValue}>
+              {formatEuro(subtotalCents)}
+            </Text>
+          </div>
+          <Text as="p" size="sm" className={styles.note}>
+            Shipping and taxes calculated at checkout.
+          </Text>
+          <Button
+            variant="primary"
+            size="bigSquared"
+            fullWidth
+            href="/checkout"
+            label="Continue to checkout"
+            className={styles.cta}
+          />
+          <Button
+            variant="secondary"
+            size="bigSquared"
+            fullWidth
+            href="/prints"
+            label="Continue shopping"
+            className={styles.secondaryCta}
+          />
+        </aside>
       </div>
     </PageLayout>
   )

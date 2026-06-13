@@ -35,7 +35,6 @@ export const CartLine = ({ item }: CartLineProps) => {
   const increase = async () => {
     const target = item.quantity + 1
     const reached = await setQuantity(item.lineId, target)
-    // Out of stock if the line never reached the quantity we asked for.
     setAtStockCap(isLimited && reached < target)
   }
 
@@ -52,42 +51,48 @@ export const CartLine = ({ item }: CartLineProps) => {
 
   return (
     <div className={styles.line}>
-      <div className={styles.thumb}>
-        <ProtectedImage
-          src={item.thumbnailUrl}
-          alt={item.title}
-          width={120}
-          height={120}
-          style={{ height: 120, width: 'auto' }}
-        />
-      </div>
+      <div className={styles.item}>
+        <div className={styles.thumb}>
+          <ProtectedImage
+            src={item.thumbnailUrl}
+            alt={item.title}
+            width={120}
+            height={120}
+            style={{ height: 120, width: 'auto' }}
+          />
+        </div>
 
-      <div className={styles.details}>
-        <Text as="span" size="xs" className={styles.artist}>
-          {item.artistName}
-        </Text>
-        <Text as="p" font="serif" size="lg" className={styles.title}>
-          {item.title}
-        </Text>
-
-        <SpecList specs={item.specsSummary} visibleByDefault={4} />
-
-        {isLimited && (
-          <Text as="span" size="xs" className={styles.editionTag}>
-            Limited edition
+        <div className={styles.details}>
+          <Text as="span" size="xs" className={styles.artist}>
+            {item.artistName}
           </Text>
-        )}
+          <Text as="p" font="serif" size="lg" className={styles.title}>
+            {item.title}
+          </Text>
 
-        {isLimited && item.holdExpiresAt && (
-          <HoldCountdown expiresAt={item.holdExpiresAt} onExpire={handleExpire} />
-        )}
+          <SpecList specs={item.specsSummary} visibleByDefault={4} className={styles.specs} />
+
+          {isLimited && (
+            <Text as="span" size="xs" className={styles.editionTag}>
+              Limited edition
+            </Text>
+          )}
+
+          {isLimited && item.holdExpiresAt && (
+            <HoldCountdown expiresAt={item.holdExpiresAt} onExpire={handleExpire} />
+          )}
+        </div>
       </div>
 
-      <div className={styles.controls}>
-        <Text as="span" size="sm" className={styles.unitPrice}>
-          {formatEuro(unitItemCents)} each
+      <div className={styles.priceCol}>
+        <span className={styles.colLabel}>Price</span>
+        <Text as="span" size="md" className={styles.price}>
+          {formatEuro(unitItemCents)}
         </Text>
+      </div>
 
+      <div className={styles.qtyCol}>
+        <span className={styles.colLabel}>Quantity</span>
         <div className={styles.stepper}>
           <Button
             variant="secondary"
@@ -109,11 +114,13 @@ export const CartLine = ({ item }: CartLineProps) => {
             onClick={increase}
           />
         </div>
+      </div>
 
+      <div className={styles.totalCol}>
+        <span className={styles.colLabel}>Total</span>
         <Text as="span" font="serif" size="lg" className={styles.lineTotal}>
           {formatEuro(lineItemCents)}
         </Text>
-
         <Button
           variant="ghost"
           size="smallSquared"
