@@ -55,12 +55,13 @@ model User {
   stripeAccountId          String?
   stripeOnboardingComplete Boolean @default(false)
 
-  exhibitions Exhibition[]
-  artworks    Artwork[]
-  presets     ArtworkPreset[]
-  accounts    Account[]
-  sessions    Session[]
-  printOrders PrintOrder[]
+  exhibitions     Exhibition[]
+  artworks        Artwork[]
+  presets         ArtworkPreset[]
+  accounts        Account[]
+  sessions        Session[]
+  printOrders     PrintOrder[]
+  printOrderItems PrintOrderItem[]
 }
 
 model ArtworkPreset {
@@ -214,6 +215,7 @@ model Artwork {
 
   exhibitionArtworks ExhibitionArtwork[]
   printOrders        PrintOrder[]
+  printOrderItems    PrintOrderItem[]
   limitedVariants    LimitedVariant[]
 
   createdAt DateTime @default(now())
@@ -285,10 +287,15 @@ model EditionNumber {
   state String @default("available")
 
   // The Stripe PI that currently holds this number while reserved/sold;
-  // cleared on release. Bound to a PrintOrder at auth.
+  // cleared on release. Bound to a PrintOrderItem at auth (cart flow).
   paymentIntentId String?
-  orderId         String?     @unique
-  order           PrintOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderItemId     String?         @unique
+  orderItem       PrintOrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+
+  // DEPRECATED (AR-129) — single-print one-to-one link to PrintOrder. Cart
+  // flow uses orderItemId. Kept additively until the AR-129 cleanup task.
+  orderId String?     @unique
+  order   PrintOrder? @relation("PrintOrderEditionNumber", fields: [orderId], references: [id], onDelete: SetNull)
 
   buyerEmail String? // denormalised snapshot for the ledger view
   reservedAt DateTime?
@@ -319,7 +326,12 @@ model PrintOrder {
   printConfig     Json // PrintConfig snapshot at checkout time
   country         String
 
-  // All amounts in minor units (cents) for the given currency.
+  // All amounts in minor units (cents) for the given currency. NOTE
+  // (AR-129): for the multi-item cart flow these per-order item amounts
+  // become rollups and the authoritative per-item money lives on
+  // PrintOrderItem; the columns are made nullable in the Task 9 cart
+  // order-creation work (kept required here so the single-print path is
+  // untouched in this additive schema step).
   totalCents              Int
   artistCents             Int
   galleryCents            Int
@@ -344,14 +356,15 @@ model PrintOrder {
   // Drop this column (schema + DB) in a follow-up once AR-126 is live on prod.
   certificateUrl String?
 
-  // Stripe Connect transfer to the artist (null until admin releases payout).
-  // 'pending' | 'paid' | 'reversed'
+  // Single-print-era per-order payout. AR-129 cart flow uses per-item
+  // payouts (PrintOrderItem.{transferId,transferStatus,paidOutAt}); these
+  // stay for the single-print path during migration.
   transferId     String?
   transferStatus String?
   paidOutAt      DateTime?
 
   // Limited-edition fulfillment: timestamp set when the admin has
-  // manually mirrored this order's edition number as "sold" in TPS's
+  // manually mirrored this order's edition number(s) as "sold" in TPS's
   // Manage Edition modal. Our `EditionNumber` ledger is authoritative;
   // this just records that the by-hand TPS step is done. Null for open
   // editions and for limited orders not yet mirrored.
@@ -360,11 +373,52 @@ model PrintOrder {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events        PrintOrderEvent[]
-  editionNumber EditionNumber?
+  // DEPRECATED (AR-129) — single-print one-to-one edition link. Cart flow
+  // links EditionNumber.orderItemId → PrintOrderItem instead.
+  editionNumber EditionNumber? @relation("PrintOrderEditionNumber")
+
+  items  PrintOrderItem[]
+  events PrintOrderEvent[]
 
   @@index([artistUserId])
   @@index([paymentStatus, fulfillmentStatus, transferStatus])
+}
+
+model PrintOrderItem {
+  id      String     @id @default(uuid())
+  orderId String
+  order   PrintOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  artworkId    String
+  artwork      Artwork @relation(fields: [artworkId], references: [id], onDelete: Restrict)
+  artistUserId String
+  artistUser   User    @relation(fields: [artistUserId], references: [id], onDelete: Restrict)
+
+  printConfig Json // WizardConfig snapshot for this item
+  quantity    Int  @default(1)
+
+  // Line totals in cents (unit × quantity).
+  productionCents Int
+  artistCents     Int
+  galleryCents    Int
+
+  // Per-item Stripe Connect payout. Mixed-artist orders pay each artist
+  // independently, so an order can be partly paid out.
+  // 'pending' | 'paid' | 'reversed'
+  transferId     String?
+  transferStatus String?
+  paidOutAt      DateTime?
+
+  certificateUrl String? // one COA per item
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  editionNumbers EditionNumber[]
+
+  @@index([orderId])
+  @@index([artistUserId])
+  @@index([transferStatus])
 }
 
 // Append-only audit trail for everything that happens to a PrintOrder.
