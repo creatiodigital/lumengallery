@@ -1,0 +1,188 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+  padding: var(--space-10) 0;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+// Two-column layout: order recap on the left, the form / summary on the
+// right. Collapses to a single column on narrow viewports.
+.addressStep,
+.reviewStep {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: var(--space-10);
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+}
+
+.cartRecap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.recapHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.recapTitle {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-4);
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.lineError {
+  background: var(--color-surface-subtle);
+}
+
+.thumb {
+  display: flex;
+  align-items: flex-start;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.artist {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--color-text-secondary);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.editionTag {
+  margin-top: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-secondary);
+}
+
+.lineErrorText {
+  margin-top: var(--space-1);
+  color: var(--color-error-text);
+}
+
+.qtyCol {
+  display: flex;
+  align-items: flex-start;
+}
+
+.qty {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.orderError {
+  margin: var(--space-2) 0 0;
+  color: var(--color-error-text);
+}
+
+// ── Form / summary panel (right) ─────────────────────────────
+.formPanel {
+  width: 100%;
+}
+
+.summaryPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-light);
+}
+
+.shipTo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.shipToLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-secondary);
+}
+
+.shipToValue {
+  color: var(--color-text-primary);
+}
+
+.changeAddress {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.totalRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.totalLabel {
+  color: var(--color-text-secondary);
+}
+
+.totalValue {
+  color: var(--color-text-primary);
+}
+
+.grandTotalRow {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.grandTotalLabel {
+  color: var(--color-text-primary);
+}
+
+.grandTotalValue {
+  color: var(--color-text-primary);
+}
+
+.payCta {
+  margin-top: var(--space-2);
+}

@@ -1,0 +1,119 @@
+.form {
+  width: 100%;
+}
+
+.formSectionTitle {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  margin: 0 0 var(--space-6) 0;
+  color: var(--color-text-primary);
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Visual section break: when the standalone Country .field is followed by
+// the .fieldGrid, push the grid down so the country choice reads as its own
+// decision before the buyer fills in name/address details below.
+.field + .fieldGrid {
+  margin-top: var(--space-6);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.fieldLabel {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+// Per-field error text. Driven by JS validation state via the `data-error`
+// attribute on the field wrapper — only set after the first submit attempt,
+// then cleared/re-set live as the user fixes each field. Avoids flashing red
+// on initial load or while typing.
+.fieldError {
+  display: none;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-error-text);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.field[data-error='true'] .fieldInput {
+  border-color: var(--color-error-text);
+}
+
+.field[data-error='true'] .fieldError {
+  display: block;
+}
+
+.fieldInput {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-strong);
+  // Client-facing UI is squared per the gallery design rule.
+  border-radius: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--color-gray-70);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-text-primary);
+  }
+}
+
+// Phone field: dial-code dropdown + free-text number digits in one row. The
+// dropdown is independent of the shipping country (a buyer might keep a
+// foreign number after relocating, gift to another country, etc).
+.phoneRow {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.phoneDial {
+  flex: 0 0 auto;
+  width: 88px;
+}
+
+.phoneNumberCol {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.phoneNumber {
+  width: 100%;
+}
+
+.submitRow {
+  margin-top: var(--space-8);
+}
