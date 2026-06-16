@@ -3,13 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { AddressForm } from '@/components/checkout/AddressForm'
-import { HoldCountdown } from '@/components/cart/HoldCountdown/HoldCountdown'
+import { CartItemDetails } from '@/components/cart/CartItemDetails/CartItemDetails'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PageLayout } from '@/components/ui/PageLayout'
-import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
-import { SpecList } from '@/components/print/SpecList/SpecList'
 import { Text } from '@/components/ui/Typography'
+import { lineTotal } from '@/lib/cart/cartMath'
 import type { CartItem } from '@/lib/cart/types'
 import { useCart } from '@/lib/cart/useCart'
 import type { CartLikeItem, CartTotals } from '@/lib/cart/validateCart'
@@ -46,7 +45,13 @@ type Step = 'address' | 'review' | 'payment' | 'confirmation'
 // CartPage.HOLD_HEARTBEAT_MS.
 const HOLD_HEARTBEAT_MS = 5 * 60 * 1000
 
-export const CartCheckout = () => {
+type CartCheckoutProps = {
+  /** Provider-shippable countries — restricts the address country picker so a
+   *  buyer can't choose a destination the server-side validation will reject. */
+  supportedCountries: string[]
+}
+
+export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
   const { items, extendHolds, clear } = useCart()
 
   // Keep limited-edition holds alive on the checkout surface too. Without this
@@ -237,9 +242,12 @@ export const CartCheckout = () => {
       {step === 'address' && (
         <div className={styles.addressStep}>
           <div className={styles.cartRecap}>
-            <Text as="h2" font="serif" size="lg" className={styles.recapTitle}>
-              Your order
-            </Text>
+            <div className={styles.recapHeader}>
+              <Text as="h2" font="serif" size="xl" className={styles.recapTitle}>
+                Your order
+              </Text>
+              <Button variant="secondary" size="smallSquared" href="/cart" label="Edit cart" />
+            </div>
             <div className={styles.lines}>
               {items.map((item) => (
                 <CheckoutLine key={item.lineId} item={item} error={lineErrors[item.lineId]} />
@@ -271,6 +279,7 @@ export const CartCheckout = () => {
               onSubmit={handleAddressSubmit}
               submitting={submitting}
               submitLabel="Continue to review"
+              countryCodes={supportedCountries}
             />
           </div>
         </div>
@@ -280,9 +289,10 @@ export const CartCheckout = () => {
         <div className={styles.reviewStep}>
           <div className={styles.cartRecap}>
             <div className={styles.recapHeader}>
-              <Text as="h2" font="serif" size="lg" className={styles.recapTitle}>
+              <Text as="h2" font="serif" size="xl" className={styles.recapTitle}>
                 Your order
               </Text>
+              <Button variant="secondary" size="smallSquared" href="/cart" label="Edit cart" />
             </div>
             <div className={styles.lines}>
               {items.map((item) => (
@@ -291,75 +301,86 @@ export const CartCheckout = () => {
             </div>
           </div>
 
-          <div className={styles.summaryPanel}>
-            <div className={styles.shipTo}>
-              <Text as="span" size="xs" className={styles.shipToLabel}>
-                Shipping to
+          <div className={styles.cartRecap}>
+            <div className={styles.recapHeader}>
+              <Text as="h2" font="serif" size="xl" className={styles.recapTitle}>
+                Summary
               </Text>
-              <Text as="span" size="sm" className={styles.shipToValue}>
-                {address.fullName}, {getCountryName(address.countryCode)}
-              </Text>
+            </div>
+
+            <div className={styles.summaryPanel}>
+              <div className={styles.shipTo}>
+                <Text as="span" size="xs" className={styles.shipToLabel}>
+                  Shipping to
+                </Text>
+                <Text as="span" size="sm" className={styles.shipToValue}>
+                  {address.fullName}
+                </Text>
+                <Text as="span" size="sm" className={styles.shipToCountry}>
+                  {getCountryName(address.countryCode)}
+                </Text>
+                <Button
+                  variant="secondary"
+                  size="smallSquared"
+                  label="Change address"
+                  onClick={handleChangeAddress}
+                  className={styles.changeAddress}
+                />
+              </div>
+
+              <div className={styles.totals}>
+                <div className={styles.totalRow}>
+                  <Text as="span" size="sm" className={styles.totalLabel}>
+                    Items
+                  </Text>
+                  <Text as="span" size="sm" className={styles.totalValue}>
+                    {formatEuro(totals.itemsPreTaxCents)}
+                  </Text>
+                </div>
+                <div className={styles.totalRow}>
+                  <Text as="span" size="sm" className={styles.totalLabel}>
+                    Shipping
+                  </Text>
+                  <Text as="span" size="sm" className={styles.totalValue}>
+                    {formatEuro(totals.shippingCents)}
+                  </Text>
+                </div>
+                <div className={styles.totalRow}>
+                  <Text as="span" size="sm" className={styles.totalLabel}>
+                    VAT
+                  </Text>
+                  <Text as="span" size="sm" className={styles.totalValue}>
+                    {formatEuro(totals.customerVatCents)}
+                  </Text>
+                </div>
+                <div className={`${styles.totalRow} ${styles.grandTotalRow}`}>
+                  <Text as="span" size="md" className={styles.grandTotalLabel}>
+                    Total
+                  </Text>
+                  <Text as="span" font="serif" size="xl" className={styles.grandTotalValue}>
+                    {formatEuro(totals.totalCents)}
+                  </Text>
+                </div>
+              </div>
+
+              {payError && (
+                <Text as="p" size="sm" className={styles.orderError}>
+                  {payError}
+                </Text>
+              )}
+
               <Button
-                variant="ghost"
-                size="smallSquared"
-                label="Change address"
-                onClick={handleChangeAddress}
-                className={styles.changeAddress}
+                variant="primary"
+                size="bigSquared"
+                fullWidth
+                disabled={submitting}
+                label={submitting ? 'Preparing payment…' : 'Proceed to payment'}
+                onClick={() => {
+                  void handleProceedToPayment()
+                }}
+                className={styles.payCta}
               />
             </div>
-
-            <div className={styles.totals}>
-              <div className={styles.totalRow}>
-                <Text as="span" size="sm" className={styles.totalLabel}>
-                  Items
-                </Text>
-                <Text as="span" size="sm" className={styles.totalValue}>
-                  {formatEuro(totals.itemsPreTaxCents)}
-                </Text>
-              </div>
-              <div className={styles.totalRow}>
-                <Text as="span" size="sm" className={styles.totalLabel}>
-                  Shipping
-                </Text>
-                <Text as="span" size="sm" className={styles.totalValue}>
-                  {formatEuro(totals.shippingCents)}
-                </Text>
-              </div>
-              <div className={styles.totalRow}>
-                <Text as="span" size="sm" className={styles.totalLabel}>
-                  VAT
-                </Text>
-                <Text as="span" size="sm" className={styles.totalValue}>
-                  {formatEuro(totals.customerVatCents)}
-                </Text>
-              </div>
-              <div className={`${styles.totalRow} ${styles.grandTotalRow}`}>
-                <Text as="span" size="md" className={styles.grandTotalLabel}>
-                  Total
-                </Text>
-                <Text as="span" font="serif" size="xl" className={styles.grandTotalValue}>
-                  {formatEuro(totals.totalCents)}
-                </Text>
-              </div>
-            </div>
-
-            {payError && (
-              <Text as="p" size="sm" className={styles.orderError}>
-                {payError}
-              </Text>
-            )}
-
-            <Button
-              variant="primary"
-              size="bigSquared"
-              fullWidth
-              disabled={submitting}
-              label={submitting ? 'Preparing payment…' : 'Proceed to payment'}
-              onClick={() => {
-                void handleProceedToPayment()
-              }}
-              className={styles.payCta}
-            />
           </div>
         </div>
       )}
@@ -393,49 +414,29 @@ type CheckoutLineProps = {
  * quantities on the cart page; checkout just reflects the order.
  */
 const CheckoutLine = ({ item, error }: CheckoutLineProps) => {
+  const { lineItemCents } = lineTotal(item)
   return (
     <div className={`${styles.line} ${error ? styles.lineError : ''}`}>
-      <div className={styles.thumb}>
-        <ProtectedImage
-          src={item.thumbnailUrl}
-          alt={item.title}
-          width={88}
-          height={88}
-          style={{ height: 88, width: 'auto' }}
-        />
-      </div>
-
-      <div className={styles.details}>
-        <Text as="span" size="xs" className={styles.artist}>
-          {item.artistName}
-        </Text>
-        <Text as="p" font="serif" size="md" className={styles.title}>
-          {item.title}
-        </Text>
-        <SpecList specs={item.specsSummary} visibleByDefault={3} />
-        {item.editionType === 'limited' && (
-          <Text as="span" size="xs" className={styles.editionTag}>
-            Limited edition
-          </Text>
-        )}
-        {item.editionType === 'limited' && item.holdExpiresAt && (
-          // Read-only surface: no onExpire/remove here (the buyer edits on
-          // /cart). HoldCountdown renders its own expired state; Task 8's
-          // submit-time re-verify is the authority on dropping/re-reserving a
-          // lapsed hold.
-          <HoldCountdown expiresAt={item.holdExpiresAt} />
-        )}
-        {error && (
-          <Text as="span" size="xs" className={styles.lineErrorText}>
-            {error}
-          </Text>
-        )}
-      </div>
+      <CartItemDetails item={item} thumbHeight={88} specsVisible={3} error={error} />
 
       <div className={styles.qtyCol}>
-        <Text as="span" size="sm" className={styles.qty}>
-          Qty {item.quantity}
-        </Text>
+        <div className={styles.qtyRow}>
+          <Text as="span" size="sm" className={styles.qtyLabel}>
+            Qty:
+          </Text>
+          <Text as="span" size="sm" className={styles.qtyValue}>
+            {item.quantity}
+          </Text>
+        </div>
+
+        <div className={styles.priceBlock}>
+          <Text as="span" size="sm" className={styles.priceLabel}>
+            Final Price
+          </Text>
+          <Text as="span" font="serif" size="lg" className={styles.priceValue}>
+            {formatEuro(lineItemCents)}
+          </Text>
+        </div>
       </div>
     </div>
   )

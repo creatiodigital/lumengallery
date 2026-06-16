@@ -63,12 +63,6 @@ export const CartPage = () => {
 
       <div className={styles.cartGrid}>
         <div className={styles.items}>
-          <div className={styles.tableHeader}>
-            <span>Item</span>
-            <span>Price</span>
-            <span>Quantity</span>
-            <span>Total</span>
-          </div>
           {items.map((item) => (
             <CartLine key={item.lineId} item={item} />
           ))}

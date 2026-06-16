@@ -2,11 +2,10 @@
 
 import { useCallback, useState } from 'react'
 
-import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
+import { CartItemDetails } from '@/components/cart/CartItemDetails/CartItemDetails'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal'
 import { Text } from '@/components/ui/Typography'
-import { SpecList } from '@/components/print/SpecList/SpecList'
-import { HoldCountdown } from '@/components/cart/HoldCountdown/HoldCountdown'
 import { useCart } from '@/lib/cart/useCart'
 import { lineTotal } from '@/lib/cart/cartMath'
 import type { CartItem } from '@/lib/cart/types'
@@ -20,7 +19,7 @@ interface CartLineProps {
 
 export const CartLine = ({ item }: CartLineProps) => {
   const { setQuantity, removeItem } = useCart()
-  const { unitItemCents, lineItemCents } = lineTotal(item)
+  const { lineItemCents } = lineTotal(item)
 
   const isLimited = item.editionType === 'limited'
 
@@ -31,6 +30,7 @@ export const CartLine = ({ item }: CartLineProps) => {
   // against the target — never a ref read in the await-continuation, which is
   // stale before React commits the re-render.
   const [atStockCap, setAtStockCap] = useState(false)
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
 
   const increase = async () => {
     const target = item.quantity + 1
@@ -51,48 +51,16 @@ export const CartLine = ({ item }: CartLineProps) => {
 
   return (
     <div className={styles.line}>
-      <div className={styles.item}>
-        <div className={styles.thumb}>
-          <ProtectedImage
-            src={item.thumbnailUrl}
-            alt={item.title}
-            width={120}
-            height={120}
-            style={{ height: 120, width: 'auto' }}
-          />
-        </div>
-
-        <div className={styles.details}>
-          <Text as="span" size="xs" className={styles.artist}>
-            {item.artistName}
-          </Text>
-          <Text as="p" font="serif" size="lg" className={styles.title}>
-            {item.title}
-          </Text>
-
-          <SpecList specs={item.specsSummary} visibleByDefault={4} className={styles.specs} />
-
-          {isLimited && (
-            <Text as="span" size="xs" className={styles.editionTag}>
-              Limited edition
-            </Text>
-          )}
-
-          {isLimited && item.holdExpiresAt && (
-            <HoldCountdown expiresAt={item.holdExpiresAt} onExpire={handleExpire} />
-          )}
-        </div>
+      <div className={styles.body}>
+        <CartItemDetails
+          item={item}
+          thumbHeight={140}
+          specsVisible={4}
+          onHoldExpire={handleExpire}
+        />
       </div>
 
-      <div className={styles.priceCol}>
-        <span className={styles.colLabel}>Price</span>
-        <Text as="span" size="md" className={styles.price}>
-          {formatEuro(unitItemCents)}
-        </Text>
-      </div>
-
-      <div className={styles.qtyCol}>
-        <span className={styles.colLabel}>Quantity</span>
+      <div className={styles.panel}>
         <div className={styles.stepper}>
           <Button
             variant="secondary"
@@ -114,21 +82,39 @@ export const CartLine = ({ item }: CartLineProps) => {
             onClick={increase}
           />
         </div>
-      </div>
 
-      <div className={styles.totalCol}>
-        <span className={styles.colLabel}>Total</span>
-        <Text as="span" font="serif" size="lg" className={styles.lineTotal}>
-          {formatEuro(lineItemCents)}
-        </Text>
+        <div className={styles.totalBlock}>
+          <Text as="span" size="sm" className={styles.panelLabel}>
+            Final Price
+          </Text>
+          <Text as="span" font="serif" size="xl" className={styles.totalValue}>
+            {formatEuro(lineItemCents)}
+          </Text>
+        </div>
+
         <Button
           variant="ghost"
           size="smallSquared"
-          label="Remove"
-          onClick={() => removeItem(item.lineId)}
+          icon="trash-2"
+          aria-label="Remove"
+          onClick={() => setConfirmingRemove(true)}
           className={styles.remove}
         />
       </div>
+
+      {confirmingRemove && (
+        <ConfirmModal
+          title="Remove print?"
+          message={`Remove “${item.title}” from your cart?`}
+          confirmLabel="Remove"
+          destructive
+          onConfirm={() => {
+            removeItem(item.lineId)
+            setConfirmingRemove(false)
+          }}
+          onCancel={() => setConfirmingRemove(false)}
+        />
+      )}
     </div>
   )
 }

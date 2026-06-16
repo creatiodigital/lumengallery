@@ -191,7 +191,7 @@ export const AddressForm = ({
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <h2 className={styles.formSectionTitle}>Where should we send it?</h2>
 
       <div className={`${styles.field} ${styles.fieldFull}`} {...fieldProps('country')}>
