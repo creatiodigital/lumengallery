@@ -701,5 +701,5 @@ export const TPS_BORDER_BOUNDS = {
   minCm: 0,
   maxCm: 10,
   stepCm: 1,
-  defaultCm: 0,
+  defaultCm: 3,
 }

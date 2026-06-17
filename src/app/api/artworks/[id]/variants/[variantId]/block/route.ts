@@ -28,7 +28,10 @@ export async function POST(
       return NextResponse.json({ error: 'Variant not found' }, { status: 404 })
     }
     if (!variant.published) {
-      return NextResponse.json({ error: 'Only a published variant can be blocked.' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Only a published variant can be blocked.' },
+        { status: 400 },
+      )
     }
 
     await prisma.limitedVariant.update({ where: { id: variantId }, data: { blocked: true } })

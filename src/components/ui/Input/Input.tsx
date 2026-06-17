@@ -45,6 +45,10 @@ type TInput = {
   autoComplete?: string
   placeholder?: string
   required?: boolean
+  /** Mark the field invalid: red border (non-bare sizes) + `aria-invalid`.
+   *  Bare inputs get the border from the FormField wrapper's `data-error`,
+   *  but still report `aria-invalid` here. */
+  invalid?: boolean
   /** Hard cap on number of characters the user can type. Match the
    *  server-side cap so the client can't smuggle oversized payloads
    *  past the same-key validation. */
@@ -81,6 +85,7 @@ const Input = ({
   autoComplete,
   placeholder,
   required,
+  invalid,
   maxLength,
   id,
   className,
@@ -116,6 +121,7 @@ const Input = ({
                 { [styles.withIcon]: !!icon },
                 { [styles.withToggle]: type === 'password' && showPasswordToggle },
                 { [styles.disabled]: disabled },
+                { [styles.invalid]: invalid },
               ],
           inputClassName,
         )}
@@ -134,6 +140,7 @@ const Input = ({
         disabled={disabled}
         readOnly={readOnly}
         aria-label={ariaLabel}
+        aria-invalid={invalid || undefined}
       />
       {icon && (
         <div className={c(styles.icon, { [styles[`rotate${rotate}` as string]]: !!rotate })}>

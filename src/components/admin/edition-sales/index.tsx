@@ -14,7 +14,11 @@ import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLay
 
 const formatDate = (iso: string | null) =>
   iso
-    ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
+    ? new Date(iso).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      })
     : '—'
 
 /**
@@ -91,7 +95,7 @@ export const AdminEditionSales = () => {
               </thead>
               <tbody>
                 {sales.map((s) => (
-                  <tr key={`${s.orderId ?? 'na'}-${s.variantName}-${s.number}`}>
+                  <tr key={s.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
                     <td>
                       {s.artworkSlug ? (
@@ -112,7 +116,9 @@ export const AdminEditionSales = () => {
                     <td>
                       <div>{s.buyerName ?? '—'}</div>
                       {s.buyerEmail && (
-                        <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>{s.buyerEmail}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>
+                          {s.buyerEmail}
+                        </div>
                       )}
                     </td>
                     <td style={{ textTransform: 'capitalize' }}>{s.state}</td>

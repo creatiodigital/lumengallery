@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 
+import { Button } from '@/components/ui/Button'
 import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
 
 import { RichText } from '@/components/ui/RichText'
@@ -28,6 +29,8 @@ type Artwork = {
 interface ArtworkGridProps {
   artworks: Artwork[]
   artistName?: string
+  /** Show an "Order Print" CTA per card (the prints page). Off elsewhere. */
+  withOrderPrint?: boolean
 }
 
 // Fallback ratio for legacy artworks uploaded before EXIF capture.
@@ -36,7 +39,7 @@ interface ArtworkGridProps {
 const FALLBACK_WIDTH = 800
 const FALLBACK_HEIGHT = 600
 
-export const ArtworkGrid = ({ artworks, artistName }: ArtworkGridProps) => {
+export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: ArtworkGridProps) => {
   return (
     <div className={styles.grid}>
       {artworks.map((artwork) => {
@@ -79,6 +82,16 @@ export const ArtworkGrid = ({ artworks, artistName }: ArtworkGridProps) => {
                 <Text as="p" size="sm" className={styles.detail}>
                   {artwork.dimensions}
                 </Text>
+              )}
+              {withOrderPrint && (
+                <div className={styles.orderAction}>
+                  <Button
+                    href={`/artworks/${artwork.slug}/print`}
+                    label="Order Print"
+                    variant="primary"
+                    size="regularSquared"
+                  />
+                </div>
               )}
             </div>
           </div>

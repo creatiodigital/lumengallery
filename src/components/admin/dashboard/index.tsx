@@ -134,8 +134,8 @@ export const DashboardAdmin = () => {
           Recent issues and items aging in their current state — coming soon.
         </p>
         <div className={styles.placeholderBlock}>
-          Stuck orders, onboarding-incomplete artists, and recent webhook failures
-          will surface here. Wired in a follow-up pass.
+          Stuck orders, onboarding-incomplete artists, and recent webhook failures will surface
+          here. Wired in a follow-up pass.
         </div>
       </section>
 

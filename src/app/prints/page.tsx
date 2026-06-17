@@ -29,6 +29,8 @@ const getPrintsPage = async () => {
         name: true,
         author: true,
         year: true,
+        technique: true,
+        dimensions: true,
         imageUrl: true,
         originalWidth: true,
         originalHeight: true,

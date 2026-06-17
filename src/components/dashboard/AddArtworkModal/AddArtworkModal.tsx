@@ -79,7 +79,7 @@ export const AddArtworkModal = ({ userId, onClose, onSuccess }: AddArtworkModalP
       <Text font="dashboard" as="h2">
         Add New Artwork
       </Text>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         {/* Title Section */}
         <div className={dashboardStyles.section}>
           <h3 className={dashboardStyles.sectionTitle}>Title</h3>

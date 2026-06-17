@@ -10,9 +10,11 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { ErrorText } from '@/components/ui/ErrorText'
 import { Input } from '@/components/ui/Input'
 import { LoadingBar } from '@/components/ui/LoadingBar'
 import { Modal } from '@/components/ui/Modal'
+import { Text } from '@/components/ui/Typography'
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 import { useEffectiveUser } from '@/hooks/useEffectiveUser'
 import { useUsers } from '@/hooks/useUsers'
@@ -35,6 +37,8 @@ export const AdminUsers = () => {
     email: string
   } | null>(null)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState('')
+  const [actionSuccess, setActionSuccess] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -47,6 +51,12 @@ export const AdminUsers = () => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [openMenuId])
+
+  useEffect(() => {
+    if (!actionSuccess) return
+    const timer = setTimeout(() => setActionSuccess(''), 4000)
+    return () => clearTimeout(timer)
+  }, [actionSuccess])
 
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
@@ -84,6 +94,8 @@ export const AdminUsers = () => {
   )
 
   const handleDeleteClick = useCallback((userId: string, userName: string) => {
+    setActionError('')
+    setActionSuccess('')
     setDeleteTarget({ id: userId, name: userName })
   }, [])
 
@@ -105,12 +117,15 @@ export const AdminUsers = () => {
 
   const handleInviteClick = useCallback((user: TUser) => {
     if (user.email) {
+      setActionError('')
+      setActionSuccess('')
       setInviteTarget({ id: user.id, name: `${user.name} ${user.lastName}`, email: user.email })
     }
   }, [])
 
   const handleInviteConfirm = useCallback(async () => {
     if (!inviteTarget) return
+    setActionError('')
     setInvitingId(inviteTarget.id)
     try {
       const response = await fetch('/api/users/invite', {
@@ -120,14 +135,14 @@ export const AdminUsers = () => {
       })
       if (response.ok) {
         setInviteTarget(null)
-        alert('Invite email sent successfully!')
+        setActionSuccess('Invite email sent successfully!')
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to send invite')
+        setActionError(data.error || 'Failed to send invite')
       }
     } catch (err) {
       console.error('Invite error:', err)
-      alert('Failed to send invite')
+      setActionError('Failed to send invite')
     } finally {
       setInvitingId(null)
     }
@@ -135,6 +150,7 @@ export const AdminUsers = () => {
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return
+    setActionError('')
     setDeleting(true)
     try {
       const response = await fetch(`/api/users/${deleteTarget.id}`, { method: 'DELETE' })
@@ -143,11 +159,11 @@ export const AdminUsers = () => {
         setDeleteTarget(null)
         setConfirmText('')
       } else {
-        alert('Failed to delete user')
+        setActionError('Failed to delete user')
       }
     } catch (err) {
       console.error('Delete error:', err)
-      alert('Failed to delete user')
+      setActionError('Failed to delete user')
     } finally {
       setDeleting(false)
     }
@@ -183,6 +199,16 @@ export const AdminUsers = () => {
             onClick={() => setShowAddModal(true)}
           />
         </div>
+
+        {actionSuccess && (
+          <Text
+            font="dashboard"
+            as="p"
+            style={{ color: 'var(--color-success)', marginBottom: '1rem' }}
+          >
+            {actionSuccess}
+          </Text>
+        )}
 
         <table className={dashboardStyles.table}>
           <thead>
@@ -336,6 +362,7 @@ export const AdminUsers = () => {
           onClose={() => {
             setDeleteTarget(null)
             setConfirmText('')
+            setActionError('')
           }}
         >
           <div className={dashboardStyles.deleteModal}>
@@ -359,6 +386,7 @@ export const AdminUsers = () => {
                 onChange={(e) => setConfirmText(e.target.value)}
               />
             </div>
+            <ErrorText>{actionError}</ErrorText>
             <div className={dashboardStyles.deleteActions}>
               <Button
                 font="dashboard"
@@ -367,6 +395,7 @@ export const AdminUsers = () => {
                 onClick={() => {
                   setDeleteTarget(null)
                   setConfirmText('')
+                  setActionError('')
                 }}
               />
               <Button
@@ -382,7 +411,12 @@ export const AdminUsers = () => {
       )}
 
       {inviteTarget && (
-        <Modal onClose={() => setInviteTarget(null)}>
+        <Modal
+          onClose={() => {
+            setInviteTarget(null)
+            setActionError('')
+          }}
+        >
           <div className={dashboardStyles.deleteModal}>
             <h2>Send Invite Email</h2>
             <p>
@@ -391,12 +425,16 @@ export const AdminUsers = () => {
             <p>
               The email will be sent to: <strong>{inviteTarget.email}</strong>
             </p>
+            <ErrorText>{actionError}</ErrorText>
             <div className={dashboardStyles.deleteActions}>
               <Button
                 font="dashboard"
                 variant="secondary"
                 label="Cancel"
-                onClick={() => setInviteTarget(null)}
+                onClick={() => {
+                  setInviteTarget(null)
+                  setActionError('')
+                }}
               />
               <Button
                 font="dashboard"

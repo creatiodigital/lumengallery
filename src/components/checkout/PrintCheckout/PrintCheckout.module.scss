@@ -113,18 +113,13 @@
   }
 }
 
-// Visual section break: when a standalone .field (e.g. the Country
-// dropdown at the top of the form) is followed by the .fieldGrid, push
-// the grid down so the country choice reads as its own decision before
-// the buyer fills in name/address details below.
-.field + .fieldGrid {
+// Visual section break: when the standalone Country field at the top of the
+// form is followed by the .fieldGrid, push the grid down so the country choice
+// reads as its own decision before the buyer fills in name/address details
+// below. (The country field is the only top-level .fieldFull immediately
+// preceding the grid.)
+.fieldFull + .fieldGrid {
   margin-top: var(--space-6);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
 }
 
 .fieldFull {
@@ -137,27 +132,6 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-text-secondary);
-}
-
-// Per-field error text. Driven by JS validation state via the
-// `data-error` attribute on the field wrapper — only set after the
-// first submit attempt, then cleared/re-set live as the user fixes
-// each field. Avoids flashing red on initial load or while typing.
-.fieldError {
-  display: none;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  color: var(--color-error-text);
-  margin-top: 4px;
-  line-height: 1.4;
-}
-
-.field[data-error='true'] .fieldInput {
-  border-color: var(--color-error-text);
-}
-
-.field[data-error='true'] .fieldError {
-  display: block;
 }
 
 .fieldInput,

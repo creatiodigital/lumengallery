@@ -4,13 +4,10 @@ import { PageLayout } from '@/components/ui/PageLayout'
 import { RichText } from '@/components/ui/RichText'
 import { Text } from '@/components/ui/Typography'
 
-import { PrintCard } from './PrintCard'
 import { PrintsBanner } from './PrintsBanner'
+import { PrintsBrowser } from './PrintsBrowser'
 import styles from './prints.module.scss'
 import type { PrintArtwork, PrintsPageContent } from './types'
-
-// Toolbar (artist filter, sort, search) is parked until the catalog grows —
-// see PrintsToolbar.tsx. Re-wire state + `<PrintsToolbar />` below when needed.
 
 interface PrintsPageProps {
   artworks: PrintArtwork[]
@@ -45,20 +42,10 @@ export const PrintsPage = ({ artworks, pageContent }: PrintsPageProps) => {
         </div>
       </div>
 
-      <div className={styles.sectionHeader}>
-        <Text as="h2" font="serif" size="2xl" className={styles.sectionTitle}>
-          Selected Works
-        </Text>
-      </div>
-
       {sorted.length === 0 ? (
         <EmptyState message="Very soon we will showcase a selection of works as signed, limited-edition prints — produced on archival, gallery-grade paper and shipped worldwide." />
       ) : (
-        <div className={styles.grid}>
-          {sorted.map((artwork) => (
-            <PrintCard key={artwork.id} artwork={artwork} />
-          ))}
-        </div>
+        <PrintsBrowser artworks={sorted} />
       )}
     </PageLayout>
   )

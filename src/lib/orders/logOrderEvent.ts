@@ -12,6 +12,7 @@ export type OrderEventKind =
   | 'email_sent'
   | 'email_failed'
   | 'admin_action'
+  | 'payout_released'
   | 'note'
   // Limited-edition ledger
   | 'edition_reserved'

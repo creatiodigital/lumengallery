@@ -19,26 +19,6 @@ const sceneSlice = createSlice({
       state.isPlaceholdersShown = false
     },
 
-    showHuman: (state: TScene) => {
-      state.isHumanVisible = true
-    },
-
-    hideHuman: (state: TScene) => {
-      state.isHumanVisible = false
-    },
-
-    setHumanPositionX: (state: TScene, action: PayloadAction<number>) => {
-      state.humanPositionX = action.payload
-    },
-
-    setHumanPositionZ: (state: TScene, action: PayloadAction<number>) => {
-      state.humanPositionZ = action.payload
-    },
-
-    setHumanRotationY: (state: TScene, action: PayloadAction<number>) => {
-      state.humanRotationY = action.payload
-    },
-
     addWall: (state: TScene, action: PayloadAction<{ id: string }>) => {
       const wallId = action.payload.id
       const wallIndex = state.walls.length + 1
@@ -81,11 +61,6 @@ export const {
   setCurrentArtwork,
   showPlaceholders,
   hidePlaceholders,
-  showHuman,
-  hideHuman,
-  setHumanPositionX,
-  setHumanPositionZ,
-  setHumanRotationY,
   addWall,
   editWallName,
   setFocusTarget,

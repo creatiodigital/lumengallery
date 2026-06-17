@@ -117,16 +117,18 @@ const MobileExhibitionView = ({
     <div className={styles.mobileOverlay}>
       <div className={styles.mobileOverlayContent}>
         <Text as="h2" size="lg" font="serif" className={styles.mobileOverlayTitle}>
-          3D Exhibition Available
+          Step inside on a bigger screen
         </Text>
         <Text as="p" size="md" className={styles.mobileOverlayText}>
-          Visit this page on a laptop or desktop to explore the full 3D exhibition experience.
+          This immersive space is best explored on a laptop or desktop, where there&apos;s room to
+          roam — but you won&apos;t miss a thing in the meantime. The full exhibition, with every
+          artwork, is right here on the exhibition page.
         </Text>
         <Link
           href={`/exhibitions/${artistSlug}/${exhibitionSlug}`}
           className={styles.mobileOverlayButton}
         >
-          Go to Exhibition Page
+          View the full exhibition
         </Link>
       </div>
     </div>

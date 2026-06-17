@@ -22,7 +22,6 @@ import type { TArtwork } from '@/types/artwork'
 
 import Controls from './controls'
 
-import HumanReference from './objects/HumanReference/HumanReference'
 import { SceneErrorBoundary } from './SceneErrorBoundary'
 import styles from './Scene.module.scss'
 import { Space } from './Space'
@@ -99,7 +98,6 @@ export const Scene = ({ hideLoader }: SceneProps = {}) => {
                 <group>
                   <Controls />
                   <Space onPlaceholderClick={handlePlaceholderClick} artworks={artworks} />
-                  <HumanReference />
                 </group>
               </Suspense>
             </Canvas>

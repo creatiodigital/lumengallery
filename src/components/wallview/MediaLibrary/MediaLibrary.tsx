@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
+import { ErrorText } from '@/components/ui/ErrorText'
 import { Icon } from '@/components/ui/Icon'
 import { Input } from '@/components/ui/Input'
 import { LoadingBar } from '@/components/ui/LoadingBar'
@@ -99,9 +100,10 @@ const truncateText = (text: string, maxLength: number) => {
 type MediaLibraryProps = {
   onClose: () => void
   onClickArtwork: (artwork: Artwork) => void
+  duplicateError?: string | null
 }
 
-export const MediaLibrary = ({ onClose, onClickArtwork }: MediaLibraryProps) => {
+export const MediaLibrary = ({ onClose, onClickArtwork, duplicateError }: MediaLibraryProps) => {
   // Use effectiveUser to get the impersonated artist's ID when admin is impersonating
   const { effectiveUser } = useEffectiveUser()
   const [artworks, setArtworks] = useState<Artwork[]>([])
@@ -241,6 +243,12 @@ export const MediaLibrary = ({ onClose, onClickArtwork }: MediaLibraryProps) => 
           aria-label="Search artworks"
         />
       </div>
+
+      {duplicateError && (
+        <div className={styles.errorWrapper}>
+          <ErrorText>{duplicateError}</ErrorText>
+        </div>
+      )}
 
       {loading ? (
         <LoadingBar />

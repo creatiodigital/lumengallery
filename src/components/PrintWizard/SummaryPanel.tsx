@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import {
@@ -25,37 +25,64 @@ interface SummaryPanelProps {
   artwork: WizardArtwork
   catalog: Catalog
   config: WizardConfig
-  /** ISO country code if the buyer already picked one on checkout (then
-   *  navigated back). Empty string when the destination hasn't been
-   *  chosen yet — the summary shows "—" for shipping in that case. */
-  country: string
   quote: Quote | null
   quoteLoading: boolean
   canContinue: boolean
   configReady: boolean
-  onAddToCart: () => void
+  /** Adds the configured item to the cart. Async to leave room for a
+   *  server-side reservation step (limited editions) before the line
+   *  is committed. Resolve only on a successful add. */
+  onAddToCart: () => Promise<void>
+  /** Returns the buyer to where they came from (reuses the wizard's
+   *  CLOSE behaviour) after a successful add. */
+  onContinueShopping: () => void
   /** Limited editions only: "1/50" rendered on the preview. */
   editionLabel?: string
+  /** Limited editions only: a friendly message when the reservation failed
+   *  (sold out / only N left). Rendered above the CTA; not an error throw. */
+  addError?: string | null
 }
-
-const regionNames =
-  typeof Intl !== 'undefined' && 'DisplayNames' in Intl
-    ? new Intl.DisplayNames(['en'], { type: 'region' })
-    : null
-const countryName = (code: string) => regionNames?.of(code) ?? code
 
 export const SummaryPanel = ({
   artwork,
   catalog,
   config,
-  country,
   quote,
   quoteLoading,
   canContinue,
   configReady,
   onAddToCart,
+  onContinueShopping,
   editionLabel,
+  addError,
 }: SummaryPanelProps) => {
+  // Local add-to-cart state. Once an item has been added we swap the
+  // single CTA for the "Continue shopping / Go to cart" pair.
+  const [added, setAdded] = useState(false)
+  const [adding, setAdding] = useState(false)
+
+  // Reset add-to-cart state when the buyer changes their configuration
+  // or switches variant — the previously added item no longer reflects
+  // the current selection, so the CTA must return to "Add to cart".
+  useEffect(() => {
+    setAdded(false)
+    setAdding(false)
+  }, [config, editionLabel])
+
+  const handleAddToCart = async () => {
+    if (adding) return
+    setAdding(true)
+    try {
+      await onAddToCart()
+      setAdded(true)
+    } catch {
+      // The reservation failed (sold out / insufficient stock). The parent
+      // surfaces the message via `addError`; keep the CTA on "Add to cart"
+      // and don't flip to the added state.
+    } finally {
+      setAdding(false)
+    }
+  }
   // Effective print size — preset OR custom. Drives schema + label.
   // Sizes are stored in the artwork's natural orientation; the schema
   // renders them as-is, no portrait/landscape toggle anywhere.
@@ -72,7 +99,7 @@ export const SummaryPanel = ({
   const showFrame = visuals.framed === true
   const moldingWidthCm = showFrame ? (visuals.mouldingWidthCm ?? 2.0) : 0
   const mattingBorderCm = showFrame ? matCm : 0
-  const moldingColorHex = visuals.frameColorHex ?? '#0b0b0b'
+  const moldingColorHex = visuals.frameColorHex ?? '#f2f2f2'
   const mattingColorHex = visuals.matColorHex ?? '#f6f3ec'
 
   // Floating frame uses a coloured backboard instead of a passepartout —
@@ -98,9 +125,9 @@ export const SummaryPanel = ({
           variant="primary"
           size="bigSquared"
           fullWidth
-          onClick={onAddToCart}
+          onClick={handleAddToCart}
           disabled
-          label="Add shipping address"
+          label="Add to cart"
           className={styles.ctaButton}
         />
       </aside>
@@ -137,41 +164,57 @@ export const SummaryPanel = ({
       <SpecList specs={summarizeConfig(catalog, config)} />
 
       {(() => {
+        // Item price only — the wizard shows the per-configuration price
+        // (artwork + production, no shipping, no VAT) so buyers can compare
+        // options. Shipping and tax are folded in later at the cart/checkout.
         const artworkLine = quote?.lines.find((l) => l.id === 'artwork')
-        const shippingLine = quote?.lines.find((l) => l.id === 'shipping')
         const placeholder = quoteLoading ? '…' : '—'
-        const vatLabel = quote?.taxLabel ?? 'VAT'
         return (
           <dl className={styles.priceList}>
             <div className={styles.priceRow}>
-              <dt>Shipping to</dt>
-              <dd>{country ? countryName(country) : '—'}</dd>
-            </div>
-            <div className={styles.priceRow}>
-              <dt>Artwork</dt>
+              <dt>Item price</dt>
               <dd>{artworkLine ? formatEuro(artworkLine.amountCents) : placeholder}</dd>
-            </div>
-            <div className={`${styles.priceRow} ${styles.priceRowMuted}`}>
-              <dt>Shipping</dt>
-              <dd>{shippingLine ? formatEuro(shippingLine.amountCents) : '—'}</dd>
-            </div>
-            <div className={`${styles.priceRow} ${styles.priceRowMuted}`}>
-              <dt>{vatLabel}</dt>
-              <dd>{quote && quote.taxCents > 0 ? formatEuro(quote.taxCents) : '—'}</dd>
             </div>
           </dl>
         )
       })()}
 
-      <Button
-        variant="primary"
-        size="bigSquared"
-        fullWidth
-        onClick={onAddToCart}
-        disabled={!canContinue}
-        label="Add shipping address"
-        className={styles.ctaButton}
-      />
+      {added ? (
+        <div className={styles.addedActions}>
+          <Button
+            variant="secondary"
+            size="bigSquared"
+            fullWidth
+            onClick={onContinueShopping}
+            label="Continue shopping"
+          />
+          <Button
+            variant="primary"
+            size="bigSquared"
+            fullWidth
+            href="/cart"
+            label="Go to cart"
+            className={styles.ctaButton}
+          />
+        </div>
+      ) : (
+        <>
+          {addError && (
+            <p className={styles.addError} role="alert">
+              {addError}
+            </p>
+          )}
+          <Button
+            variant="primary"
+            size="bigSquared"
+            fullWidth
+            onClick={handleAddToCart}
+            disabled={!canContinue || adding}
+            label={adding ? 'Adding…' : 'Add to cart'}
+            className={styles.ctaButton}
+          />
+        </>
+      )}
     </aside>
   )
 }

@@ -29,7 +29,9 @@ const ArtisticImage = ({ artwork }: ArtisticImageProps) => {
     paperBorderSize,
   } = artwork
 
-  const frameFolder = (frameMaterial === 'wood' ? 'wood-dark' : (frameMaterial ?? 'wood-dark')).replace('wood-', '')
+  const frameFolder = (
+    frameMaterial === 'wood' ? 'wood-dark' : (frameMaterial ?? 'wood-dark')
+  ).replace('wood-', '')
   const frameTextureUrl = assetUrl(`/assets/materials/wooden-frame-${frameFolder}/diffuse.jpg`)
 
   return (

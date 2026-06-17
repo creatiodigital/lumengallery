@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
+import { createPrintOrderFromCart } from '@/lib/orders/createPrintOrderFromCart'
 import { createPrintOrderFromPaymentIntent } from '@/lib/orders/createPrintOrderFromPaymentIntent'
 import { logOrderEvent } from '@/lib/orders/logOrderEvent'
 import { captureError } from '@/lib/observability/captureError'
@@ -74,6 +75,11 @@ export async function POST(req: NextRequest) {
         await releaseEditionNumberForPaymentIntent(pi.id).catch((err) =>
           console.warn('[stripe-webhook] release edition number failed:', err),
         )
+        // Cart PIs stage their lines in a PendingCart row that only gets
+        // consumed + deleted when the order is built. A canceled PI never
+        // completed, so the row is leftover — clean it up. No-op for
+        // single-print PIs (no row) or if it was already consumed.
+        await prisma.pendingCart.delete({ where: { paymentIntentId: pi.id } }).catch(() => {})
         await prisma.printOrder
           .updateMany({
             where: { paymentIntentId: pi.id },
@@ -105,6 +111,10 @@ export async function POST(req: NextRequest) {
           await releaseEditionNumberForPaymentIntent(pi.id).catch((err) =>
             console.warn('[stripe-webhook] release edition number failed:', err),
           )
+          // Same as canceled: a hard failure means the buyer never
+          // completed, so drop any leftover cart staging row. Guarded
+          // no-op for single-print PIs or an already-consumed row.
+          await prisma.pendingCart.delete({ where: { paymentIntentId: pi.id } }).catch(() => {})
         }
         await prisma.printOrder
           .updateMany({
@@ -196,7 +206,15 @@ async function handleAccountUpdated(account: AccountLike) {
 }
 
 async function handlePaymentIntentAuthorized(pi: PaymentIntentLike) {
-  const res = await createPrintOrderFromPaymentIntent(pi)
+  // Cart PIs carry metadata.kind === 'cart' (set in createCartPaymentIntent)
+  // and stage their line items in a PendingCart row; single-print PIs carry
+  // the order fields in metadata. Dispatch on that flag. The cart builder
+  // only reads pi.id + pi.metadata, so the minimal PaymentIntentLike shape
+  // satisfies it directly.
+  const res =
+    pi.metadata?.kind === 'cart'
+      ? await createPrintOrderFromCart(pi)
+      : await createPrintOrderFromPaymentIntent(pi)
   if (!res.ok) {
     console.error(
       `[stripe-webhook] amount_capturable_updated pi=${pi.id} → order creation failed: ${res.error}`,
@@ -205,9 +223,13 @@ async function handlePaymentIntentAuthorized(pi: PaymentIntentLike) {
     // known failure shapes. This is a belt-and-braces alert so any new
     // failure mode added in the future doesn't go silently — it's safe
     // to receive two alerts for the same incident.
+    const builder =
+      pi.metadata?.kind === 'cart'
+        ? 'createPrintOrderFromCart'
+        : 'createPrintOrderFromPaymentIntent'
     await sendAdminCriticalAlert({
       title: 'Order creation failed after card auth',
-      problem: `createPrintOrderFromPaymentIntent returned not-ok: ${res.error}`,
+      problem: `${builder} returned not-ok: ${res.error}`,
       paymentIntentId: pi.id,
       whatToDo: [
         'You may have already received a more specific alert above — check.',

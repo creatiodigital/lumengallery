@@ -1,10 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
 
 import { Button } from '@/components/ui/Button'
-import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 import type { SpecsSummary } from '@/lib/print-providers'
 
 import styles from './SpecList.module.scss'
@@ -55,12 +53,6 @@ export const SpecList = ({ specs, className, visibleByDefault = 5 }: SpecListPro
           onClick={() => setExpanded((v) => !v)}
         >
           <span>{expanded ? 'Show less' : 'Show all selected options'}</span>
-          <ChevronDown
-            size={16}
-            strokeWidth={ICON_STROKE_WIDTH}
-            className={`${styles.chevron} ${expanded ? styles.chevronOpen : ''}`}
-            aria-hidden
-          />
         </Button>
       )}
     </div>

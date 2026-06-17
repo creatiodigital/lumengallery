@@ -5,8 +5,6 @@ import { useSelector } from 'react-redux'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
 import { CameraPanel } from '@/components/editview/CameraPanel'
 import { FloorPanel } from '@/components/editview/FloorPanel'
-
-import HumanPanel from '@/components/editview/HumanPanel/HumanPanel'
 import { LightingPanel } from '@/components/editview/LightingPanel'
 import WallCeilingPanel from '@/components/editview/WallCeilingPanel/WallCeilingPanel'
 import { Scene } from '@/components/scene'
@@ -29,9 +27,6 @@ function EditView() {
   const isCameraPanelOpen: boolean = useSelector(
     (state: RootState) => state.dashboard.isCameraPanelOpen,
   )
-  const isHumanPanelOpen: boolean = useSelector(
-    (state: RootState) => state.dashboard.isHumanPanelOpen,
-  )
 
   const isWallCeilingPanelOpen: boolean = useSelector(
     (state: RootState) => state.dashboard.isWallCeilingPanelOpen,
@@ -47,7 +42,6 @@ function EditView() {
           {isLightingPanelOpen && <LightingPanel />}
           {isFloorPanelOpen && <FloorPanel />}
           {isCameraPanelOpen && <CameraPanel />}
-          {isHumanPanelOpen && <HumanPanel />}
 
           {isWallCeilingPanelOpen && <WallCeilingPanel />}
         </div>

@@ -11,6 +11,8 @@ export type PrintArtwork = {
   name: string
   author: string | null
   year: string | null
+  technique: string | null
+  dimensions: string | null
   imageUrl: string | null
   originalWidth?: number | null
   originalHeight?: number | null

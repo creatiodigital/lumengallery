@@ -1,0 +1,16 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+// Error border for the control. `:where()` keeps the inner selector at zero
+// specificity so a control's own focus/hover border can still win, and so this
+// reaches "bare" inputs/textareas (size="bare" skips all Input styles and owns
+// its look via inputClassName) which have no `invalid` prop to hook. Styled
+// controls get the same red border via their own `invalid` prop — both routes
+// use the same token, no !important. (SelectDropdown is a <button>, so it uses
+// its `invalid` prop, not this rule.)
+.field[data-error='true'] :where(input, textarea) {
+  border-color: var(--color-error-text);
+}

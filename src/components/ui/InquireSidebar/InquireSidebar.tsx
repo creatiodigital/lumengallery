@@ -5,10 +5,13 @@ import { useState } from 'react'
 import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
 
 import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Icon } from '@/components/ui/Icon'
 import { Text } from '@/components/ui/Typography'
 import { Modal } from '@/components/ui/Modal'
+import { useFormValidation } from '@/hooks/useFormValidation'
+import { email, minLength, phone, type Validator } from '@/lib/validation'
 
 import styles from './InquireSidebar.module.scss'
 
@@ -36,60 +39,41 @@ type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
 
 type FieldName = keyof FormErrors
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const validateField = (field: FieldName, value: string): string | undefined => {
-  const trimmed = value.trim()
-  switch (field) {
-    case 'firstName':
-      if (trimmed.length < 2) return 'Please enter your first name.'
-      return
-    case 'lastName':
-      if (trimmed.length < 2) return 'Please enter your last name.'
-      return
-    case 'email':
-      if (!emailRegex.test(trimmed)) return 'Please enter a valid email address.'
-      return
-    case 'phone': {
-      const digits = trimmed.replace(/\D/g, '')
-      if (digits.length < 8) return 'Please enter a valid phone number.'
-      if (/^(\d)\1+$/.test(digits)) return 'Please enter a valid phone number.'
-      return
-    }
-    case 'message':
-      if (trimmed.length < 10) return 'Please enter a message of at least 10 characters.'
-      return
-  }
+// Built from the shared validator factories so the messages + rules live in
+// one place. Module-level (stable identity) for `useFormValidation`.
+const inquireValidators: Record<FieldName, Validator> = {
+  firstName: minLength(2, 'Please enter your first name.'),
+  lastName: minLength(2, 'Please enter your last name.'),
+  email: email(),
+  phone: phone(),
+  message: minLength(10, 'Please enter a message of at least 10 characters.'),
 }
 
 export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps) => {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
+  const [emailField, setEmailField] = useState('')
+  const [phoneField, setPhoneField] = useState('')
   const [message, setMessage] = useState('')
   const [honeypot, setHoneypot] = useState('')
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [submitAttempted, setSubmitAttempted] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle')
   const [showModal, setShowModal] = useState(false)
 
-  // After a failed submit, re-validate a field as the user edits it so
-  // the error clears in place. Per project rule, no validation runs
-  // before the first submit attempt.
-  const handleChange = (field: FieldName, value: string) => {
-    if (!submitAttempted) return
-    setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }))
-  }
+  // Shared house validation flow (silent → all errors on submit → clear live).
+  const {
+    validateAll,
+    handleChange,
+    fieldError,
+    reset: resetValidation,
+  } = useFormValidation(inquireValidators)
 
   const resetForm = () => {
     setFirstName('')
     setLastName('')
-    setEmail('')
-    setPhone('')
+    setEmailField('')
+    setPhoneField('')
     setMessage('')
-    setErrors({})
-    setSubmitAttempted(false)
+    resetValidation()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,16 +86,14 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
       return
     }
 
-    setSubmitAttempted(true)
-    const newErrors: FormErrors = {
-      firstName: validateField('firstName', firstName),
-      lastName: validateField('lastName', lastName),
-      email: validateField('email', email),
-      phone: validateField('phone', phone),
-      message: validateField('message', message),
-    }
-    setErrors(newErrors)
-    if (Object.values(newErrors).some((err) => err !== undefined)) return
+    const valid = validateAll({
+      firstName,
+      lastName,
+      email: emailField,
+      phone: phoneField,
+      message,
+    })
+    if (!valid) return
 
     setSubmitStatus('submitting')
 
@@ -122,8 +104,8 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
         body: JSON.stringify({
           firstName,
           lastName,
-          email,
-          phone,
+          email: emailField,
+          phone: phoneField,
           message,
           artworkSlug: artwork.slug,
           artworkTitle: artwork.title,
@@ -200,7 +182,7 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
             </div>
 
             <div className={styles.content}>
-              <form onSubmit={handleSubmit} className={styles.form}>
+              <form onSubmit={handleSubmit} className={styles.form} noValidate>
                 {/* Honeypot field */}
                 <input
                   type="text"
@@ -212,7 +194,7 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
                   autoComplete="off"
                 />
 
-                <div className={styles.field}>
+                <FormField error={fieldError('firstName')}>
                   <label htmlFor="firstName" className={styles.label}>
                     First name
                   </label>
@@ -225,12 +207,12 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
                     }}
                     variant="underline"
                     maxLength={100}
-                    className={`${styles.input} ${errors.firstName ? styles.inputError : ''}`}
+                    invalid={!!fieldError('firstName')}
+                    className={styles.input}
                   />
-                  {errors.firstName && <span className={styles.errorText}>{errors.firstName}</span>}
-                </div>
+                </FormField>
 
-                <div className={styles.field}>
+                <FormField error={fieldError('lastName')}>
                   <label htmlFor="lastName" className={styles.label}>
                     Last name
                   </label>
@@ -243,49 +225,49 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
                     }}
                     variant="underline"
                     maxLength={100}
-                    className={`${styles.input} ${errors.lastName ? styles.inputError : ''}`}
+                    invalid={!!fieldError('lastName')}
+                    className={styles.input}
                   />
-                  {errors.lastName && <span className={styles.errorText}>{errors.lastName}</span>}
-                </div>
+                </FormField>
 
-                <div className={styles.field}>
+                <FormField error={fieldError('email')}>
                   <label htmlFor="email" className={styles.label}>
                     Email
                   </label>
                   <Input
                     id="email"
                     type="email"
-                    value={email}
+                    value={emailField}
                     onChange={(e) => {
-                      setEmail(e.target.value)
+                      setEmailField(e.target.value)
                       handleChange('email', e.target.value)
                     }}
                     variant="underline"
                     maxLength={200}
-                    className={`${styles.input} ${errors.email ? styles.inputError : ''}`}
+                    invalid={!!fieldError('email')}
+                    className={styles.input}
                   />
-                  {errors.email && <span className={styles.errorText}>{errors.email}</span>}
-                </div>
+                </FormField>
 
-                <div className={styles.field}>
+                <FormField error={fieldError('phone')}>
                   <label htmlFor="phone" className={styles.label}>
                     Phone
                   </label>
                   <Input
                     id="phone"
-                    value={phone}
+                    value={phoneField}
                     onChange={(e) => {
-                      setPhone(e.target.value)
+                      setPhoneField(e.target.value)
                       handleChange('phone', e.target.value)
                     }}
                     variant="underline"
                     maxLength={32}
-                    className={`${styles.input} ${errors.phone ? styles.inputError : ''}`}
+                    invalid={!!fieldError('phone')}
+                    className={styles.input}
                   />
-                  {errors.phone && <span className={styles.errorText}>{errors.phone}</span>}
-                </div>
+                </FormField>
 
-                <div className={styles.field}>
+                <FormField error={fieldError('message')}>
                   <label htmlFor="message" className={styles.label}>
                     Message
                   </label>
@@ -296,12 +278,12 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
                       setMessage(e.target.value)
                       handleChange('message', e.target.value)
                     }}
-                    className={`${styles.textarea} ${errors.message ? styles.textareaError : ''}`}
+                    className={styles.textarea}
                     rows={4}
                     maxLength={4000}
+                    aria-invalid={!!fieldError('message') || undefined}
                   />
-                  {errors.message && <span className={styles.errorText}>{errors.message}</span>}
-                </div>
+                </FormField>
 
                 <div className={styles.artworkPreview}>
                   <div className={styles.artworkImage}>

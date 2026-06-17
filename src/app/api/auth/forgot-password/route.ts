@@ -4,6 +4,7 @@ import crypto from 'crypto'
 
 import { escapeHtml } from '@/utils/escapeHtml'
 import prisma from '@/lib/prisma'
+import { isEmail } from '@/lib/validation'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -53,8 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    if (!isEmail(email)) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { RichText } from '@/components/ui/RichText'
@@ -109,19 +110,26 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
           className={styles.inquireButton}
         />
         {artwork.printEnabled && artwork.printPriceCents ? (
-          <Button
-            variant="primary"
-            label="Order Print"
-            icon="arrowRight"
-            size="bigSquared"
-            onClick={() => {
-              // Remember where we came from (exhibition visit URL when opened from the
-              // modal, or this artwork page) so the print flow's Close returns here.
-              setPrintReturnUrl(artwork.slug, window.location.pathname)
-              router.push(`/artworks/${artwork.slug}/print`)
-            }}
-            className={styles.inquireButton}
-          />
+          <>
+            <Button
+              variant="primary"
+              label="Order Print"
+              icon="arrowRight"
+              size="bigSquared"
+              onClick={() => {
+                // Remember where we came from (exhibition visit URL when opened from the
+                // modal, or this artwork page) so the print flow's Close returns here.
+                setPrintReturnUrl(artwork.slug, window.location.pathname)
+                router.push(`/artworks/${artwork.slug}/print`)
+              }}
+              className={styles.inquireButton}
+            />
+            <div className={styles.catalogueNote}>
+              <Link href="/prints" className={styles.catalogueLink}>
+                See all available prints →
+              </Link>
+            </div>
+          </>
         ) : null}
         <Share title={displayTitle || 'Artwork'} url={shareUrl} className={styles.share} />
       </div>

@@ -11,8 +11,6 @@ import {
   hideFloorPanel,
   showCameraPanel,
   hideCameraPanel,
-  showHumanPanel,
-  hideHumanPanel,
   showWallCeilingPanel,
   hideWallCeilingPanel,
 } from '@/redux/slices/dashboardSlice'
@@ -29,7 +27,6 @@ export const Menu = () => {
   const isLightingPanelOpen = useSelector((state: RootState) => state.dashboard.isLightingPanelOpen)
   const isFloorPanelOpen = useSelector((state: RootState) => state.dashboard.isFloorPanelOpen)
   const isCameraPanelOpen = useSelector((state: RootState) => state.dashboard.isCameraPanelOpen)
-  const isHumanPanelOpen = useSelector((state: RootState) => state.dashboard.isHumanPanelOpen)
 
   const isWallCeilingPanelOpen = useSelector(
     (state: RootState) => state.dashboard.isWallCeilingPanelOpen,
@@ -43,20 +40,6 @@ export const Menu = () => {
     }
   }
 
-  const toggleHumanPanel = () => {
-    if (isHumanPanelOpen) {
-      dispatch(hideHumanPanel())
-    } else {
-      // Close other panels first
-      if (isLightingPanelOpen) dispatch(hideLightingPanel())
-      if (isFloorPanelOpen) dispatch(hideFloorPanel())
-      if (isCameraPanelOpen) dispatch(hideCameraPanel())
-
-      if (isWallCeilingPanelOpen) dispatch(hideWallCeilingPanel())
-      dispatch(showHumanPanel())
-    }
-  }
-
   const toggleLightingPanel = () => {
     if (isLightingPanelOpen) {
       dispatch(hideLightingPanel())
@@ -64,7 +47,6 @@ export const Menu = () => {
       // Close other panels first
       if (isFloorPanelOpen) dispatch(hideFloorPanel())
       if (isCameraPanelOpen) dispatch(hideCameraPanel())
-      if (isHumanPanelOpen) dispatch(hideHumanPanel())
 
       if (isWallCeilingPanelOpen) dispatch(hideWallCeilingPanel())
       dispatch(showLightingPanel())
@@ -78,7 +60,6 @@ export const Menu = () => {
       // Close other panels first
       if (isLightingPanelOpen) dispatch(hideLightingPanel())
       if (isCameraPanelOpen) dispatch(hideCameraPanel())
-      if (isHumanPanelOpen) dispatch(hideHumanPanel())
 
       if (isWallCeilingPanelOpen) dispatch(hideWallCeilingPanel())
       dispatch(showFloorPanel())
@@ -92,7 +73,6 @@ export const Menu = () => {
       // Close other panels first
       if (isLightingPanelOpen) dispatch(hideLightingPanel())
       if (isFloorPanelOpen) dispatch(hideFloorPanel())
-      if (isHumanPanelOpen) dispatch(hideHumanPanel())
 
       if (isWallCeilingPanelOpen) dispatch(hideWallCeilingPanel())
       dispatch(showCameraPanel())
@@ -106,7 +86,6 @@ export const Menu = () => {
       if (isLightingPanelOpen) dispatch(hideLightingPanel())
       if (isFloorPanelOpen) dispatch(hideFloorPanel())
       if (isCameraPanelOpen) dispatch(hideCameraPanel())
-      if (isHumanPanelOpen) dispatch(hideHumanPanel())
 
       dispatch(showWallCeilingPanel())
     }
@@ -133,14 +112,6 @@ export const Menu = () => {
           variant="secondary"
           icon={isPlaceholdersShown ? 'preview' : 'placeholder'}
           onClick={() => togglePlaceholders()}
-        />
-      </Tooltip>
-      <Tooltip label="Human reference" placement="right">
-        <Button
-          size="regular"
-          variant="secondary"
-          icon="human-standing"
-          onClick={toggleHumanPanel}
         />
       </Tooltip>
       <Tooltip label="Lighting controls" placement="right">

@@ -47,7 +47,10 @@ export async function saveLimitedVariants(args: {
     return { ok: false, error: 'A limited edition needs at least one variant.' }
   }
   if (variants.length > MAX_LIMITED_VARIANTS) {
-    return { ok: false, error: `A limited edition can have at most ${MAX_LIMITED_VARIANTS} variants.` }
+    return {
+      ok: false,
+      error: `A limited edition can have at most ${MAX_LIMITED_VARIANTS} variants.`,
+    }
   }
 
   const existing = await prisma.limitedVariant.findMany({

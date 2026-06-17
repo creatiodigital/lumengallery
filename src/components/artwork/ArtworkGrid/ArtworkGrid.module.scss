@@ -59,7 +59,12 @@
   padding-top: var(--space-5);
   border-top: 1px solid var(--color-border-default);
   width: 100%;
-  min-height: 200px;
+
+  // Equal-height caption blocks keep multi-column rows aligned; in the
+  // single-column mobile layout this just adds dead space before the footer.
+  @include breakpoint(md) {
+    min-height: 200px;
+  }
 }
 
 .artist {
@@ -81,4 +86,9 @@
   display: inline-block;
   margin-top: var(--space-4);
   text-decoration: none;
+}
+
+// Order Print CTA (prints page only — gated by the withOrderPrint prop).
+.orderAction {
+  margin-top: var(--space-4);
 }

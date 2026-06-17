@@ -10,6 +10,7 @@ import {
   isSuperAdmin,
 } from '@/lib/authUtils'
 import prisma from '@/lib/prisma'
+import { isEmail } from '@/lib/validation'
 import { sanitizeLine } from '@/utils/sanitizeLine'
 
 type Body = {
@@ -132,6 +133,12 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       const v = sanitizeLine(String(body.email))
       if (v.length > 200) {
         return NextResponse.json({ error: 'Email too long.' }, { status: 400 })
+      }
+      // Required + format-checked when supplied — mirrors the profile form's
+      // client rule (shared `isEmail`) so the two never drift. Admin toggles
+      // that don't send `email` are unaffected.
+      if (!isEmail(v)) {
+        return NextResponse.json({ error: 'A valid email is required.' }, { status: 400 })
       }
       data.email = v
     }
