@@ -98,7 +98,7 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
     id: m.id,
     label: m.label,
     visibleWhen: { dimensionId: 'frameType', valueIn: [m.frameType] },
-    isDefault: m.id === 'std-black-thin',
+    isDefault: m.id === 'std-white-thin',
     visual: {
       frameColorHex: m.hex,
       frameRoughness: m.roughness,

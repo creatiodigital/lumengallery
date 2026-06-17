@@ -1,0 +1,54 @@
+@use '@/styles/mixins' as *;
+
+// Desktop: the real CTA into the 3D walk-through. Hidden below the lg breakpoint
+// (1024px) — the SAME threshold the /visit route uses to block small viewports —
+// so a mobile visitor never taps a button that would only turn them away.
+.desktopCta {
+  display: none;
+
+  @include breakpoint(lg) {
+    display: inline-flex;
+  }
+}
+
+// Mobile: an honest, friendly note in place of the CTA. The exhibition's Share
+// control sits just below it, so a visitor can send themselves the link to open
+// on a larger screen later.
+// A bordered callout (squared, per the client-facing convention) so the note
+// reads as an intentional element rather than stray text where the CTA was.
+.mobileNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  max-width: 28rem;
+  padding: var(--space-5);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-default);
+
+  @include breakpoint(lg) {
+    display: none;
+  }
+}
+
+.mobileNoticeIcon {
+  flex-shrink: 0;
+  margin-top: var(--space-2);
+  color: var(--color-text-primary);
+}
+
+.mobileNoticeBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.mobileNoticeLabel {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-secondary);
+}
+
+.mobileNoticeText {
+  margin: 0;
+  color: var(--color-text-primary);
+}

@@ -55,108 +55,35 @@
   margin: 0 0 var(--space-4);
 }
 
-.sectionHeader {
+// Prints commerce toolbar — sits between two double borders (the gallery
+// motif), holding the artist filter (left) and the cart (right).
+.printsToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
   border-top: 3px double var(--color-border-default);
-  padding-top: var(--space-8);
+  border-bottom: 3px double var(--color-border-default);
+  padding: var(--space-4) 0;
   margin-bottom: var(--space-10);
-  text-align: center;
 }
 
-.sectionTitle {
-  margin: 0;
-  color: var(--color-text-primary);
-  line-height: 1.2;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-6);
-
-  @include breakpoint(md) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-8);
-  }
-
-  @include breakpoint(lg) {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-10);
-  }
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--space-6);
-
-  @include breakpoint(lg) {
-    gap: var(--space-8);
-  }
-}
-
-.imageWrapper {
-  width: 100%;
+.toolbarFilter {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 0;
-  flex-grow: 1;
 }
 
-.imageLink {
-  width: 100%;
+.artistSelect {
+  width: 320px;
+  max-width: 100%;
+}
+
+.toolbarActions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-decoration: none;
-}
-
-.image {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  max-height: 600px;
-}
-
-.placeholder {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface-subtle);
-  color: var(--color-text-primary);
-}
-
-.info {
-  width: 100%;
-  min-height: 200px;
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--color-border-default);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.artist {
-  color: var(--color-text-primary);
-  font-weight: 600;
-  margin-bottom: var(--space-1);
-}
-
-.title {
-  color: var(--color-text-primary);
-  margin-bottom: var(--space-1);
-}
-
-.year {
-  color: var(--color-text-primary);
-}
-
-.action {
-  margin-top: var(--space-4);
+  gap: var(--space-5);
+  // Inset from the toolbar's right edge so the cart badge (which overhangs the
+  // icon ~8px) never touches the screen edge on mobile.
+  padding-right: var(--space-3);
 }

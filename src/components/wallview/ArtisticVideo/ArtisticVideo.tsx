@@ -75,7 +75,9 @@ const ArtisticVideo = ({ artwork }: ArtisticVideoProps) => {
   // The display image: poster → video first frame → none
   const displayImageUrl = imageUrl || videoFrameUrl
 
-  const frameFolder = (frameMaterial === 'wood' ? 'wood-dark' : (frameMaterial ?? 'wood-dark')).replace('wood-', '')
+  const frameFolder = (
+    frameMaterial === 'wood' ? 'wood-dark' : (frameMaterial ?? 'wood-dark')
+  ).replace('wood-', '')
   const frameTextureUrl = assetUrl(`/assets/materials/wooden-frame-${frameFolder}/diffuse.jpg`)
 
   return (

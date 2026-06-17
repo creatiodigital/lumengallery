@@ -4,8 +4,11 @@ import { useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import { ErrorText } from '@/components/ui/ErrorText'
+import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Text } from '@/components/ui/Typography'
+import { useFormValidation } from '@/hooks/useFormValidation'
+import { email } from '@/lib/validation'
 
 import styles from './ForgotPasswordModal.module.scss'
 
@@ -14,22 +17,29 @@ type ForgotPasswordModalProps = {
   onBack: () => void
 }
 
+const forgotValidators = { email: email() }
+
 export const ForgotPasswordModal = ({ onClose, onBack }: ForgotPasswordModalProps) => {
-  const [email, setEmail] = useState('')
+  const [emailField, setEmailField] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
+  const { validateAll, handleChange, fieldError } = useFormValidation(forgotValidators)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (!validateAll({ email: emailField })) return
+
     setLoading(true)
 
     try {
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: emailField }),
       })
 
       const data = await response.json()
@@ -70,18 +80,26 @@ export const ForgotPasswordModal = ({ onClose, onBack }: ForgotPasswordModalProp
       <Text as="p" className={styles.description}>
         Enter your email address and we&apos;ll send you a link to reset your password.
       </Text>
-      <form onSubmit={handleSubmit}>
-        <div className={styles.field}>
-          <label htmlFor="forgot-email">Email</label>
+      <form onSubmit={handleSubmit} noValidate>
+        <FormField
+          className={styles.field}
+          label="Email"
+          htmlFor="forgot-email"
+          error={fieldError('email')}
+        >
           <Input
             id="forgot-email"
             type="email"
             size="medium"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={emailField}
+            onChange={(e) => {
+              setEmailField(e.target.value)
+              handleChange('email', e.target.value)
+            }}
+            invalid={!!fieldError('email')}
             required
           />
-        </div>
+        </FormField>
         <ErrorText>{error}</ErrorText>
         <div className={styles.actions}>
           <Button size="small" label={loading ? 'Sending...' : 'Send Reset Link'} type="submit" />

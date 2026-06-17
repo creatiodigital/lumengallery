@@ -48,6 +48,10 @@
   text-align: center;
 }
 
+.errorWrapper {
+  padding: var(--space-3) var(--space-4) 0;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

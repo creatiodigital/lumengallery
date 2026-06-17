@@ -8,6 +8,7 @@ import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLay
 import { spaceConfigs, type SpaceKey } from '@/components/scene/constants'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { ErrorText } from '@/components/ui/ErrorText'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
@@ -37,6 +38,7 @@ export const AdminExhibitions = () => {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<Exhibition | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   const [confirmText, setConfirmText] = useState('')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -158,6 +160,7 @@ export const AdminExhibitions = () => {
     if (!deleteTarget) return
 
     setDeleting(true)
+    setDeleteError('')
     try {
       const response = await fetch(`/api/exhibitions/${deleteTarget.id}`, {
         method: 'DELETE',
@@ -168,11 +171,11 @@ export const AdminExhibitions = () => {
         setConfirmText('')
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to delete exhibition')
+        setDeleteError(data.error || 'Failed to delete exhibition')
       }
     } catch (error) {
       console.error('Failed to delete exhibition:', error)
-      alert('Failed to delete exhibition')
+      setDeleteError('Failed to delete exhibition')
     } finally {
       setDeleting(false)
     }
@@ -357,6 +360,7 @@ export const AdminExhibitions = () => {
                           className={`${dashboardStyles.kebabMenuItem} ${dashboardStyles.kebabMenuItemDanger}`}
                           onClick={() => {
                             setOpenMenuId(null)
+                            setDeleteError('')
                             setDeleteTarget(exhibition)
                           }}
                           label="Delete"
@@ -377,6 +381,7 @@ export const AdminExhibitions = () => {
           onClose={() => {
             setDeleteTarget(null)
             setConfirmText('')
+            setDeleteError('')
           }}
         >
           <div className={dashboardStyles.deleteModal}>
@@ -400,6 +405,7 @@ export const AdminExhibitions = () => {
                 onChange={(e) => setConfirmText(e.target.value)}
               />
             </div>
+            <ErrorText>{deleteError}</ErrorText>
             <div className={dashboardStyles.deleteActions}>
               <Button
                 font="dashboard"
@@ -408,6 +414,7 @@ export const AdminExhibitions = () => {
                 onClick={() => {
                   setDeleteTarget(null)
                   setConfirmText('')
+                  setDeleteError('')
                 }}
               />
               <Button

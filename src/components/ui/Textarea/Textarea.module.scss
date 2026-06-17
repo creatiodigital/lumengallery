@@ -33,3 +33,14 @@
     border-color: var(--color-text-primary);
   }
 }
+
+// Validation state. Wins over the size variants' borders without `!important`.
+// Pairs with the `invalid` prop.
+.invalid {
+  &,
+  &:hover,
+  &:focus,
+  &:focus-visible {
+    border-color: var(--color-error-text);
+  }
+}

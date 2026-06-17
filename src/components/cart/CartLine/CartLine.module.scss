@@ -1,0 +1,88 @@
+// Item card: details (image + artist/title/specs) on the left, and a vertical
+// price · quantity · subtotal · remove panel on the right, split by a divider.
+// Below 640px the panel drops beneath the details.
+.line {
+  display: flex;
+  align-items: stretch;
+  background: var(--color-surface-subtle);
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
+  // White gap between item cards — the page background shows through.
+  margin-bottom: var(--space-6);
+
+  @media (max-width: 560px) {
+    flex-direction: column;
+  }
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-5);
+}
+
+// Right panel — the divider is its left border, full-height because the row
+// stretches both columns to equal height.
+.panel {
+  position: relative;
+  flex-shrink: 0;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+
+  // Vertical divider between the details and this panel, inset from the top and
+  // bottom so it doesn't run the full card height.
+  &::before {
+    content: '';
+    position: absolute;
+    top: var(--space-6);
+    bottom: var(--space-6);
+    left: 0;
+    width: 1px;
+    background: var(--color-border-light);
+  }
+
+  @media (max-width: 560px) {
+    width: auto;
+    border-top: 1px solid var(--color-border-light);
+
+    &::before {
+      display: none;
+    }
+  }
+}
+
+.totalBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.panelLabel {
+  color: var(--color-text-secondary);
+}
+
+.totalValue {
+  color: var(--color-text-primary);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.qty {
+  min-width: var(--space-6);
+  text-align: center;
+  color: var(--color-text-primary);
+}
+
+.remove {
+  color: var(--color-text-secondary);
+}

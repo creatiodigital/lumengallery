@@ -12,7 +12,11 @@
  *   - sizes are DISTINCT across an artwork's variants (TPS keys edition
  *     identity on the unframed print size)
  */
-import { TPS_PAPERS, TPS_SIZE_BOUNDS, TPS_BORDER_BOUNDS } from '@/lib/print-providers/printspace/data'
+import {
+  TPS_PAPERS,
+  TPS_SIZE_BOUNDS,
+  TPS_BORDER_BOUNDS,
+} from '@/lib/print-providers/printspace/data'
 import type { TpsPrintTypeId } from '@/lib/print-providers/printspace/data'
 import { getPrintLongEdgeBounds } from '@/lib/print-providers/printspace/sizeBounds'
 

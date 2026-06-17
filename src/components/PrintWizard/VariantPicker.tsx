@@ -35,7 +35,9 @@ export const VariantPicker = ({ variants, selectedVariantId, onSelect }: Props) 
           aria-pressed={selected}
         >
           <span className={styles.variantCardName}>{v.name}</span>
-          <span className={styles.variantCardMeta}>{formatDualDimensions(v.widthCm, v.heightCm)}</span>
+          <span className={styles.variantCardMeta}>
+            {formatDualDimensions(v.widthCm, v.heightCm)}
+          </span>
           <span className={styles.variantCardMeta}>{paperLabel}</span>
           <span className={styles.variantCardStock}>
             {v.remaining} of {v.editionSize} available

@@ -36,6 +36,7 @@ type ButtonProps = {
   'aria-checked'?: boolean
   'aria-haspopup'?: boolean | 'menu' | 'listbox' | 'dialog' | 'tree' | 'grid'
   'aria-selected'?: boolean
+  'aria-invalid'?: boolean
   role?: string
 }
 
@@ -66,6 +67,7 @@ export const Button = React.memo(
     'aria-checked': ariaChecked,
     'aria-haspopup': ariaHaspopup,
     'aria-selected': ariaSelected,
+    'aria-invalid': ariaInvalid,
     role,
   }: ButtonProps) => {
     const isIconOnly = icon && !label && !children
@@ -119,6 +121,7 @@ export const Button = React.memo(
         aria-checked={ariaChecked}
         aria-haspopup={ariaHaspopup}
         aria-selected={ariaSelected}
+        aria-invalid={ariaInvalid}
       >
         {content}
       </button>

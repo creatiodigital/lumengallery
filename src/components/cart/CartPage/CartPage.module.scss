@@ -1,0 +1,110 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+  padding: var(--space-10) 0;
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+// Page layout: items table (left) + sticky order summary (right).
+.cartGrid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-10);
+  align-items: start;
+
+  // Keep items + summary side by side on laptops (incl. 13" ≈ 1280px); only
+  // stack on tablet/mobile.
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+}
+
+.items {
+  min-width: 0;
+}
+
+// Column template — MUST stay in sync with .line in CartLine.module.scss.
+.tableHeader {
+  display: grid;
+  grid-template-columns: 1fr 90px 140px 100px;
+  gap: var(--space-5);
+  // Horizontal padding matches the line cards (.line padding) so the column
+  // labels stay aligned over the padded cells.
+  padding: 0 var(--space-5) var(--space-3);
+  border-bottom: 1px solid var(--color-border-default);
+
+  span {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+  }
+
+  // Item label left; the three value columns centered over their cells.
+  span:not(:first-child) {
+    text-align: center;
+  }
+
+  // Hidden once the line stacks into labelled rows (each row carries labels).
+  @media (max-width: 900px) {
+    display: none;
+  }
+}
+
+// ── Order summary card ─────────────────────────────────────────
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background: var(--color-surface-elevated);
+  border-top: 1px solid var(--color-border-default);
+  border-bottom: 1px solid var(--color-border-default);
+
+  // Stops being a sticky sidebar once it drops below the table (see .cartGrid).
+  @media (max-width: 1024px) {
+    position: static;
+  }
+}
+
+.summaryTitle {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-primary);
+}
+
+.subtotalRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.subtotalLabel {
+  color: var(--color-text-secondary);
+}
+
+.subtotalValue {
+  color: var(--color-text-primary);
+}
+
+.note {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.cta {
+  margin-top: var(--space-2);
+}
+
+.secondaryCta {
+  margin-top: var(--space-1);
+}

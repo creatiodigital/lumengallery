@@ -37,11 +37,6 @@
   }
 }
 
-// Validation variants
-.error {
-  border-color: var(--color-error-text) !important;
-}
-
 .disabled {
   background-color: var(--color-surface-disabled);
   cursor: not-allowed;
@@ -133,5 +128,18 @@
   &:focus {
     outline: none;
     opacity: 1;
+  }
+}
+
+// Validation state. Placed last so it wins (equal specificity, later source
+// order) over every size/context variant's resting + hover + focus border,
+// including `.underline` below — red border without `!important`. Pairs with
+// the `invalid` prop. (`border-color` covers the underline's bottom border too.)
+.invalid {
+  &,
+  &:hover,
+  &:focus,
+  &:focus-visible {
+    border-color: var(--color-error-text);
   }
 }

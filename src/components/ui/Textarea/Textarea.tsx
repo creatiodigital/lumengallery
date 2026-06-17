@@ -13,6 +13,8 @@ type TTextarea = {
   rows?: number
   size?: 'regular' | 'medium'
   className?: string
+  /** Mark the field invalid: red border + `aria-invalid`. */
+  invalid?: boolean
 }
 
 function Textarea({
@@ -23,16 +25,18 @@ function Textarea({
   rows = 3,
   size = 'regular',
   className,
+  invalid,
 }: TTextarea) {
   return (
     <div className={c(styles.wrapper, className)}>
       <textarea
         id={id}
-        className={c(styles.textarea, styles[size])}
+        className={c(styles.textarea, styles[size], { [styles.invalid]: invalid })}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         rows={rows}
+        aria-invalid={invalid || undefined}
       />
     </div>
   )

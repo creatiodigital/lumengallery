@@ -6,10 +6,12 @@ import Link from 'next/link'
 
 import { Button } from '@/components/ui/Button'
 import { ErrorText } from '@/components/ui/ErrorText'
+import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { LoadingBar } from '@/components/ui/LoadingBar'
 import { PageLayout } from '@/components/ui/PageLayout'
 import { Text } from '@/components/ui/Typography'
+import { validatePassword } from '@/lib/validation'
 
 import styles from './reset-password.module.scss'
 
@@ -20,6 +22,12 @@ const ResetPasswordForm = () => {
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  // Per-field errors (password strength + match). `error` stays for
+  // form-level problems (invalid token, server failure).
+  const [fieldErrors, setFieldErrors] = useState<{ password?: string; confirmPassword?: string }>(
+    {},
+  )
+  const [submitAttempted, setSubmitAttempted] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -30,19 +38,30 @@ const ResetPasswordForm = () => {
     }
   }, [token])
 
+  // Strength via the shared `validatePassword` (one rule, client + server) plus
+  // the cross-field match check.
+  const computeFieldErrors = (pw: string, confirm: string) => {
+    const next: { password?: string; confirmPassword?: string } = {}
+    const result = validatePassword(pw)
+    if (!result.valid) next.password = `Password must include ${result.errors.join(', ')}.`
+    if (confirm !== pw) next.confirmPassword = 'Passwords do not match.'
+    return next
+  }
+
+  // House flow: errors only after the first submit, then re-checked live as the
+  // user edits either field (so the match error clears once they line up).
+  const revalidate = (pw: string, confirm: string) => {
+    if (submitAttempted) setFieldErrors(computeFieldErrors(pw, confirm))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setSubmitAttempted(true)
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long')
-      return
-    }
+    const nextErrors = computeFieldErrors(password, confirmPassword)
+    setFieldErrors(nextErrors)
+    if (nextErrors.password || nextErrors.confirmPassword) return
 
     setLoading(true)
 
@@ -100,32 +119,42 @@ const ResetPasswordForm = () => {
         Enter your new password below.
       </Text>
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.field}>
-          <label htmlFor="password">New Password</label>
+      <form onSubmit={handleSubmit} className={styles.form} noValidate>
+        <FormField label="New Password" htmlFor="password" error={fieldErrors.password}>
           <Input
             id="password"
             type="password"
             size="medium"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              revalidate(e.target.value, confirmPassword)
+            }}
+            invalid={!!fieldErrors.password}
             showPasswordToggle
             required
           />
-        </div>
+        </FormField>
 
-        <div className={styles.field}>
-          <label htmlFor="confirmPassword">Confirm Password</label>
+        <FormField
+          label="Confirm Password"
+          htmlFor="confirmPassword"
+          error={fieldErrors.confirmPassword}
+        >
           <Input
             id="confirmPassword"
             type="password"
             size="medium"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value)
+              revalidate(password, e.target.value)
+            }}
+            invalid={!!fieldErrors.confirmPassword}
             showPasswordToggle
             required
           />
-        </div>
+        </FormField>
 
         <ErrorText>{error}</ErrorText>
 

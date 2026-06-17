@@ -105,6 +105,33 @@ export async function bindEditionNumberToOrder(args: {
   return true
 }
 
+/**
+ * Bind specific reserved cart-held numbers to their PrintOrderItem at
+ * order creation. The numbers already carry the PI (attached in
+ * createCartPaymentIntent); this adds the per-item link. Returns the count
+ * bound. Idempotent: re-running binds nothing new (rows whose orderItemId is
+ * already set fall outside the WHERE). Empty input is a no-op.
+ *
+ * One statement: orderItemId is a one-to-many FK (PrintOrderItem.editionNumbers),
+ * so a quantity>=2 limited line binds all its numbers to the same orderItemId
+ * here. The caller compares the returned count to the expected quantity and
+ * raises a reconciliation alert (not an order failure) on any shortfall.
+ */
+export async function bindEditionNumbersToOrderItem(args: {
+  numberIds: string[]
+  orderItemId: string
+  buyerEmail: string
+}): Promise<number> {
+  const { numberIds, orderItemId, buyerEmail } = args
+  if (numberIds.length === 0) return 0
+
+  const result = await prisma.editionNumber.updateMany({
+    where: { id: { in: numberIds }, state: 'reserved', orderItemId: null },
+    data: { orderItemId, buyerEmail },
+  })
+  return result.count
+}
+
 /** Confirm a bound number as sold at capture (admin markPlaced). */
 export async function markEditionNumberSold(paymentIntentId: string): Promise<void> {
   await prisma.editionNumber.updateMany({

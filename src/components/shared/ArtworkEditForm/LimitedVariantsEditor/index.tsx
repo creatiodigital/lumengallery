@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react'
 
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 import { Button } from '@/components/ui/Button'
+import { ErrorText } from '@/components/ui/ErrorText'
 import { Input } from '@/components/ui/Input'
 import { SelectDropdown, type SelectOption } from '@/components/ui/SelectDropdown'
 import { CustomSizeInputs } from '@/components/PrintWizard/CustomSizeInputs'
@@ -202,9 +203,10 @@ export const LimitedVariantsEditor = ({
                     value={variant.name}
                     disabled={variantLocked}
                     placeholder="e.g. Small"
+                    invalid={!!errFor('name')}
                     onChange={(e) => update(index, { name: e.target.value })}
                   />
-                  {errFor('name') && <p className={styles.error}>{errFor('name')}</p>}
+                  <ErrorText>{errFor('name')}</ErrorText>
                 </div>
 
                 <div className={dashboardStyles.field}>
@@ -230,11 +232,11 @@ export const LimitedVariantsEditor = ({
                       update(index, { widthCm: size.widthCm, heightCm: size.heightCm })
                     }
                   />
-                  {errFor('size') && <p className={styles.error}>{errFor('size')}</p>}
+                  <ErrorText>{errFor('size')}</ErrorText>
                   {duplicateSize && (
-                    <p className={styles.error}>
+                    <ErrorText>
                       Each variant must have a distinct print size — this one clashes with another.
-                    </p>
+                    </ErrorText>
                   )}
                 </div>
 
@@ -248,6 +250,7 @@ export const LimitedVariantsEditor = ({
                       size="medium"
                       value={variant.borderCm ? String(variant.borderCm) : ''}
                       disabled={variantLocked}
+                      invalid={!!errFor('border')}
                       onChange={(e) =>
                         update(index, {
                           borderCm: Number(e.target.value.replace(/[^0-9]/g, '')) || 0,
@@ -255,7 +258,7 @@ export const LimitedVariantsEditor = ({
                       }
                     />
                     <span className={styles.hint}>min {LIMITED_BORDER_MIN_CM} cm, whole cm</span>
-                    {errFor('border') && <p className={styles.error}>{errFor('border')}</p>}
+                    <ErrorText>{errFor('border')}</ErrorText>
                   </div>
                   <div className={dashboardStyles.field}>
                     <label>Number of copies</label>
@@ -265,6 +268,7 @@ export const LimitedVariantsEditor = ({
                       size="medium"
                       value={variant.editionSize ? String(variant.editionSize) : ''}
                       disabled={variantLocked}
+                      invalid={!!errFor('editionSize')}
                       onChange={(e) =>
                         update(index, {
                           editionSize: Number(e.target.value.replace(/[^0-9]/g, '')) || 0,
@@ -272,9 +276,7 @@ export const LimitedVariantsEditor = ({
                       }
                     />
                     <span className={styles.hint}>How many numbered prints exist.</span>
-                    {errFor('editionSize') && (
-                      <p className={styles.error}>{errFor('editionSize')}</p>
-                    )}
+                    <ErrorText>{errFor('editionSize')}</ErrorText>
                   </div>
                 </div>
 
@@ -287,6 +289,7 @@ export const LimitedVariantsEditor = ({
                     value={variant.priceEuros ?? ''}
                     disabled={variantLocked}
                     placeholder="Add your price here"
+                    invalid={!!errFor('price')}
                     onChange={(e) =>
                       update(index, {
                         priceEuros: e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''),
@@ -294,7 +297,7 @@ export const LimitedVariantsEditor = ({
                     }
                   />
                   <span className={styles.hint}>What you earn per print of this variant</span>
-                  {errFor('price') && <p className={styles.error}>{errFor('price')}</p>}
+                  <ErrorText>{errFor('price')}</ErrorText>
                 </div>
 
                 {(showUnblock || showReadyToSell || showDelete) && (

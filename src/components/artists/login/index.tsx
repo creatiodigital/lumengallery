@@ -7,11 +7,25 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { ErrorText } from '@/components/ui/ErrorText'
 import { ForgotPasswordModal } from '@/components/ui/ForgotPasswordModal'
+import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { Text } from '@/components/ui/Typography'
+import { useFormValidation } from '@/hooks/useFormValidation'
+import { email as emailRule, required } from '@/lib/validation'
 
 import styles from './login.module.scss'
+
+// Login validates email shape + presence client-side (the password field is the
+// user's *existing* password, so it gets a presence check only — never the
+// strength rules). Wrong-credential errors stay server-side + form-level.
+const credentialValidators = {
+  email: emailRule(),
+  password: required('Please enter your password.'),
+}
+const codeValidators = {
+  loginCode: required('Please enter the verification code.'),
+}
 
 export const LoginPage = () => {
   const router = useRouter()
@@ -27,9 +41,22 @@ export const LoginPage = () => {
   // 2FA step: 'credentials' or 'code'
   const [step, setStep] = useState<'credentials' | 'code'>('credentials')
 
+  const {
+    validateAll: validateCredentials,
+    handleChange: handleCredentialChange,
+    fieldError: credentialError,
+  } = useFormValidation(credentialValidators)
+  const {
+    validateAll: validateCode,
+    handleChange: handleCodeChange,
+    fieldError: codeError,
+    reset: resetCode,
+  } = useFormValidation(codeValidators)
+
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!validateCredentials({ email, password })) return
     setSubmitting(true)
 
     try {
@@ -103,6 +130,7 @@ export const LoginPage = () => {
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!validateCode({ loginCode })) return
     setSubmitting(true)
 
     try {
@@ -175,28 +203,34 @@ export const LoginPage = () => {
           </Text>
 
           {step === 'credentials' ? (
-            <form onSubmit={handleSendCode} className={styles.form}>
-              <div className={styles.field}>
-                <label htmlFor="email">Email</label>
+            <form onSubmit={handleSendCode} className={styles.form} noValidate>
+              <FormField label="Email" htmlFor="email" error={credentialError('email')}>
                 <Input
                   id="email"
                   type="email"
                   size="medium"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    handleCredentialChange('email', e.target.value)
+                  }}
+                  invalid={!!credentialError('email')}
                   autoComplete="email"
                   required
                 />
-              </div>
+              </FormField>
 
-              <div className={styles.field}>
-                <label htmlFor="password">Password</label>
+              <FormField label="Password" htmlFor="password" error={credentialError('password')}>
                 <Input
                   id="password"
                   type="password"
                   size="medium"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    handleCredentialChange('password', e.target.value)
+                  }}
+                  invalid={!!credentialError('password')}
                   autoComplete="current-password"
                   showPasswordToggle
                   required
@@ -207,7 +241,7 @@ export const LoginPage = () => {
                   onClick={() => setShowForgotPassword(true)}
                   label="Forgot password?"
                 />
-              </div>
+              </FormField>
 
               <ErrorText>{error}</ErrorText>
 
@@ -219,7 +253,7 @@ export const LoginPage = () => {
               />
             </form>
           ) : (
-            <form onSubmit={handleVerifyCode} className={styles.form}>
+            <form onSubmit={handleVerifyCode} className={styles.form} noValidate>
               {/* Visually hidden credentials for Chrome password manager detection */}
               <div
                 style={{
@@ -252,19 +286,26 @@ export const LoginPage = () => {
                 We sent a verification code to <strong>{email}</strong>
               </Text>
 
-              <div className={styles.field}>
-                <label htmlFor="loginCode">Verification Code</label>
+              <FormField
+                label="Verification Code"
+                htmlFor="loginCode"
+                error={codeError('loginCode')}
+              >
                 <Input
                   id="loginCode"
                   type="text"
                   size="medium"
                   value={loginCode}
-                  onChange={(e) => setLoginCode(e.target.value)}
+                  onChange={(e) => {
+                    setLoginCode(e.target.value)
+                    handleCodeChange('loginCode', e.target.value)
+                  }}
+                  invalid={!!codeError('loginCode')}
                   placeholder="Enter 6-digit code"
                   autoComplete="one-time-code"
                   required
                 />
-              </div>
+              </FormField>
 
               <ErrorText>{error}</ErrorText>
               {successMessage && (
@@ -300,6 +341,7 @@ export const LoginPage = () => {
                   setStep('credentials')
                   setLoginCode('')
                   setError('')
+                  resetCode()
                 }}
                 label="← Back to login"
               />

@@ -88,7 +88,7 @@ export const AdminPayouts = () => {
               </thead>
               <tbody>
                 {payouts.map((p) => (
-                  <tr key={p.transferId}>
+                  <tr key={p.rowKey}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(p.paidOutAt)}</td>
                     <td>
                       <div>{p.artistName}</div>
@@ -98,7 +98,17 @@ export const AdminPayouts = () => {
                         </div>
                       )}
                     </td>
-                    <td>{p.artworkTitle}</td>
+                    <td>
+                      {p.artworkTitle}
+                      {/* Cart orders contribute one row per line — flag the
+                          source so a multi-row order reads clearly. */}
+                      {p.source === 'item' && (
+                        <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>
+                          {' '}
+                          · cart item
+                        </span>
+                      )}
+                    </td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {formatEuro(p.amountCents)}
                     </td>

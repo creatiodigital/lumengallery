@@ -38,6 +38,11 @@ interface SelectDropdownProps<V extends string = string> {
   placeholder?: string
   disabled?: boolean
   className?: string
+  /** Visual style of the closed control. 'boxed' (default) = bordered input;
+   *  'plain' = borderless text + chevron (underlines on hover). */
+  variant?: 'boxed' | 'plain'
+  /** Mark the control invalid: red border + `aria-invalid`. */
+  invalid?: boolean
 }
 
 /**
@@ -53,6 +58,8 @@ export const SelectDropdown = <V extends string = string>({
   placeholder,
   disabled,
   className,
+  variant = 'boxed',
+  invalid,
 }: SelectDropdownProps<V>) => {
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
@@ -136,18 +143,19 @@ export const SelectDropdown = <V extends string = string>({
 
   return (
     <div
-      className={`${styles.wrapper} ${className ?? ''}`}
+      className={`${styles.wrapper} ${variant === 'plain' ? styles.wrapperPlain : ''} ${className ?? ''}`}
       ref={wrapperRef}
       onKeyDown={handleKeyDown}
     >
       {label && <span className={styles.label}>{label}</span>}
       <Button
         variant="bare"
-        className={`${styles.control} ${open ? styles.controlOpen : ''}`}
+        className={`${styles.control} ${variant === 'plain' ? styles.controlPlain : ''} ${open ? styles.controlOpen : ''} ${invalid ? styles.invalid : ''}`}
         onClick={() => !disabled && setOpen((v) => !v)}
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-invalid={invalid || undefined}
       >
         <span className={styles.controlLabel}>
           {selected ? selected.label : (placeholder ?? 'Select…')}

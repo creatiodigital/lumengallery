@@ -1,0 +1,91 @@
+.item {
+  display: flex;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+// Uniform square box: portrait and landscape art both sit inside the same
+// footprint (contained, never cropped) so every item's columns line up. No
+// background or border — just the image centered in its square.
+.thumb {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.thumbImage {
+  object-fit: contain;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.artist {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--color-text-secondary);
+}
+
+.title {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+// Aligned two-column spec list (labels column + values column) so keys and
+// values line up consistently regardless of value length. Element selectors
+// stay literal in CSS modules, so this re-styles the shared SpecList only
+// where CartItemDetails renders it; the component's other uses are untouched.
+.specs {
+  max-width: 420px;
+  margin-top: var(--space-1);
+
+  dl {
+    display: grid;
+    // FIXED label column (sized in ch to the longest label, "Mount
+    // (Passepartout)") rather than max-content — so the value column sits at
+    // the same position whether the list is collapsed or expanded, instead of
+    // jumping right when a longer label is revealed.
+    // minmax(0, 1fr) lets the value column shrink and wrap instead of
+    // overflowing (clipping) the card on narrow widths.
+    grid-template-columns: 23ch minmax(0, 1fr);
+    column-gap: var(--space-4);
+    row-gap: var(--space-1);
+  }
+
+  dl > div {
+    display: contents;
+  }
+
+  // Left-align values right after the label column so the key→value gap is a
+  // constant column-gap in every row — and stays consistent when "Show all"
+  // reveals longer labels/values. (Overrides SpecList's text-align: right;
+  // the extra `dl` raises specificity above the shared rule.)
+  dl dd {
+    margin: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  // Narrow screens: a 23ch label column leaves too little for the values and
+  // clips them — shrink the label column (long labels wrap) and use full width.
+  @media (max-width: 640px) {
+    max-width: 100%;
+
+    dl {
+      grid-template-columns: 12ch minmax(0, 1fr);
+      column-gap: var(--space-3);
+    }
+  }
+}
+
+.edition {
+  color: var(--color-text-secondary);
+}
+
+.errorText {
+  margin-top: var(--space-1);
+  color: var(--color-error-text);
+}

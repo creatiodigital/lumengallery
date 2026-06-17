@@ -434,6 +434,19 @@ export const ArtworkEditForm = ({
   // Silent until the artist clicks the open-edition "Ready to Sell"; then the
   // price error shows and clears live once a valid price is entered.
   const [triedOpenReadyToSell, setTriedOpenReadyToSell] = useState(false)
+  // Title is required (the form has noValidate, so we guard it in JS rather than
+  // via the native bubble; the server only sanitizes, it doesn't reject empty).
+  const [titleError, setTitleError] = useState<string>()
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    if (!formData.title.trim()) {
+      e.preventDefault()
+      setTitleError('Please enter a title.')
+      return
+    }
+    setTitleError(undefined)
+    onSubmit(e)
+  }
   // If server has original file info, use that directly instead of reading from CDN image
   const serverMeta = useMemo<ImageMeta | null>(() => {
     if (originalWidth && originalHeight) {
@@ -725,11 +738,10 @@ export const ArtworkEditForm = ({
                         )
                       }
                       placeholder="Add your price here"
+                      invalid={openPriceError}
                     />
                     {openPriceError && (
-                      <p className={styles.sizeError}>
-                        Price is required and must be greater than 0.
-                      </p>
+                      <ErrorText>Price is required and must be greater than 0.</ErrorText>
                     )}
                   </div>
                   <p className={styles.printDisabledHint} style={{ marginTop: 'var(--space-2)' }}>
@@ -1221,7 +1233,7 @@ export const ArtworkEditForm = ({
         </div>
       )}
 
-      <form onSubmit={onSubmit}>
+      <form onSubmit={handleFormSubmit} noValidate>
         {/* Title Section */}
         <div className={dashboardStyles.section}>
           <h3 className={dashboardStyles.sectionTitle}>Title</h3>
@@ -1231,9 +1243,14 @@ export const ArtworkEditForm = ({
             type="text"
             size="medium"
             value={formData.title}
-            onChange={(e) => onFormChange('title', e.target.value)}
+            onChange={(e) => {
+              onFormChange('title', e.target.value)
+              if (titleError && e.target.value.trim()) setTitleError(undefined)
+            }}
+            invalid={!!titleError}
             required
           />
+          <ErrorText>{titleError}</ErrorText>
           <span className={dashboardStyles.hint}>
             This will be shown in exhibitions and on your profile.
           </span>

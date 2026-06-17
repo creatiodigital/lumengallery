@@ -30,7 +30,8 @@ export const CreatePanel = () => {
   const boundingData = useBoundingData(nodes as Record<string, Mesh>, currentWallId)
 
   const { handleCreateArtwork } = useCreateArtwork(boundingData!)
-  const { handleAddExistingArtwork } = useAddExistingArtwork(boundingData)
+  const { handleAddExistingArtwork, duplicateError, clearDuplicateError } =
+    useAddExistingArtwork(boundingData)
 
   const handleArtworkDragStart = (e: React.DragEvent, artworkType: string) => {
     e.dataTransfer.setData('artworkType', artworkType)
@@ -48,8 +49,12 @@ export const CreatePanel = () => {
     <>
       {showMediaLibrary && (
         <MediaLibrary
-          onClose={() => setShowMediaLibrary(false)}
+          onClose={() => {
+            clearDuplicateError()
+            setShowMediaLibrary(false)
+          }}
           onClickArtwork={handleClickExistingArtwork}
+          duplicateError={duplicateError}
         />
       )}
       <div className={styles.panel}>

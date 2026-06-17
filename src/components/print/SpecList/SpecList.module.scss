@@ -34,8 +34,7 @@
 .toggle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  justify-content: flex-start;
   padding: var(--space-2) 0 0;
   background: none;
   border: none;
@@ -48,13 +47,4 @@
   &:hover {
     opacity: 0.75;
   }
-}
-
-.chevron {
-  display: inline-block;
-  transition: transform 160ms ease;
-}
-
-.chevronOpen {
-  transform: rotate(180deg);
 }

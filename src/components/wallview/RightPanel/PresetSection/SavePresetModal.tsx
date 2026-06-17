@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
 import { Input } from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal/Modal'
 import { Text } from '@/components/ui/Typography'
@@ -23,13 +24,22 @@ const SavePresetModal = ({
   existingNames = [],
 }: SavePresetModalProps) => {
   const [name, setName] = useState('')
+  const [submitAttempted, setSubmitAttempted] = useState(false)
 
   const trimmed = name.trim()
   const isDuplicate =
     trimmed.length > 0 && existingNames.some((n) => n.toLowerCase() === trimmed.toLowerCase())
+  // Duplicate shows live; the empty-name error appears only after a submit
+  // attempt and clears live once the user types.
+  const nameError = isDuplicate
+    ? 'This preset already exists'
+    : submitAttempted && !trimmed
+      ? 'Please enter a preset name.'
+      : undefined
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitAttempted(true)
     if (trimmed && !isDuplicate) {
       onSave(trimmed)
     }
@@ -40,8 +50,8 @@ const SavePresetModal = ({
       <Text font="dashboard" as="h3" size="sm" weight="bold" className={styles.title}>
         Create Preset
       </Text>
-      <form onSubmit={handleSubmit}>
-        <div className={styles.inputGroup}>
+      <form onSubmit={handleSubmit} noValidate>
+        <FormField className={styles.inputGroup} error={nameError}>
           <Text font="dashboard" as="label" size="xs" className={styles.label}>
             Preset name
           </Text>
@@ -52,13 +62,9 @@ const SavePresetModal = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Photography Standard"
+            invalid={!!nameError}
           />
-          {isDuplicate && (
-            <Text font="dashboard" as="p" size="xs" className={styles.error}>
-              This preset already exists
-            </Text>
-          )}
-        </div>
+        </FormField>
         <div className={styles.actions}>
           <Button
             font="dashboard"
@@ -71,9 +77,9 @@ const SavePresetModal = ({
             font="dashboard"
             size="small"
             variant="primary"
+            type="submit"
             label={loading ? 'Saving...' : 'Save'}
-            onClick={() => trimmed && !isDuplicate && onSave(trimmed)}
-            disabled={!trimmed || isDuplicate || loading}
+            disabled={isDuplicate || loading}
           />
         </div>
       </form>

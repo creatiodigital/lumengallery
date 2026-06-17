@@ -336,10 +336,18 @@ export const AdminOrders = () => {
                   <tr key={o.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(o.createdAt)}</td>
                     <td>
-                      <div>{o.artwork.title ?? o.artwork.slug ?? o.artwork.id}</div>
-                      <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7, marginTop: 2 }}>
-                        {o.artist.name}
-                      </div>
+                      {o.itemCount > 0 ? (
+                        <div>
+                          {o.itemCount} {o.itemCount === 1 ? 'print' : 'prints'}
+                        </div>
+                      ) : (
+                        <>
+                          <div>{o.artwork.title ?? o.artwork.slug ?? o.artwork.id}</div>
+                          <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7, marginTop: 2 }}>
+                            {o.artist.name}
+                          </div>
+                        </>
+                      )}
                     </td>
                     <td>
                       <div>{o.buyerName}</div>
