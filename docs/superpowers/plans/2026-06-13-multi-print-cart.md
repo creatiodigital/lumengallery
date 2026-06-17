@@ -42,6 +42,7 @@
 ## Task 1: Schema — `PrintOrderItem` + re-link `EditionNumber`
 
 **Files:**
+
 - Modify: `prisma/schema.prisma` (PrintOrder ~307, EditionNumber ~270)
 
 - [ ] **Step 1.1: Add `PrintOrderItem` model** (after `PrintOrder`):
@@ -109,6 +110,7 @@ Expected: exit 0, Prisma client regenerates.
 ## Task 2: Cart domain types + money helpers (pure, testable)
 
 **Files:**
+
 - Create: `src/lib/cart/types.ts`
 - Create: `src/lib/cart/cartMath.ts`
 - Test: `e2e/cart-math.spec.ts` (API-level, no WebGL)
@@ -150,7 +152,12 @@ import { test, expect } from '@playwright/test'
 import { lineTotal, cartSubtotal } from '@/lib/cart/cartMath'
 
 test('lineTotal multiplies unit item price by quantity', () => {
-  const item = { unitArtistCents: 1000, unitProductionCents: 500, unitGalleryCents: 675, quantity: 2 }
+  const item = {
+    unitArtistCents: 1000,
+    unitProductionCents: 500,
+    unitGalleryCents: 675,
+    quantity: 2,
+  }
   expect(lineTotal(item as any).lineItemCents).toBe((1000 + 500 + 675) * 2)
 })
 
@@ -159,7 +166,7 @@ test('cartSubtotal sums line totals, excludes shipping and VAT', () => {
     { unitArtistCents: 1000, unitProductionCents: 500, unitGalleryCents: 675, quantity: 2 },
     { unitArtistCents: 2000, unitProductionCents: 800, unitGalleryCents: 1260, quantity: 1 },
   ]
-  expect(cartSubtotal(items as any)).toBe((2175 * 2) + 4060)
+  expect(cartSubtotal(items as any)).toBe(2175 * 2 + 4060)
 })
 ```
 
@@ -170,7 +177,9 @@ test('cartSubtotal sums line totals, excludes shipping and VAT', () => {
 ```ts
 import type { CartItem, CartItemTotals } from './types'
 
-export function lineTotal(item: Pick<CartItem, 'unitArtistCents' | 'unitProductionCents' | 'unitGalleryCents' | 'quantity'>): CartItemTotals {
+export function lineTotal(
+  item: Pick<CartItem, 'unitArtistCents' | 'unitProductionCents' | 'unitGalleryCents' | 'quantity'>,
+): CartItemTotals {
   const unitItemCents = item.unitArtistCents + item.unitProductionCents + item.unitGalleryCents
   return { unitItemCents, lineItemCents: unitItemCents * item.quantity }
 }
@@ -189,6 +198,7 @@ export function cartSubtotal(items: Array<Parameters<typeof lineTotal>[0]>): num
 ## Task 3: Cart client store (localStorage) + header cart icon
 
 **Files:**
+
 - Create: `src/lib/cart/useCart.ts` (client hook + provider)
 - Modify: `src/components/ui/Header/Header.tsx` + `Header.module.scss`
 - Create: `src/components/cart/CartIcon/CartIcon.tsx` + module.scss
@@ -208,6 +218,7 @@ export function cartSubtotal(items: Array<Parameters<typeof lineTotal>[0]>): num
 ## Task 4: Wizard terminal CTA → add-to-cart
 
 **Files:**
+
 - Modify: `src/components/PrintWizard/SummaryPanel.tsx`
 - Modify: `src/components/PrintWizard/index.tsx`, `LimitedWizard.tsx` (pass artwork/variant context to SummaryPanel)
 
@@ -226,6 +237,7 @@ export function cartSubtotal(items: Array<Parameters<typeof lineTotal>[0]>): num
 ## Task 5: Cart page
 
 **Files:**
+
 - Create: `src/app/cart/page.tsx` + `src/components/cart/CartPage/CartPage.tsx` + module.scss
 - Create: `src/components/cart/CartLine/CartLine.tsx` + module.scss
 
@@ -242,6 +254,7 @@ export function cartSubtotal(items: Array<Parameters<typeof lineTotal>[0]>): num
 ## Task 6: Cart-time reservation + TTL sweep + countdown (limited)
 
 **Files:**
+
 - Create: `src/lib/editions/reserveForCart.ts`
 - Create: `src/lib/editions/sweepExpiredReservations.ts`
 - Create: `src/app/api/cart/reserve/route.ts` (POST: reserve N for a variant; returns held numberIds + `expiresAt`)
@@ -271,6 +284,7 @@ export function cartSubtotal(items: Array<Parameters<typeof lineTotal>[0]>): num
 ## Task 7: Checkout — address form + per-item re-validation + flat shipping + VAT
 
 **Files:**
+
 - Create: `src/app/checkout/page.tsx` + `src/components/checkout/CartCheckout/CartCheckout.tsx`
 - Create: `src/components/checkout/AddressForm/AddressForm.tsx` (extract from existing PrintCheckout if reusable)
 - Create: `src/lib/cart/validateCart.ts` (server)
@@ -293,6 +307,7 @@ export function cartSubtotal(items: Array<Parameters<typeof lineTotal>[0]>): num
 ## Task 8: Pending cart + one PaymentIntent for the cart
 
 **Files:**
+
 - Modify: `prisma/schema.prisma` — add `PendingCart` (USER runs db push)
 - Create: `src/lib/cart/pendingCart.ts`
 - Create: `src/components/checkout/CartCheckout/createCartPaymentIntent.ts` (server action)
@@ -316,6 +331,7 @@ model PendingCart {
   createdAt       DateTime @default(now())
 }
 ```
+
 Run `pnpm db:generate`; HANDOFF db push to user (same rule as Task 1).
 
 - [ ] **Step 8.2: `createCartPaymentIntent(items, address)`** — re-runs `validateCart` (never trust client), computes totals (Task 7), creates ONE Stripe PI `capture_method:'manual'`, `amount = totalCents`, minimal metadata (`kind:'cart'`, no per-item config — too big), `receipt_email`, shipping address. Persists a `PendingCart` row keyed by `paymentIntentId` with the validated items + money. For limited items, attach each held edition number to the PI (`attachPaymentIntentToReservation`). Idempotency hash over (items, address, totalCents). Returns `{ ok, clientSecret, paymentIntentId, totals }`.
@@ -331,6 +347,7 @@ Run `pnpm db:generate`; HANDOFF db push to user (same rule as Task 1).
 ## Task 9: Webhook → create header + line items; bind edition numbers
 
 **Files:**
+
 - Create: `src/lib/orders/createPrintOrderFromCart.ts`
 - Modify: `src/app/api/webhooks/stripe/route.ts`
 - Modify: `src/lib/orders/createPrintOrderFromPaymentIntent.ts` (route by metadata.kind)
@@ -352,6 +369,7 @@ Run `pnpm db:generate`; HANDOFF db push to user (same rule as Task 1).
 ## Task 10: Admin — multi-item detail, per-item payouts, payouts page, ledger relink
 
 **Files:**
+
 - Modify: `src/app/admin/orders/actions.ts`
 - Modify: `src/components/admin/orders/OrderDetail.tsx`, `index.tsx`
 - Modify: `src/components/admin/edition-sales/index.tsx`
@@ -376,6 +394,7 @@ Run `pnpm db:generate`; HANDOFF db push to user (same rule as Task 1).
 ## Task 11: Whole-order refund + e2e
 
 **Files:**
+
 - Modify: admin order actions (refund)
 - Test: `e2e/cart-checkout.spec.ts`
 

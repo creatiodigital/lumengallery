@@ -478,7 +478,8 @@ export async function getOrderDetail(
     const en = r.editionNumber
     const v = en.variant
     const paperLabel = TPS_PAPERS.find((p) => p.id === v.paperId)?.label ?? v.paperId
-    const printTypeLabel = TPS_PRINT_TYPES.find((t) => t.id === v.printTypeId)?.label ?? v.printTypeId
+    const printTypeLabel =
+      TPS_PRINT_TYPES.find((t) => t.id === v.printTypeId)?.label ?? v.printTypeId
     const label = `${v.name} #${en.number}/${v.editionSize}`
     const tpsSku =
       `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm` +
@@ -1121,7 +1122,13 @@ export async function refundOrder(
         try {
           await stripe.transfers.createReversal(
             item.transferId,
-            { metadata: { orderId: order.id, orderItemId: item.id, adminReason: reason.slice(0, 500) } },
+            {
+              metadata: {
+                orderId: order.id,
+                orderItemId: item.id,
+                adminReason: reason.slice(0, 500),
+              },
+            },
             // Per-item idempotency so retrying a refund never double-reverses
             // a line (or collides with another line's reversal).
             { idempotencyKey: `reversal:${item.id}` },
@@ -1135,8 +1142,7 @@ export async function refundOrder(
           // Non-fatal: capture, record, and keep going. The buyer refund (above)
           // and the edition release / refunded state (below) MUST still complete
           // even if a single clawback fails — the admin reconciles the rest.
-          const errMsg =
-            reversalErr instanceof Error ? reversalErr.message : String(reversalErr)
+          const errMsg = reversalErr instanceof Error ? reversalErr.message : String(reversalErr)
           reversalFailures.push({
             orderItemId: item.id,
             transferId: item.transferId,

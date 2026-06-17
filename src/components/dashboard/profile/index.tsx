@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/Input'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
 import { Text } from '@/components/ui/Typography'
 import { useEffectiveUser } from '@/hooks/useEffectiveUser'
+import { useFormValidation } from '@/hooks/useFormValidation'
+import { isEmail, required } from '@/lib/validation'
 
 import { DashboardLayout } from '../DashboardLayout'
 import dashboardStyles from '../DashboardLayout/DashboardLayout.module.scss'
@@ -23,6 +25,19 @@ type User = {
   email: string | null
   profileImageUrl: string | null
   signatureUrl: string | null
+}
+
+const profileValidators = {
+  name: required('Please enter your first name.'),
+  lastName: required('Please enter your last name.'),
+  handler: required('Please enter a profile URL.'),
+  // Required + format-checked.
+  email: (value: string) =>
+    !value.trim()
+      ? 'Please enter your email address.'
+      : isEmail(value)
+        ? undefined
+        : 'Please enter a valid email address.',
 }
 
 export const DashboardProfilePage = () => {
@@ -78,14 +93,33 @@ export const DashboardProfilePage = () => {
     }
   }, [effectiveUser?.id])
 
+  const {
+    validateAll,
+    handleChange: validateField,
+    fieldError,
+  } = useFormValidation(profileValidators)
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setSuccess('')
+    // Live-clear validation errors for the validated fields (the `if` also
+    // narrows the type to the schema keys).
+    if (field === 'name' || field === 'lastName' || field === 'handler' || field === 'email') {
+      validateField(field, value)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!effectiveUser?.id) return
+
+    const valid = validateAll({
+      name: formData.name,
+      lastName: formData.lastName,
+      handler: formData.handler,
+      email: formData.email,
+    })
+    if (!valid) return
 
     setSaving(true)
     setError('')
@@ -284,7 +318,7 @@ export const DashboardProfilePage = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         {/* Name Row */}
         <div className={dashboardStyles.section}>
           <h3 className={dashboardStyles.sectionTitle}>Display Name</h3>
@@ -300,8 +334,10 @@ export const DashboardProfilePage = () => {
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
                 placeholder="First Name"
+                invalid={!!fieldError('name')}
                 required
               />
+              <ErrorText>{fieldError('name')}</ErrorText>
             </div>
             <div className={styles.fieldHalf}>
               <Input
@@ -311,8 +347,10 @@ export const DashboardProfilePage = () => {
                 value={formData.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
                 placeholder="Last Name"
+                invalid={!!fieldError('lastName')}
                 required
               />
+              <ErrorText>{fieldError('lastName')}</ErrorText>
             </div>
           </div>
           <span className={dashboardStyles.hint}>
@@ -333,8 +371,10 @@ export const DashboardProfilePage = () => {
             size="medium"
             value={formData.handler}
             onChange={(e) => handleChange('handler', e.target.value)}
+            invalid={!!fieldError('handler')}
             required
           />
+          <ErrorText>{fieldError('handler')}</ErrorText>
           <span className={dashboardStyles.hint}>
             Your profile will be available at: theartroom.gallery/artists/
             {formData.handler || 'your-handle'}
@@ -354,9 +394,12 @@ export const DashboardProfilePage = () => {
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
             placeholder="email@example.com"
+            invalid={!!fieldError('email')}
+            required
           />
+          <ErrorText>{fieldError('email')}</ErrorText>
           <span className={dashboardStyles.hint}>
-            Leave blank if you prefer not to display your email publicly.
+            Required so the gallery can reach you about your work.
           </span>
         </div>
 

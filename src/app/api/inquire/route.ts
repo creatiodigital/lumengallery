@@ -3,6 +3,7 @@ import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
 import { sanitizeLine, sanitizeMultiline } from '@/utils/sanitizeLine'
+import { isEmail } from '@/lib/validation'
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -98,8 +99,7 @@ export async function POST(request: NextRequest) {
 
     // Email format validation — checked AFTER sanitization so smuggled
     // CRLF can't slip into header injection.
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    if (!isEmail(email)) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 

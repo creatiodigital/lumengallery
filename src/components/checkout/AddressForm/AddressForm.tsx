@@ -3,10 +3,13 @@
 import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
+import { FormField } from '@/components/ui/FormField'
 import { Icon } from '@/components/ui/Icon'
 import { Input } from '@/components/ui/Input'
 import { SelectDropdown, type SelectOption } from '@/components/ui/SelectDropdown'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import { COUNTRY_NAMES, DIAL_CODES, getCountryName } from '@/lib/print-providers/dialCodes'
+import { shippingValidators, type ShippingFieldName } from '@/lib/validation'
 import type { ShippingAddress } from '@/components/checkout/PrintCheckout/createPaymentIntent'
 
 import styles from './AddressForm.module.scss'
@@ -18,56 +21,6 @@ import styles from './AddressForm.module.scss'
 // mismatch. Static map => identical strings on both sides.
 const sortCountries = (codes: string[]) =>
   [...codes].sort((a, b) => getCountryName(a).localeCompare(getCountryName(b)))
-
-type ShippingFieldName =
-  | 'country'
-  | 'fullName'
-  | 'email'
-  | 'phone'
-  | 'address1'
-  | 'city'
-  | 'postalCode'
-
-type ShippingErrors = Partial<Record<ShippingFieldName, string>>
-
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-// Same rules as the single-print checkout (PrintCheckout/index.tsx) so the
-// two surfaces validate identically. Kept here as a fresh copy: this form
-// is fully self-contained and presentational, and the single-print path's
-// form is tangled with its own sessionStorage/handoff effects, so sharing
-// risked breaking it — see the task report.
-const validateShippingField = (name: ShippingFieldName, value: string): string | undefined => {
-  const trimmed = value.trim()
-  switch (name) {
-    case 'country':
-      if (!trimmed) return 'Please choose a country.'
-      return
-    case 'fullName':
-      if (trimmed.length < 2) return 'Please enter your full name.'
-      return
-    case 'email':
-      if (!emailRegex.test(trimmed)) return 'Please enter a valid email address.'
-      return
-    case 'phone': {
-      const digits = trimmed.replace(/\D/g, '')
-      if (digits.length < 8) return 'Please enter a valid phone number.'
-      if (/^(\d)\1+$/.test(digits)) return 'Please enter a valid phone number.'
-      return
-    }
-    case 'address1':
-      if (trimmed.length < 3) return 'Please enter your street address.'
-      return
-    case 'city':
-      if (trimmed.length < 2) return 'Please enter a city.'
-      return
-    case 'postalCode':
-      if (trimmed.length < 3 || !/\d/.test(trimmed)) {
-        return 'Please enter a valid postal code.'
-      }
-      return
-  }
-}
 
 type AddressFormProps = {
   /** Called with the assembled, trimmed ShippingAddress once every field
@@ -87,10 +40,11 @@ type AddressFormProps = {
 
 /**
  * Reusable, presentational address + buyer-info form. Owns its own field
- * state + validation UX (silent on arrival → all errors on submit → clear
- * live as each field is fixed) and emits a single ShippingAddress on a
- * valid submit. No pricing, no cart, no persistence — those are the
- * caller's concern.
+ * state and delegates validation to the shared `useFormValidation` hook +
+ * `shippingValidators` (silent on arrival → all errors on submit → clear
+ * live as each field is fixed). Emits a single ShippingAddress on a valid
+ * submit. No pricing, no cart, no persistence — those are the caller's
+ * concern.
  */
 export const AddressForm = ({
   onSubmit,
@@ -114,10 +68,9 @@ export const AddressForm = ({
   // after that; the buyer owns the choice.
   const [phoneDial, setPhoneDial] = useState(() => DIAL_CODES[initialCountry] ?? DIAL_CODES.ES)
 
-  // Validation errors keyed by field name. Populated only after the first
-  // submit attempt; cleared/updated as the buyer fixes each field.
-  const [errors, setErrors] = useState<ShippingErrors>({})
-  const [submitAttempted, setSubmitAttempted] = useState(false)
+  // Per-field error state + the house validation flow, shared across every
+  // checkout surface via the same `shippingValidators`.
+  const { validateAll, handleChange, fieldError } = useFormValidation(shippingValidators)
 
   const countryOptions: SelectOption<string>[] = useMemo(() => {
     const codes = countryCodes ?? Object.keys(COUNTRY_NAMES)
@@ -138,21 +91,8 @@ export const AddressForm = ({
       .map((dial) => ({ value: dial, label: `+${dial}` }))
   }, [])
 
-  // Re-validate one field as the buyer edits it after the first failed
-  // submit so the error message clears in place once they fix it.
-  const handleFieldChange = (name: ShippingFieldName, value: string) => {
-    if (!submitAttempted) return
-    if (!(name in errors)) return
-    setErrors((prev) => ({ ...prev, [name]: validateShippingField(name, value) }))
-  }
-
-  const fieldProps = (name: ShippingFieldName) => ({
-    'data-error': errors[name] ? 'true' : 'false',
-  })
-
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
-    setSubmitAttempted(true)
 
     const fieldValues: Record<ShippingFieldName, string> = {
       country,
@@ -163,13 +103,7 @@ export const AddressForm = ({
       city,
       postalCode,
     }
-    const newErrors: ShippingErrors = {}
-    for (const name of Object.keys(fieldValues) as ShippingFieldName[]) {
-      const err = validateShippingField(name, fieldValues[name])
-      if (err) newErrors[name] = err
-    }
-    setErrors(newErrors)
-    if (Object.keys(newErrors).length > 0) return
+    if (!validateAll(fieldValues)) return
 
     // Combine the dial-code dropdown choice with the digits the buyer typed.
     // Parent gets a single E.164-ish string ("+34 612345678") it can pass
@@ -194,7 +128,7 @@ export const AddressForm = ({
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <h2 className={styles.formSectionTitle}>Where should we send it?</h2>
 
-      <div className={`${styles.field} ${styles.fieldFull}`} {...fieldProps('country')}>
+      <FormField className={styles.fieldFull} error={fieldError('country')}>
         <label className={styles.fieldLabel} htmlFor="country">
           Country
         </label>
@@ -203,20 +137,15 @@ export const AddressForm = ({
           value={country}
           onChange={(next) => {
             setCountry(next)
-            if (submitAttempted) {
-              setErrors((prev) => ({
-                ...prev,
-                country: validateShippingField('country', next),
-              }))
-            }
+            handleChange('country', next)
           }}
           placeholder="Choose a country…"
+          invalid={!!fieldError('country')}
         />
-        <span className={styles.fieldError}>Please choose a country.</span>
-      </div>
+      </FormField>
 
       <div className={styles.fieldGrid}>
-        <div className={`${styles.field} ${styles.fieldFull}`} {...fieldProps('fullName')}>
+        <FormField className={styles.fieldFull} error={fieldError('fullName')}>
           <label className={styles.fieldLabel} htmlFor="fullName">
             Full name
           </label>
@@ -229,16 +158,16 @@ export const AddressForm = ({
             autoComplete="name"
             required
             maxLength={200}
+            invalid={!!fieldError('fullName')}
             value={fullName}
             onChange={(e) => {
               setFullName(e.target.value)
-              handleFieldChange('fullName', e.target.value)
+              handleChange('fullName', e.target.value)
             }}
           />
-          <span className={styles.fieldError}>Please enter your full name.</span>
-        </div>
+        </FormField>
 
-        <div className={styles.field} {...fieldProps('email')}>
+        <FormField error={fieldError('email')}>
           <label className={styles.fieldLabel} htmlFor="email">
             Email
           </label>
@@ -251,16 +180,16 @@ export const AddressForm = ({
             autoComplete="email"
             required
             maxLength={200}
+            invalid={!!fieldError('email')}
             value={emailField}
             onChange={(e) => {
               setEmailField(e.target.value)
-              handleFieldChange('email', e.target.value)
+              handleChange('email', e.target.value)
             }}
           />
-          <span className={styles.fieldError}>Please enter a valid email address.</span>
-        </div>
+        </FormField>
 
-        <div className={styles.field} {...fieldProps('phone')}>
+        <FormField error={fieldError('phone')}>
           <label className={styles.fieldLabel} htmlFor="phone">
             Phone (for carrier)
           </label>
@@ -282,18 +211,18 @@ export const AddressForm = ({
                 autoComplete="tel"
                 required
                 maxLength={32}
+                invalid={!!fieldError('phone')}
                 value={phoneField}
                 onChange={(e) => {
                   setPhoneField(e.target.value)
-                  handleFieldChange('phone', e.target.value)
+                  handleChange('phone', e.target.value)
                 }}
               />
-              <span className={styles.fieldError}>Please enter a valid phone number.</span>
             </div>
           </div>
-        </div>
+        </FormField>
 
-        <div className={`${styles.field} ${styles.fieldFull}`} {...fieldProps('address1')}>
+        <FormField className={styles.fieldFull} error={fieldError('address1')}>
           <label className={styles.fieldLabel} htmlFor="address1">
             Address
           </label>
@@ -306,16 +235,16 @@ export const AddressForm = ({
             autoComplete="address-line1"
             required
             maxLength={200}
+            invalid={!!fieldError('address1')}
             value={address1}
             onChange={(e) => {
               setAddress1(e.target.value)
-              handleFieldChange('address1', e.target.value)
+              handleChange('address1', e.target.value)
             }}
           />
-          <span className={styles.fieldError}>Please enter your street address.</span>
-        </div>
+        </FormField>
 
-        <div className={`${styles.field} ${styles.fieldFull}`}>
+        <FormField className={styles.fieldFull}>
           <label className={styles.fieldLabel} htmlFor="address2">
             Apartment, suite, etc. (optional)
           </label>
@@ -330,9 +259,9 @@ export const AddressForm = ({
             value={address2}
             onChange={(e) => setAddress2(e.target.value)}
           />
-        </div>
+        </FormField>
 
-        <div className={styles.field} {...fieldProps('city')}>
+        <FormField error={fieldError('city')}>
           <label className={styles.fieldLabel} htmlFor="city">
             City
           </label>
@@ -345,16 +274,16 @@ export const AddressForm = ({
             autoComplete="address-level2"
             required
             maxLength={120}
+            invalid={!!fieldError('city')}
             value={city}
             onChange={(e) => {
               setCity(e.target.value)
-              handleFieldChange('city', e.target.value)
+              handleChange('city', e.target.value)
             }}
           />
-          <span className={styles.fieldError}>Please enter a city.</span>
-        </div>
+        </FormField>
 
-        <div className={styles.field}>
+        <FormField>
           <label className={styles.fieldLabel} htmlFor="state">
             State / region (optional)
           </label>
@@ -369,9 +298,9 @@ export const AddressForm = ({
             value={stateOrRegion}
             onChange={(e) => setStateOrRegion(e.target.value)}
           />
-        </div>
+        </FormField>
 
-        <div className={styles.field} {...fieldProps('postalCode')}>
+        <FormField error={fieldError('postalCode')}>
           <label className={styles.fieldLabel} htmlFor="postalCode">
             Postal code
           </label>
@@ -384,14 +313,14 @@ export const AddressForm = ({
             autoComplete="postal-code"
             required
             maxLength={20}
+            invalid={!!fieldError('postalCode')}
             value={postalCode}
             onChange={(e) => {
               setPostalCode(e.target.value)
-              handleFieldChange('postalCode', e.target.value)
+              handleChange('postalCode', e.target.value)
             }}
           />
-          <span className={styles.fieldError}>Please enter a valid postal code.</span>
-        </div>
+        </FormField>
       </div>
 
       <div className={styles.submitRow}>

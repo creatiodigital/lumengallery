@@ -274,6 +274,7 @@ export const ExhibitionSettingsPage = ({ exhibitionId }: ExhibitionSettingsPageP
           placeholder="Exhibition name"
           inputClassName={styles.titleInput}
           readOnly={!editingName}
+          invalid={!!urlError}
           aria-label="Exhibition name"
         />
         <div style={{ marginTop: 'var(--space-2)', display: 'flex', gap: 'var(--space-2)' }}>
@@ -320,6 +321,7 @@ export const ExhibitionSettingsPage = ({ exhibitionId }: ExhibitionSettingsPageP
               }
               placeholder={slugify(mainTitle)}
               inputClassName={styles.titleInput}
+              invalid={!!urlError}
               aria-label="Custom URL slug"
             />
             <span className={dashboardStyles.hint}>

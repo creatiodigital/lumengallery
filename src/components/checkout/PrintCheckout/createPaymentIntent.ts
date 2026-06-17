@@ -10,7 +10,7 @@ import {
   findConfigRestrictionClash,
 } from '@/lib/print-providers'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
-import { getVatRate } from '@/lib/print-providers/printspace/pricing'
+import { getVatRate, TPS_GALLERY_MARKUP_RATE } from '@/lib/print-providers/printspace/pricing'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import type { PrintRestrictions } from '@/lib/print-providers/types'
 import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
@@ -20,9 +20,9 @@ import {
 } from '@/lib/editions/reserveEditionNumber'
 import { releaseEditionNumberById } from '@/lib/editions/releaseEditionNumber'
 import { captureError } from '@/lib/observability/captureError'
+import { sanitizeAndValidateAddress } from '@/lib/checkout/sanitizeAndValidateAddress'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
-import { sanitizeLine } from '@/utils/sanitizeLine'
 
 export type ShippingAddress = {
   fullName: string
@@ -68,8 +68,6 @@ export type CreatePaymentIntentResult =
       }
     }
   | { ok: false; error: string }
-
-const GALLERY_MARKUP_RATE = 0.45
 
 /**
  * Hard ceiling on the buyer-facing total. Any computed total above this
@@ -119,8 +117,6 @@ function isKnownProvider(id: unknown): id is ProviderId {
   return id === 'printspace'
 }
 
-// sanitizeLine moved to @/utils/sanitizeLine
-
 /**
  * Server-authoritative payment setup. Quotes the order against TPS so we
  * don't trust the number the client saw, then opens a Stripe
@@ -146,69 +142,12 @@ export async function createPaymentIntent(
   if (!validateConfigShape(config)) {
     return { ok: false, error: 'Invalid request. Please reload and try again.' }
   }
-  if (!address?.countryCode || address.countryCode.length !== 2) {
-    return { ok: false, error: 'Invalid request. Please reload and try again.' }
-  }
-  // Address strings: type-check first, then sanitize (strip control
-  // chars, zero-width Unicode, collapse whitespace), then length-check.
-  // Length cap kicks in AFTER sanitize so a tampered payload that's
-  // padded with control chars can't sneak past via raw byte count.
-  const rawFields = [
-    address.fullName,
-    address.email,
-    address.phone,
-    address.address1,
-    address.address2,
-    address.city,
-    address.stateOrRegion,
-    address.postalCode,
-  ]
-  if (rawFields.some((s) => typeof s !== 'string')) {
-    return { ok: false, error: 'Invalid request. Please reload and try again.' }
-  }
-
-  // Mutate `address` in place with sanitized values. Downstream code
-  // (Stripe metadata, PI shipping, DB write via webhook) all read from
-  // here, so cleaning once at the boundary is enough.
-  address.fullName = sanitizeLine(address.fullName)
-  address.email = sanitizeLine(address.email)
-  address.phone = sanitizeLine(address.phone)
-  address.address1 = sanitizeLine(address.address1)
-  address.address2 = sanitizeLine(address.address2)
-  address.city = sanitizeLine(address.city)
-  address.stateOrRegion = sanitizeLine(address.stateOrRegion)
-  address.postalCode = sanitizeLine(address.postalCode)
-
-  const sanitizedFields = [
-    address.fullName,
-    address.email,
-    address.phone,
-    address.address1,
-    address.address2,
-    address.city,
-    address.stateOrRegion,
-    address.postalCode,
-  ]
-  if (sanitizedFields.some((s) => s.length > 200)) {
-    return { ok: false, error: 'Invalid request. Please reload and try again.' }
-  }
-  // Required-field presence check (post-sanitize, so a pure-whitespace
-  // input that the client smuggled past `required` is rejected here).
-  if (
-    !address.fullName ||
-    !address.email ||
-    !address.phone ||
-    !address.address1 ||
-    !address.city ||
-    !address.postalCode
-  ) {
-    return { ok: false, error: 'Invalid request. Please reload and try again.' }
-  }
-  // Email must contain at least one '@' and one '.' after it. Cheap
-  // structural check on top of HTML5 client validation; Stripe + Resend
-  // do their own format checks downstream too.
-  const atIndex = address.email.indexOf('@')
-  if (atIndex < 1 || address.email.indexOf('.', atIndex) < 0) {
+  // Shared shipping-address tamper defense: type-checks every field,
+  // sanitizes in place (control chars / zero-width Unicode / whitespace),
+  // length-caps, requires the mandatory fields, and shape-checks the email.
+  // The cart path runs the SAME helper via validateCart, so an
+  // address-validation fix now lands in exactly one place.
+  if (!sanitizeAndValidateAddress(address).ok) {
     return { ok: false, error: 'Invalid request. Please reload and try again.' }
   }
 
@@ -323,7 +262,7 @@ export async function createPaymentIntent(
   // Limited editions use the chosen variant's price; open editions use the
   // single artwork price. Both are guaranteed non-null by the checks above.
   const artistCents = isLimited ? pinnedVariant!.priceCents! : artwork.printPriceCents!
-  const galleryCents = Math.round(artistCents * GALLERY_MARKUP_RATE)
+  const galleryCents = Math.round(artistCents * TPS_GALLERY_MARKUP_RATE)
 
   const quote = getProviderQuote(providerId, {
     config: effectiveConfig,

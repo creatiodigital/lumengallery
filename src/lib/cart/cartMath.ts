@@ -1,7 +1,10 @@
 import type { WizardConfig } from '@/lib/print-providers'
 import type { CartItem, CartItemTotals } from './types'
 
-type MoneyParts = Pick<CartItem, 'unitArtistCents' | 'unitProductionCents' | 'unitGalleryCents' | 'quantity'>
+type MoneyParts = Pick<
+  CartItem,
+  'unitArtistCents' | 'unitProductionCents' | 'unitGalleryCents' | 'quantity'
+>
 
 /**
  * Order-insensitive stable key for a WizardConfig. Sorting the `values`

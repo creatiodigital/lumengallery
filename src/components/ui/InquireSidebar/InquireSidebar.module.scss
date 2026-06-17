@@ -99,12 +99,6 @@
   gap: var(--space-4);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
 .label {
   font-family: var(--font-sans);
   font-size: var(--text-sm);
@@ -207,26 +201,6 @@
   height: 0;
   width: 0;
   pointer-events: none;
-}
-
-// Error states — match the print checkout / wizard form style.
-.errorText {
-  display: block;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  color: var(--color-error-text);
-  margin-top: 4px;
-  line-height: 1.4;
-}
-
-.inputError {
-  input {
-    border-color: var(--color-error-text);
-  }
-}
-
-.textareaError {
-  border-color: var(--color-error-text);
 }
 
 .submitError {

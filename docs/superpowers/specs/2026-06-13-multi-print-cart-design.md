@@ -6,12 +6,13 @@
 
 ## Goal
 
-Let buyers purchase one *or more* prints in a single order with one consolidated
+Let buyers purchase one _or more_ prints in a single order with one consolidated
 shipment and one payment, and move the delivery-address form to the very end of
 the flow. Today the print flow is single-print only: a buyer runs the whole
 wizard + payment per print and pays a separate shipping fee each time.
 
 Two user-facing pillars:
+
 1. **Address at the end.** The wizard only configures and prices an item; address,
    shipping, VAT, and final totals appear only at checkout.
 2. **One order, many prints.** Add-to-cart, quantity per line, mixed artists
@@ -58,6 +59,7 @@ Keep (order-level): `id`, `paymentIntentId` (unique), `buyerEmail`, `buyerName`,
 `createdAt`, `updatedAt`, `events`.
 
 Change to order-level totals (sums over line items):
+
 - `totalCents` — grand total (sum of item totals + shipping + VAT).
 - `customerVatCents` — VAT on the whole order.
 - `productionShippingCents` → rename intent kept: **one** consolidated shipping
@@ -130,6 +132,7 @@ guarantee is preserved. `buyerEmail` denormalization stays for the ledger.
 ## 2. Cart & checkout flow
 
 ### Wizard (configure one item, item-price only)
+
 - Both OpenWizard and LimitedWizard keep their current configuration UIs and 3D
   preview. The SummaryPanel shows **item price only** — no shipping, no VAT,
   no address.
@@ -137,6 +140,7 @@ guarantee is preserved. `buyerEmail` denormalization stays for the ledger.
   adding, surface **"Continue Shopping"** and **"Go to cart."**
 
 ### Cart (client state; localStorage)
+
 - localStorage stores **selections only** (artworkId, variantId for limited,
   WizardConfig, quantity) — it is NOT the stock authority.
 - Header gets a **cart icon with item count**.
@@ -146,6 +150,7 @@ guarantee is preserved. `buyerEmail` denormalization stays for the ledger.
 - CTA: **"Continue to checkout."**
 
 ### Checkout (address first asked here)
+
 1. Address + buyer-info form (name, email, shipping address, country). First and
    only time the address is collected.
 2. Checkout summary: all items + quantities, **flat shipping** for the country,
@@ -154,6 +159,7 @@ guarantee is preserved. `buyerEmail` denormalization stays for the ledger.
    (`capture_method: 'manual'`), as today.
 
 ### Server-side pending cart (replaces Stripe-metadata config)
+
 - Stripe metadata cannot hold a multi-item cart (500-char limit). Instead, persist
   a **pending cart** server-side keyed by the PaymentIntent id (a small table or a
   JSON blob keyed by PI id) containing the validated line items + computed money.
@@ -163,6 +169,7 @@ guarantee is preserved. `buyerEmail` denormalization stays for the ledger.
 - Pending cart is cleared after the order is created (and on cancel/fail).
 
 ### Server re-validation at checkout (loop existing defenses over items)
+
 For every line item, server re-checks: print-enabled, per-artwork restrictions,
 destination shippable, and re-quotes price server-side. Existing single-item
 guards are applied per item. Totals are recomputed server-side; client numbers
@@ -173,12 +180,14 @@ are display-only.
 ## 3. Limited-edition stock: caps, holds, countdown
 
 ### Quantity cap
+
 - Open editions: unlimited.
 - Limited: quantity per line capped at **remaining available** for the variant,
   enforced in the cart UI AND re-checked server-side at checkout (UI cap can go
   stale if stock changes while the cart sits).
 
 ### Timed hold (the "book reservation")
+
 - Adding a limited print to cart creates a server-side reservation: one
   `EditionNumber` per unit moves `available → reserved` with `reservedAt = now`,
   claimed atomically (lowest available numbers). Open editions: no hold.
@@ -189,6 +198,7 @@ are display-only.
 - Re-adding / still-active cart refreshes the hold's `reservedAt`.
 
 ### Buyer countdown
+
 - When a hold is created, the server returns `expiresAt`. The cart/checkout UI
   shows a countdown mirroring it ("You have 5 minutes left to complete this
   order").
@@ -203,9 +213,9 @@ are display-only.
 ## 4. Admin — preserved + extended
 
 - **Edition-sales ledger** (`/admin`): unchanged capability — buyer (email/name)
-  + assigned number per variant for every completed limited sale. It now reads
-  through `EditionNumber → PrintOrderItem → PrintOrder`; a `quantity = 2` line
-  shows two numbered rows, each buyer-attributed.
+  - assigned number per variant for every completed limited sale. It now reads
+    through `EditionNumber → PrintOrderItem → PrintOrder`; a `quantity = 2` line
+    shows two numbered rows, each buyer-attributed.
 - **Order list**: a row may now represent multiple items; show item count and
   summed totals; keep payment/fulfillment/payout status columns.
 - **Order detail**: renders N line items (artwork, specs, qty, per-item money).
@@ -272,6 +282,7 @@ are display-only.
 ## Decomposition for the plan
 
 The implementation plan will sequence these as independently-shippable phases:
+
 1. Schema: add `PrintOrderItem`, re-link `EditionNumber` (user runs db push).
 2. Cart client state + localStorage + header icon (no checkout yet).
 3. Wizard terminal CTA → add-to-cart.

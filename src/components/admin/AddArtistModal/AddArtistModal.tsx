@@ -7,6 +7,8 @@ import { ErrorText } from '@/components/ui/ErrorText'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Text } from '@/components/ui/Typography'
+import { useFormValidation } from '@/hooks/useFormValidation'
+import { email, required, validatePassword } from '@/lib/validation'
 
 import styles from './AddArtistModal.module.scss'
 
@@ -15,6 +17,21 @@ const baseUserTypeOptions = [
   { value: 'artist', label: 'Artist' },
   { value: 'curator', label: 'Curator' },
 ]
+
+const addArtistValidators = {
+  name: required('Please enter a first name.'),
+  lastName: required('Please enter a last name.'),
+  handler: required('Please enter a handler.'),
+  email: email(),
+  // Optional — a blank password is auto-generated server-side. But if the admin
+  // types one, validate its strength here (same rules the server enforces) so
+  // they get instant feedback instead of a round-trip 400.
+  password: (value: string) => {
+    if (!value.trim()) return undefined
+    const result = validatePassword(value)
+    return result.valid ? undefined : `Password must include ${result.errors.join(', ')}.`
+  },
+}
 
 type AddArtistModalProps = {
   onClose: () => void
@@ -43,6 +60,12 @@ export const AddArtistModal = ({
   const [error, setError] = useState('')
   const [provisionalPassword, setProvisionalPassword] = useState('')
 
+  const {
+    validateAll,
+    handleChange: validateField,
+    fieldError,
+  } = useFormValidation(addArtistValidators)
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
 
@@ -56,11 +79,33 @@ export const AddArtistModal = ({
         .replace(/--+/g, '-')
       setFormData((prev) => ({ ...prev, handler, [field]: value }))
     }
+
+    // Live-clear validation errors for the validated fields (the `if` also
+    // narrows the type to the schema keys).
+    if (
+      field === 'name' ||
+      field === 'lastName' ||
+      field === 'handler' ||
+      field === 'email' ||
+      field === 'password'
+    ) {
+      validateField(field, value)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    const valid = validateAll({
+      name: formData.name,
+      lastName: formData.lastName,
+      handler: formData.handler,
+      email: formData.email,
+      password: formData.password,
+    })
+    if (!valid) return
+
     setLoading(true)
 
     try {
@@ -131,7 +176,7 @@ export const AddArtistModal = ({
           <Text font="dashboard" as="h2">
             Add New User
           </Text>
-          <form onSubmit={handleSubmit} autoComplete="off">
+          <form onSubmit={handleSubmit} autoComplete="off" noValidate>
             <div className={styles.section}>
               <label className={styles.label} htmlFor="name">
                 First Name
@@ -142,8 +187,10 @@ export const AddArtistModal = ({
                 size="medium"
                 value={formData.name}
                 onChange={(e) => handleChange('name', e.target.value)}
+                invalid={!!fieldError('name')}
                 required
               />
+              <ErrorText>{fieldError('name')}</ErrorText>
 
               <label className={styles.label} htmlFor="lastName">
                 Last Name
@@ -154,8 +201,10 @@ export const AddArtistModal = ({
                 size="medium"
                 value={formData.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
+                invalid={!!fieldError('lastName')}
                 required
               />
+              <ErrorText>{fieldError('lastName')}</ErrorText>
 
               <label className={styles.label} htmlFor="handler">
                 Handler (URL slug)
@@ -166,8 +215,10 @@ export const AddArtistModal = ({
                 size="medium"
                 value={formData.handler}
                 onChange={(e) => handleChange('handler', e.target.value)}
+                invalid={!!fieldError('handler')}
                 required
               />
+              <ErrorText>{fieldError('handler')}</ErrorText>
 
               <label className={styles.label} htmlFor="email">
                 Email
@@ -178,9 +229,11 @@ export const AddArtistModal = ({
                 size="medium"
                 value={formData.email}
                 onChange={(e) => handleChange('email', e.target.value)}
+                invalid={!!fieldError('email')}
                 autoComplete="off"
                 required
               />
+              <ErrorText>{fieldError('email')}</ErrorText>
 
               <label className={styles.label} htmlFor="password">
                 Password{' '}
@@ -196,7 +249,9 @@ export const AddArtistModal = ({
                 onChange={(e) => handleChange('password', e.target.value)}
                 autoComplete="new-password"
                 showPasswordToggle
+                invalid={!!fieldError('password')}
               />
+              <ErrorText>{fieldError('password')}</ErrorText>
 
               <label className={styles.label} htmlFor="userType">
                 Type

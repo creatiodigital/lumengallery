@@ -32,9 +32,7 @@ export const PrintsBrowser = ({ artworks }: Props) => {
   // present (ArtworkGrid reads `author`, which can be null on the row, so fall
   // back to the user's name via displayArtist).
   const gridArtworks = useMemo(() => {
-    const visible = artistId
-      ? artworks.filter((artwork) => artwork.user.id === artistId)
-      : artworks
+    const visible = artistId ? artworks.filter((artwork) => artwork.user.id === artistId) : artworks
     return visible.map((artwork) => ({ ...artwork, author: displayArtist(artwork) }))
   }, [artworks, artistId])
 

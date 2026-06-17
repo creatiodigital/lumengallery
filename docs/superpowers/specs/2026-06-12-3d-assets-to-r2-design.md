@@ -10,6 +10,7 @@ Serve all 3D scene/preview assets (~118 MB: glTF models, PBR material textures, 
 space textures) from Cloudflare R2 (`assets.theartroom.gallery`) instead of Vercel.
 
 Motivation:
+
 - **Reliability:** a buyer hit a 404 on a ReflectiveFloor texture in the "vivriere"
   exhibition (June 2026). The floor-loading code is already guarded (material
   validation, alias fallback, resilient texture loader, config matches files on
@@ -22,6 +23,7 @@ Motivation:
 ## Scope
 
 **Moves to R2 (everything 3D in use, ~118 MB):**
+
 - `public/assets/materials/**` — 15 PBR material folders (floor/wall/frame textures)
 - `public/assets/spaces/**` — `madrid9.glb`, `paris18.glb` + their texture folders
 - `public/assets/hdri/soil.hdr` (16 MB)
@@ -29,9 +31,11 @@ Motivation:
   deploy weight, exempt from loading-time concerns)
 
 **Stays on Vercel (2D UI, ~3.6 MB):**
+
 - `email-logo.png`, `landing/carousel*.webp`, `helpers/*.jpg`, `person.png`
 
 **Deleted (not uploaded):**
+
 - `public/assets/objects/sofa/sofa.glb` (72 MB) + `src/components/PrintWizard/scene/Sofa.tsx`
   — confirmed by user as a test; the component is imported nowhere and never renders
 - `textures/window-shadow.png` — referenced nowhere, dead file
@@ -97,6 +101,7 @@ defeats both goals).
 ### 4. Upload — one-off script, run by Claude, no manual steps
 
 `scripts/upload-3d-assets.ts` (ts-node, mirrors `reconcile-r2.ts` conventions):
+
 - Uses the existing `@aws-sdk/client-s3` dependency and R2 creds from `.env.local`
   (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`)
   — no new dependencies, no rclone/aws CLI install.
@@ -112,6 +117,7 @@ defeats both goals).
 Three.js loaders fetch with `crossOrigin='anonymous'` — without CORS, glbs and
 textures fail even on HTTP 200 (phantom-error mode). Bucket CORS must allow `GET`
 from:
+
 - `https://theartroom.gallery`
 - `https://staging.theartroom.gallery`
 - `http://localhost:3001`

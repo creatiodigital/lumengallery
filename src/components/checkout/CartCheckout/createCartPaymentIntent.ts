@@ -78,6 +78,12 @@ export async function createCartPaymentIntent(
   // lineId → the final set of number ids for that line (length === quantity).
   const lineNumberIds = new Map<string, string[]>()
 
+  // Return the numbers WE reserved this call to the pool, in parallel. Every
+  // failure path funnels through here so there is one release path to reason
+  // about. Defaults to the full set; the replay path passes only its surplus.
+  const releaseFreshlyReserved = (ids: string[] = freshlyReservedIds) =>
+    Promise.all(ids.map((id) => releaseEditionNumberById(id)))
+
   for (const item of items) {
     if (item.editionType !== 'limited' || !item.variantId) continue
     const variantId = item.variantId
@@ -121,9 +127,7 @@ export async function createCartPaymentIntent(
     // c. Still short → sold out. Release our replacements (NOT the buyer's
     //    pre-existing holds) and bail.
     if (soldOut || validIds.length < quantity) {
-      for (const id of freshlyReservedIds) {
-        await releaseEditionNumberById(id)
-      }
+      await releaseFreshlyReserved()
       return {
         ok: false,
         error: 'This edition has just sold out. Please adjust your cart.',
@@ -189,9 +193,7 @@ export async function createCartPaymentIntent(
     )
 
     if (!pi.client_secret) {
-      for (const id of freshlyReservedIds) {
-        await releaseEditionNumberById(id)
-      }
+      await releaseFreshlyReserved()
       return { ok: false, error: 'Could not start payment. Please try again.' }
     }
 
@@ -236,11 +238,7 @@ export async function createCartPaymentIntent(
 
       // Release every number we reserved THIS call that the original PI does
       // not actually carry — these are the surplus that would otherwise leak.
-      for (const id of freshlyReservedIds) {
-        if (!boundIds.has(id)) {
-          await releaseEditionNumberById(id)
-        }
-      }
+      await releaseFreshlyReserved(freshlyReservedIds.filter((id) => !boundIds.has(id)))
       // Numbers already carry the PI; nothing to (re-)attach.
     } else {
       // First call. Bind every held number across all limited lines to this
@@ -258,18 +256,27 @@ export async function createCartPaymentIntent(
     //    keyed by paymentIntentId so an idempotent re-submit (same PI) just
     //    rewrites the same row.
     const cartItems = items.map((item) => {
+      // validateCart returns a priced entry for every line it didn't fail, and
+      // we already bailed on !validation.ok above — so a miss here is a logic
+      // error, not a benign absence. Throw rather than persist an empty/zero
+      // line: the catch below releases our held numbers and reports it, which
+      // beats persisting a €0, artist-less row the webhook would build an
+      // order and split payouts from.
       const priced = pricedByLine.get(item.lineId)
+      if (!priced) {
+        throw new Error(`Cart line ${item.lineId} missing from validated pricing`)
+      }
       return {
         lineId: item.lineId,
-        artworkId: priced?.artworkId ?? '',
-        artistUserId: priced?.artistUserId ?? '',
+        artworkId: priced.artworkId,
+        artistUserId: priced.artistUserId,
         variantId: item.variantId ?? null,
         editionType: item.editionType,
-        printConfig: priced?.effectiveConfig ?? item.config,
+        printConfig: priced.effectiveConfig,
         quantity: item.quantity,
-        productionCents: priced?.lineProductionCents ?? 0,
-        artistCents: priced?.lineArtistCents ?? 0,
-        galleryCents: priced?.lineGalleryCents ?? 0,
+        productionCents: priced.lineProductionCents,
+        artistCents: priced.lineArtistCents,
+        galleryCents: priced.lineGalleryCents,
         editionNumberIds: lineNumberIds.get(item.lineId) ?? [],
       }
     })
@@ -316,9 +323,7 @@ export async function createCartPaymentIntent(
     //    return ONLY the numbers we reserved THIS call to the pool. The
     //    buyer's pre-existing valid holds are left untouched so a retry can
     //    reuse them.
-    for (const id of freshlyReservedIds) {
-      await releaseEditionNumberById(id)
-    }
+    await releaseFreshlyReserved()
     captureError(err, {
       flow: 'payment',
       stage: 'create-cart-payment-intent',

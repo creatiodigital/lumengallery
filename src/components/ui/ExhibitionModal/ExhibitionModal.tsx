@@ -44,6 +44,7 @@ export const ExhibitionModal = React.memo(
     const [urlEdited, setUrlEdited] = useState(false)
 
     const [urlError, setUrlError] = useState('')
+    const [titleError, setTitleError] = useState('')
     const [checking, setChecking] = useState(false)
 
     // Auto-generate URL from title (unless manually edited)
@@ -92,11 +93,14 @@ export const ExhibitionModal = React.memo(
     }
 
     const handleCreateClick = useCallback(() => {
+      if (!mainTitle.trim()) {
+        setTitleError('Please enter an exhibition title.')
+        return
+      }
+      setTitleError('')
       if (urlError || !customUrl) return
       onCreate(mainTitle, customUrl)
     }, [onCreate, mainTitle, customUrl, urlError])
-
-    const canCreate = mainTitle.trim() && customUrl.trim() && !urlError && !checking
 
     return (
       <div className={styles.modal}>
@@ -109,6 +113,7 @@ export const ExhibitionModal = React.memo(
             handleCreateClick()
           }}
           autoComplete="off"
+          noValidate
         >
           <div className={styles.section}>
             <label className={styles.label} htmlFor="exhibitionTitle">
@@ -119,9 +124,14 @@ export const ExhibitionModal = React.memo(
               type="text"
               size="medium"
               value={mainTitle}
-              onChange={(e) => setMainTitle(e.target.value)}
+              onChange={(e) => {
+                setMainTitle(e.target.value)
+                if (titleError && e.target.value.trim()) setTitleError('')
+              }}
+              invalid={!!titleError}
               required
             />
+            <ErrorText>{titleError}</ErrorText>
 
             <label className={styles.label} htmlFor="exhibitionUrl">
               URL Slug
@@ -132,7 +142,7 @@ export const ExhibitionModal = React.memo(
               size="medium"
               value={customUrl}
               onChange={(e) => handleUrlChange(e.target.value)}
-              variant={urlError ? 'error' : undefined}
+              invalid={!!urlError}
               required
             />
             <Text font="dashboard" as="p" className={styles.urlPreview}>
@@ -167,7 +177,7 @@ export const ExhibitionModal = React.memo(
               variant="primary"
               label={creating ? 'Creating...' : 'Create Exhibition'}
               type="submit"
-              disabled={!canCreate}
+              disabled={creating || checking}
             />
           </div>
         </form>

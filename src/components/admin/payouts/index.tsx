@@ -103,7 +103,10 @@ export const AdminPayouts = () => {
                       {/* Cart orders contribute one row per line — flag the
                           source so a multi-row order reads clearly. */}
                       {p.source === 'item' && (
-                        <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}> · cart item</span>
+                        <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>
+                          {' '}
+                          · cart item
+                        </span>
                       )}
                     </td>
                     <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>

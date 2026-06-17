@@ -1476,7 +1476,6 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             </div>
           </div>
         )}
-
       </div>
 
       {(() => {

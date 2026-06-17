@@ -323,9 +323,9 @@ export async function createPrintOrderFromCart(
   // already created but a still-present PendingCart (e.g. a prior run crashed
   // between commit and this delete). Idempotent — a redelivery that already
   // deleted it just no-ops.
-  await prisma.pendingCart.delete({ where: { paymentIntentId: pi.id } }).catch((err) =>
-    console.warn('[createPrintOrderFromCart] PendingCart delete failed:', err),
-  )
+  await prisma.pendingCart
+    .delete({ where: { paymentIntentId: pi.id } })
+    .catch((err) => console.warn('[createPrintOrderFromCart] PendingCart delete failed:', err))
 
   // ── 4. Resolve artwork titles + artist names for the emails. One query.
   const artworkIds = Array.from(new Set(items.map((it) => it.artworkId)))
@@ -344,8 +344,7 @@ export async function createPrintOrderFromCart(
     const a = artworkById.get(artworkId)
     return [a?.user?.name, a?.user?.lastName].filter(Boolean).join(' ').trim()
   }
-  const artworkTitleFor = (artworkId: string): string =>
-    artworkById.get(artworkId)?.title ?? ''
+  const artworkTitleFor = (artworkId: string): string => artworkById.get(artworkId)?.title ?? ''
 
   // ── 5. Buyer confirmation email — gated by the event log so a webhook
   // redelivery never re-emails. Lists every purchased line.

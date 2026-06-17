@@ -7,7 +7,6 @@ export const createDashboardState = (): TDashboardState => ({
   isLightingPanelOpen: false,
   isFloorPanelOpen: false,
   isCameraPanelOpen: false,
-  isHumanPanelOpen: false,
 
   isWallCeilingPanelOpen: false,
   isEditingArtwork: false,

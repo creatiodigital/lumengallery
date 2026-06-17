@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { WALL_SCALE } from '@/components/wallview/constants'
@@ -19,6 +19,11 @@ import type { TDimensions } from '@/types/geometry'
 export const useAddExistingArtwork = (boundingData: TDimensions | null) => {
   const dispatch = useDispatch()
 
+  // Inline duplicate-guard error, surfaced via the consuming panel UI
+  // (replaces the former native alert()).
+  const [duplicateError, setDuplicateError] = useState<string | null>(null)
+  const clearDuplicateError = useCallback(() => setDuplicateError(null), [])
+
   const sizeForType = (type: string) => (type === 'sound' ? WALL_SCALE * 0.1 : WALL_SCALE * 0.25)
 
   const wallWidth = useSelector((state: RootState) => state.wallView.wallWidth)
@@ -37,9 +42,12 @@ export const useAddExistingArtwork = (boundingData: TDimensions | null) => {
   // Add existing artwork at center
   const handleAddExistingArtwork = useCallback(
     async (artworkId: string): Promise<boolean> => {
+      // Fresh attempt: clear any lingering duplicate error.
+      setDuplicateError(null)
+
       // Check for duplicates
       if (isArtworkInExhibition(artworkId)) {
-        alert('This artwork already exists in your exhibition.')
+        setDuplicateError('This artwork already exists in your exhibition.')
         return false
       }
 
@@ -105,9 +113,12 @@ export const useAddExistingArtwork = (boundingData: TDimensions | null) => {
   // Add existing artwork at specific position (for drag-drop)
   const handleAddExistingArtworkDrag = useCallback(
     async (artworkId: string, posX2d: number, posY2d: number): Promise<boolean> => {
+      // Fresh attempt: clear any lingering duplicate error.
+      setDuplicateError(null)
+
       // Check for duplicates
       if (isArtworkInExhibition(artworkId)) {
-        alert('This artwork already exists in your exhibition.')
+        setDuplicateError('This artwork already exists in your exhibition.')
         return false
       }
 
@@ -174,5 +185,7 @@ export const useAddExistingArtwork = (boundingData: TDimensions | null) => {
     handleAddExistingArtwork,
     handleAddExistingArtworkDrag,
     isArtworkInExhibition,
+    duplicateError,
+    clearDuplicateError,
   }
 }

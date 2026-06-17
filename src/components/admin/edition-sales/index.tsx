@@ -14,7 +14,11 @@ import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLay
 
 const formatDate = (iso: string | null) =>
   iso
-    ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
+    ? new Date(iso).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+      })
     : '—'
 
 /**
@@ -112,7 +116,9 @@ export const AdminEditionSales = () => {
                     <td>
                       <div>{s.buyerName ?? '—'}</div>
                       {s.buyerEmail && (
-                        <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>{s.buyerEmail}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>
+                          {s.buyerEmail}
+                        </div>
                       )}
                     </td>
                     <td style={{ textTransform: 'capitalize' }}>{s.state}</td>

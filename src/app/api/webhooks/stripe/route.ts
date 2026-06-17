@@ -79,9 +79,7 @@ export async function POST(req: NextRequest) {
         // consumed + deleted when the order is built. A canceled PI never
         // completed, so the row is leftover — clean it up. No-op for
         // single-print PIs (no row) or if it was already consumed.
-        await prisma.pendingCart
-          .delete({ where: { paymentIntentId: pi.id } })
-          .catch(() => {})
+        await prisma.pendingCart.delete({ where: { paymentIntentId: pi.id } }).catch(() => {})
         await prisma.printOrder
           .updateMany({
             where: { paymentIntentId: pi.id },
@@ -116,9 +114,7 @@ export async function POST(req: NextRequest) {
           // Same as canceled: a hard failure means the buyer never
           // completed, so drop any leftover cart staging row. Guarded
           // no-op for single-print PIs or an already-consumed row.
-          await prisma.pendingCart
-            .delete({ where: { paymentIntentId: pi.id } })
-            .catch(() => {})
+          await prisma.pendingCart.delete({ where: { paymentIntentId: pi.id } }).catch(() => {})
         }
         await prisma.printOrder
           .updateMany({

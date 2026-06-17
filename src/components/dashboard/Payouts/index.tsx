@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { SelectDropdown, type SelectOption } from '@/components/ui/SelectDropdown'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 
@@ -29,6 +30,7 @@ export const PayoutsPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [country, setCountry] = useState<string>('')
   const [countries, setCountries] = useState<ConnectCountry[]>([])
+  const [confirmingDisconnect, setConfirmingDisconnect] = useState(false)
 
   const load = useCallback(async () => {
     setError(null)
@@ -91,14 +93,7 @@ export const PayoutsPage = () => {
     setWorking(false)
   }, [])
 
-  const handleDisconnect = useCallback(async () => {
-    const ok = window.confirm(
-      'Disconnect your Stripe account?\n\n' +
-        'Your bank details will be removed from Stripe and you\u2019ll have to complete ' +
-        'onboarding again if you reconnect. Any shipped orders that haven\u2019t been paid ' +
-        'out yet will need a new account to receive their payout.',
-    )
-    if (!ok) return
+  const performDisconnect = useCallback(async () => {
     setWorking(true)
     setError(null)
     const res = await disconnectAccount()
@@ -114,6 +109,7 @@ export const PayoutsPage = () => {
       )
     }
     await load()
+    setConfirmingDisconnect(false)
     setWorking(false)
   }, [load])
 
@@ -195,7 +191,7 @@ export const PayoutsPage = () => {
                   font="dashboard"
                   variant="secondary"
                   label={working ? 'Disconnecting\u2026' : 'Disconnect Stripe'}
-                  onClick={handleDisconnect}
+                  onClick={() => setConfirmingDisconnect(true)}
                   disabled={working}
                 />
               </div>
@@ -212,6 +208,24 @@ export const PayoutsPage = () => {
         <div className={dashboardStyles.section}>
           <p className={dashboardStyles.sectionDescription}>⚠️ {error}</p>
         </div>
+      )}
+
+      {confirmingDisconnect && (
+        <ConfirmModal
+          title="Disconnect your Stripe account?"
+          message={
+            <>
+              {
+                'Your bank details will be removed from Stripe and you’ll have to complete onboarding again if you reconnect. Any shipped orders that haven’t been paid out yet will need a new account to receive their payout.'
+              }
+            </>
+          }
+          confirmLabel="Disconnect"
+          destructive
+          busy={working}
+          onConfirm={performDisconnect}
+          onCancel={() => setConfirmingDisconnect(false)}
+        />
       )}
     </DashboardLayout>
   )

@@ -24,6 +24,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { isSafeImageSrc } from '@/lib/imageSafety'
 
 import { Button } from '@/components/ui/Button'
+import { ErrorText } from '@/components/ui/ErrorText'
 import { Icon } from '@/components/ui/Icon'
 import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
@@ -279,6 +280,7 @@ export const ArtworkLibraryPage = () => {
     exhibitionTitle: string
   } | null>(null)
   const [unlinking, setUnlinking] = useState(false)
+  const [actionError, setActionError] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'image' | 'text' | 'sound' | 'video'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -392,12 +394,14 @@ export const ArtworkLibraryPage = () => {
   }, [fetchArtworks])
 
   const handleDeleteClick = useCallback((id: string, name: string) => {
+    setActionError('')
     setDeleteTarget({ id, name })
   }, [])
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return
 
+    setActionError('')
     setDeleting(true)
     try {
       const response = await fetch(`/api/artworks/${deleteTarget.id}`, {
@@ -408,11 +412,11 @@ export const ArtworkLibraryPage = () => {
         fetchArtworks()
         setDeleteTarget(null)
       } else {
-        alert('Failed to delete artwork')
+        setActionError('Failed to delete artwork')
       }
     } catch (error) {
       console.error('Delete error:', error)
-      alert('Failed to delete artwork')
+      setActionError('Failed to delete artwork')
     } finally {
       setDeleting(false)
     }
@@ -420,6 +424,7 @@ export const ArtworkLibraryPage = () => {
 
   const handleUnlinkClick = useCallback(
     (exhibitionArtworkId: string, artworkName: string, exhibitionTitle: string) => {
+      setActionError('')
       setUnlinkTarget({ exhibitionArtworkId, artworkName, exhibitionTitle })
     },
     [],
@@ -428,6 +433,7 @@ export const ArtworkLibraryPage = () => {
   const handleUnlinkConfirm = useCallback(async () => {
     if (!unlinkTarget) return
 
+    setActionError('')
     setUnlinking(true)
     try {
       const response = await fetch(`/api/exhibition-artworks/${unlinkTarget.exhibitionArtworkId}`, {
@@ -438,11 +444,11 @@ export const ArtworkLibraryPage = () => {
         fetchArtworks()
         setUnlinkTarget(null)
       } else {
-        alert('Failed to remove from exhibition')
+        setActionError('Failed to remove from exhibition')
       }
     } catch (error) {
       console.error('Unlink error:', error)
-      alert('Failed to remove from exhibition')
+      setActionError('Failed to remove from exhibition')
     } finally {
       setUnlinking(false)
     }
@@ -606,6 +612,7 @@ export const ArtworkLibraryPage = () => {
               <br />
               This action cannot be undone.
             </Text>
+            <ErrorText>{actionError}</ErrorText>
             <div className={styles.deleteActions}>
               <Button
                 variant="primary"
@@ -635,6 +642,7 @@ export const ArtworkLibraryPage = () => {
               <br />
               The artwork will remain in your library.
             </Text>
+            <ErrorText>{actionError}</ErrorText>
             <div className={styles.deleteActions}>
               <Button
                 variant="primary"

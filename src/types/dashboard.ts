@@ -10,7 +10,6 @@ export type TDashboardState = {
   isLightingPanelOpen: boolean
   isFloorPanelOpen: boolean
   isCameraPanelOpen: boolean
-  isHumanPanelOpen: boolean
 
   isWallCeilingPanelOpen: boolean
   isEditingArtwork: boolean

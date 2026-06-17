@@ -82,6 +82,19 @@
   background: transparent;
 }
 
+// Validation state: red border on the (boxed) closed control. `.control.invalid`
+// beats the resting/open/hover/focus borders above by equal-or-higher
+// specificity + later source order — no `!important`. (The plain variant is
+// borderless, so this is a no-op there, which is fine.)
+.control.invalid {
+  &,
+  &:hover:not(:disabled),
+  &:focus,
+  &:focus-visible {
+    border-color: var(--color-error-text);
+  }
+}
+
 // Plain variant has no chevron — just the label.
 .wrapperPlain .chevron {
   display: none;
