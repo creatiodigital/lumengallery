@@ -280,6 +280,7 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
               submitting={submitting}
               submitLabel="Continue to review"
               countryCodes={supportedCountries}
+              initialAddress={address}
             />
           </div>
         </div>
@@ -431,7 +432,7 @@ const CheckoutLine = ({ item, error }: CheckoutLineProps) => {
 
         <div className={styles.priceBlock}>
           <Text as="span" size="sm" className={styles.priceLabel}>
-            Final Price
+            Total Price
           </Text>
           <Text as="span" font="serif" size="lg" className={styles.priceValue}>
             {formatEuro(lineItemCents)}

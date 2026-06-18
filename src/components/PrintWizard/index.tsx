@@ -14,6 +14,7 @@ import Logo from '@/icons/logo.svg'
 import Monogram from '@/icons/monogram.svg'
 
 import { buildCartItem } from '@/lib/cart/buildCartItem'
+import { hasMatchingCartLine } from '@/lib/cart/cartMath'
 import { useCart } from '@/lib/cart/useCart'
 import {
   type Catalog,
@@ -251,17 +252,34 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
   )
   const quoteLoading = false
 
-  const { addItem } = useCart()
+  const { addItem, removeItem, items } = useCart()
   const [cartAddedOpen, setCartAddedOpen] = useState(false)
+
+  // When the buyer arrived via the cart's "Edit item" link, the line's id rides
+  // in the URL. Re-adding replaces that line (removed just before the add) so
+  // editing reconfigures in place instead of leaving a duplicate behind.
+  const editLineId = searchParams.get('editLineId')
 
   const close = () => {
     clearPrintSession(artwork.slug)
     router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
   }
 
+  // The current config already sits in the cart as its own line (ignoring the
+  // line being edited) → adding merges into a quantity bump, so we confirm.
+  const isDuplicate = useMemo(
+    () => hasMatchingCartLine(items, { artworkId: artwork.id, config }, editLineId ?? undefined),
+    [items, artwork.id, config, editLineId],
+  )
+
   const handleAddToCart = async () => {
-    await addItem(
-      buildCartItem({
+    // Editing: carry the original line's quantity so the edit applies to the
+    // whole line (a qty-2 line stays qty 2), then drop that line so the re-add
+    // replaces it — merging into an identical line if one now matches.
+    const quantity = editLineId ? (items.find((i) => i.lineId === editLineId)?.quantity ?? 1) : 1
+    if (editLineId) await removeItem(editLineId)
+    await addItem({
+      ...buildCartItem({
         artwork: {
           id: artwork.id,
           slug: artwork.slug,
@@ -276,7 +294,8 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
         artistCents: artwork.printPriceCents,
         specsSummary: summarizeConfig(catalog, config),
       }),
-    )
+      quantity,
+    })
     setCartAddedOpen(true)
   }
 
@@ -325,11 +344,13 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
           configReady
           onAddToCart={handleAddToCart}
           onContinueShopping={close}
+          isEditing={editLineId !== null}
+          isDuplicate={isDuplicate}
         />
       </main>
 
       {cartAddedOpen && (
-        <CartAddedModal onClose={() => setCartAddedOpen(false)} onContinueShopping={close} />
+        <CartAddedModal onClose={() => setCartAddedOpen(false)} edited={editLineId !== null} />
       )}
 
       {introOpen && (

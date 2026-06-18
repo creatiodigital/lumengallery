@@ -36,3 +36,25 @@ export function cartSubtotal(items: MoneyParts[]): number {
 export function cartCount(items: Array<Pick<CartItem, 'quantity'>>): number {
   return items.reduce((sum, i) => sum + i.quantity, 0)
 }
+
+/**
+ * True when an existing line — other than `excludeLineId` — is the exact same
+ * print: same artwork, same variant, and an identical full config (the same
+ * key `sameLine` merges on). Drives the wizard's "already in your cart"
+ * confirmation before a duplicate add merges into a quantity bump. The
+ * `excludeLineId` lets the edit flow ignore the line currently being edited.
+ */
+export function hasMatchingCartLine(
+  items: CartItem[],
+  candidate: { artworkId: string; variantId?: string; config: WizardConfig },
+  excludeLineId?: string,
+): boolean {
+  const candidateKey = configKey(candidate.config)
+  return items.some(
+    (item) =>
+      item.lineId !== excludeLineId &&
+      item.artworkId === candidate.artworkId &&
+      item.variantId === candidate.variantId &&
+      configKey(item.config) === candidateKey,
+  )
+}

@@ -23,6 +23,12 @@
   min-width: 0;
 }
 
+// Space the hold countdown away from the "Show all selected options" toggle
+// above it so the two don't read as one block.
+.hold {
+  margin-top: var(--space-4);
+}
+
 .artist {
   text-transform: uppercase;
   letter-spacing: 1.5px;

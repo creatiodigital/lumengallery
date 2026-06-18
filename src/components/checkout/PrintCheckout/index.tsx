@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
+import { configToWizardParams } from '@/components/PrintWizard/wizardParams'
 import { Button } from '@/components/ui/Button'
 import { FormField } from '@/components/ui/FormField'
 import { Icon } from '@/components/ui/Icon'
@@ -197,23 +198,7 @@ export const PrintCheckout = ({
     // Forward every wizard option back into the URL so the wizard
     // re-hydrates the buyer's exact selection. Country is intentionally
     // omitted — it lives on the checkout step now, not the wizard.
-    const params = new URLSearchParams()
-    if (handoff) {
-      for (const [key, value] of Object.entries(handoff.config.values)) {
-        params.set(key, value)
-      }
-      if (handoff.config.customSize) {
-        params.set(
-          'customSize',
-          `${handoff.config.customSize.widthCm}x${handoff.config.customSize.heightCm}`,
-        )
-      }
-      if (handoff.config.borders) {
-        for (const [borderId, b] of Object.entries(handoff.config.borders)) {
-          params.set(borderId, String(b.allCm))
-        }
-      }
-    }
+    const params = handoff ? configToWizardParams(handoff.config) : new URLSearchParams()
     params.set('provider', providerId)
     router.push(`/artworks/${artwork.slug}/print?${params.toString()}`)
   }

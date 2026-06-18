@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { CartIcon } from '@/components/cart/CartIcon'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +14,7 @@ import Logo from '@/icons/logo.svg'
 import Monogram from '@/icons/monogram.svg'
 
 import { buildCartItem } from '@/lib/cart/buildCartItem'
+import { hasMatchingCartLine } from '@/lib/cart/cartMath'
 import { useCart } from '@/lib/cart/useCart'
 import { type Catalog, type Quote, summarizeConfig } from '@/lib/print-providers'
 import { getProviderQuote } from '@/lib/print-providers/quote'
@@ -55,6 +56,10 @@ function readCountryFromStash(slug: string): string {
  */
 export const LimitedWizard = ({ artwork, catalog }: Props) => {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // Set when the buyer came from the cart's "Edit item" link — re-adding
+  // replaces this line (removed just before the add) instead of duplicating it.
+  const editLineId = searchParams.get('editLineId')
 
   // Sold-out variants are hidden — only buyable ones are offered.
   const available = useMemo(
@@ -106,7 +111,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
     [available, country, catalog.providerId, artwork.printPriceCents],
   )
 
-  const { addItem } = useCart()
+  const { addItem, removeItem, items } = useCart()
   const [addError, setAddError] = useState<string | null>(null)
   const [cartAddedOpen, setCartAddedOpen] = useState(false)
 
@@ -121,18 +126,36 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
     router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
   }
 
+  // Same variant + config already in the cart (ignoring any line being edited)
+  // → adding merges into a quantity bump, so we confirm first.
+  const isDuplicate = useMemo(
+    () =>
+      !!config &&
+      hasMatchingCartLine(
+        items,
+        { artworkId: artwork.id, variantId: selected?.id, config },
+        editLineId ?? undefined,
+      ),
+    [items, artwork.id, selected?.id, config, editLineId],
+  )
+
   const handleAddToCart = async () => {
     if (!selected || !config || !quote) return
 
     setAddError(null)
+
+    // Editing: carry the original line's quantity (the edit applies to the
+    // whole line), then drop that line so the re-add replaces it.
+    const quantity = editLineId ? (items.find((i) => i.lineId === editLineId)?.quantity ?? 1) : 1
+    if (editLineId) await removeItem(editLineId)
 
     // `addItem` reserves the edition number server-side BEFORE committing the
     // line; on sold-out / insufficient stock it throws so we surface a
     // friendly message and leave the cart untouched. Re-throw so SummaryPanel
     // does not flip to its "added" state.
     try {
-      await addItem(
-        buildCartItem({
+      await addItem({
+        ...buildCartItem({
           artwork: {
             id: artwork.id,
             slug: artwork.slug,
@@ -148,7 +171,8 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
           artistCents: selected.priceCents ?? artwork.printPriceCents,
           specsSummary: summarizeConfig(catalog, config),
         }),
-      )
+        quantity,
+      })
       setCartAddedOpen(true)
     } catch (error) {
       const reason = error instanceof Error ? error.message : ''
@@ -211,6 +235,8 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
               onContinueShopping={close}
               editionLabel={`1/${selected.editionSize}`}
               addError={addError}
+              isEditing={editLineId !== null}
+              isDuplicate={isDuplicate}
             />
           </>
         ) : (
@@ -221,7 +247,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
       </main>
 
       {cartAddedOpen && (
-        <CartAddedModal onClose={() => setCartAddedOpen(false)} onContinueShopping={close} />
+        <CartAddedModal onClose={() => setCartAddedOpen(false)} edited={editLineId !== null} />
       )}
 
       {introOpen && detailVariant && (

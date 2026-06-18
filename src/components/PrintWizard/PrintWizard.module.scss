@@ -418,32 +418,50 @@
   }
 }
 
-// ── Add-to-cart confirmation ───────────────────────────────────
-.cartAddedModal {
+// ── Add-to-cart confirmation (self-dismissing banner) ──────────
+.cartAddedBanner {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  opacity: 1;
+  // Purely a visual confirmation — let clicks reach the wizard underneath.
+  pointer-events: none;
+  // Fade duration kept in sync with FADE_MS in CartAddedModal.tsx.
+  transition: opacity 400ms ease;
+}
+
+.cartAddedLeaving {
+  opacity: 0;
+}
+
+.cartAddedCard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
   max-width: 420px;
-  padding: var(--space-6);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  background: var(--color-white);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   font-family: var(--font-sans);
-  text-align: center;
+
+  // Keep the check from squashing if the message ever wraps.
+  svg {
+    flex-shrink: 0;
+  }
 }
 
 .cartAddedTitle {
-  margin: 0 0 var(--space-5);
+  margin: 0;
   font-size: 16px;
   line-height: 1.5;
   color: var(--color-text-primary);
-}
-
-.cartAddedActions {
-  display: flex;
-  justify-content: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-
-  // Buyer-facing surface: squared controls (client-facing UI rule).
-  button,
-  a {
-    border-radius: 0;
-  }
 }
 
 .sliderValue {
@@ -910,6 +928,7 @@
   gap: var(--space-3);
   font-family: var(--font-sans);
   font-size: var(--text-sm);
+  font-weight: 600;
   margin: 0;
 
   dt {

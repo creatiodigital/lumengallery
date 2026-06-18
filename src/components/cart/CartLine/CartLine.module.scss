@@ -75,6 +75,21 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+
+  // −, + and the qty-1 trash all render at one consistent width, whether they
+  // carry a text glyph or an (icon-only) icon — the icon variant's tighter
+  // padding would otherwise make the trash narrower than −/+.
+  button {
+    min-width: 40px;
+    justify-content: center;
+  }
+
+  // The trash icon that replaces "−" at qty 1 — keep it in scale with the
+  // "−"/"+" glyphs rather than the button's default 20px icon size.
+  svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .qty {
@@ -83,6 +98,11 @@
   color: var(--color-text-primary);
 }
 
-.remove {
-  color: var(--color-text-secondary);
+// Edit / Delete CTAs — stacked, equal width (both fullWidth) so the panel
+// reads as one tidy action column.
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
 }

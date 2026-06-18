@@ -2,9 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+import { HelpTooltip } from '@/components/ui/HelpTooltip'
+import { Icon } from '@/components/ui/Icon'
 import { Text } from '@/components/ui/Typography'
 
 import styles from './HoldCountdown.module.scss'
+
+const HOLD_EXPLAINER =
+  'Limited editions are reserved while you decide. This numbered print is held ' +
+  'just for you for a few minutes — when the timer runs out it’s released to ' +
+  'other collectors and removed from your cart.'
 
 interface HoldCountdownProps {
   /** Server-provided epoch ms the hold expires at. */
@@ -59,8 +66,13 @@ export const HoldCountdown = ({ expiresAt, onExpire }: HoldCountdownProps) => {
   }
 
   return (
-    <Text as="span" size="xs" className={styles.countdown} aria-live="polite">
-      Held for you — {formatMmSs(ms)}
-    </Text>
+    <span className={styles.countdown}>
+      <Text as="span" size="xs" aria-live="polite">
+        Held for you — {formatMmSs(ms)}
+      </Text>
+      <HelpTooltip content={HOLD_EXPLAINER} placement="top">
+        <Icon name="info" size={14} />
+      </HelpTooltip>
+    </span>
   )
 }

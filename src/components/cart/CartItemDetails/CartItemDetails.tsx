@@ -78,7 +78,9 @@ export const CartItemDetails = ({
         />
 
         {isLimited && item.holdExpiresAt && (
-          <HoldCountdown expiresAt={item.holdExpiresAt} onExpire={onHoldExpire} />
+          <div className={styles.hold}>
+            <HoldCountdown expiresAt={item.holdExpiresAt} onExpire={onHoldExpire} />
+          </div>
         )}
 
         {error && (

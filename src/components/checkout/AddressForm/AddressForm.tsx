@@ -22,6 +22,15 @@ import styles from './AddressForm.module.scss'
 const sortCountries = (codes: string[]) =>
   [...codes].sort((a, b) => getCountryName(a).localeCompare(getCountryName(b)))
 
+// `handleSubmit` emits phone as "+<dial> <digits>". Split a previously-submitted
+// value back into its parts so a buyer returning via "Change address" sees their
+// dial + number restored rather than one combined blob (or nothing).
+const splitPhone = (combined: string): { dial: string; number: string } => {
+  const match = /^\+(\d+)\s+(.*)$/.exec(combined.trim())
+  if (match) return { dial: match[1], number: match[2] }
+  return { dial: '', number: combined.trim() }
+}
+
 type AddressFormProps = {
   /** Called with the assembled, trimmed ShippingAddress once every field
    *  passes validation. The parent (CartCheckout) owns the server call. */
@@ -36,6 +45,9 @@ type AddressFormProps = {
   /** Country codes to offer in the picker. Defaults to every known country
    *  (per-line shippability is enforced server-side by validateCart). */
   countryCodes?: string[]
+  /** Pre-fill every field — used when the buyer returns via "Change address"
+   *  so their entries aren't lost on the form's remount. */
+  initialAddress?: ShippingAddress | null
 }
 
 /**
@@ -52,21 +64,32 @@ export const AddressForm = ({
   submitLabel = 'Continue',
   initialCountry = '',
   countryCodes,
+  initialAddress = null,
 }: AddressFormProps) => {
-  const [country, setCountry] = useState(initialCountry)
-  const [fullName, setFullName] = useState('')
-  const [emailField, setEmailField] = useState('')
-  const [phoneField, setPhoneField] = useState('')
-  const [address1, setAddress1] = useState('')
-  const [address2, setAddress2] = useState('')
-  const [city, setCity] = useState('')
-  const [stateOrRegion, setStateOrRegion] = useState('')
-  const [postalCode, setPostalCode] = useState('')
+  // Seed from a previously-submitted address when present (the buyer came back
+  // via "Change address"); the form remounts each time it's shown, so these
+  // lazy initializers re-read the latest values on every return.
+  const seededPhone = splitPhone(initialAddress?.phone ?? '')
+
+  const [country, setCountry] = useState(initialAddress?.countryCode || initialCountry)
+  const [fullName, setFullName] = useState(initialAddress?.fullName ?? '')
+  const [emailField, setEmailField] = useState(initialAddress?.email ?? '')
+  const [phoneField, setPhoneField] = useState(seededPhone.number)
+  const [address1, setAddress1] = useState(initialAddress?.address1 ?? '')
+  const [address2, setAddress2] = useState(initialAddress?.address2 ?? '')
+  const [city, setCity] = useState(initialAddress?.city ?? '')
+  const [stateOrRegion, setStateOrRegion] = useState(initialAddress?.stateOrRegion ?? '')
+  const [postalCode, setPostalCode] = useState(initialAddress?.postalCode ?? '')
   // Independent of `country` by design — a buyer might keep a foreign phone
-  // after relocating or be sending a gift to another country. We seed it
-  // from the initial shipping country (best guess) but never auto-sync
-  // after that; the buyer owns the choice.
-  const [phoneDial, setPhoneDial] = useState(() => DIAL_CODES[initialCountry] ?? DIAL_CODES.ES)
+  // after relocating or be sending a gift to another country. We seed it from
+  // the returning address's dial (if any), else the initial shipping country
+  // (best guess), and never auto-sync after that; the buyer owns the choice.
+  const [phoneDial, setPhoneDial] = useState(
+    () =>
+      seededPhone.dial ||
+      DIAL_CODES[initialAddress?.countryCode || initialCountry] ||
+      DIAL_CODES.ES,
+  )
 
   // Per-field error state + the house validation flow, shared across every
   // checkout surface via the same `shippingValidators`.

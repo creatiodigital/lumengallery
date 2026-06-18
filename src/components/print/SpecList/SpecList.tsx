@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
+import { Icon } from '@/components/ui/Icon'
 import type { SpecsSummary } from '@/lib/print-providers'
 
 import styles from './SpecList.module.scss'
@@ -53,6 +54,9 @@ export const SpecList = ({ specs, className, visibleByDefault = 5 }: SpecListPro
           onClick={() => setExpanded((v) => !v)}
         >
           <span>{expanded ? 'Show less' : 'Show all selected options'}</span>
+          <span className={`${styles.chevron}${expanded ? ` ${styles.chevronOpen}` : ''}`}>
+            <Icon name="chevronDown" size={14} />
+          </span>
         </Button>
       )}
     </div>
