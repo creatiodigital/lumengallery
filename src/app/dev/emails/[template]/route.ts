@@ -8,7 +8,7 @@ function sampleHtml(): string {
   const body =
     emailHeading('Thank you, Jane') +
     emailParagraph(
-      "Your order is confirmed. We'll begin printing shortly -- your invoice will follow once it's in production.",
+      "Your order is confirmed. We'll begin printing shortly — your invoice will follow once it's in production.",
     ) +
     emailButton('View your order', 'https://theartroom.gallery/account/orders')
   return renderEmailLayout({ preheader: 'Your order is confirmed', bodyHtml: body })

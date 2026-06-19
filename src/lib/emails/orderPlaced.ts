@@ -85,7 +85,7 @@ export type OrderPlacedArgs = {
  * No side effects; safe to call from preview routes.
  */
 export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string; html: string } {
-  const rawFirstName = args.buyerName.split(' ')[0] || args.buyerName || 'there'
+  const rawFirstName = args.buyerName.split(' ')[0] || 'there'
   const firstName = escapeHtml(rawFirstName)
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)
