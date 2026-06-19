@@ -1,5 +1,6 @@
 import { renderEmailLayout } from '@/lib/emails/layout'
 import { emailButton, emailHeading, emailParagraph } from '@/lib/emails/components'
+import { renderOrderPlacedEmail } from '@/lib/emails/orderPlaced'
 
 // Dev-only preview of branded emails with SAMPLE data (no DB, no real send).
 // 404 in production so it never ships to buyers.
@@ -7,7 +8,7 @@ function sampleHtml(): string {
   const body =
     emailHeading('Thank you, Jane') +
     emailParagraph(
-      "Your order is confirmed. We’ll begin printing shortly — your invoice will follow once it’s in production.",
+      "Your order is confirmed. We'll begin printing shortly -- your invoice will follow once it's in production.",
     ) +
     emailButton('View your order', 'https://theartroom.gallery/account/orders')
   return renderEmailLayout({ preheader: 'Your order is confirmed', bodyHtml: body })
@@ -15,6 +16,17 @@ function sampleHtml(): string {
 
 const TEMPLATES: Record<string, () => string> = {
   sample: sampleHtml,
+  'order-placed': () =>
+    renderOrderPlacedEmail({
+      to: 'jane@example.com',
+      buyerName: 'Jane Smith',
+      artistName: 'John Doe',
+      orderId: 'sample-order-1234',
+      artworkTitle: 'Puerta Verde',
+      totalCents: 21100,
+      currency: 'eur',
+      shippingCountryCode: 'ES',
+    }).html,
 }
 
 export async function GET(_req: Request, ctx: { params: Promise<{ template: string }> }) {

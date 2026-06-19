@@ -21,4 +21,12 @@ test.describe('branded email layout (dev preview)', () => {
     // Never name the print provider.
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
+
+  test('order-placed email shows the buyer headline and total', async ({ page }) => {
+    await page.goto('/dev/emails/order-placed')
+    await expect(page.getByText(/thank you, jane/i)).toBeVisible()
+    await expect(page.getByText('€211.00')).toBeVisible() // sample total
+    await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)
+    await expect(page.locator('body')).not.toContainText(/printspace/i)
+  })
 })
