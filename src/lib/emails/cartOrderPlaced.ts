@@ -3,7 +3,10 @@ import { Resend } from 'resend'
 import { escapeHtml } from '@/utils/escapeHtml'
 import { emailButton, emailDivider, emailHeading, emailLineItems, emailParagraph, type EmailLineItem } from './components'
 import { formatAmount } from './format'
+import { EMAIL_BRAND } from './brand'
 import { renderEmailLayout } from './layout'
+
+const B = EMAIL_BRAND
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -105,7 +108,7 @@ export function renderCartOrderPlacedEmail(args: CartOrderPlacedArgs): { subject
   }))
 
   const dutyNote = dutyLikely
-    ? `<p style="margin:0 0 16px;padding:12px 14px;background:#fff8e1;border:1px solid #f0c36d;font-size:13px;line-height:1.5;font-family:Garamond,Georgia,serif;color:#111"><strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.</p>`
+    ? `<p style="margin:0 0 16px;padding:12px 14px;background:#fff8e1;border:1px solid #f0c36d;font-size:13px;line-height:1.5;font-family:${B.fontStack};color:#111"><strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.</p>`
     : ''
 
   const body =

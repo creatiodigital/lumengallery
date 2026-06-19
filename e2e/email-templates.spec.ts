@@ -9,7 +9,7 @@ test.describe('branded email layout (dev preview)', () => {
     // Monogram (header) + wordmark (footer) both present.
     await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)
 
-    // CTA is a real link (and not red — assert it's the black button color).
+    // CTA link is visible. Button color is enforced by brand tokens in code, not asserted here.
     const cta = page.getByRole('link', { name: 'View your order' })
     await expect(cta).toBeVisible()
 

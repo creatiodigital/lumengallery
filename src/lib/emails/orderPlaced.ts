@@ -1,9 +1,12 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
-import { emailButton, emailDivider, emailHeading, emailParagraph } from './components'
+import { emailButton, emailDivider, emailHeading, emailLineItems, emailParagraph } from './components'
 import { formatAmount } from './format'
+import { EMAIL_BRAND } from './brand'
 import { renderEmailLayout } from './layout'
+
+const B = EMAIL_BRAND
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -96,10 +99,8 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
   const dutyLikely = mayOweImportDuty(args.shippingCountryCode)
 
   const dutyNote = dutyLikely
-    ? `<p style="margin:0 0 16px;padding:12px 14px;background:#fff8e1;border:1px solid #f0c36d;font-size:13px;line-height:1.5;font-family:Garamond,Georgia,serif;color:#111"><strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.</p>`
+    ? `<p style="margin:0 0 16px;padding:12px 14px;background:#fff8e1;border:1px solid #f0c36d;font-size:13px;line-height:1.5;font-family:${B.fontStack};color:#111"><strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.</p>`
     : ''
-
-  const orderSummary = `<div style="background:#f6f6f6;padding:16px 20px;margin:0 0 16px 0"><p style="margin:0 0 8px 0;font-family:Garamond,Georgia,serif;font-size:14px;color:#111"><strong>Order</strong> #${safeOrderId}</p><p style="margin:0 0 8px 0;font-family:Garamond,Georgia,serif;font-size:14px;color:#111">${safeArtwork} &mdash; ${safeArtist}</p><p style="margin:0;font-family:Garamond,Georgia,serif;font-size:14px;color:#111"><strong>Total</strong> ${total}</p></div>`
 
   const body =
     emailHeading(`Thank you, ${firstName}`) +
@@ -113,7 +114,8 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
       `A temporary hold has been placed on your card &mdash; we&rsquo;ll only charge it once your print enters production. You&rsquo;ll get another email from us when that happens, and one more with tracking details as soon as it ships.`,
     ) +
     emailDivider() +
-    orderSummary +
+    emailParagraph(`<strong>Order</strong> #${safeOrderId}`) +
+    emailLineItems([{ title: safeArtwork, artist: safeArtist, qty: 1 }], { label: 'Total', value: total }) +
     dutyNote +
     emailDivider() +
     emailButton('View your order', 'https://theartroom.gallery/account/orders') +

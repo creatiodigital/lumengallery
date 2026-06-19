@@ -43,7 +43,7 @@ export function emailLineItems(
         : ''
       return `<tr><td style="padding:14px 0;border-bottom:1px solid ${B.hairline};vertical-align:top">
         <div style="font-size:14px;color:${B.ink};font-weight:600">${it.title}</div>${artist}${specs}
-        <div style="font-size:12px;color:${B.muted};margin-top:4px">Qty: ${it.qty}</div>
+        ${it.qty > 1 ? `<div style="font-size:12px;color:${B.muted};margin-top:4px">Qty: ${it.qty}</div>` : ''}
       </td><td style="padding:14px 0;border-bottom:1px solid ${B.hairline};text-align:right;white-space:nowrap;font-size:14px;color:${B.ink}">${it.price ?? ''}</td></tr>`
     })
     .join('')
