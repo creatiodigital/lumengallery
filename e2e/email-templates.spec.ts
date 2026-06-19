@@ -29,4 +29,12 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
+
+  test('cart-order-placed email lists each line and the total', async ({ page }) => {
+    await page.goto('/dev/emails/cart-order-placed')
+    await expect(page.getByText('Puerta Verde')).toBeVisible()
+    await expect(page.getByText('Landscape and River')).toBeVisible()
+    await expect(page.getByText('€844.00')).toBeVisible() // sample order total
+    await expect(page.locator('body')).not.toContainText(/printspace/i)
+  })
 })

@@ -1,6 +1,7 @@
 import { renderEmailLayout } from '@/lib/emails/layout'
 import { emailButton, emailHeading, emailParagraph } from '@/lib/emails/components'
 import { renderOrderPlacedEmail } from '@/lib/emails/orderPlaced'
+import { renderCartOrderPlacedEmail } from '@/lib/emails/cartOrderPlaced'
 
 // Dev-only preview of branded emails with SAMPLE data (no DB, no real send).
 // 404 in production so it never ships to buyers.
@@ -24,6 +25,19 @@ const TEMPLATES: Record<string, () => string> = {
       orderId: 'sample-order-1234',
       artworkTitle: 'Puerta Verde',
       totalCents: 21100,
+      currency: 'eur',
+      shippingCountryCode: 'ES',
+    }).html,
+  'cart-order-placed': () =>
+    renderCartOrderPlacedEmail({
+      to: 'jane@example.com',
+      buyerName: 'Jane Smith',
+      orderId: 'sample-order-5678',
+      lines: [
+        { artworkTitle: 'Puerta Verde', artistName: 'John Doe', quantity: 2 },
+        { artworkTitle: 'Landscape and River', artistName: 'John Doe', quantity: 1 },
+      ],
+      totalCents: 84400,
       currency: 'eur',
       shippingCountryCode: 'ES',
     }).html,
