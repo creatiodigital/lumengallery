@@ -61,6 +61,9 @@ export const CartLine = ({ item }: CartLineProps) => {
   // leaving a duplicate). Encoding shared with the checkout "back to wizard".
   const editParams = configToWizardParams(item.config)
   editParams.set('editLineId', item.lineId)
+  // Limited editions re-open the variant-picker wizard, which restores the
+  // chosen edition from this param (the config params don't carry the variant).
+  if (item.variantId) editParams.set('variant', item.variantId)
   const editHref = `/artworks/${item.artworkSlug}/print?${editParams.toString()}`
 
   return (

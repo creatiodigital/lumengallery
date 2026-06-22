@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .payment {
   display: flex;
   flex-direction: column;
@@ -61,7 +63,7 @@
   grid-template-columns: 1fr 360px;
   min-height: 0;
 
-  @media (max-width: 900px) {
+  @include media-down(tablet) {
     grid-template-columns: 1fr;
   }
 }
@@ -72,7 +74,7 @@
   width: 100%;
   margin: 0 auto;
 
-  @media (max-width: 768px) {
+  @include media-down(md) {
     padding: var(--space-6) var(--space-5);
   }
 }

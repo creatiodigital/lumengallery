@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDualDimensions, formatEuro } from '@/lib/print-providers'
-import { TPS_PAPERS } from '@/lib/print-providers/printspace'
+import { TPS_PAPERS, TPS_PRINT_TYPES } from '@/lib/print-providers/printspace'
 import type { LimitedVariantView } from '@/lib/editions/types'
 
 import styles from './PrintWizard.module.scss'
@@ -25,6 +25,9 @@ export const VariantPicker = ({ variants, selectedVariantId, onSelect }: Props) 
     <h2 className={styles.variantPickerTitle}>Choose your edition</h2>
     {variants.map((v) => {
       const paperLabel = TPS_PAPERS.find((p) => p.id === v.paperId)?.label ?? v.paperId
+      const techniqueLabel = TPS_PRINT_TYPES.find((t) => t.id === v.printTypeId)?.label
+      // White Cube–style medium line: "<technique> print on <paper>".
+      const medium = techniqueLabel ? `${techniqueLabel} print on ${paperLabel}` : paperLabel
       const selected = v.id === selectedVariantId
       return (
         <button
@@ -34,13 +37,15 @@ export const VariantPicker = ({ variants, selectedVariantId, onSelect }: Props) 
           onClick={() => onSelect(v.id)}
           aria-pressed={selected}
         >
+          <span className={styles.variantCardEyebrow}>Edition name</span>
           <span className={styles.variantCardName}>{v.name}</span>
+          <span className={styles.variantCardMeta}>{medium}</span>
           <span className={styles.variantCardMeta}>
-            {formatDualDimensions(v.widthCm, v.heightCm)}
+            {formatDualDimensions(v.widthCm, v.heightCm)} · Unframed
           </span>
-          <span className={styles.variantCardMeta}>{paperLabel}</span>
+          <span className={styles.variantCardMeta}>Printed by The Print Space</span>
           <span className={styles.variantCardStock}>
-            {v.remaining} of {v.editionSize} available
+            Edition of {v.editionSize}
           </span>
           <span className={styles.variantCardPrice}>{formatEuro(v.priceCents)}</span>
         </button>

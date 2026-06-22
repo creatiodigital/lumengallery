@@ -66,7 +66,15 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
     () => (artwork.variants ?? []).filter((v) => v.remaining > 0),
     [artwork.variants],
   )
-  const [selectedVariantId, setSelectedVariantId] = useState(available[0]?.id ?? '')
+  // Restore the buyer's chosen variant when re-entering via the cart's "Edit
+  // item" link (which passes `?variant=<id>`); otherwise default to the first
+  // available edition. Without this, editing always reset to the first variant.
+  const requestedVariantId = searchParams.get('variant')
+  const [selectedVariantId, setSelectedVariantId] = useState(() =>
+    requestedVariantId && available.some((v) => v.id === requestedVariantId)
+      ? requestedVariantId
+      : (available[0]?.id ?? ''),
+  )
   const [country] = useState<string>(() => readCountryFromStash(artwork.slug))
 
   // Edition-details modal — opened ONLY when the buyer clicks "See Details" on
@@ -166,6 +174,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
           providerId: catalog.providerId,
           editionType: 'limited',
           variantId: selected.id,
+          editionName: selected.name,
           config,
           quote,
           artistCents: selected.priceCents ?? artwork.printPriceCents,
@@ -251,50 +260,65 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
       )}
 
       {introOpen && detailVariant && (
-        <Modal onClose={dismissIntro} titleId="print-intro-title">
+        <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px">
           <div className={styles.introModal}>
             <Monogram className={styles.introMonogram} aria-hidden="true" />
             <p id="print-intro-title" className={styles.detailLead}>
-              <strong>{artwork.title}</strong> by <strong>{artwork.artistName}</strong> is a{' '}
-              <strong>limited edition</strong> — a fixed, numbered run.
+              <strong>{artwork.title}</strong> by <strong>{artwork.artistName}</strong>.
             </p>
-            <p className={styles.detailSubhead}>The print</p>
-            <ul className={styles.detailList}>
-              <li>
-                <strong>Numbered</strong> — each print shows its own edition number (e.g. 1/
-                {detailVariant.editionSize}) just below the image.
-              </li>
-              <li>
-                Comes with a <strong>Certificate of Authenticity (COA)</strong>, hand-signed by the
-                artist — the signature is on the certificate, not the print.
-              </li>
-              <li>
-                Sold <strong>unframed</strong>, on premium archival paper — frame it your way.
-              </li>
-            </ul>
-            <p className={styles.detailSubhead}>Good to know</p>
-            <ul className={styles.detailList}>
-              <li>
-                <strong>Price might rise</strong> as the edition sells.
-              </li>
-              <li>
-                Your <strong>edition number is allocated at the point of sale</strong>.
-              </li>
-              <li>
-                Final <strong>VAT</strong> is calculated when you confirm your delivery address at
-                checkout.
-              </li>
-              <li>
-                Sales are strictly limited to <strong>one edition per household</strong>.
-              </li>
-              <li>
-                Editions <strong>may not be resold</strong> to a third party for a period of two
-                years.
-              </li>
-            </ul>
-            <p className={styles.introEdition}>
-              Once the edition sells out, it is closed for good.
-            </p>
+            <div className={styles.detailSections}>
+              <p className={styles.detailSubhead}>Terms of sale</p>
+              <ul className={styles.detailList}>
+                <li>
+                  <strong>Individually numbered</strong> — each print carries its own number in the
+                  margin below the image.
+                </li>
+                <li>
+                  Comes with a <strong>Certificate of Authenticity (COA)</strong>, hand-signed by
+                  the artist — the signature is on the certificate, not the print.
+                </li>
+                <li>
+                  Sold <strong>unframed</strong>, on premium archival paper — frame it your way.
+                </li>
+                <li>
+                  <strong>Price might rise</strong> as the edition sells.
+                </li>
+                <li>
+                  Your <strong>edition number is allocated at the point of sale</strong>.
+                </li>
+                <li>
+                  Final <strong>VAT</strong> is calculated when you confirm your delivery address at
+                  checkout.
+                </li>
+                <li>
+                  Sales are strictly limited to <strong>one edition per household</strong>.
+                </li>
+                <li>We reserve the right to cancel or refund an order if needed.</li>
+              </ul>
+              <p className={styles.detailSubhead}>Shipping</p>
+              <ul className={styles.detailList}>
+                <li>
+                  All editions are <strong>packaged to the highest standards</strong>, managed at
+                  our warehouse using archival materials.
+                </li>
+                <li>
+                  <strong>Shipping is calculated at checkout</strong>, based on your delivery
+                  address.
+                </li>
+                <li>
+                  Most editions are <strong>dispatched within about two weeks</strong> of purchase.
+                </li>
+                <li>
+                  Sent with <strong>tracked delivery</strong> &mdash; we&rsquo;ll email you the
+                  tracking when it&rsquo;s on its way.
+                </li>
+                <li>
+                  Delivery is typically <strong>1&ndash;2 weeks in Europe</strong> and{' '}
+                  <strong>2&ndash;4 weeks internationally</strong> (international orders may be
+                  subject to customs and local import duties).
+                </li>
+              </ul>
+            </div>
             <p className={styles.detailTerms}>
               Please read our{' '}
               <Link href="/terms-of-sale" target="_blank" rel="noopener noreferrer">

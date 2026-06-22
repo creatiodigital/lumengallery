@@ -4,6 +4,7 @@ import { HoldCountdown } from '@/components/cart/HoldCountdown/HoldCountdown'
 import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
 import { SpecList } from '@/components/print/SpecList/SpecList'
 import { Text } from '@/components/ui/Typography'
+import { editionLabel } from '@/lib/editions/editionLabel'
 import type { CartItem } from '@/lib/cart/types'
 
 import styles from './CartItemDetails.module.scss'
@@ -67,7 +68,7 @@ export const CartItemDetails = ({
 
         {showEditionTag && (
           <Text as="span" size="md" className={styles.edition}>
-            {isLimited ? 'Limited Edition' : 'Open Edition'}
+            {editionLabel(item.editionType, item.editionName)}
           </Text>
         )}
 

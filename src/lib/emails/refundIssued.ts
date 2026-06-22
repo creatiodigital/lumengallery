@@ -1,13 +1,17 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
+import {
+  emailDetailRows,
+  emailDivider,
+  emailEyebrow,
+  emailHeading,
+  emailParagraph,
+} from './components'
+import { formatAmount } from './format'
+import { renderEmailLayout } from './layout'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-function formatAmount(cents: number, currency: string): string {
-  const symbol = currency.toLowerCase() === 'eur' ? '€' : currency.toUpperCase() + ' '
-  return `${symbol}${(cents / 100).toFixed(2)}`
-}
 
 type RefundIssuedArgs = {
   to: string
@@ -15,6 +19,39 @@ type RefundIssuedArgs = {
   orderId: string
   amountCents: number
   currency: string
+}
+
+/**
+ * Pure renderer — builds the subject and HTML for the refund-issued email.
+ * No side effects; safe to call from preview routes.
+ */
+export function renderRefundIssuedEmail(
+  args: RefundIssuedArgs,
+): { subject: string; html: string } {
+  const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
+  const safeOrderId = escapeHtml(args.orderId.slice(0, 8)).toUpperCase()
+  const amount = formatAmount(args.amountCents, args.currency)
+
+  const body =
+    emailHeading(`Your refund is on its way, ${firstName}`) +
+    emailParagraph(
+      `We&rsquo;ve issued a refund for your order. The amount will be returned to the card you used for the original purchase.`,
+    ) +
+    emailDivider() +
+    emailEyebrow(`Order ${safeOrderId}`) +
+    emailDetailRows([{ label: 'Refund', value: amount }]) +
+    emailDivider() +
+    emailParagraph(
+      `Depending on your bank, it may take <strong>5&ndash;10 business days</strong> to appear on your statement.`,
+    ) +
+    emailParagraph(
+      `We&rsquo;re sorry this order didn&rsquo;t work out. Thank you for giving us the chance, and please don&rsquo;t hesitate to reach out if there&rsquo;s anything else we can help with.`,
+    )
+
+  return {
+    subject: 'Your refund from The Art Room',
+    html: renderEmailLayout({ preheader: 'Your refund from The Art Room', bodyHtml: body }),
+  }
 }
 
 /**
@@ -30,42 +67,14 @@ export async function sendRefundIssuedEmail(
   }
 
   const fromEmail = process.env.FROM_EMAIL || 'contact@theartroom.gallery'
-
-  const safeName = escapeHtml(args.buyerName || 'there')
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
-  const amount = formatAmount(args.amountCents, args.currency)
+  const { subject, html } = renderRefundIssuedEmail(args)
 
   try {
     const res = await resend.emails.send({
       from: `The Art Room <${fromEmail}>`,
       to: args.to,
-      subject: 'Your refund from The Art Room',
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 560px; margin: 0 auto; color: #111;">
-          <h2 style="font-size: 22px; margin: 0 0 16px 0;">Your refund has been issued</h2>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">Hi ${safeName},</p>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">
-            We&rsquo;ve issued a refund for your order <strong>#${safeOrderId}</strong>.
-            The amount of <strong>${amount}</strong> will be returned to the card you used for the
-            original purchase.
-          </p>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">
-            Depending on your bank, it may take <strong>5&ndash;10 business days</strong> to appear
-            on your statement.
-          </p>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">
-            We&rsquo;re sorry this order didn&rsquo;t work out. Thank you for giving us the chance,
-            and please don&rsquo;t hesitate to reach out if there&rsquo;s anything else we can help
-            with.
-          </p>
-
-          <p style="margin: 24px 0 0 0; color:#666; font-size: 13px;">&mdash; The Art Room</p>
-        </div>
-      `,
+      subject,
+      html,
     })
 
     if (res.error) {

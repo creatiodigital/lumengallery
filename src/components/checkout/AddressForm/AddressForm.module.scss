@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .form {
   width: 100%;
 }
@@ -14,7 +16,7 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
 
-  @media (max-width: 640px) {
+  @include media-down(sm) {
     grid-template-columns: 1fr;
   }
 }

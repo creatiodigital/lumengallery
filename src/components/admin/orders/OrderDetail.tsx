@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
+import { editionLabel } from '@/lib/editions/editionLabel'
 import { daysSinceDelivered, PAYOUT_SAFE_WINDOW_DAYS } from '@/lib/orders/payoutPolicy'
 import { formatEuro } from '@/lib/print-providers/format'
+import { countryName } from '@/utils/countryName'
 
 import {
   deleteOrder,
@@ -20,7 +22,7 @@ import {
   markItemPaidManually,
   markPaidManually,
   markPlaced,
-  markRejected,
+  cancelOrder,
   markShipped,
   markStarted,
   refundOrder,
@@ -67,14 +69,14 @@ const Dot = ({ color }: { color: DotColor }) => (
   />
 )
 
-const TERMINAL_STAGES = new Set(['Complete', 'Rejected'])
+const TERMINAL_STAGES = new Set(['Complete', 'Cancelled'])
 
 // Full order lifecycle, rendered top-of-page as a trail of badges so
 // the admin can see at a glance which milestones have been hit and
 // which are still ahead. The first five steps are driven by
 // `fulfillmentStatus`; the final "Artist paid" step is driven by
 // `paidOutAt` (set when the artist payout — Stripe transfer or
-// manual — has actually fired). Off-ramp `Rejected` is rendered
+// manual — has actually fired). Off-ramp `Cancelled` is rendered
 // separately, not as part of this trail.
 const buildLifecycle = (order: {
   fulfillmentStatus: string | null
@@ -191,6 +193,11 @@ const LineItemsTable = ({ items }: { items: AdminOrderItem[] }) => (
             <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7, marginTop: 2 }}>
               {it.artistName}
             </div>
+            {it.editionName && (
+              <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7, marginTop: 2 }}>
+                {editionLabel('limited', it.editionName)}
+              </div>
+            )}
           </td>
           <td style={{ fontSize: 'var(--text-xs)' }}>
             {it.specsSummary.length > 0
@@ -417,10 +424,10 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
   const [refundError, setRefundError] = useState<string | null>(null)
   const [refundConfirmOpen, setRefundConfirmOpen] = useState(false)
 
-  const [rejectOpen, setRejectOpen] = useState(false)
-  const [rejectReason, setRejectReason] = useState('')
-  const [rejecting, setRejecting] = useState(false)
-  const [rejectError, setRejectError] = useState<string | null>(null)
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState<string | null>(null)
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -481,21 +488,21 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
     await load()
   }, [order, refundReason, load])
 
-  const handleMarkRejected = useCallback(async () => {
+  const handleCancelOrder = useCallback(async () => {
     if (!order) return
-    setRejecting(true)
-    setRejectError(null)
-    const res = await markRejected(order.id, rejectReason)
-    setRejecting(false)
+    setCancelling(true)
+    setCancelError(null)
+    const res = await cancelOrder(order.id, cancelReason)
+    setCancelling(false)
     if (!res.ok) {
-      setRejectError(res.error)
+      setCancelError(res.error)
       return
     }
-    setRejectOpen(false)
-    setRejectReason('')
+    setCancelOpen(false)
+    setCancelReason('')
     await load()
     if (res.needsRefund) setRefundOpen(true)
-  }, [order, rejectReason, load])
+  }, [order, cancelReason, load])
 
   const handleDelete = useCallback(async () => {
     if (!order) return
@@ -633,7 +640,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
       rows: [
         ['Name', order.buyerName || '—'],
         ['Email', order.buyerEmail || '—'],
-        ['Country', order.country],
+        ['Country', countryName(order.country) || '—'],
         [
           'Shipping',
           <div key="ship" style={{ lineHeight: 1.5 }}>
@@ -642,7 +649,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             <br />
             {[addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ')}
             <br />
-            {addr.country}
+            {countryName(addr.country)}
             {addr.phone ? (
               <>
                 <br />
@@ -701,7 +708,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
 
   const stage = order.fulfillmentStatus
   const isTerminal = stage ? TERMINAL_STAGES.has(stage) : false
-  const canReject = !isTerminal
+  const canCancel = !isTerminal
 
   return (
     <DashboardLayout backLink="/admin/orders" backLabel="← Back to Orders">
@@ -742,7 +749,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         </div>
       </div>
 
-      {order.fulfillmentStatus === 'Rejected' && order.paymentStatus === 'succeeded' && (
+      {order.fulfillmentStatus === 'Cancelled' && order.paymentStatus === 'succeeded' && (
         <div className={dashboardStyles.section}>
           <div
             style={{
@@ -847,8 +854,8 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           }}
         >
           <h2 style={{ margin: 0, fontSize: 16 }}>Fulfillment</h2>
-          {stage === 'Rejected' ? (
-            <Badge label="Rejected" variant="past" />
+          {stage === 'Cancelled' ? (
+            <Badge label="Cancelled" variant="past" />
           ) : (
             buildLifecycle(order).map((s) => (
               <Badge key={s.label} label={s.label} variant={s.reached ? 'current' : 'neutral'} />
@@ -907,14 +914,14 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 the pipeline — it pulls the order out of the flow
                 entirely (and triggers refund-needed messaging if the
                 card was already charged). */}
-            {canReject && (
+            {canCancel && (
               <Button
                 font="dashboard"
                 variant="secondary"
-                label="Mark rejected"
+                label="Cancel order"
                 onClick={() => {
-                  setRejectError(null)
-                  setRejectOpen(true)
+                  setCancelError(null)
+                  setCancelOpen(true)
                 }}
                 disabled={busy !== null}
               />
@@ -983,7 +990,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               </div>
             </div>
           )}
-          {rejectOpen && (
+          {cancelOpen && (
             <div
               style={{
                 padding: 16,
@@ -993,15 +1000,15 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               }}
             >
               <p style={{ margin: '0 0 12px 0', fontSize: 14 }}>
-                <strong>Mark this order as rejected</strong>
+                <strong>Cancel this order</strong>
                 {order.paymentStatus === 'authorized'
                   ? ' — the Stripe hold will be voided immediately (no money moves).'
                   : order.paymentStatus === 'succeeded'
-                    ? ' — the payment was already captured; after marking rejected you’ll need to issue a refund separately.'
+                    ? ' — the payment was already captured; after cancelling you’ll need to issue a refund separately.'
                     : '.'}
               </p>
               <label
-                htmlFor="reject-reason"
+                htmlFor="cancel-reason"
                 style={{
                   display: 'block',
                   fontSize: 12,
@@ -1014,11 +1021,11 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 Reason (internal, for audit log)
               </label>
               <textarea
-                id="reject-reason"
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
+                id="cancel-reason"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
                 rows={3}
-                placeholder="e.g. TPS rejected the file for low resolution."
+                placeholder="e.g. Buyer asked to cancel; or TPS rejected the file for low resolution."
                 style={{
                   width: '100%',
                   padding: 8,
@@ -1029,29 +1036,29 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                   boxSizing: 'border-box',
                 }}
               />
-              {rejectError && (
+              {cancelError && (
                 <p style={{ margin: '12px 0 0 0', color: '#b91c1c', fontSize: 13 }}>
-                  ⚠️ {rejectError}
+                  ⚠️ {cancelError}
                 </p>
               )}
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <Button
                   font="dashboard"
                   variant="danger"
-                  label={rejecting ? 'Marking…' : 'Mark rejected'}
-                  onClick={handleMarkRejected}
-                  disabled={rejecting || rejectReason.trim().length === 0}
+                  label={cancelling ? 'Cancelling…' : 'Cancel order'}
+                  onClick={handleCancelOrder}
+                  disabled={cancelling || cancelReason.trim().length === 0}
                 />
                 <Button
                   font="dashboard"
                   variant="secondary"
-                  label="Cancel"
+                  label="Keep order"
                   onClick={() => {
-                    setRejectOpen(false)
-                    setRejectReason('')
-                    setRejectError(null)
+                    setCancelOpen(false)
+                    setCancelReason('')
+                    setCancelError(null)
                   }}
-                  disabled={rejecting}
+                  disabled={cancelling}
                 />
               </div>
             </div>
@@ -1345,6 +1352,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 >
                   {it.artworkTitle} · {it.artistName}
                   {it.quantity > 1 ? ` · ×${it.quantity}` : ''}
+                  {it.editionName ? ` · ${it.editionName}` : ''}
                   {it.editionLabels.length > 0 ? ` · ${it.editionLabels.join(', ')}` : ''}
                 </div>
                 {it.specsSummary.length > 0 ? (
@@ -1441,7 +1449,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 order.buyerName,
                 [addr.line1, addr.line2].filter(Boolean).join(', '),
                 [addr.city, addr.state, addr.postalCode].filter(Boolean).join(', '),
-                addr.country,
+                countryName(addr.country),
                 addr.phone,
               ]
                 .filter(Boolean)

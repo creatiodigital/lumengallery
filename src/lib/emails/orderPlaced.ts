@@ -1,75 +1,21 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
-import { emailButton, emailDivider, emailHeading, emailLineItems, emailParagraph } from './components'
+import {
+  emailDivider,
+  emailEyebrow,
+  emailHeading,
+  emailLineItems,
+  emailNotice,
+  emailParagraph,
+  type EmailSpec,
+  type EmailSummaryRow,
+} from './components'
 import { formatAmount } from './format'
-import { EMAIL_BRAND } from './brand'
 import { renderEmailLayout } from './layout'
-
-const B = EMAIL_BRAND
+import { estimateDeliveryWindow, mayOweImportDuty } from './delivery'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-// EU member states (2026) — destinations where flat 21% VAT applies
-// at checkout via OSS, so no import duty greets the buyer.
-const EU_ISO_CODES = new Set([
-  'AT',
-  'BE',
-  'BG',
-  'HR',
-  'CY',
-  'CZ',
-  'DK',
-  'EE',
-  'FI',
-  'FR',
-  'DE',
-  'GR',
-  'HU',
-  'IE',
-  'IT',
-  'LV',
-  'LT',
-  'LU',
-  'MT',
-  'NL',
-  'PL',
-  'PT',
-  'RO',
-  'SK',
-  'SI',
-  'ES',
-  'SE',
-])
-
-/**
- * Rough end-to-end delivery window by destination (production + shipping
- * on Standard tier). Indicative, not guaranteed —
- * framed orders can push the upper bound.
- */
-function estimateDeliveryWindow(countryCode: string): { minDays: number; maxDays: number } {
-  const cc = countryCode.toUpperCase()
-  if (cc === 'GB') return { minDays: 3, maxDays: 7 }
-  if (EU_ISO_CODES.has(cc)) return { minDays: 6, maxDays: 10 }
-  if (cc === 'US' || cc === 'CA') return { minDays: 7, maxDays: 14 }
-  if (cc === 'AU' || cc === 'NZ') return { minDays: 10, maxDays: 20 }
-  return { minDays: 10, maxDays: 21 }
-}
-
-/**
- * True when the destination is likely to hit cross-border customs on
- * delivery. Ships from the UK; UK domestic and IOSS-covered
- * EU orders stay clean. Anywhere else, the shipment crosses a border
- * and the buyer may owe local tax/duty. We disclose it upfront so
- * there's no surprise at the door.
- */
-function mayOweImportDuty(countryCode: string): boolean {
-  const cc = countryCode.toUpperCase()
-  if (cc === 'GB') return false
-  if (cc === 'US') return false
-  if (EU_ISO_CODES.has(cc)) return false
-  return true
-}
 
 export type OrderPlacedArgs = {
   to: string
@@ -77,6 +23,16 @@ export type OrderPlacedArgs = {
   orderId: string
   artworkTitle: string
   artistName: string
+  /** Chosen print options (size, paper, frame, edition…) to itemize on the receipt. */
+  specs?: EmailSpec[]
+  /** Retail price of the item (artist + gallery + production), in cents. */
+  itemTotalCents?: number
+  /** Shipping charged to the buyer, in cents. */
+  shippingCents?: number
+  /** VAT charged to the buyer, in cents. */
+  vatCents?: number
+  /** Label for the VAT line, e.g. 'VAT (ES 21%)'. Defaults to 'VAT'. */
+  vatLabel?: string
   totalCents: number
   currency: string
   /** ISO-2 shipping destination — shapes the delivery estimate + duty note. */
@@ -94,12 +50,29 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
   const safeArtist = escapeHtml(args.artistName)
   const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
   const total = formatAmount(args.totalCents, args.currency)
+  const safeSpecs = args.specs?.map((s) => ({
+    label: escapeHtml(s.label),
+    value: escapeHtml(s.value),
+  }))
+  const itemPrice = args.itemTotalCents != null ? formatAmount(args.itemTotalCents, args.currency) : undefined
+
+  // Full price breakdown when the money fields are supplied; otherwise just the total.
+  const hasBreakdown =
+    args.itemTotalCents != null && args.shippingCents != null && args.vatCents != null
+  const summary: EmailSummaryRow[] = hasBreakdown
+    ? [
+        { label: 'Subtotal', value: formatAmount(args.itemTotalCents!, args.currency) },
+        { label: 'Shipping', value: formatAmount(args.shippingCents!, args.currency) },
+        { label: args.vatLabel ?? 'VAT', value: formatAmount(args.vatCents!, args.currency) },
+        { label: 'Total', value: total, strong: true },
+      ]
+    : [{ label: 'Total', value: total, strong: true }]
 
   const deliveryWindow = estimateDeliveryWindow(args.shippingCountryCode)
   const dutyLikely = mayOweImportDuty(args.shippingCountryCode)
 
   const dutyNote = dutyLikely
-    ? `<p style="margin:0 0 16px;padding:12px 14px;background:#fff8e1;border:1px solid #f0c36d;font-size:13px;line-height:1.5;font-family:${B.fontStack};color:#111"><strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.</p>`
+    ? emailNotice('caution', '<strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.')
     : ''
 
   const body =
@@ -111,14 +84,25 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
       `<strong>Expected delivery:</strong> ${deliveryWindow.minDays}&ndash;${deliveryWindow.maxDays} business days from today. Framed prints can occasionally take a few days longer to make.`,
     ) +
     emailParagraph(
-      `A temporary hold has been placed on your card &mdash; we&rsquo;ll only charge it once your print enters production. You&rsquo;ll get another email from us when that happens, and one more with tracking details as soon as it ships.`,
+      `A temporary hold has been placed on your card &mdash; we&rsquo;ll only charge it once your print enters production. We&rsquo;ll email your invoice with that charge, and send tracking details as soon as it ships.`,
     ) +
     emailDivider() +
-    emailParagraph(`<strong>Order</strong> #${safeOrderId}`) +
-    emailLineItems([{ title: safeArtwork, artist: safeArtist, qty: 1 }], { label: 'Total', value: total }) +
+    emailEyebrow(`Order ${safeOrderId.toUpperCase()}`) +
+    emailLineItems(
+      [
+        {
+          title: safeArtwork,
+          artist: safeArtist,
+          specs: safeSpecs,
+          quantity: 1,
+          unitPrice: itemPrice,
+          lineTotal: itemPrice,
+        },
+      ],
+      summary,
+    ) +
     dutyNote +
     emailDivider() +
-    emailButton('View your order', 'https://theartroom.gallery/account/orders') +
     emailParagraph(`If anything changes with your order, we&rsquo;ll be in touch right away.`)
 
   return {

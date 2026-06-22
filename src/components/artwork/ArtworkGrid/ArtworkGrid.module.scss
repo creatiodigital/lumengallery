@@ -88,6 +88,16 @@
   text-decoration: none;
 }
 
+// Edition tag shown with the Order Print CTA (prints page only).
+.editionTag {
+  display: block;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
 // Order Print CTA (prints page only — gated by the withOrderPrint prop).
 .orderAction {
   margin-top: var(--space-4);

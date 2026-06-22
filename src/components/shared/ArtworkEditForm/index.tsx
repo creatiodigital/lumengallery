@@ -757,7 +757,8 @@ export const ArtworkEditForm = ({
                   <p className={styles.printDisabledHint}>
                     Define 1–4 variants. Each is its own numbered edition (e.g. “Small” 1/50) with
                     its own size and price. Sizes must be distinct. Once you start selling, the
-                    edition is locked.
+                    edition is locked — only the price can still be changed (raise it as copies
+                    sell).
                   </p>
                   <LimitedVariantsEditor
                     variants={formData.limitedVariants}

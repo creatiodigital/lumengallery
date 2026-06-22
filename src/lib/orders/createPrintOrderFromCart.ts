@@ -1,4 +1,5 @@
 import { bindEditionNumbersToOrderItem } from '@/lib/editions/reserveEditionNumber'
+import { editionLabel } from '@/lib/editions/editionLabel'
 import { sendAdminCartOrderNotification } from '@/lib/emails/adminCartOrderNotification'
 import type { AdminCartOrderLine } from '@/lib/emails/adminCartOrderNotification'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
@@ -9,6 +10,7 @@ import type { SpecsSummary, WizardConfig } from '@/lib/print-providers'
 import { summarizeConfig } from '@/lib/print-providers'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import prisma from '@/lib/prisma'
+import { countryName } from '@/utils/countryName'
 import { logOrderEvent } from './logOrderEvent'
 
 /**
@@ -346,6 +348,44 @@ export async function createPrintOrderFromCart(
   }
   const artworkTitleFor = (artworkId: string): string => artworkById.get(artworkId)?.title ?? ''
 
+  // Derive display specs per line ONCE, reused by both the buyer receipt and
+  // the admin notification. Specs are display-only; a catalog/summarize
+  // failure falls back to [] rather than failing the email.
+  const specsByLineId = new Map<string, SpecsSummary>()
+  for (const it of items) {
+    try {
+      const art = artworkById.get(it.artworkId)
+      const catalog = await loadProviderCatalog('printspace', {
+        imageWidthPx: art?.originalWidth ?? 1000,
+        imageHeightPx: art?.originalHeight ?? 1000,
+      })
+      specsByLineId.set(it.lineId, summarizeConfig(catalog, it.printConfig))
+    } catch (err) {
+      captureError(err instanceof Error ? err : new Error(String(err)), {
+        flow: 'order',
+        stage: 'cart-derive-specs',
+        extra: { paymentIntentId: pi.id, artworkId: it.artworkId },
+        level: 'warning',
+      })
+      specsByLineId.set(it.lineId, [])
+    }
+  }
+
+  // Resolve limited-line variant display names so the buyer receipt can lead
+  // each line with its edition (e.g. "Limited Edition · Medium"), matching the
+  // cart. One query for all limited lines; open lines need no lookup.
+  const variantIds = Array.from(
+    new Set(items.map((it) => it.variantId).filter((v): v is string => !!v)),
+  )
+  const variantNameById = new Map<string, string>()
+  if (variantIds.length > 0) {
+    const variants = await prisma.limitedVariant.findMany({
+      where: { id: { in: variantIds } },
+      select: { id: true, name: true },
+    })
+    for (const v of variants) variantNameById.set(v.id, v.name)
+  }
+
   // ── 5. Buyer confirmation email — gated by the event log so a webhook
   // redelivery never re-emails. Lists every purchased line.
   const alreadyEmailed = await prisma.printOrderEvent.findFirst({
@@ -357,12 +397,39 @@ export async function createPrintOrderFromCart(
       artworkTitle: artworkTitleFor(it.artworkId),
       artistName: artistNameFor(it.artworkId),
       quantity: it.quantity,
+      // Buyer-facing retail line total = artist + gallery + production (these
+      // sum across lines to the order subtotal). Not productionCents alone.
+      lineTotalCents: it.artistCents + it.galleryCents + it.productionCents,
+      // Lead with the edition, then the chosen print options.
+      specs: [
+        {
+          label: 'Edition',
+          value: editionLabel(
+            it.editionType,
+            it.variantId ? variantNameById.get(it.variantId) : undefined,
+          ),
+        },
+        ...(specsByLineId.get(it.lineId) ?? []).map((row) => ({
+          label: row.label,
+          value: row.value,
+        })),
+      ],
     }))
+    // Subtotal = items only (total − shipping − VAT); VAT is added on top of
+    // (items + shipping), matching checkout.
+    const subtotalCents = pending.totalCents - pending.shippingCents - pending.customerVatCents
+    const vatBase = subtotalCents + pending.shippingCents
+    const vatRate = vatBase > 0 ? Math.round((pending.customerVatCents * 100) / vatBase) : 0
     const emailRes = await sendCartOrderPlacedEmail({
       to: buyerEmail,
       buyerName: pending.buyerName,
       orderId: result.orderId,
       lines,
+      subtotalCents,
+      shippingCents: pending.shippingCents,
+      vatCents: pending.customerVatCents,
+      vatLabel:
+        pending.customerVatCents > 0 ? `VAT (${countryName(country)} ${vatRate}%)` : undefined,
       totalCents: pending.totalCents,
       currency: pending.currency,
       shippingCountryCode: country,
@@ -397,31 +464,14 @@ export async function createPrintOrderFromCart(
   })
   if (!alreadyNotifiedAdmin) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://theartroom.gallery'
-    const adminLines: AdminCartOrderLine[] = []
-    for (const it of items) {
-      let specs: SpecsSummary = []
-      try {
-        const art = artworkById.get(it.artworkId)
-        const catalog = await loadProviderCatalog('printspace', {
-          imageWidthPx: art?.originalWidth ?? 1000,
-          imageHeightPx: art?.originalHeight ?? 1000,
-        })
-        specs = summarizeConfig(catalog, it.printConfig)
-      } catch (err) {
-        captureError(err instanceof Error ? err : new Error(String(err)), {
-          flow: 'order',
-          stage: 'cart-derive-specs',
-          extra: { paymentIntentId: pi.id, artworkId: it.artworkId },
-          level: 'warning',
-        })
-      }
-      adminLines.push({
-        artworkTitle: artworkTitleFor(it.artworkId),
-        artistName: artistNameFor(it.artworkId),
-        quantity: it.quantity,
-        skuAttributes: Object.fromEntries(specs.map((row) => [row.label, row.value])),
-      })
-    }
+    const adminLines: AdminCartOrderLine[] = items.map((it) => ({
+      artworkTitle: artworkTitleFor(it.artworkId),
+      artistName: artistNameFor(it.artworkId),
+      quantity: it.quantity,
+      skuAttributes: Object.fromEntries(
+        (specsByLineId.get(it.lineId) ?? []).map((row) => [row.label, row.value]),
+      ),
+    }))
 
     const addr = (pending.shippingAddress ?? {}) as Record<string, unknown>
     const adminRes = await sendAdminCartOrderNotification({

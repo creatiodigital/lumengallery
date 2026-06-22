@@ -7,18 +7,24 @@ import { Text } from '@/components/ui/Typography'
 import { PrintsBanner } from './PrintsBanner'
 import { PrintsBrowser } from './PrintsBrowser'
 import styles from './prints.module.scss'
-import type { PrintArtwork, PrintsPageContent } from './types'
+import type { PrintArtistOption, PrintArtwork, PrintsPageContent } from './types'
 
 interface PrintsPageProps {
-  artworks: PrintArtwork[]
+  /** SSR'd first page of the catalog. */
+  initialItems: PrintArtwork[]
+  /** Total print-enabled, published works (unfiltered) — drives the empty + page count. */
+  initialTotal: number
+  /** Distinct artists with prints, for the filter dropdown. */
+  artistOptions: PrintArtistOption[]
   pageContent: PrintsPageContent | null
 }
 
-export const PrintsPage = ({ artworks, pageContent }: PrintsPageProps) => {
-  const sorted = [...artworks].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  )
-
+export const PrintsPage = ({
+  initialItems,
+  initialTotal,
+  artistOptions,
+  pageContent,
+}: PrintsPageProps) => {
   const hasDescription =
     !!pageContent?.content && pageContent.content.trim() !== '' && pageContent.content !== '<p></p>'
 
@@ -26,7 +32,7 @@ export const PrintsPage = ({ artworks, pageContent }: PrintsPageProps) => {
     <PageLayout>
       <PageHeader
         pageTitle="Prints"
-        pageSubtitle="Museum-grade prints of selected works, hand-signed by the artist."
+        pageSubtitle="Museum-grade prints of selected works, in open and limited editions."
       />
 
       <div className={styles.intro}>
@@ -42,10 +48,14 @@ export const PrintsPage = ({ artworks, pageContent }: PrintsPageProps) => {
         </div>
       </div>
 
-      {sorted.length === 0 ? (
+      {initialTotal === 0 ? (
         <EmptyState message="Very soon we will showcase a selection of works as signed, limited-edition prints — produced on archival, gallery-grade paper and shipped worldwide." />
       ) : (
-        <PrintsBrowser artworks={sorted} />
+        <PrintsBrowser
+          initialItems={initialItems}
+          initialTotal={initialTotal}
+          artistOptions={artistOptions}
+        />
       )}
     </PageLayout>
   )

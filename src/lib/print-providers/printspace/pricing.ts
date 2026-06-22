@@ -445,9 +445,11 @@ export const TPS_SUPPORTED_COUNTRIES: string[] = [
   'KR',
 ]
 
-// ── VAT ─────────────────────────────────────────────────────────
+// ── Gallery commission ──────────────────────────────────────────
 
-export const TPS_GALLERY_MARKUP_RATE = 0.45
+// The gallery's markup on the artist's price: gallery cut = artist price ×
+// this rate. 40% per the artist↔gallery contract (was 0.45).
+export const TPS_GALLERY_MARKUP_RATE = 0.4
 
 // Per-destination standard VAT rate. Single source of truth for both
 // the checkout preview AND the PaymentIntent total — what's here is

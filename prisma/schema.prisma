@@ -220,6 +220,13 @@ model Artwork {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Supports the /prints catalog query: leading equality on `printEnabled`,
+  // optional equality on `editionType` / `userId`, then `createdAt` for the
+  // newest-first ordering. (Tune column order to the planner if needed.)
+  @@index([printEnabled, editionType, userId, createdAt])
+  // Plain FK index — backs the artist filter + the distinct-artists query.
+  @@index([userId])
 }
 
 // One pre-defined offering of a LIMITED-edition artwork. A limited
@@ -349,7 +356,7 @@ model PrintOrder {
   // Manual TPS fulfillment stage. Admin advances by hand from
   // /admin/orders after placing the order on theprintspace's portal.
   // Values: null (pending placement) | 'Placed' | 'Started' | 'Shipped'
-  // | 'Complete' | 'Rejected'.
+  // | 'Complete' | 'Cancelled'.
   fulfillmentStatus String?
   trackingUrl       String?
   shippedAt         DateTime?

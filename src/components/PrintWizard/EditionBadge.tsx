@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/Button'
+import { Icon } from '@/components/ui/Icon'
 import { Text } from '@/components/ui/Typography'
 
 import styles from './PrintWizard.module.scss'
@@ -21,6 +22,12 @@ export const EditionBadge = ({ editionType, onDetails }: Props) => (
     <Text as="span" font="sans" size="lg" className={styles.editionBadgeLabel}>
       {editionType === 'limited' ? 'Limited Edition' : 'Open Edition'}
     </Text>
-    <Button variant="primary" size="smallSquared" label="Learn More" onClick={onDetails} />
+    <Button
+      variant="primary"
+      size="regularSquared"
+      label="Learn More"
+      iconRight={<Icon name="arrowRight" size={16} />}
+      onClick={onDetails}
+    />
   </div>
 )

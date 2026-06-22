@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
 
-import { escapeHtml } from '@/utils/escapeHtml'
 import { sanitizeLine, sanitizeMultiline } from '@/utils/sanitizeLine'
 import { isEmail } from '@/lib/validation'
-
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendInquiryAdminNotificationEmail } from '@/lib/emails/inquiryAdminNotification'
+import { sendInquiryUserConfirmationEmail } from '@/lib/emails/inquiryUserConfirmation'
 
 // Rate limiting - simple in-memory store (resets on redeploy)
 const rateLimitStore = new Map<string, { count: number; timestamp: number }>()
@@ -103,82 +100,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 
-    // Now safe to escape for HTML email template interpolation.
-    const safeFirstName = escapeHtml(firstName)
-    const safeLastName = escapeHtml(lastName)
-    const safeEmail = escapeHtml(email)
-    const safePhone = escapeHtml(phone)
-    const safeMessage = escapeHtml(message)
-    const safeArtworkTitle = escapeHtml(artworkTitle)
-    const safeArtworkArtist = escapeHtml(artworkArtist)
-    const safeArtworkSlug = escapeHtml(artworkSlug)
-
-    // Get environment variables
-    const fromEmail = process.env.FROM_EMAIL || 'contact@theartroom.gallery'
-    const inquiryRecipientsEnv = process.env.INQUIRY_EMAIL_TO || 'contact@theartroom.gallery'
-    // Support comma-separated emails for multiple recipients
-    const inquiryRecipients = inquiryRecipientsEnv.split(',').map((e) => e.trim())
-
-    // Send inquiry notification to admin
-    await resend.emails.send({
-      from: `The Art Room <${fromEmail}>`,
-      to: inquiryRecipients,
-      replyTo: email,
-      subject: `New Inquiry: ${safeArtworkTitle} by ${safeArtworkArtist}`,
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="font-size: 24px; margin-bottom: 24px;">New Artwork Inquiry</h2>
-          
-          <div style="background-color: #f9f9f9; padding: 20px; margin-bottom: 24px;">
-            <p style="margin: 0 0 8px 0;"><strong>Artwork:</strong> ${safeArtworkTitle}</p>
-            <p style="margin: 0 0 8px 0;"><strong>Artist:</strong> ${safeArtworkArtist}</p>
-            <p style="margin: 0;"><strong>Artwork Ref:</strong> ${safeArtworkSlug}</p>
-          </div>
-          
-          <h3 style="font-size: 18px; margin-bottom: 16px;">Contact Information</h3>
-          <p style="margin: 0 0 8px 0;"><strong>Name:</strong> ${safeFirstName} ${safeLastName}</p>
-          <p style="margin: 0 0 8px 0;"><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
-          <p style="margin: 0 0 24px 0;"><strong>Phone:</strong> ${safePhone}</p>
-          
-          <h3 style="font-size: 18px; margin-bottom: 16px;">Message</h3>
-          <div style="background-color: #f9f9f9; padding: 20px; white-space: pre-wrap;">${safeMessage}</div>
-          
-          <p style="margin-top: 32px; color: #666; font-size: 12px;">
-            This inquiry was submitted via The Art Room website.
-          </p>
-        </div>
-      `,
+    // Delegate to branded email modules — they handle FROM, recipients,
+    // replyTo, escaping, and Resend. Sanitized (not yet escaped) values are
+    // passed; each renderer escapes internally.
+    await sendInquiryAdminNotificationEmail({
+      firstName,
+      lastName,
+      email,
+      phone,
+      message,
+      artworkTitle,
+      artworkArtist,
+      artworkSlug,
     })
 
-    // Send confirmation to the user
-    await resend.emails.send({
-      from: `The Art Room <${fromEmail}>`,
-      to: email,
-      subject: `We received your inquiry about "${safeArtworkTitle}"`,
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="font-size: 24px; margin-bottom: 24px;">Thank you for your inquiry</h2>
-          
-          <p>Dear ${safeFirstName},</p>
-          
-          <p>We have received your inquiry about <strong>${safeArtworkTitle}</strong> by ${safeArtworkArtist}.</p>
-          
-          <p>Our team will review your message and get back to you as soon as possible.</p>
-          
-          <div style="background-color: #f9f9f9; padding: 20px; margin: 24px 0;">
-            <p style="margin: 0 0 8px 0;"><strong>Your message:</strong></p>
-            <p style="margin: 0; white-space: pre-wrap;">${safeMessage}</p>
-          </div>
-          
-          <p>Best regards,<br>The Art Room Team</p>
-          
-          <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;" />
-          
-          <p style="color: #666; font-size: 12px;">
-            This is an automated confirmation. Please do not reply to this email.
-          </p>
-        </div>
-      `,
+    await sendInquiryUserConfirmationEmail({
+      firstName,
+      email,
+      message,
+      artworkTitle,
+      artworkArtist,
     })
 
     return NextResponse.json({ success: true })

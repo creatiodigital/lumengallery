@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .content {
   flex: 1 0 auto;
   max-width: var(--content-max-width);
@@ -5,7 +7,7 @@
   padding: var(--space-4) 0;
   width: calc(100% - var(--site-padding) * 2);
 
-  @media (max-width: 1020px) {
+  @include media-down(lg) {
     width: calc(100% - var(--space-6) * 2);
   }
 }

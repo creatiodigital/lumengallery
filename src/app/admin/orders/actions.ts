@@ -153,6 +153,9 @@ export type AdminOrderItem = {
   /** Display-only spec rows derived from this line's printConfig + the
    *  live catalog. Empty fallback on any catalog/summarize failure. */
   specsSummary: SpecsSummary
+  /** Limited-edition variant display name (e.g. "Medium"); null for open
+   *  editions. Sourced from the bound edition numbers' shared variant. */
+  editionName: string | null
   /** Edition labels like ['29/50', '30/50'] for limited lines; empty for
    *  open editions. */
   editionLabels: string[]
@@ -324,6 +327,7 @@ export type EditionSaleRow = {
   id: string
   artworkTitle: string
   artworkSlug: string | null
+  artistName: string
   variantName: string
   number: number
   editionSize: number
@@ -365,7 +369,18 @@ export async function listEditionSales(): Promise<
     orderBy: [{ soldAt: 'desc' }, { reservedAt: 'desc' }],
     take: 1000,
     include: {
-      variant: { include: { artwork: { select: { title: true, slug: true } } } },
+      variant: {
+        include: {
+          artwork: {
+            select: {
+              title: true,
+              slug: true,
+              author: true,
+              user: { select: { name: true, lastName: true } },
+            },
+          },
+        },
+      },
       order: { select: orderSelect },
       orderItem: { select: { order: { select: orderSelect } } },
     },
@@ -379,6 +394,14 @@ export async function listEditionSales(): Promise<
       id: r.id,
       artworkTitle: r.variant.artwork.title ?? '(untitled)',
       artworkSlug: r.variant.artwork.slug,
+      // Artist display: the per-work `author` override if set, else the
+      // owning user's name (same convention as the public grid).
+      artistName:
+        r.variant.artwork.author?.trim() ||
+        [r.variant.artwork.user.name, r.variant.artwork.user.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim(),
       variantName: r.variant.name,
       number: r.number,
       editionSize: r.variant.editionSize,
@@ -394,6 +417,78 @@ export async function listEditionSales(): Promise<
   })
 
   return { ok: true, sales }
+}
+
+/**
+ * RELEASE a single ORPHANED edition number from the ledger — a reserved/sold
+ * copy no longer attached to any order (abandoned cart holds / abandoned
+ * checkouts). Sets it back to `available` and clears its bindings: the row
+ * (the numbered slot) stays, so the edition is never gapped — it just drops
+ * out of this ledger (which lists reserved/sold) and can sell again.
+ *
+ * NOTE: we deliberately release rather than hard-delete. Deleting the row
+ * removes the slot permanently, so the next sale skips that number (e.g. an
+ * edition would start at 3/30 instead of 1/30). Release keeps 1..N intact.
+ *
+ * Refuses a number still bound to a live order: that would desync the order
+ * from its copy. Cancel or refund that order instead — that path releases it.
+ */
+export async function releaseOrphanedEditionNumber(
+  numberId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const row = await prisma.editionNumber.findUnique({
+    where: { id: numberId },
+    include: {
+      order: { select: { id: true } },
+      orderItem: { select: { order: { select: { id: true } } } },
+    },
+  })
+  if (!row) return { ok: false, error: 'Edition number not found.' }
+  if (row.state === 'available') {
+    return { ok: false, error: 'This number is already available — nothing to release.' }
+  }
+
+  const boundOrderId = row.order?.id ?? row.orderItem?.order?.id ?? null
+  if (boundOrderId) {
+    return {
+      ok: false,
+      error: `This copy is attached to order #${boundOrderId.slice(0, 8)}. Cancel or refund that order instead.`,
+    }
+  }
+
+  try {
+    // Reserved OR sold orphan → back to available, all bindings cleared. The
+    // numbered slot itself is preserved (no gap in the edition).
+    await prisma.editionNumber.updateMany({
+      where: { id: numberId, state: { in: ['reserved', 'sold'] } },
+      data: {
+        state: 'available',
+        paymentIntentId: null,
+        orderId: null,
+        orderItemId: null,
+        buyerEmail: null,
+        reservedAt: null,
+        soldAt: null,
+      },
+    })
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: 'release-orphaned-edition-number',
+      extra: { numberId },
+      level: 'error',
+      fingerprint: ['admin:release-orphan-edition-failed'],
+    })
+    return {
+      ok: false,
+      error: `Release failed: ${err instanceof Error ? err.message : String(err)}`,
+    }
+  }
+
+  return { ok: true }
 }
 
 export async function getOrderDetail(
@@ -539,6 +634,8 @@ export async function getOrderDetail(
         transferStatus: it.transferStatus,
         paidOutAt: it.paidOutAt?.toISOString() ?? null,
         specsSummary,
+        // All numbers on a line share one variant, so the first carries the name.
+        editionName: it.editionNumbers[0]?.variant.name ?? null,
         editionLabels: it.editionNumbers.map((en) => `${en.number}/${en.variant.editionSize}`),
         tpsSkus,
       }
@@ -608,7 +705,7 @@ const STAGE_PLACED = 'Placed' // admin placed at TPS; payment captured
 const STAGE_STARTED = 'Started' // TPS started production
 const STAGE_SHIPPED = 'Shipped' // TPS shipped
 const STAGE_COMPLETE = 'Complete' // delivered; 14-day payout clock starts
-const STAGE_REJECTED = 'Rejected' // admin marked rejected / cancelled
+const STAGE_CANCELLED = 'Cancelled' // order pulled out before delivery: buyer asked to cancel, couldn't fulfil, TPS rejected the file, artist disabled prints, etc.
 
 /**
  * Release the artist's cut for a delivered order. Preconditions:
@@ -1570,12 +1667,14 @@ export async function markDelivered(
 }
 
 /**
- * Admin CTA: order rejected (artist disabled prints, file unusable, etc.)
- * Terminal state. If payment was still authorized we cancel the Stripe
- * PI (releases the hold); if it was already captured, admin must use
- * the existing Refund flow to return funds.
+ * Admin CTA: cancel an order before delivery — the catch-all off-ramp for
+ * any reason a sale doesn't go through (buyer asked to cancel, we couldn't
+ * fulfil, artist disabled prints, TPS rejected the file, etc.). Terminal
+ * state. If payment was still authorized we cancel the Stripe PI (releases
+ * the hold, no charge); if it was already captured, the admin must use the
+ * existing Refund flow to return funds.
  */
-export async function markRejected(
+export async function cancelOrder(
   orderId: string,
   reason: string,
 ): Promise<{ ok: true; needsRefund: boolean } | { ok: false; error: string }> {
@@ -1587,7 +1686,7 @@ export async function markRejected(
 
   const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
   if (!order) return { ok: false, error: 'Order not found.' }
-  if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_REJECTED) {
+  if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_CANCELLED) {
     return {
       ok: false,
       error: `Cannot reject from stage "${order.fulfillmentStatus}".`,
@@ -1602,10 +1701,10 @@ export async function markRejected(
     } catch (err) {
       captureError(err, {
         flow: 'admin',
-        stage: 'mark-rejected-cancel-pi',
+        stage: 'cancel-order-cancel-pi',
         extra: { orderId, paymentIntentId: order.paymentIntentId },
         level: 'error',
-        fingerprint: ['admin:mark-rejected-cancel-failed'],
+        fingerprint: ['admin:cancel-order-pi-failed'],
       })
       return {
         ok: false,
@@ -1617,7 +1716,7 @@ export async function markRejected(
   await prisma.printOrder.update({
     where: { id: order.id },
     data: {
-      fulfillmentStatus: STAGE_REJECTED,
+      fulfillmentStatus: STAGE_CANCELLED,
       ...(voided ? { paymentStatus: 'canceled' } : {}),
     },
   })
@@ -1627,8 +1726,8 @@ export async function markRejected(
     kind: 'admin_action',
     actor: `admin:${guard.session.user.id}`,
     message: voided
-      ? 'Marked rejected (Stripe auth voided)'
-      : 'Marked rejected (manual refund required)',
+      ? 'Order cancelled (Stripe auth voided)'
+      : 'Order cancelled (manual refund required)',
     payload: { reason: trimmedReason, voided, priorPaymentStatus: order.paymentStatus },
   })
 
@@ -1637,7 +1736,7 @@ export async function markRejected(
   // and a no-op for open editions.
   await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
 
-  await maybeSendBuyerTransitionEmail(order.id, STAGE_REJECTED, { trackingUrl: null })
+  await maybeSendBuyerTransitionEmail(order.id, STAGE_CANCELLED, { trackingUrl: null })
 
   const needsRefund = order.paymentStatus === 'succeeded' && !order.transferId
   return { ok: true, needsRefund }
@@ -1663,7 +1762,7 @@ async function advanceStage(
 
   const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
   if (!order) return { ok: false, error: 'Order not found.' }
-  if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_REJECTED) {
+  if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_CANCELLED) {
     return {
       ok: false,
       error: `Cannot advance from terminal stage "${order.fulfillmentStatus}".`,
@@ -1715,7 +1814,7 @@ async function maybeSendBuyerTransitionEmail(
     newStage !== STAGE_STARTED &&
     newStage !== STAGE_SHIPPED &&
     newStage !== STAGE_COMPLETE &&
-    newStage !== STAGE_REJECTED
+    newStage !== STAGE_CANCELLED
   ) {
     return
   }
@@ -1749,6 +1848,30 @@ async function maybeSendBuyerTransitionEmail(
     .join(' ')
     .trim()
 
+  // For the in-production email, surface the buyer's assigned limited-edition
+  // number(s). Bound to the order via either the legacy single-print path
+  // (orderId) or the cart path (orderItem.orderId). Empty for open editions.
+  const editions =
+    newStage === STAGE_STARTED
+      ? (
+          await prisma.editionNumber.findMany({
+            where: {
+              state: { in: ['reserved', 'sold'] },
+              OR: [{ orderId: order.id }, { orderItem: { orderId: order.id } }],
+            },
+            select: {
+              number: true,
+              variant: { select: { editionSize: true, artwork: { select: { title: true } } } },
+            },
+            orderBy: { number: 'asc' },
+          })
+        ).map((e) => ({
+          artworkTitle: e.variant.artwork.title ?? '',
+          number: e.number,
+          editionSize: e.variant.editionSize,
+        }))
+      : []
+
   const emailRes =
     newStage === STAGE_STARTED
       ? await sendOrderInProductionEmail({
@@ -1757,6 +1880,7 @@ async function maybeSendBuyerTransitionEmail(
           orderId: order.id,
           artworkTitle: order.artwork.title ?? '',
           artistName,
+          editions,
         })
       : newStage === STAGE_SHIPPED
         ? await sendOrderShippedEmail({
@@ -1804,7 +1928,7 @@ async function maybeSendBuyerTransitionEmail(
     })
   }
 
-  if (newStage === STAGE_REJECTED) {
+  if (newStage === STAGE_CANCELLED) {
     const adminAlreadySent = await prisma.printOrderEvent.findFirst({
       where: { orderId, kind: 'email_sent', message: 'admin_order_cancelled' },
       select: { id: true },

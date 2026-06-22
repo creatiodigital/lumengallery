@@ -56,7 +56,7 @@ type Bucket =
   | 'shipped'
   | 'delivered'
   | 'done'
-  | 'rejected'
+  | 'cancelled'
   | 'refunded'
   | 'attention'
 
@@ -67,7 +67,7 @@ const BUCKET_ORDER: Bucket[] = [
   'shipped',
   'delivered',
   'done',
-  'rejected',
+  'cancelled',
   'refunded',
   'attention',
 ]
@@ -84,7 +84,7 @@ const BUCKET_META: Record<
     title: 'New',
     helper:
       'Buyer paid; card is on hold. Place the order on theprintspace, then click Capture & mark placed to charge the buyer and advance.',
-    nextAction: 'Capture & mark placed',
+    nextAction: 'Capture & place',
   },
   'at-tps': {
     title: 'At TPS',
@@ -112,10 +112,10 @@ const BUCKET_META: Record<
     helper: 'Order delivered and artist paid. Archived view.',
     nextAction: 'View details',
   },
-  rejected: {
-    title: 'Rejected',
+  cancelled: {
+    title: 'Cancelled',
     helper:
-      'Orders pulled out of the pipeline before delivery — TPS rejected the file, artist disabled prints, etc. Refunds (if needed) are handled from the order detail page.',
+      'Orders pulled out of the pipeline before delivery — buyer asked to cancel, we couldn’t fulfil, TPS rejected the file, artist disabled prints, etc. Refunds (if needed) are handled from the order detail page.',
     nextAction: 'View details',
   },
   refunded: {
@@ -136,7 +136,7 @@ function bucketOf(o: AdminOrderRow): Bucket {
   const f = o.fulfillmentStatus
   const p = o.paymentStatus
 
-  if (f === 'Rejected') return 'rejected'
+  if (f === 'Cancelled') return 'cancelled'
   if (p === 'refunded') return 'refunded'
   if (p === 'failed' || p === 'canceled') return 'attention'
 
@@ -191,7 +191,7 @@ export const AdminOrders = () => {
       shipped: [],
       delivered: [],
       done: [],
-      rejected: [],
+      cancelled: [],
       refunded: [],
       attention: [],
     }
@@ -230,7 +230,7 @@ export const AdminOrders = () => {
           const meta = BUCKET_META[b]
           const count = grouped[b].length
           const active = b === activeBucket
-          const isAttention = b === 'attention' || b === 'rejected'
+          const isAttention = b === 'attention' || b === 'cancelled'
           const isRefunded = b === 'refunded'
           const hasItems = count > 0
           // Refunded only goes orange when there's *more than one* —
@@ -416,10 +416,10 @@ export const AdminOrders = () => {
 const NextActionCell = ({ order, bucket }: { order: AdminOrderRow; bucket: Bucket }) => {
   const meta = BUCKET_META[bucket]
 
-  // Every row in every bucket is just a doorway to the detail page.
-  // Real actions (capture, mark in production, refund, pay artist…)
-  // only fire from the detail page, where the admin sees full context
-  // and can't trip them with an accidental table tap.
+  // The row's only action is a doorway to the detail page — every real
+  // workflow action (capture, mark in production, refund, pay artist, and
+  // deleting the order) fires there, with full context, so an accidental
+  // table tap can't trip them.
   const linkStyle: React.CSSProperties = {
     display: 'inline-block',
     padding: '6px 12px',
@@ -432,8 +432,10 @@ const NextActionCell = ({ order, bucket }: { order: AdminOrderRow; bucket: Bucke
   }
 
   return (
-    <Link href={`/admin/orders/${order.id}`} style={linkStyle}>
-      {meta.nextAction}
-    </Link>
+    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <Link href={`/admin/orders/${order.id}`} style={linkStyle}>
+        {meta.nextAction}
+      </Link>
+    </div>
   )
 }

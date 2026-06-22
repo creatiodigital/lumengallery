@@ -354,38 +354,62 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
       )}
 
       {introOpen && (
-        <Modal onClose={dismissIntro} titleId="print-intro-title">
+        <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px">
           <div className={styles.introModal}>
             <Monogram className={styles.introMonogram} aria-hidden="true" />
             <p id="print-intro-title" className={styles.detailLead}>
               Your print of <strong>{artwork.title}</strong> by{' '}
-              <strong>{artwork.artistName}</strong> is an <strong>open edition</strong> — made to
-              order, with no fixed run and no edition limit.
+              <strong>{artwork.artistName}</strong> is an <strong>open edition</strong>.
             </p>
-            <p className={styles.detailSubhead}>The print</p>
-            <ul className={styles.detailList}>
-              <li>
-                <strong>Made to order</strong> on premium archival paper (giclée or C-Type),
-                hand-inspected and finished by a specialist fine-art print lab.
-              </li>
-              <li>
-                <strong>Fully configurable</strong> — choose your size, paper and framing (framed or
-                print-only).
-              </li>
-              <li>
-                <strong>Not numbered</strong> and not a limited run — available on an ongoing basis.
-              </li>
-            </ul>
-            <p className={styles.detailSubhead}>Good to know</p>
-            <ul className={styles.detailList}>
-              <li>
-                <strong>No purchase limits</strong> — order as many as you like.
-              </li>
-              <li>
-                Final <strong>VAT</strong> is calculated when you confirm your delivery address at
-                checkout.
-              </li>
-            </ul>
+            <div className={styles.detailSections}>
+              <p className={styles.detailSubhead}>Terms of sale</p>
+              <ul className={styles.detailList}>
+                <li>
+                  <strong>Made to order</strong> on premium archival paper (giclée or C-Type),
+                  hand-inspected and finished by a specialist fine-art print lab.
+                </li>
+                <li>
+                  <strong>Fully configurable</strong> — choose your size, paper and framing (framed
+                  or print-only).
+                </li>
+                <li>
+                  <strong>Not numbered</strong> and not a limited run — available on an ongoing
+                  basis.
+                </li>
+                <li>
+                  <strong>No purchase limits</strong> — order as many as you like.
+                </li>
+                <li>
+                  Final <strong>VAT</strong> is calculated when you confirm your delivery address at
+                  checkout.
+                </li>
+                <li>We reserve the right to cancel or refund an order if needed.</li>
+              </ul>
+              <p className={styles.detailSubhead}>Shipping</p>
+              <ul className={styles.detailList}>
+                <li>
+                  All prints are <strong>packaged to the highest standards</strong>, managed at our
+                  warehouse using archival materials.
+                </li>
+                <li>
+                  <strong>Shipping is calculated at checkout</strong>, based on your delivery
+                  address.
+                </li>
+                <li>
+                  Most orders are <strong>dispatched within about two weeks</strong>; framed pieces
+                  can take a little longer.
+                </li>
+                <li>
+                  Sent with <strong>tracked delivery</strong> &mdash; we&rsquo;ll email you the
+                  tracking when it&rsquo;s on its way.
+                </li>
+                <li>
+                  Delivery is typically <strong>1&ndash;2 weeks in Europe</strong> and{' '}
+                  <strong>2&ndash;4 weeks internationally</strong> (international orders may be
+                  subject to customs and local import duties).
+                </li>
+              </ul>
+            </div>
             <p className={styles.detailTerms}>
               Please read our{' '}
               <Link href="/terms-of-sale" target="_blank" rel="noopener noreferrer">

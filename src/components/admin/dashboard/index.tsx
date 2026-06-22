@@ -44,6 +44,11 @@ const NAV_HUBS: Hub[] = [
     href: '/admin/orders',
   },
   {
+    label: 'Edition Sales',
+    description: 'Numbered limited-edition copies reserved or sold — the authoritative ledger.',
+    href: '/admin/edition-sales',
+  },
+  {
     label: 'Users',
     description: 'Artists, admins, curators — invite, publish, impersonate.',
     href: '/admin/users',

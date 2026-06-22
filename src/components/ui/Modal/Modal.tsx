@@ -13,11 +13,16 @@ type ModalProps = {
    * open. Falls back to an unlabelled dialog if omitted.
    */
   titleId?: string
+  /**
+   * Optional override for the panel's max width (e.g. '640px'). Applied
+   * inline so it wins over the default 560px without affecting other modals.
+   */
+  maxWidth?: string
 }
 
 import styles from './Modal.module.scss'
 
-const Modal = ({ children, onClose, titleId }: ModalProps) => {
+const Modal = ({ children, onClose, titleId, maxWidth }: ModalProps) => {
   const mouseDownOnBackdrop = useRef(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -73,6 +78,7 @@ const Modal = ({ children, onClose, titleId }: ModalProps) => {
         aria-labelledby={titleId}
         tabIndex={-1}
         className={styles.content}
+        style={maxWidth ? { maxWidth } : undefined}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >

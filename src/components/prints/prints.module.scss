@@ -72,11 +72,19 @@
 .toolbarFilter {
   display: flex;
   align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
 }
 
-.artistSelect {
-  width: 320px;
+.artistSelect,
+.editionSelect {
   max-width: 100%;
+}
+
+// Give the artist trigger a touch more room (grows for longer names; the
+// chevron still hugs the label — extra width is trailing space).
+.artistSelect {
+  min-width: 10rem;
 }
 
 .toolbarActions {
@@ -86,4 +94,43 @@
   // Inset from the toolbar's right edge so the cart badge (which overhangs the
   // icon ~8px) never touches the screen edge on mobile.
   padding-right: var(--space-3);
+}
+
+// Wraps the grid + pagination so the loading spinner can overlay the dimmed
+// grid while a page/filter fetch is in flight.
+.results {
+  position: relative;
+}
+
+// Dim + lock the current grid during a fetch; the fresh page swaps in when the
+// server action resolves.
+.gridLoading {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.loadingOverlay {
+  position: absolute;
+  top: var(--space-10);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--color-border-default);
+  border-top-color: var(--color-text-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

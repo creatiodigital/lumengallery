@@ -4,15 +4,19 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://theartroom.gallery
 export const EMAIL_BRAND = {
   red: '#bd1622',
   ink: '#111111',
-  bodyText: '#444444',
-  muted: '#8a8a8a',
-  labelMuted: '#b9b9b9',
-  valueText: '#555555',
+  // Greys kept dark enough for WCAG AA on white (>= 4.5:1): bodyText/valueText
+  // ~12.6:1, muted ~7:1. Avoid lighter greys — they fail contrast.
+  bodyText: '#333333',
+  muted: '#595959',
+  valueText: '#333333',
   beige: '#faf9f6',
   hairline: '#eeeeee',
   pageBg: '#f2f2f2',
   fontStack: "Helvetica, 'Helvetica Neue', Arial, sans-serif",
   contentWidth: 600,
+  // Base origin for absolute asset/link URLs. Defaults to prod; the dev
+  // preview route rewrites this to the request origin so marks load locally.
+  siteUrl: SITE_URL,
   // Absolute URLs — email clients can't resolve relative paths. PNG, not SVG.
   monogramUrl: `${SITE_URL}/email/monogram@2x.png`,
   wordmarkUrl: `${SITE_URL}/email/wordmark@2x.png`,
