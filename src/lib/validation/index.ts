@@ -48,15 +48,22 @@ export const email =
     isEmail(value) ? undefined : message
 
 /**
- * A usable phone number: at least 8 digits and not all the same digit.
- * Lenient on formatting (spaces, dashes, parens are stripped) — we only need
- * something a carrier can dial, not strict E.164.
+ * A usable phone number from a single free-text field (the buyer types the
+ * whole number, optionally with their own "+<country code>"). Lenient on
+ * formatting but rejects junk:
+ *   - only phone-shaped characters: an optional leading "+", then digits and
+ *     common separators (space, dash, dot, parens) — letters or a value pasted
+ *     from the wrong field are rejected;
+ *   - 8–15 digits (E.164 caps the significant digits at 15; carriers need ~8);
+ *   - not all the same digit (e.g. "00000000").
  */
 export const phone =
   (message = 'Please enter a valid phone number.'): Validator =>
   (value) => {
-    const digits = value.trim().replace(/\D/g, '')
-    if (digits.length < 8) return message
+    const trimmed = value.trim()
+    if (!/^\+?[\d\s().-]+$/.test(trimmed)) return message
+    const digits = trimmed.replace(/\D/g, '')
+    if (digits.length < 8 || digits.length > 15) return message
     if (/^(\d)\1+$/.test(digits)) return message
     return undefined
   }

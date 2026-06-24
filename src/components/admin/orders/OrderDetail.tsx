@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
-import { editionLabel } from '@/lib/editions/editionLabel'
+import { editionTypeLabel } from '@/lib/editions/editionLabel'
 import { daysSinceDelivered, PAYOUT_SAFE_WINDOW_DAYS } from '@/lib/orders/payoutPolicy'
 import { formatEuro } from '@/lib/print-providers/format'
 import { countryName } from '@/utils/countryName'
@@ -179,7 +179,7 @@ const LineItemsTable = ({ items }: { items: AdminOrderItem[] }) => (
         <th>Specs</th>
         <th>Qty</th>
         <th>Editions</th>
-        <th>Production</th>
+        <th>TPS</th>
         <th>Artist cut</th>
         <th>Gallery cut</th>
         <th>Payout</th>
@@ -195,7 +195,8 @@ const LineItemsTable = ({ items }: { items: AdminOrderItem[] }) => (
             </div>
             {it.editionName && (
               <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7, marginTop: 2 }}>
-                {editionLabel('limited', it.editionName)}
+                <div>{editionTypeLabel('limited')}</div>
+                <div>{it.editionName}</div>
               </div>
             )}
           </td>
@@ -623,16 +624,20 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
     )
   }
 
-  const addr =
-    (order.shippingAddress as {
-      line1?: string
-      line2?: string
-      city?: string
-      state?: string
-      postalCode?: string
-      country?: string
-      phone?: string
-    }) ?? {}
+  // Cart orders store the buyer's ShippingAddress verbatim (address1 /
+  // address2 / stateOrRegion / countryCode); single-print orders store Stripe's
+  // shape (line1 / line2 / state / country). Read BOTH so the street + country
+  // never go blank regardless of which path created the order.
+  const rawAddr = (order.shippingAddress as Record<string, unknown> | null) ?? {}
+  const addr = {
+    line1: (rawAddr.line1 ?? rawAddr.address1) as string | undefined,
+    line2: (rawAddr.line2 ?? rawAddr.address2) as string | undefined,
+    city: rawAddr.city as string | undefined,
+    state: (rawAddr.state ?? rawAddr.stateOrRegion) as string | undefined,
+    postalCode: rawAddr.postalCode as string | undefined,
+    country: (rawAddr.country ?? rawAddr.countryCode) as string | undefined,
+    phone: rawAddr.phone as string | undefined,
+  }
 
   const sections: Section[] = [
     {
@@ -709,6 +714,12 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
   const stage = order.fulfillmentStatus
   const isTerminal = stage ? TERMINAL_STAGES.has(stage) : false
   const canCancel = !isTerminal
+  // A refunded or canceled order is terminal & READ-ONLY: no fulfillment
+  // actions at all (advancing one would, e.g., email an already-refunded buyer
+  // "in production"). The "Delete order" escape hatch in the Danger zone is
+  // exempt — it stays available in every state.
+  const isTerminalPayment =
+    order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled'
 
   return (
     <DashboardLayout backLink="/admin/orders" backLabel="← Back to Orders">
@@ -748,6 +759,23 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           </p>
         </div>
       </div>
+
+      {isTerminalPayment && (
+        <div className={dashboardStyles.section}>
+          <div
+            style={{
+              padding: '12px 16px',
+              background: '#fef3c7',
+              border: '1px solid #fcd34d',
+              borderRadius: 4,
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            This order is {order.paymentStatus} — view only. No further action is needed.
+          </div>
+        </div>
+      )}
 
       {order.fulfillmentStatus === 'Cancelled' && order.paymentStatus === 'succeeded' && (
         <div className={dashboardStyles.section}>
@@ -865,6 +893,12 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {isTerminalPayment ? (
+              <span style={{ fontSize: 12, opacity: 0.6 }}>
+                This order is {order.paymentStatus} — no further actions (view only).
+              </span>
+            ) : (
+              <>
             {/* Single stage-aware primary CTA. The fulfillment pipeline
                 is strictly forward-only — backward steps would just send
                 contradictory emails to the buyer (the prior stage's
@@ -930,6 +964,8 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               <span style={{ fontSize: 12, opacity: 0.6 }}>
                 Waiting for payment to authorize before you can capture & mark placed.
               </span>
+            )}
+              </>
             )}
           </div>
           {busyError && <p style={{ margin: 0, color: '#b91c1c', fontSize: 13 }}>⚠️ {busyError}</p>}
@@ -1343,21 +1379,36 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               <div key={it.id} style={{ marginBottom: 16 }}>
                 <div
                   style={{
-                    fontSize: 11,
+                    fontSize: 13,
+                    fontWeight: 600,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
-                    opacity: 0.6,
-                    marginBottom: 4,
+                    opacity: 0.85,
+                    marginBottom: 6,
                   }}
                 >
                   {it.artworkTitle} · {it.artistName}
                   {it.quantity > 1 ? ` · ×${it.quantity}` : ''}
-                  {it.editionName ? ` · ${it.editionName}` : ''}
-                  {it.editionLabels.length > 0 ? ` · ${it.editionLabels.join(', ')}` : ''}
                 </div>
                 {it.specsSummary.length > 0 ? (
                   <table style={{ fontSize: 13 }}>
                     <tbody>
+                      {it.editionLabels.length > 0 && (
+                        <tr>
+                          <td style={{ padding: '2px 16px 2px 0', opacity: 0.7 }}>Edition</td>
+                          <td style={{ padding: '2px 0', fontFamily: 'monospace' }}>
+                            {it.editionLabels.join(', ')}
+                          </td>
+                        </tr>
+                      )}
+                      {it.editionName && (
+                        <tr>
+                          <td style={{ padding: '2px 16px 2px 0', opacity: 0.7 }}>Variant</td>
+                          <td style={{ padding: '2px 0', fontFamily: 'monospace' }}>
+                            {it.editionName}
+                          </td>
+                        </tr>
+                      )}
                       {it.specsSummary.map((s) => (
                         <tr key={s.id}>
                           <td style={{ padding: '2px 16px 2px 0', opacity: 0.7 }}>{s.label}</td>
@@ -1370,22 +1421,6 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                   <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>
                     Specs unavailable — see the raw printConfig in the timeline payload.
                   </p>
-                )}
-                {/* Copy-ready Sell-as-Print line per numbered copy (limited
-                    lines only). Mirrors the legacy single-print tpsSku so a
-                    cart's limited items are as paste-ready as the old flow. */}
-                {it.tpsSkus.length > 0 && (
-                  <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {it.tpsSkus.map((sku, i) => (
-                      <div
-                        key={i}
-                        style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}
-                      >
-                        <code style={{ fontSize: 12 }}>{sku}</code>
-                        <CopyButton value={sku} label="Copy SKU" />
-                      </div>
-                    ))}
-                  </div>
                 )}
               </div>
             ))
@@ -1427,23 +1462,23 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           >
             Recipient
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-              {order.buyerName}
-              <br />
-              {addr.line1}
-              {addr.line2 ? `, ${addr.line2}` : ''}
-              <br />
-              {[addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ')}
-              <br />
-              {addr.country}
-              {addr.phone ? (
-                <>
-                  <br />
-                  {addr.phone}
-                </>
-              ) : null}
-            </div>
+          <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+            {order.buyerName}
+            <br />
+            {addr.line1}
+            {addr.line2 ? `, ${addr.line2}` : ''}
+            <br />
+            {[addr.city, addr.state, addr.postalCode].filter(Boolean).join(', ')}
+            <br />
+            {countryName(addr.country)}
+            {addr.phone ? (
+              <>
+                <br />
+                {addr.phone}
+              </>
+            ) : null}
+          </div>
+          <div style={{ marginTop: 8 }}>
             <CopyButton
               value={[
                 order.buyerName,

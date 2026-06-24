@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 
 import { createPaymentIntent } from '@/components/checkout/PrintCheckout/createPaymentIntent'
 import { TPS_PAPERS } from '@/lib/print-providers/printspace/data'
+import { TPS_GALLERY_MARKUP_RATE } from '@/lib/print-providers/printspace/pricing'
 
 import { restoreArtworkPrintOptions, setArtworkPrintOptions } from './cleanup-helpers'
 import { setupOpenFixture, teardownOpenFixture, type OpenFixture } from './edition-helpers'
@@ -23,8 +24,9 @@ import { buildFixtureConfig, cancelPaymentIntent, fixtureAddress } from './strip
  * test-mode keys in .env.local (present).
  */
 
-// 45% gallery markup — mirrors GALLERY_MARKUP_RATE in createPaymentIntent.ts.
-const GALLERY_MARKUP_RATE = 0.45
+// Import the gallery markup rate straight from the pricing module (the single
+// source of truth getQuote uses) rather than re-declaring it here — a hardcoded
+// copy silently drifted when the rate changed 45% → 40% and failed this spec.
 
 test.describe('createPaymentIntent contract', () => {
   // Self-seeded throwaway OPEN artwork — keeps these specs independent of
@@ -61,7 +63,7 @@ test.describe('createPaymentIntent contract', () => {
       expect(t.currency).toBe('eur')
       // Artist keeps their set price; gallery markup is derived from it.
       expect(t.artistCents).toBe(artistPriceCents)
-      expect(t.galleryCents).toBe(Math.round(artistPriceCents * GALLERY_MARKUP_RATE))
+      expect(t.galleryCents).toBe(Math.round(artistPriceCents * TPS_GALLERY_MARKUP_RATE))
       expect(t.productionCents).toBeGreaterThanOrEqual(0)
       expect(t.shippingCents).toBeGreaterThanOrEqual(0)
       expect(t.customerVatCents).toBeGreaterThanOrEqual(0)

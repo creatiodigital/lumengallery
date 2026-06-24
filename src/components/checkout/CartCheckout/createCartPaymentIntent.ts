@@ -162,6 +162,60 @@ export async function createCartPaymentIntent(
   // ── 4–7. Create the PI, bind numbers, persist PendingCart ────────
   // Wrap from PI creation onward so a Stripe failure releases ONLY the
   // replacements we reserved this call.
+  // Best-effort human summary of WHAT was bought, written onto the PI so the
+  // order is identifiable + fulfillable from Stripe alone — never just
+  // "Cart: N item(s)". Cosmetic: any failure here falls back to the bland
+  // description so it can NEVER block the payment.
+  let piDescription = `Cart: ${items.length} item(s)`
+  const piMetadata: Record<string, string> = { kind: 'cart' }
+  try {
+    const allNumberIds = Array.from(lineNumberIds.values()).flat()
+    const numberRows = allNumberIds.length
+      ? await prisma.editionNumber.findMany({
+          where: { id: { in: allNumberIds } },
+          select: { id: true, number: true },
+        })
+      : []
+    const numberById = new Map(numberRows.map((r) => [r.id, r.number]))
+
+    const variantIds = items.map((i) => i.variantId).filter((v): v is string => Boolean(v))
+    const variantRows = variantIds.length
+      ? await prisma.limitedVariant.findMany({
+          where: { id: { in: variantIds } },
+          select: { id: true, editionSize: true },
+        })
+      : []
+    const sizeByVariant = new Map(variantRows.map((v) => [v.id, v.editionSize]))
+
+    const lineStrings = items.map((item) => {
+      const priced = pricedByLine.get(item.lineId)
+      const title = priced?.title ?? item.artworkSlug
+      const specs = (priced?.specsSummary ?? []).map((s) => s.value).join(', ')
+      const ids = lineNumberIds.get(item.lineId) ?? []
+      const nums = ids
+        .map((id) => numberById.get(id))
+        .filter((n): n is number => n != null)
+        .sort((a, b) => a - b)
+      const size = item.variantId ? sizeByVariant.get(item.variantId) : undefined
+      const edition = nums.length && size ? ` · No.${nums.join(',')}/${size}` : ''
+      const qty = item.quantity > 1 ? ` ×${item.quantity}` : ''
+      return `${title}${specs ? ` — ${specs}` : ''}${edition}${qty}`.trim()
+    })
+
+    // Stripe caps description at 1000 chars; truncate safely.
+    const joined = lineStrings.join(' | ')
+    if (joined) piDescription = joined.length > 990 ? `${joined.slice(0, 986)} …` : joined
+    // Per-item metadata: ≤50 keys / ≤500 chars each (Stripe limits).
+    lineStrings.slice(0, 40).forEach((s, i) => {
+      piMetadata[`item_${i + 1}`] = s.length > 500 ? `${s.slice(0, 497)}…` : s
+    })
+  } catch (summaryErr) {
+    console.warn(
+      '[create-cart-pi] order summary build failed (non-fatal):',
+      summaryErr instanceof Error ? summaryErr.message : summaryErr,
+    )
+  }
+
   try {
     const pi = await stripe.paymentIntents.create(
       {
@@ -172,7 +226,7 @@ export async function createCartPaymentIntent(
         // places the order at the provider. One PI for the whole cart.
         capture_method: 'manual',
         receipt_email: address.email || undefined,
-        description: `Cart: ${items.length} item(s)`,
+        description: piDescription,
         shipping: {
           name: address.fullName,
           phone: address.phone || undefined,
@@ -185,9 +239,10 @@ export async function createCartPaymentIntent(
             country: address.countryCode,
           },
         },
-        // Items are too large for Stripe metadata (500-char values); the
-        // PendingCart row is the authoritative item source for the webhook.
-        metadata: { kind: 'cart' },
+        // A per-item order summary (title · specs · edition no · qty), so the
+        // order is identifiable from Stripe alone. The PendingCart row remains
+        // the AUTHORITATIVE item source for the webhook; this is for humans.
+        metadata: piMetadata,
       },
       { idempotencyKey },
     )

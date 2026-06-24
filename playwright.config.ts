@@ -70,6 +70,18 @@ const emailSkipEnv: Record<string, string> = sendEmails
       SKIP_LOGIN_OTP: 'true',
     }
 
+// The skip flags above are injected into the spawned dev server (webServer.env
+// below) — which protects every email sent FROM the server (browser checkout,
+// Stripe webhooks). But some specs build orders IN-PROCESS: e2e/order-helpers.ts
+// calls createPrintOrderFromCart directly in the test-runner process, and its
+// buyer/admin email senders read SKIP_EMAILS from THIS process's env — which
+// webServer.env never touches. So apply the same skip to the runner itself.
+// This runs at config-load time in every worker (exactly like loadDotenv above),
+// so the in-process money-path short-circuits its sends instead of emailing for
+// real. No-op when E2E_SEND_EMAILS=true (emailSkipEnv is empty), so the opt-in
+// send-emails run is unaffected.
+Object.assign(process.env, emailSkipEnv)
+
 // Opt-in: run the suite against a real production build (`next build &&
 // next start`) instead of the default `next dev`. Use sparingly — for
 // big refactors, `'use client'` ↔ server-component conversions, dep

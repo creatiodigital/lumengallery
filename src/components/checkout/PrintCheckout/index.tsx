@@ -19,7 +19,7 @@ import {
   type WizardConfig,
   formatEuro,
 } from '@/lib/print-providers'
-import { DIAL_CODES, getCountryName } from '@/lib/print-providers/dialCodes'
+import { getCountryName } from '@/lib/print-providers/dialCodes'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import { shippingValidators, type ShippingFieldName } from '@/lib/validation'
 
@@ -116,19 +116,17 @@ export const PrintCheckout = ({
   // special handling.
   const [fullName, setFullName] = useState(initialAddress.fullName ?? '')
   const [emailField, setEmailField] = useState(initialAddress.email ?? '')
+  // Single free-text phone field (Amazon-style): the buyer types the whole
+  // number, including their own "+<code>" if it's a foreign phone. The country
+  // is captured separately below, so no dial-code dropdown is needed — and with
+  // one input there's no second place a country code can live, which is what
+  // used to produce "+34 +34…".
   const [phoneField, setPhoneField] = useState(initialAddress.phone ?? '')
   const [address1, setAddress1] = useState(initialAddress.address1 ?? '')
   const [address2, setAddress2] = useState(initialAddress.address2 ?? '')
   const [city, setCity] = useState(initialAddress.city ?? '')
   const [stateOrRegion, setStateOrRegion] = useState(initialAddress.state ?? '')
   const [postalCode, setPostalCode] = useState(initialAddress.postalCode ?? '')
-  // Independent of `country` by design — a buyer might keep a foreign
-  // phone after relocating or be sending a gift to another country. We
-  // seed it from the initial shipping country (best guess) but never
-  // auto-sync after that; the buyer owns the choice.
-  const [phoneDial, setPhoneDial] = useState<string>(
-    () => DIAL_CODES[initialCountry] ?? DIAL_CODES.ES,
-  )
   const [handoff, setHandoff] = useState<WizardHandoff | null>(null)
   const [quoteError, setQuoteError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -143,16 +141,6 @@ export const PrintCheckout = ({
     [supportedCountries],
   )
 
-  // Phone-prefix options: unique dial codes only (many countries share
-  // a prefix — e.g. +1 covers US/CA/Caribbean — and the digits a buyer
-  // types work the same regardless), sorted numerically. Independent
-  // of `supportedCountries`: the buyer's phone can be from anywhere.
-  const phoneDialOptions: SelectOption<string>[] = useMemo(() => {
-    const unique = Array.from(new Set(Object.values(DIAL_CODES)))
-    return unique
-      .sort((a, b) => Number(a) - Number(b))
-      .map((dial) => ({ value: dial, label: `+${dial}` }))
-  }, [])
   // Per-field error state + the house validation flow, shared across every
   // checkout surface via the same `shippingValidators`.
   const { validateAll, handleChange, fieldError } = useFormValidation(shippingValidators)
@@ -271,15 +259,10 @@ export const PrintCheckout = ({
     }
     if (!validateAll(fieldValues)) return
 
-    // Combine the dial-code dropdown choice with the digits the buyer
-    // typed. Server gets a single E.164-ish string ("+34 612345678")
-    // it can pass straight to TPS / show in admin orders.
-    const rawPhone = phoneField.trim()
-    const phoneCombined = rawPhone && phoneDial ? `+${phoneDial} ${rawPhone}` : rawPhone
     const submitted: AddressForm = {
       fullName: fullName.trim(),
       email: emailField.trim(),
-      phone: phoneCombined,
+      phone: phoneField.trim(),
       countryCode: country,
       address1: address1.trim(),
       address2: address2.trim(),
@@ -411,33 +394,22 @@ export const PrintCheckout = ({
               <label className={styles.fieldLabel} htmlFor="phone">
                 Phone (for carrier)
               </label>
-              <div className={styles.phoneRow}>
-                <SelectDropdown<string>
-                  className={styles.phoneDial}
-                  options={phoneDialOptions}
-                  value={phoneDial}
-                  onChange={setPhoneDial}
-                />
-                <div className={styles.phoneNumberCol}>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    className={styles.phoneNumber}
-                    size="bare"
-                    inputClassName={styles.fieldInput}
-                    type="tel"
-                    autoComplete="tel"
-                    required
-                    maxLength={32}
-                    invalid={!!fieldError('phone')}
-                    value={phoneField}
-                    onChange={(e) => {
-                      setPhoneField(e.target.value)
-                      handleChange('phone', e.target.value)
-                    }}
-                  />
-                </div>
-              </div>
+              <Input
+                id="phone"
+                name="phone"
+                size="bare"
+                inputClassName={styles.fieldInput}
+                type="tel"
+                autoComplete="tel"
+                required
+                maxLength={32}
+                invalid={!!fieldError('phone')}
+                value={phoneField}
+                onChange={(e) => {
+                  setPhoneField(e.target.value)
+                  handleChange('phone', e.target.value)
+                }}
+              />
             </FormField>
 
             <FormField className={styles.fieldFull} error={fieldError('address1')}>

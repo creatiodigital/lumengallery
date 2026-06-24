@@ -1686,6 +1686,12 @@ export async function cancelOrder(
 
   const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
   if (!order) return { ok: false, error: 'Order not found.' }
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return {
+      ok: false,
+      error: `Order is ${order.paymentStatus} — it cannot be canceled (already terminal).`,
+    }
+  }
   if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_CANCELLED) {
     return {
       ok: false,
@@ -1762,6 +1768,12 @@ async function advanceStage(
 
   const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
   if (!order) return { ok: false, error: 'Order not found.' }
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return {
+      ok: false,
+      error: `Order is ${order.paymentStatus} — no further fulfillment actions are allowed.`,
+    }
+  }
   if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_CANCELLED) {
     return {
       ok: false,

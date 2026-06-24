@@ -18,7 +18,7 @@ interface PrintConfirmationProps {
     artistName: string
   }
   paymentIntentId: string | null
-  status: 'succeeded' | 'processing' | 'failed' | 'unknown'
+  status: 'succeeded' | 'processing' | 'failed' | 'unknown' | 'order_failed'
 }
 
 /**
@@ -32,14 +32,16 @@ interface PrintConfirmationProps {
  */
 export const PrintConfirmation = ({ artwork, paymentIntentId, status }: PrintConfirmationProps) => {
   useEffect(() => {
-    if (status !== 'succeeded' && status !== 'processing') return
+    // Also clear on order_failed: the card is authorized, so re-mounting the
+    // wizard with the old stash could let the buyer pay again — don't.
+    if (status !== 'succeeded' && status !== 'processing' && status !== 'order_failed') return
     // Wipe every stash for this artwork so a return visit starts the
     // wizard fresh — the previous order's config / country / address /
     // payment ids would otherwise re-hydrate on the next /print mount.
     clearPrintSession(artwork.slug)
   }, [artwork.slug, status])
 
-  const headline =
+  let headline =
     status === 'succeeded'
       ? 'Thank you — your order is confirmed.'
       : status === 'processing'
@@ -48,7 +50,7 @@ export const PrintConfirmation = ({ artwork, paymentIntentId, status }: PrintCon
           ? 'We couldn\u2019t find your payment.'
           : 'Payment didn\u2019t complete.'
 
-  const body =
+  let body =
     status === 'succeeded'
       ? `We\u2019ve placed a hold on your card and your order is now being prepared. We\u2019ll charge your card once your print enters production, and send a confirmation email with tracking details as soon as it ships.`
       : status === 'processing'
@@ -56,6 +58,13 @@ export const PrintConfirmation = ({ artwork, paymentIntentId, status }: PrintCon
         : status === 'unknown'
           ? `If you just completed a payment, please check your email for a receipt. Otherwise start a new order from the artwork page.`
           : `Your card wasn\u2019t charged. You can try again from the checkout screen.`
+
+  // order_failed: the card is authorized but we couldn't record the order.
+  // Honest + distinct from a declined card — the card was NOT charged.
+  if (status === 'order_failed') {
+    headline = 'Payment received — we’re finalizing your order'
+    body = `Your card has been authorized but not charged. We hit a snag recording your order and have already been notified — we’ll email you to confirm it shortly and put right anything that’s wrong. Please don’t pay again.`
+  }
 
   return (
     <div className={styles.confirmation}>

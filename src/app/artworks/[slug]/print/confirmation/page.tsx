@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { PrintConfirmation } from '@/components/checkout/PrintConfirmation'
+import { ensureOrderForPaymentIntent } from '@/lib/orders/ensureOrderForPaymentIntent'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
 
@@ -68,6 +69,16 @@ const ConfirmationPage = async ({ params, searchParams }: ConfirmationPageProps)
     }
   }
 
+  // Gate the success screen on the order ACTUALLY existing. An authorized PI
+  // isn't enough — create the order now (idempotently) if the webhook hasn't,
+  // and downgrade to an honest "couldn't finalize" state if it genuinely can't
+  // be created. Never show "confirmed" without an order row.
+  let status: 'succeeded' | 'processing' | 'failed' | 'unknown' | 'order_failed' = verifiedStatus
+  if (status === 'succeeded' && paymentIntentId) {
+    const ensured = await ensureOrderForPaymentIntent(paymentIntentId)
+    if (!ensured.ok) status = 'order_failed'
+  }
+
   const artistName = `${artwork.user.name} ${artwork.user.lastName}`
 
   return (
@@ -78,8 +89,8 @@ const ConfirmationPage = async ({ params, searchParams }: ConfirmationPageProps)
         imageUrl: artwork.imageUrl ?? '',
         artistName,
       }}
-      paymentIntentId={verifiedStatus === 'succeeded' ? paymentIntentId : null}
-      status={verifiedStatus}
+      paymentIntentId={status === 'succeeded' || status === 'order_failed' ? paymentIntentId : null}
+      status={status}
     />
   )
 }

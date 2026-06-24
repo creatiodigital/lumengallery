@@ -22,21 +22,16 @@ export const CartLine = ({ item }: CartLineProps) => {
   const { setQuantity, removeItem } = useCart()
   const { lineItemCents } = lineTotal(item)
 
+  // Limited editions are capped at a single copy per order: one buy → one
+  // edition number, so an order never carries two or three numbers that are
+  // hard to track. A buyer who wants another copy pays again. The '+' is
+  // disabled for limited lines; open editions step freely.
   const isLimited = item.editionType === 'limited'
 
-  // For limited lines, the provider reserves the delta on every increase and
-  // silently keeps the old quantity when stock runs out. We detect that no-op
-  // and disable '+' so the buyer isn't clicking a button that does nothing.
-  // setQuantity RETURNS the quantity actually achieved, so we compare that
-  // against the target — never a ref read in the await-continuation, which is
-  // stale before React commits the re-render.
-  const [atStockCap, setAtStockCap] = useState(false)
   const [confirmingRemove, setConfirmingRemove] = useState(false)
 
   const increase = async () => {
-    const target = item.quantity + 1
-    const reached = await setQuantity(item.lineId, target)
-    setAtStockCap(isLimited && reached < target)
+    await setQuantity(item.lineId, item.quantity + 1)
   }
 
   const decrease = async () => {
@@ -46,7 +41,6 @@ export const CartLine = ({ item }: CartLineProps) => {
       setConfirmingRemove(true)
       return
     }
-    setAtStockCap(false)
     await setQuantity(item.lineId, item.quantity - 1)
   }
 
@@ -95,7 +89,7 @@ export const CartLine = ({ item }: CartLineProps) => {
             size="smallSquared"
             label="+"
             aria-label="Increase quantity"
-            disabled={isLimited && atStockCap}
+            disabled={isLimited}
             onClick={increase}
           />
         </div>

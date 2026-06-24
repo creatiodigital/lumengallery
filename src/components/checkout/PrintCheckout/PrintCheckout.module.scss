@@ -168,32 +168,6 @@
   padding-right: var(--space-6);
 }
 
-// Phone field: dial-code dropdown + free-text number digits in one row.
-// The dropdown is independent of the shipping country (a buyer might
-// keep a foreign number after relocating, gift to another country, etc).
-.phoneRow {
-  display: flex;
-  gap: var(--space-2);
-  align-items: stretch;
-}
-
-.phoneDial {
-  flex: 0 0 auto;
-  width: 88px;
-}
-
-.phoneNumberCol {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.phoneNumber {
-  width: 100%;
-}
-
 .editButtonRow {
   margin-top: var(--space-8);
 }
