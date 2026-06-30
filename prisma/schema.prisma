@@ -361,6 +361,18 @@ model PrintOrder {
   trackingUrl       String?
   shippedAt         DateTime?
 
+  // Re-order / replacement reprint (damaged, wrong size, bad print, etc.).
+  // When the admin triggers a reprint, the order is reset to the "to place at
+  // TPS" step (fulfillmentStatus → null) WHILE paymentStatus stays 'succeeded',
+  // so it is never re-captured; the same numbered edition copy is remade
+  // (EditionNumber + payout untouched). These record WHY and HOW MANY times and
+  // drive the permanent "⟳ Replacement" badge + reason history.
+  // reorderReason ∈ 'damaged' | 'wrong_size' | 'print_quality' | 'other'.
+  reorderReason String?
+  reorderNote   String?
+  reorderedAt   DateTime?
+  reorderCount  Int       @default(0)
+
   // DEPRECATED — no longer read/written by AR-126 code. Kept ONLY so the
   // schema stays additive against prod, where `main` still reads/writes it.
   // Drop this column (schema + DB) in a follow-up once AR-126 is live on prod.

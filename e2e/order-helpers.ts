@@ -158,6 +158,7 @@ export async function buyOneLimited(
 /** Teardown for a single-limited bought order, safe in finally{}. */
 export async function teardownBoughtOrder(bought: BoughtLimitedOrder | null): Promise<void> {
   if (!bought) return
+  if (process.env.E2E_KEEP_DATA === '1') return // keep for manual inspection
   await releaseEditionNumberForPaymentIntent(bought.paymentIntentId, { allowSold: true })
   await cancelPaymentIntent(bought.paymentIntentId)
   await deletePrintOrderById(bought.orderId)
@@ -219,6 +220,7 @@ export async function buyLimitedPlusOpen(
  *  is idempotent, so it's safe even if the test already deleted the order. */
 export async function teardownBoughtMixed(bought: BoughtMixedOrder | null): Promise<void> {
   if (!bought) return
+  if (process.env.E2E_KEEP_DATA === '1') return // keep for manual inspection
   await releaseEditionNumberForPaymentIntent(bought.paymentIntentId, { allowSold: true })
   await cancelPaymentIntent(bought.paymentIntentId)
   await deletePrintOrderById(bought.orderId)
@@ -260,6 +262,49 @@ export async function authorizeLimitedCartPI(
     totalCents: intent.totals.totalCents,
     address,
   }
+}
+
+/**
+ * Hit the REAL reconcile-orders cron route as Vercel Cron would: a GET with
+ * `Authorization: Bearer <CRON_SECRET>`. `minAgeMinutes` overrides the route's
+ * default 30-min min-age so a freshly-created test PI isn't skipped as "too young"
+ * (the override is auth-gated; production cron sends no param). Pass an explicit
+ * `secret` (incl. '') to exercise the auth gate. Returns status + parsed JSON.
+ *
+ * CRON_SECRET is pinned + injected into the dev server and this runner by
+ * playwright.config — see the cronEnv block there.
+ */
+export async function hitReconcileCron(
+  request: APIRequestContext,
+  opts: { minAgeMinutes?: number; secret?: string | null } = {},
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  const secret = opts.secret === undefined ? process.env.CRON_SECRET : opts.secret
+  const qs = opts.minAgeMinutes != null ? `?minAgeMinutes=${opts.minAgeMinutes}` : ''
+  const headers: Record<string, string> = {}
+  if (secret) headers.authorization = `Bearer ${secret}`
+  const res = await request.get(`/api/cron/reconcile-orders${qs}`, { headers })
+  let body: Record<string, unknown> = {}
+  try {
+    body = (await res.json()) as Record<string, unknown>
+  } catch {
+    // non-JSON body (shouldn't happen) — leave body empty
+  }
+  return { status: res.status(), body }
+}
+
+/**
+ * Backdate an edition number's `reservedAt` past the reconcile min-age cutoff so
+ * Phase B (orphan-reservation release) considers it. Mirrors the real-world case
+ * where a reservation has been stuck for longer than the grace window.
+ */
+export async function backdateReservation(
+  paymentIntentId: string,
+  minutesAgo = 45,
+): Promise<void> {
+  await prisma.editionNumber.updateMany({
+    where: { paymentIntentId },
+    data: { reservedAt: new Date(Date.now() - minutesAgo * 60 * 1000) },
+  })
 }
 
 /**

@@ -39,6 +39,7 @@ export async function waitForPrintOrderByPaymentIntent(
  * (e.g., webhook never fired), this is a no-op.
  */
 export async function deletePrintOrderByPaymentIntent(paymentIntentId: string): Promise<void> {
+  if (process.env.E2E_KEEP_DATA === '1') return // keep for manual inspection
   try {
     await prisma.printOrder.deleteMany({ where: { paymentIntentId } })
   } catch (err) {
@@ -51,6 +52,7 @@ export async function deletePrintOrderByPaymentIntent(paymentIntentId: string): 
 
 /** Same as above but by orderId, for tests that already have it. */
 export async function deletePrintOrderById(orderId: string): Promise<void> {
+  if (process.env.E2E_KEEP_DATA === '1') return // keep for manual inspection
   try {
     await prisma.printOrder.deleteMany({ where: { id: orderId } })
   } catch (err) {

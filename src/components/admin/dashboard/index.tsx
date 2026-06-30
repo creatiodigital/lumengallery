@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -8,27 +8,40 @@ import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
 import { LoadingBar } from '@/components/ui/LoadingBar'
+import { listOrders } from '@/app/admin/orders/actions'
+import { type AttentionMetric, countAttentionMetrics } from '@/lib/orders/orderBuckets'
 
 import styles from './AdminDashboard.module.scss'
 
-// Counter cards surface what needs the admin's attention right now.
-// Each routes to a filtered view once the bucket query-param wiring
-// lands; for now we point at the parent list and let the admin pick
-// the tab manually. Counts are 0 placeholders until we wire the
-// server action — the goal of this pass is layout, not data.
+// Counter cards surface what needs the admin's attention right now. Each
+// carries a `metric` and reads its live count from countAttentionMetrics
+// (same bucketOf logic as the orders tabs — single source of truth).
+// Ordered by urgency: buyer-money / legal exposure first, payouts last.
+// A card only takes its red/amber tone when its count > 0 (see render),
+// so a clean panel is all-grey and the eye lands on what needs action.
 type CounterCard = {
   label: string
-  count: number
+  metric: AttentionMetric
   href: string
   tone?: 'red' | 'amber' | 'neutral'
 }
 
 const URGENT_COUNTERS: CounterCard[] = [
-  { label: 'Awaiting placement at TPS', count: 0, href: '/admin/orders', tone: 'amber' },
-  { label: 'Needs attention', count: 0, href: '/admin/orders', tone: 'red' },
-  { label: 'Refund still owed', count: 0, href: '/admin/orders', tone: 'red' },
-  { label: 'Delivered, artist not paid', count: 0, href: '/admin/orders', tone: 'amber' },
-  { label: 'Unanswered inquiries', count: 0, href: '/admin/dashboard', tone: 'amber' },
+  { label: 'Refund still owed', metric: 'refundOwed', href: '/admin/orders', tone: 'red' },
+  { label: 'Needs attention', metric: 'attention', href: '/admin/orders', tone: 'red' },
+  { label: 'New', metric: 'new', href: '/admin/orders', tone: 'amber' },
+  {
+    label: 'Awaiting placement at TPS',
+    metric: 'toPlace',
+    href: '/admin/orders',
+    tone: 'amber',
+  },
+  {
+    label: 'Delivered, artist not paid',
+    metric: 'deliveredUnpaid',
+    href: '/admin/orders',
+    tone: 'amber',
+  },
 ]
 
 type Hub = {
@@ -74,6 +87,8 @@ export const DashboardAdmin = () => {
   const { data: session, status: sessionStatus } = useSession()
   const router = useRouter()
 
+  const [metrics, setMetrics] = useState<Record<AttentionMetric, number> | null>(null)
+
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
       router.push('/')
@@ -84,6 +99,17 @@ export const DashboardAdmin = () => {
       }
     }
   }, [sessionStatus, session, router])
+
+  // Live counts for the "Needs your attention" cards. Reuses the orders
+  // list's bucketOf so the dashboard never drifts from the tab badges.
+  const loadCounts = useCallback(async () => {
+    const res = await listOrders()
+    if (res.ok) setMetrics(countAttentionMetrics(res.orders))
+  }, [])
+
+  useEffect(() => {
+    if (sessionStatus === 'authenticated') loadCounts()
+  }, [sessionStatus, loadCounts])
 
   if (sessionStatus === 'loading') {
     return (
@@ -114,16 +140,18 @@ export const DashboardAdmin = () => {
           list.
         </p>
         <div className={styles.counterGrid}>
-          {URGENT_COUNTERS.map((c) => (
-            <Link
-              key={c.label}
-              href={c.href}
-              className={`${styles.counterCard} ${c.tone ? styles[`tone_${c.tone}`] : ''}`}
-            >
-              <div className={styles.counterValue}>{c.count}</div>
-              <div className={styles.counterLabel}>{c.label}</div>
-            </Link>
-          ))}
+          {URGENT_COUNTERS.map((c) => {
+            const count = metrics ? metrics[c.metric] : 0
+            // Tone only kicks in when there's actually work — a 0 stays
+            // neutral grey so the eye lands on the cards that need action.
+            const toneClass = count > 0 && c.tone ? styles[`tone_${c.tone}`] : ''
+            return (
+              <Link key={c.label} href={c.href} className={`${styles.counterCard} ${toneClass}`}>
+                <div className={styles.counterValue}>{count}</div>
+                <div className={styles.counterLabel}>{c.label}</div>
+              </Link>
+            )
+          })}
         </div>
       </section>
 

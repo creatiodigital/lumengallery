@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { findOrphanedReservations } from '@/lib/editions/findOrphanedReservations'
+import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
+import { ensureOrderForPaymentIntent } from '@/lib/orders/ensureOrderForPaymentIntent'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { captureError } from '@/lib/observability/captureError'
 import prisma from '@/lib/prisma'
@@ -8,22 +11,36 @@ import { stripe } from '@/lib/stripe/client'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+const DEFAULT_MIN_AGE_MINUTES = 30
+
 /**
- * Hourly safety-net cron. Lists Stripe PaymentIntents from the last 24h
- * that originated from our wizard (have wizardConfig metadata) and are
- * in a state that means the webhook *should* have created an order
- * (`requires_capture`, `succeeded`, or `processing`). If any of those
- * have no matching PrintOrder row in our DB, sends a single alert email
- * listing the orphans so the admin can recover them by hand.
+ * Safety-net cron (Layer 3 of guaranteed order capture). Two phases:
  *
- * Why this exists: the Stripe webhook is the only thing that creates
- * PrintOrder rows. If the webhook fails to deliver (mid-deploy, DNS
- * blip, our app down), Stripe retries for ~3 days then drops it. This
- * cron catches the gap within an hour.
+ *   A. RECOVER — list Stripe PaymentIntents from the last 24h that originated
+ *      from our checkout (wizardConfig metadata for single-print, kind='cart'
+ *      for cart) and are authorized (`requires_capture`/`succeeded`). If one has
+ *      no PrintOrder row, create it on the spot via the SAME idempotent builder
+ *      the confirmation page uses (`ensureOrderForPaymentIntent`), binding the
+ *      reserved edition number. Any recovery means the webhook path is degraded,
+ *      so we ALWAYS alert when something was auto-fixed.
  *
- * Auth: Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` on every
- * scheduled invocation. We reject anything else with 401 to keep this
- * endpoint from being scraped.
+ *   B. RELEASE — find limited-edition numbers stuck `reserved` with a PI attached
+ *      but no order (the orphaned-reservation leak: reserved at PI creation, but
+ *      the webhook that releases on cancel/expiry never fired). Run AFTER phase A
+ *      so authorized PIs have had their numbers bound first. For each remaining
+ *      stuck PI: release the number iff the PI is dead
+ *      (`canceled`/`requires_payment_method`/`requires_confirmation`); leave
+ *      authorized/in-flight ones; if the PI can't be retrieved at all, leave it
+ *      and alert (never auto-release on incomplete info).
+ *
+ * Why this exists: order creation must not depend solely on the Stripe webhook
+ * (mid-deploy, DNS blip, our app down). Layer 1 closes the gap at confirmation;
+ * this catches anything the buyer never came back to confirm.
+ *
+ * Auth: Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`. Anything else is
+ * 401. An authorized caller may pass `?minAgeMinutes=N` to override the 30-min
+ * min-age (e.g. an immediate reconcile, or e2e where the PI is seconds old);
+ * production cron sends no param → 30-min default.
  */
 export async function GET(req: NextRequest) {
   const expected = process.env.CRON_SECRET
@@ -36,16 +53,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
 
-  // 24h lookback. Stripe retries failed webhooks for up to 3 days; an
-  // hourly cron with a 24h window catches any orphan within an hour of
-  // it stabilising.
+  // 24h lookback. Stripe retries failed webhooks for up to 3 days; a 24h window
+  // catches any orphan within a cron tick of it stabilising.
   const since = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000)
 
-  // Skip PIs younger than this — webhook delivery has its own retry
-  // window, and we don't want to alert on a transient delay that will
-  // resolve itself within minutes.
-  const minAgeSeconds = 30 * 60
-  const cutoff = Math.floor(Date.now() / 1000) - minAgeSeconds
+  // Skip PIs younger than this — webhook delivery has its own retry window, and
+  // we don't want to act on a transient delay that resolves itself in minutes.
+  // Auth-gated `?minAgeMinutes=` override (default 30) for immediate reconciles
+  // and tests; clamped to a sane range.
+  // NB: searchParams.get returns null when absent, and Number(null) === 0 (not
+  // NaN) — so guard on null FIRST, else the default min-age would never apply and
+  // the cron would act on PaymentIntents seconds old in production.
+  const minAgeParam = new URL(req.url).searchParams.get('minAgeMinutes')
+  const parsedMinAge = minAgeParam === null ? Number.NaN : Number(minAgeParam)
+  const minAgeMinutes =
+    Number.isFinite(parsedMinAge) && parsedMinAge >= 0 ? parsedMinAge : DEFAULT_MIN_AGE_MINUTES
+  const cutoff = Math.floor(Date.now() / 1000) - minAgeMinutes * 60
 
   let stripePIs: Awaited<ReturnType<typeof stripe.paymentIntents.list>>['data'] = []
   try {
@@ -70,57 +93,145 @@ export async function GET(req: NextRequest) {
   }
 
   // Only consider PIs that:
-  //  - originated from our wizard (have a wizardConfig metadata field)
+  //  - originated from our checkout (single-print carries `wizardConfig`; cart
+  //    carries `kind='cart'` and NO wizardConfig — both must be covered)
   //  - are in a state where an order should exist
-  //  - are at least minAgeSeconds old (let webhook retries finish first)
+  //  - are at least minAgeMinutes old (let webhook retries finish first)
   const ourPIs = stripePIs.filter((pi) => {
-    if (!pi.metadata?.wizardConfig) return false
+    const ours = Boolean(pi.metadata?.wizardConfig) || pi.metadata?.kind === 'cart'
+    if (!ours) return false
     if (pi.created > cutoff) return false
     return (
       pi.status === 'requires_capture' || pi.status === 'succeeded' || pi.status === 'processing'
     )
   })
 
-  if (ourPIs.length === 0) {
-    return NextResponse.json({ checked: 0, orphans: 0 })
-  }
-
   const piIds = ourPIs.map((p) => p.id)
-  const existing = await prisma.printOrder.findMany({
-    where: { paymentIntentId: { in: piIds } },
-    select: { paymentIntentId: true },
-  })
+  const existing = piIds.length
+    ? await prisma.printOrder.findMany({
+        where: { paymentIntentId: { in: piIds } },
+        select: { paymentIntentId: true },
+      })
+    : []
   const existingIds = new Set(existing.map((o) => o.paymentIntentId))
 
+  // Orphan candidates: ours, in scope, no order row yet.
   const orphans = ourPIs.filter((pi) => !existingIds.has(pi.id))
 
-  if (orphans.length > 0) {
-    const orphanLines = orphans
-      .map((pi) => {
-        const ageMin = Math.round((Date.now() / 1000 - pi.created) / 60)
-        const total = pi.amount
-          ? `${(pi.amount / 100).toFixed(2)} ${pi.currency.toUpperCase()}`
-          : '?'
-        return `${pi.id} — ${pi.status} — ${total} — ${ageMin}m old — ${pi.receipt_email ?? 'no email'}`
-      })
-      .join('\n')
+  // Phase A — auto-recover. `processing` PIs aren't yet authorized, so
+  // ensureOrderForPaymentIntent returns ok:false for them BY DESIGN — count them
+  // as "still pending" (a few minutes from authorising), not a hard failure.
+  let recovered = 0
+  let recoveryFailed = 0
+  let stillPending = 0
+  const recoveredIds: string[] = []
+  const failedLines: string[] = []
 
+  for (const pi of orphans) {
+    if (pi.status === 'processing') {
+      stillPending += 1
+      continue
+    }
+    const res = await ensureOrderForPaymentIntent(pi.id)
+    if (res.ok) {
+      recovered += 1
+      recoveredIds.push(pi.id)
+    } else {
+      recoveryFailed += 1
+      const total = pi.amount
+        ? `${(pi.amount / 100).toFixed(2)} ${pi.currency.toUpperCase()}`
+        : '?'
+      failedLines.push(`${pi.id} — ${pi.status} — ${total} — ${res.error}`)
+    }
+  }
+
+  // Phase B — release orphan reservations. Runs AFTER phase A, so any PI we just
+  // recovered has its number bound (orderId set) and falls out of this query;
+  // only genuinely unbound reservations remain.
+  const reservationCutoff = new Date(Date.now() - minAgeMinutes * 60 * 1000)
+  const orphanReservations = await findOrphanedReservations(reservationCutoff)
+
+  let reservationsReleased = 0
+  let reservationsUnresolvedPI = 0
+  const unresolvedLines: string[] = []
+
+  for (const { paymentIntentId } of orphanReservations) {
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId).catch(() => null)
+    if (!pi) {
+      // Can't confirm it's dead — never auto-release on incomplete info
+      // (Eduardo, 2026-06-24). Leave the number held and flag for a human.
+      reservationsUnresolvedPI += 1
+      unresolvedLines.push(`${paymentIntentId} — PI could not be retrieved from Stripe`)
+      continue
+    }
+    const dead =
+      pi.status === 'canceled' ||
+      pi.status === 'requires_payment_method' ||
+      pi.status === 'requires_confirmation'
+    if (dead) {
+      // Abandoned/dead: return the number to the pool.
+      await releaseEditionNumberForPaymentIntent(paymentIntentId)
+      reservationsReleased += 1
+    }
+    // Authorized (requires_capture/succeeded) or in-flight (processing/
+    // requires_action): leave the hold — phase A owns the authorized case and
+    // we never free a number whose card is still held.
+  }
+
+  // Always alert when anything was auto-fixed or still needs a human: an
+  // auto-recovery or an auto-release happening at all means the webhook path is
+  // degraded (Eduardo, 2026-06-24).
+  const needsAlert =
+    recovered > 0 || recoveryFailed > 0 || reservationsReleased > 0 || reservationsUnresolvedPI > 0
+  if (needsAlert) {
+    const parts: string[] = []
+    if (recovered > 0) {
+      parts.push(
+        `${recovered} order${recovered === 1 ? '' : 's'} were AUTO-RECOVERED — the buyer paid but the Stripe webhook never created the order. They now exist in /admin/orders, but the webhook path is degraded and needs investigating before launch.\n\nRecovered: ${recoveredIds.join(', ')}`,
+      )
+    }
+    if (reservationsReleased > 0) {
+      parts.push(
+        `${reservationsReleased} orphaned edition-number reservation${reservationsReleased === 1 ? '' : 's'} (PI canceled/abandoned, never bound to an order) were AUTO-RELEASED back to the available pool.`,
+      )
+    }
+    if (recoveryFailed > 0) {
+      parts.push(
+        `${recoveryFailed} authorized PaymentIntent${recoveryFailed === 1 ? '' : 's'} could NOT be recovered automatically — a human must create the order or refund the buyer:\n\n${failedLines.join('\n')}`,
+      )
+    }
+    if (reservationsUnresolvedPI > 0) {
+      parts.push(
+        `${reservationsUnresolvedPI} stuck reservation${reservationsUnresolvedPI === 1 ? '' : 's'} could not be resolved (PI not retrievable from Stripe) — left held, needs a manual check:\n\n${unresolvedLines.join('\n')}`,
+      )
+    }
     await sendAdminCriticalAlert({
-      title: `${orphans.length} paid PaymentIntent${orphans.length === 1 ? '' : 's'} with no order row`,
-      problem: `The hourly reconciliation job found ${orphans.length} Stripe PaymentIntent${orphans.length === 1 ? '' : 's'} from the last 24h that should have created a PrintOrder row but didn't. These are silent webhook failures — the buyer was charged or has a card hold, and no order is visible in /admin/orders.\n\n${orphanLines}`,
-      context: { orphanCount: orphans.length, checkedCount: ourPIs.length },
+      title: `Reconcile cron: ${recovered} recovered, ${reservationsReleased} released, ${recoveryFailed + reservationsUnresolvedPI} need a human`,
+      problem: parts.join('\n\n'),
+      context: {
+        recovered,
+        recoveryFailed,
+        stillPending,
+        reservationsReleased,
+        reservationsUnresolvedPI,
+        checked: ourPIs.length,
+      },
       whatToDo: [
-        'Open each PaymentIntent in Stripe and confirm it really has no PrintOrder (search by PI id in your DB).',
-        'For each orphan: open Stripe → grab the wizardConfig metadata + shipping address → recreate the order manually.',
-        'If you cannot recover an order, refund the buyer and contact them to re-place.',
-        'Until each orphan is resolved, this alert will fire again every hour. To stop the alert: create the missing PrintOrder row, refund the buyer, or cancel the PaymentIntent.',
+        'Investigate WHY the webhook did not fire: check the Stripe Dashboard webhook endpoint, signing secret, and event subscription for this environment.',
+        'For any order that could not be recovered: open the PaymentIntent in Stripe, grab its metadata + shipping address, and recreate the order — or refund the buyer and ask them to re-place.',
+        'For any unresolved reservation: confirm the PI in Stripe; if dead, release the number from the edition-sales ledger; if live, recover its order.',
+        'Recovered orders are real and ready to fulfil; verify each one in /admin/orders.',
       ],
     })
   }
 
   return NextResponse.json({
     checked: ourPIs.length,
-    orphans: orphans.length,
-    orphanIds: orphans.map((p) => p.id),
+    recovered,
+    recoveryFailed,
+    stillPending,
+    reservationsScanned: orphanReservations.length,
+    reservationsReleased,
+    reservationsUnresolvedPI,
   })
 }

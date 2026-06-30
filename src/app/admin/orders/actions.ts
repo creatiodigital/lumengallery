@@ -13,6 +13,8 @@ import { sendOrderInProductionEmail } from '@/lib/emails/orderInProduction'
 import { sendOrderShippedEmail } from '@/lib/emails/orderShipped'
 import { sendRefundIssuedEmail } from '@/lib/emails/refundIssued'
 import { markEditionNumberSold } from '@/lib/editions/reserveEditionNumber'
+import { REORDER_REASONS, type ReorderReason } from '@/lib/orders/reorderReasons'
+import { computeOrderPayout } from '@/lib/orders/orderPayout'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { captureError } from '@/lib/observability/captureError'
 import { logOrderEvent } from '@/lib/orders/logOrderEvent'
@@ -43,10 +45,20 @@ export type AdminOrderRow = {
   transferId: string | null
   transferStatus: string | null
   paidOutAt: string | null
+  /** Artist-payout rollup that is cart-aware (every line paid) AND legacy-aware
+   *  (header paidOutAt). Drives the "Artist paid" bucket + payout column so a
+   *  fully-paid cart order doesn't get stranded in "Delivered". */
+  payoutComplete: boolean
+  payoutAt: string | null
+  payoutManual: boolean
   latestEvent: { kind: string; message: string | null; at: string } | null
   /** Number of PrintOrderItem line rows. 0 = legacy single-print order
    *  (data on the header), > 0 = cart order. */
   itemCount: number
+  /** Replacement-reprint marker. > 0 = this order has been re-ordered (see
+   *  reorderReason); drives the permanent "⟳ Replacement" badge. */
+  reorderCount: number
+  reorderReason: string | null
 }
 
 async function requireAdminSession() {
@@ -83,11 +95,14 @@ export async function listOrders(): Promise<
         take: 1,
         select: { kind: true, message: true, at: true },
       },
+      items: { select: { paidOutAt: true, transferStatus: true } },
       _count: { select: { items: true } },
     },
   })
 
-  const orders: AdminOrderRow[] = rows.map((r) => ({
+  const orders: AdminOrderRow[] = rows.map((r) => {
+    const payout = computeOrderPayout(r.items, r.paidOutAt, r.transferStatus)
+    return {
     id: r.id,
     paymentIntentId: r.paymentIntentId,
     createdAt: r.createdAt.toISOString(),
@@ -115,11 +130,17 @@ export async function listOrders(): Promise<
     transferId: r.transferId,
     transferStatus: r.transferStatus,
     paidOutAt: r.paidOutAt?.toISOString() ?? null,
+    payoutComplete: payout.complete,
+    payoutAt: payout.at?.toISOString() ?? null,
+    payoutManual: payout.manual,
     latestEvent: r.events[0]
       ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
       : null,
     itemCount: r._count.items,
-  }))
+    reorderCount: r.reorderCount,
+    reorderReason: r.reorderReason,
+    }
+  })
 
   return { ok: true, orders }
 }
@@ -167,6 +188,9 @@ export type AdminOrderItem = {
 }
 
 export type AdminOrderDetail = AdminOrderRow & {
+  /** Replacement-reprint detail for the header badge + history. */
+  reorderNote: string | null
+  reorderedAt: string | null
   shippingAddress: unknown
   printConfig: unknown
   productionCents: number
@@ -643,6 +667,8 @@ export async function getOrderDetail(
   )
   const isCart = items.length > 0
 
+  const payout = computeOrderPayout(r.items, r.paidOutAt, r.transferStatus)
+
   const order: AdminOrderDetail = {
     id: r.id,
     paymentIntentId: r.paymentIntentId,
@@ -667,10 +693,17 @@ export async function getOrderDetail(
     transferId: r.transferId,
     transferStatus: r.transferStatus,
     paidOutAt: r.paidOutAt?.toISOString() ?? null,
+    payoutComplete: payout.complete,
+    payoutAt: payout.at?.toISOString() ?? null,
+    payoutManual: payout.manual,
     latestEvent: r.events[0]
       ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
       : null,
     itemCount: items.length,
+    reorderCount: r.reorderCount,
+    reorderReason: r.reorderReason,
+    reorderNote: r.reorderNote,
+    reorderedAt: r.reorderedAt?.toISOString() ?? null,
     shippingAddress: r.shippingAddress,
     printConfig: r.printConfig,
     productionCents: r.productionCents,
@@ -1136,6 +1169,77 @@ export async function markItemPaidManually(
 }
 
 /**
+ * Re-order / replacement reprint — the faulty-goods remedy when the buyer wants a
+ * reprint instead of a refund. Resets the SAME order back to step ② "To place at
+ * TPS" so the replacement walks the normal pipeline again, WITHOUT re-charging
+ * (paymentStatus stays 'succeeded', so capturePayment can't run) and WITHOUT
+ * touching the edition number or payout — the same numbered copy is remade.
+ * Records the reason + bumps reorderCount for the permanent "⟳ Replacement"
+ * badge. The soft cap (warn from the 3rd) is a UI concern; the server allows any
+ * count. Spec: docs/superpowers/specs/2026-06-26-reorder-reprint-design.md
+ */
+export async function reorderForReprint(
+  orderId: string,
+  opts: { reason: string; note?: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+  const adminId = guard.session.user.id
+
+  const reason = (opts.reason ?? '').trim()
+  if (!REORDER_REASONS.includes(reason as ReorderReason)) {
+    return { ok: false, error: 'A valid reason is required to re-order.' }
+  }
+  const note = (opts.note ?? '').trim().slice(0, 500) || null
+
+  const order = await prisma.printOrder.findUnique({
+    where: { id: orderId },
+    select: { id: true, paymentStatus: true, fulfillmentStatus: true, reorderCount: true },
+  })
+  if (!order) return { ok: false, error: 'Order not found.' }
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return { ok: false, error: `Order is ${order.paymentStatus} — no further actions.` }
+  }
+  if (order.paymentStatus !== 'succeeded') {
+    return { ok: false, error: 'Only a captured order can be re-ordered.' }
+  }
+  // A reprint only makes sense once a print physically exists (produced /
+  // shipped / delivered) — not for an order still pending placement at TPS.
+  const reprintable = [STAGE_STARTED, STAGE_SHIPPED, STAGE_COMPLETE]
+  if (!order.fulfillmentStatus || !reprintable.includes(order.fulfillmentStatus)) {
+    return {
+      ok: false,
+      error: `Re-order is only available once the print has been produced (current: ${order.fulfillmentStatus ?? 'pending placement'}).`,
+    }
+  }
+
+  // Reset to "To place at TPS" (succeeded + pending) with a fresh shipment; keep
+  // the edition number sold and the payout untouched (the sale stands).
+  await prisma.printOrder.update({
+    where: { id: order.id },
+    data: {
+      fulfillmentStatus: STAGE_PENDING,
+      trackingUrl: null,
+      shippedAt: null,
+      reorderReason: reason,
+      reorderNote: note,
+      reorderedAt: new Date(),
+      reorderCount: { increment: 1 },
+    },
+  })
+
+  await logOrderEvent({
+    orderId: order.id,
+    kind: 'reorder',
+    actor: `admin:${adminId}`,
+    message: `Replacement reprint (#${order.reorderCount + 1}) — ${reason}${note ? `: ${note}` : ''}`,
+    payload: { reason, note, count: order.reorderCount + 1 },
+  })
+
+  return { ok: true }
+}
+
+/**
  * Full refund of a buyer's order. Handles both pre-capture (authorized,
  * no money moved) and post-capture (succeeded, money in our balance)
  * states.
@@ -1510,7 +1614,19 @@ export async function deleteOrder(
  * auth (auth → succeeded) and advances stage to Placed. No buyer email
  * at this stage — Placed is internal.
  */
-export async function markPlaced(
+/**
+ * Step ① of fulfillment: CAPTURE the buyer's payment, WITHOUT placing the order
+ * at TPS. Capture-first is the money-safety rule — the gallery must hold the
+ * buyer's money before spending its own at TPS (TPS charges at placement with no
+ * account billing, so paying TPS before a successful capture risks a hard loss).
+ * See docs/superpowers/specs/2026-06-24-capture-place-split-design.md.
+ *
+ * Leaves `fulfillmentStatus` at STAGE_PENDING (null) — the order then sits in the
+ * "To place at TPS" queue until the admin places it and calls `markPlacedAtTps`.
+ * On a Stripe capture failure (dead/expired card, fraud block) the order is left
+ * untouched and recoverable, and crucially TPS has been paid nothing.
+ */
+export async function capturePayment(
   orderId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const guard = await requireAdminSession()
@@ -1518,6 +1634,9 @@ export async function markPlaced(
 
   const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
   if (!order) return { ok: false, error: 'Order not found.' }
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return { ok: false, error: `Order is ${order.paymentStatus} — no further actions.` }
+  }
   if (order.fulfillmentStatus !== STAGE_PENDING) {
     return {
       ok: false,
@@ -1536,25 +1655,26 @@ export async function markPlaced(
   } catch (err) {
     captureError(err, {
       flow: 'admin',
-      stage: 'mark-placed-capture',
+      stage: 'capture-payment',
       extra: { orderId, paymentIntentId: order.paymentIntentId },
       level: 'error',
-      fingerprint: ['admin:mark-placed-capture-failed'],
+      fingerprint: ['admin:capture-payment-failed'],
     })
     return {
       ok: false,
-      error: `Stripe capture failed: ${err instanceof Error ? err.message : String(err)}`,
+      error: `Stripe capture failed: ${err instanceof Error ? err.message : String(err)}. The buyer's card may be canceled or the hold expired — contact the buyer or cancel the order. TPS has not been paid.`,
     }
   }
 
+  // Money taken, but NOT placed at TPS — fulfillment stays pending.
   await prisma.printOrder.update({
     where: { id: order.id },
-    data: { fulfillmentStatus: STAGE_PLACED, paymentStatus: 'succeeded' },
+    data: { paymentStatus: 'succeeded' },
   })
 
-  // Confirm the held edition number as sold at capture (limited editions
-  // only; a no-op for open orders). Our ledger is authoritative — the
-  // admin still mirrors this number as sold in TPS by hand.
+  // Confirm the held edition number as sold at capture (money collected =
+  // sale final; limited editions only, a no-op for open orders). Our ledger is
+  // authoritative — the admin still mirrors this number as sold in TPS by hand.
   await markEditionNumberSold(order.paymentIntentId)
   // Resolve the order's edition number for the timeline event. Single-print
   // orders bind via the deprecated EditionNumber.orderId; cart orders bind
@@ -1576,9 +1696,55 @@ export async function markPlaced(
 
   await logOrderEvent({
     orderId: order.id,
+    kind: 'captured',
+    actor: `admin:${guard.session.user.id}`,
+    message: 'Payment captured (buyer charged)',
+    payload: {},
+  })
+
+  return { ok: true }
+}
+
+/**
+ * Step ② of fulfillment: record that the admin has placed + paid the order at
+ * TPS. Requires a SUCCEEDED capture first (so it's impossible to place an order
+ * the gallery hasn't been paid for), and does no Stripe work — the capture
+ * already happened in `capturePayment`. Advances STAGE_PENDING → STAGE_PLACED.
+ */
+export async function markPlacedAtTps(
+  orderId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
+  if (!order) return { ok: false, error: 'Order not found.' }
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return { ok: false, error: `Order is ${order.paymentStatus} — no further actions.` }
+  }
+  if (order.fulfillmentStatus !== STAGE_PENDING) {
+    return {
+      ok: false,
+      error: `Already advanced past pending (status: ${order.fulfillmentStatus}).`,
+    }
+  }
+  if (order.paymentStatus !== 'succeeded') {
+    return {
+      ok: false,
+      error: 'Capture the payment first — you cannot place an order at TPS before the buyer has been charged.',
+    }
+  }
+
+  await prisma.printOrder.update({
+    where: { id: order.id },
+    data: { fulfillmentStatus: STAGE_PLACED },
+  })
+
+  await logOrderEvent({
+    orderId: order.id,
     kind: 'admin_action',
     actor: `admin:${guard.session.user.id}`,
-    message: 'Marked placed at The Print Space (payment captured)',
+    message: 'Marked placed at The Print Space',
     payload: {},
   })
 

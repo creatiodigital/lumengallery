@@ -59,7 +59,12 @@ test.describe('Refunded order is read-only in admin', () => {
         'a refunded order must not offer "cancel order"',
       ).toHaveCount(0)
       await expect(
-        page.getByRole('button', { name: 'Capture payment & mark placed' }),
+        page.getByRole('button', { name: 'Capture payment' }),
+        'a refunded order must not offer "capture payment"',
+      ).toHaveCount(0)
+      await expect(
+        page.getByRole('button', { name: 'Mark placed at TPS' }),
+        'a refunded order must not offer "mark placed at TPS"',
       ).toHaveCount(0)
     } finally {
       await teardownBoughtOrder(bought)

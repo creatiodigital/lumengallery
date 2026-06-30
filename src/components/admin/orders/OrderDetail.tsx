@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -21,16 +21,19 @@ import {
   markDelivered,
   markItemPaidManually,
   markPaidManually,
-  markPlaced,
+  capturePayment,
+  markPlacedAtTps,
   cancelOrder,
   markShipped,
   markStarted,
   refundOrder,
+  reorderForReprint,
   releaseItemPayout,
   releasePayout,
   type AdminOrderDetail as Detail,
   type AdminOrderItem,
 } from '@/app/admin/orders/actions'
+import { REORDER_REASONS, REORDER_REASON_LABELS } from '@/lib/orders/reorderReasons'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
 
@@ -68,6 +71,45 @@ const Dot = ({ color }: { color: DotColor }) => (
     }}
   />
 )
+
+// Shared issue banner — matches the existing "💸 Refund needed" box so
+// every must-not-miss order state reads the same way: a bold title, a
+// plain-language explanation, and the action (if any).
+const IssueBanner = ({
+  tone,
+  title,
+  children,
+}: {
+  tone: 'red' | 'amber'
+  title: string
+  children: ReactNode
+}) => {
+  const palette =
+    tone === 'red'
+      ? { bg: '#fdecea', border: '#f5a5a0' }
+      : { bg: '#fef3c7', border: '#fcd34d' }
+  return (
+    <div className={dashboardStyles.section}>
+      <div
+        style={{
+          padding: '12px 16px',
+          background: palette.bg,
+          border: `1px solid ${palette.border}`,
+          borderRadius: 4,
+          fontSize: 13,
+          lineHeight: 1.55,
+        }}
+      >
+        <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>{title}</p>
+        <div style={{ margin: 0 }}>{children}</div>
+      </div>
+    </div>
+  )
+}
+
+// Stripe holds a manual-capture card authorization for ~7 days; after
+// that it lapses and the sale can no longer be collected.
+const AUTH_HOLD_DAYS = 7
 
 const TERMINAL_STAGES = new Set(['Complete', 'Cancelled'])
 
@@ -430,11 +472,19 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
 
+  const [reorderOpen, setReorderOpen] = useState(false)
+  const [reorderReason, setReorderReason] = useState('')
+  const [reorderNote, setReorderNote] = useState('')
+  const [reordering, setReordering] = useState(false)
+  const [reorderError, setReorderError] = useState<string | null>(null)
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const [busy, setBusy] = useState<'placed' | 'started' | 'shipped' | 'delivered' | null>(null)
+  const [busy, setBusy] = useState<
+    'capture' | 'placed' | 'started' | 'shipped' | 'delivered' | null
+  >(null)
   const [busyError, setBusyError] = useState<string | null>(null)
   const [shipOpen, setShipOpen] = useState(false)
   const [trackingUrlInput, setTrackingUrlInput] = useState('')
@@ -519,11 +569,11 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
     router.push('/admin/orders')
   }, [order, router])
 
-  const handlePlaced = useCallback(async () => {
+  const handleCapture = useCallback(async () => {
     if (!order) return
-    setBusy('placed')
+    setBusy('capture')
     setBusyError(null)
-    const res = await markPlaced(order.id)
+    const res = await capturePayment(order.id)
     setBusy(null)
     if (!res.ok) {
       setBusyError(res.error)
@@ -531,6 +581,35 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
     }
     await load()
   }, [order, load])
+
+  const handlePlacedAtTps = useCallback(async () => {
+    if (!order) return
+    setBusy('placed')
+    setBusyError(null)
+    const res = await markPlacedAtTps(order.id)
+    setBusy(null)
+    if (!res.ok) {
+      setBusyError(res.error)
+      return
+    }
+    await load()
+  }, [order, load])
+
+  const handleReorder = useCallback(async () => {
+    if (!order) return
+    setReordering(true)
+    setReorderError(null)
+    const res = await reorderForReprint(order.id, { reason: reorderReason, note: reorderNote })
+    setReordering(false)
+    if (!res.ok) {
+      setReorderError(res.error)
+      return
+    }
+    setReorderOpen(false)
+    setReorderReason('')
+    setReorderNote('')
+    await load()
+  }, [order, reorderReason, reorderNote, load])
 
   const handleStarted = useCallback(async () => {
     if (!order) return
@@ -721,6 +800,22 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
   const isTerminalPayment =
     order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled'
 
+  // Silent-failure states that need an explicit explanation. A `canceled`
+  // order with no fulfillment stage was never a deliberate dashboard
+  // cancel (that sets fulfillmentStatus='Cancelled') — it's an expired or
+  // externally-canceled auth, i.e. a lost sale. `failed` is a declined card.
+  const isAuthExpired = order.paymentStatus === 'canceled' && order.fulfillmentStatus === null
+  const isPaymentFailed = order.paymentStatus === 'failed'
+
+  // Proactive warning as the ~7-day auth window closes (or has lapsed)
+  // on a still-authorized, unplaced order — capture before the sale is lost.
+  const authExpiresAt =
+    order.paymentStatus === 'authorized' && order.fulfillmentStatus === null
+      ? new Date(new Date(order.createdAt).getTime() + AUTH_HOLD_DAYS * 86_400_000)
+      : null
+  const authExpiringSoon =
+    authExpiresAt !== null && authExpiresAt.getTime() - Date.now() <= 2 * 86_400_000
+
   return (
     <DashboardLayout backLink="/admin/orders" backLabel="← Back to Orders">
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', marginBottom: 8 }}>
@@ -753,6 +848,29 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               </>
             )}
           </p>
+          {order.reorderCount > 0 && (
+            <p style={{ margin: '6px 0 0 0', fontSize: 13 }}>
+              <Badge
+                label={`⟳ Replacement${order.reorderCount > 1 ? ` ×${order.reorderCount}` : ''}`}
+                variant="unpublished"
+              />
+              {order.reorderReason && (
+                <span style={{ opacity: 0.75 }}>
+                  {' '}
+                  —{' '}
+                  {REORDER_REASON_LABELS[
+                    order.reorderReason as keyof typeof REORDER_REASON_LABELS
+                  ] ?? order.reorderReason}
+                </span>
+              )}
+              {order.reorderNote && (
+                <span style={{ opacity: 0.6 }}> · “{order.reorderNote}”</span>
+              )}
+              {order.reorderedAt && (
+                <span style={{ opacity: 0.6 }}> · {formatDateTime(order.reorderedAt)}</span>
+              )}
+            </p>
+          )}
           <p className={dashboardStyles.sectionDescription} style={{ margin: '4px 0 0 0' }}>
             Placed {formatDateTime(order.createdAt)} ·{' '}
             <Link href="/admin/orders">back to all orders</Link>
@@ -760,7 +878,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         </div>
       </div>
 
-      {isTerminalPayment && (
+      {isTerminalPayment && !isAuthExpired && (
         <div className={dashboardStyles.section}>
           <div
             style={{
@@ -775,6 +893,39 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             This order is {order.paymentStatus} — view only. No further action is needed.
           </div>
         </div>
+      )}
+
+      {isAuthExpired && (
+        <IssueBanner tone="red" title="⚠️ Authorization expired — no payment collected">
+          The buyer&apos;s card hold lapsed before the payment was captured, so{' '}
+          <strong>no money was taken</strong> and there is nothing to fulfil. If they still want the
+          print, they&apos;ll need to purchase again. You can remove this order from the Danger zone
+          below.
+        </IssueBanner>
+      )}
+
+      {isPaymentFailed && (
+        <IssueBanner tone="red" title="⛔ Payment failed — card declined">
+          The buyer&apos;s card was declined, so <strong>no money was taken</strong> and there is
+          nothing to fulfil. No action is required unless you want to follow up. You can remove this
+          order from the Danger zone below.
+        </IssueBanner>
+      )}
+
+      {authExpiringSoon && authExpiresAt && (
+        <IssueBanner
+          tone="amber"
+          title={
+            authExpiresAt.getTime() <= Date.now()
+              ? '⏳ Authorization may have expired'
+              : '⏳ Authorization expires soon'
+          }
+        >
+          Stripe holds the buyer&apos;s card for about {AUTH_HOLD_DAYS} days. This hold{' '}
+          {authExpiresAt.getTime() <= Date.now() ? 'was expected to lapse' : 'lapses'} around{' '}
+          <strong>{formatDateTime(authExpiresAt.toISOString())}</strong>. Capture the payment (button
+          below) before then or the sale — <strong>{formatEuro(order.totalCents)}</strong> — is lost.
+        </IssueBanner>
       )}
 
       {order.fulfillmentStatus === 'Cancelled' && order.paymentStatus === 'succeeded' && (
@@ -908,8 +1059,17 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               <Button
                 font="dashboard"
                 variant="primary"
-                label={busy === 'placed' ? 'Capturing…' : 'Capture payment & mark placed'}
-                onClick={handlePlaced}
+                label={busy === 'capture' ? 'Capturing…' : 'Capture payment'}
+                onClick={handleCapture}
+                disabled={busy !== null}
+              />
+            )}
+            {stage === null && order.paymentStatus === 'succeeded' && (
+              <Button
+                font="dashboard"
+                variant="primary"
+                label={busy === 'placed' ? 'Marking…' : 'Mark placed at TPS'}
+                onClick={handlePlacedAtTps}
                 disabled={busy !== null}
               />
             )}
@@ -960,11 +1120,13 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 disabled={busy !== null}
               />
             )}
-            {stage === null && order.paymentStatus !== 'authorized' && (
-              <span style={{ fontSize: 12, opacity: 0.6 }}>
-                Waiting for payment to authorize before you can capture & mark placed.
-              </span>
-            )}
+            {stage === null &&
+              order.paymentStatus !== 'authorized' &&
+              order.paymentStatus !== 'succeeded' && (
+                <span style={{ fontSize: 12, opacity: 0.6 }}>
+                  Waiting for payment to authorize before you can capture.
+                </span>
+              )}
               </>
             )}
           </div>
@@ -1641,6 +1803,140 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           </div>
         )
       })()}
+
+      {/* Re-order / replacement reprint — available once a print physically
+          exists (produced/shipped/delivered). Resets the order to "To place at
+          TPS" for a fresh copy WITHOUT re-charging; same edition number remade.
+          A sanctioned backward move, kept apart from the forward CTA. */}
+      {order.paymentStatus === 'succeeded' &&
+        ['Started', 'Shipped', 'Complete'].includes(order.fulfillmentStatus ?? '') && (
+          <div className={dashboardStyles.section}>
+            {!reorderOpen ? (
+              <Button
+                font="dashboard"
+                variant="secondary"
+                label="Re-order (reprint)"
+                onClick={() => {
+                  setReorderError(null)
+                  setReorderOpen(true)
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  padding: 16,
+                  border: '1px solid rgba(0,0,0,0.15)',
+                  borderRadius: 4,
+                  background: '#fafafa',
+                }}
+              >
+                <p style={{ margin: '0 0 12px 0', fontSize: 14 }}>
+                  <strong>Re-order this print (replacement reprint)</strong> — resets the
+                  order to <strong>To place at TPS</strong> so you can send a fresh copy to
+                  the print partner. The buyer is <strong>not</strong> charged again and
+                  keeps their edition number.
+                </p>
+
+                {order.reorderCount >= 2 && (
+                  <p
+                    style={{
+                      margin: '0 0 12px 0',
+                      padding: 10,
+                      background: '#fff4cc',
+                      border: '1px solid #e9c46a',
+                      borderRadius: 4,
+                      fontSize: 13,
+                    }}
+                  >
+                    ⚠️ This order has already been reprinted{' '}
+                    <strong>{order.reorderCount}</strong> times — a refund may serve the
+                    buyer better. You can still proceed.
+                  </p>
+                )}
+
+                <label
+                  htmlFor="reorder-reason"
+                  style={{
+                    display: 'block',
+                    fontSize: 12,
+                    marginBottom: 6,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    opacity: 0.7,
+                  }}
+                >
+                  Reason
+                </label>
+                <select
+                  id="reorder-reason"
+                  value={reorderReason}
+                  onChange={(e) => setReorderReason(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: 8,
+                    border: '1px solid rgba(0,0,0,0.2)',
+                    borderRadius: 4,
+                    fontFamily: 'inherit',
+                    fontSize: 13,
+                    boxSizing: 'border-box',
+                    marginBottom: 12,
+                  }}
+                >
+                  <option value="">Select a reason…</option>
+                  {REORDER_REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {REORDER_REASON_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+
+                <textarea
+                  value={reorderNote}
+                  onChange={(e) => setReorderNote(e.target.value)}
+                  rows={2}
+                  placeholder="Optional note (e.g. corner crushed in transit)"
+                  style={{
+                    width: '100%',
+                    padding: 8,
+                    border: '1px solid rgba(0,0,0,0.2)',
+                    borderRadius: 4,
+                    fontFamily: 'inherit',
+                    fontSize: 13,
+                    boxSizing: 'border-box',
+                  }}
+                />
+
+                {reorderError && (
+                  <p style={{ margin: '12px 0 0 0', color: '#b91c1c', fontSize: 13 }}>
+                    ⚠️ {reorderError}
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <Button
+                    font="dashboard"
+                    variant="danger"
+                    label={reordering ? 'Re-ordering…' : 'Confirm re-order'}
+                    onClick={handleReorder}
+                    disabled={reordering || reorderReason.length === 0}
+                  />
+                  <Button
+                    font="dashboard"
+                    variant="secondary"
+                    label="Cancel"
+                    onClick={() => {
+                      setReorderOpen(false)
+                      setReorderReason('')
+                      setReorderNote('')
+                      setReorderError(null)
+                    }}
+                    disabled={reordering}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       {sections.map((s) => (
         <div key={s.title} className={dashboardStyles.section}>

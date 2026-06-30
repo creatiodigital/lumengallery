@@ -14,6 +14,7 @@ export type OrderEventKind =
   | 'admin_action'
   | 'payout_released'
   | 'note'
+  | 'reorder'
   // Limited-edition ledger
   | 'edition_reserved'
   | 'edition_sold'

@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { type Bucket, BUCKET_ORDER, bucketOf } from '@/lib/orders/orderBuckets'
 import { daysSinceDelivered, PAYOUT_SAFE_WINDOW_DAYS } from '@/lib/orders/payoutPolicy'
 import { formatEuro } from '@/lib/print-providers/format'
 
@@ -47,31 +48,6 @@ const Dot = ({ color }: { color: keyof typeof DOT_COLORS }) => (
   />
 )
 
-// Workflow buckets — each bucket corresponds to one tab on the orders
-// page. Order matters (it's the user's mental left-to-right pipeline).
-type Bucket =
-  | 'new'
-  | 'at-tps'
-  | 'production'
-  | 'shipped'
-  | 'delivered'
-  | 'done'
-  | 'cancelled'
-  | 'refunded'
-  | 'attention'
-
-const BUCKET_ORDER: Bucket[] = [
-  'new',
-  'at-tps',
-  'production',
-  'shipped',
-  'delivered',
-  'done',
-  'cancelled',
-  'refunded',
-  'attention',
-]
-
 const BUCKET_META: Record<
   Bucket,
   {
@@ -83,8 +59,14 @@ const BUCKET_META: Record<
   new: {
     title: 'New',
     helper:
-      'Buyer paid; card is on hold. Place the order on theprintspace, then click Capture & mark placed to charge the buyer and advance.',
-    nextAction: 'Capture & place',
+      'Buyer paid; card is on hold. Capture the payment FIRST — once it succeeds the order moves to “To place at TPS”. Never place at TPS before capturing.',
+    nextAction: 'Capture payment',
+  },
+  'to-place': {
+    title: 'To place at TPS',
+    helper:
+      'Payment captured — you hold the buyer’s money. Now place + pay the order on theprintspace, then click Mark placed at TPS to advance.',
+    nextAction: 'Mark placed at TPS',
   },
   'at-tps': {
     title: 'At TPS',
@@ -132,27 +114,6 @@ const BUCKET_META: Record<
   },
 }
 
-function bucketOf(o: AdminOrderRow): Bucket {
-  const f = o.fulfillmentStatus
-  const p = o.paymentStatus
-
-  if (f === 'Cancelled') return 'cancelled'
-  if (p === 'refunded') return 'refunded'
-  if (p === 'failed' || p === 'canceled') return 'attention'
-
-  if (f === null && p === 'authorized') return 'new'
-  if (f === 'Placed') return 'at-tps'
-  if (f === 'Started') return 'production'
-  if (f === 'Shipped') return 'shipped'
-  // `paidOutAt` is the universal "artist has been paid" signal — set
-  // by both Stripe Connect transfers and out-of-band manual payments.
-  // `transferId` only tracks the Stripe path.
-  if (f === 'Complete' && !o.paidOutAt) return 'delivered'
-  if (f === 'Complete' && o.paidOutAt) return 'done'
-
-  return 'attention'
-}
-
 export const AdminOrders = () => {
   const { data: session, status: sessionStatus } = useSession()
   const router = useRouter()
@@ -186,6 +147,7 @@ export const AdminOrders = () => {
   const grouped = useMemo(() => {
     const map: Record<Bucket, AdminOrderRow[]> = {
       new: [],
+      'to-place': [],
       'at-tps': [],
       production: [],
       shipped: [],
@@ -348,6 +310,18 @@ export const AdminOrders = () => {
                           </div>
                         </>
                       )}
+                      {o.reorderCount > 0 && (
+                        <div
+                          style={{
+                            fontSize: 'var(--text-xs)',
+                            marginTop: 2,
+                            color: '#7c3aed',
+                            fontWeight: 600,
+                          }}
+                        >
+                          ⟳ Replacement{o.reorderCount > 1 ? ` ×${o.reorderCount}` : ''}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <div>{o.buyerName}</div>
@@ -366,14 +340,14 @@ export const AdminOrders = () => {
                     {(activeBucket === 'delivered' || activeBucket === 'done') && (
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {(() => {
-                          if (o.paidOutAt) {
-                            const isManual = o.transferStatus === 'paid_manual'
+                          if (o.payoutComplete) {
                             return (
                               <>
                                 <Dot color="green" />
                                 <span style={{ fontSize: 'var(--text-xs)' }}>
-                                  {formatEuro(o.artistCents)} · {formatDate(o.paidOutAt)}
-                                  {isManual ? ' (manual)' : ''}
+                                  {formatEuro(o.artistCents)}
+                                  {o.payoutAt ? ` · ${formatDate(o.payoutAt)}` : ''}
+                                  {o.payoutManual ? ' (manual)' : ''}
                                 </span>
                               </>
                             )
