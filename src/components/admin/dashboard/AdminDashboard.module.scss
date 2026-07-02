@@ -50,7 +50,7 @@
 }
 
 // Tone is applied (by the component) only when the counter has items
-// > 0. A zero keeps the neutral baseline, so a clean panel reads grey.
+// > 0. A zero keeps the neutral baseline, so a clean panel reads gray.
 .tone_red {
   .counterValue {
     color: var(--color-badge-danger-text);

@@ -20,7 +20,7 @@ export function emailHeader(): string {
 
 /**
  * Branded email footer — a `<tr>` row for the content table: wordmark + the
- * labelled contact signature. Reused by every email via {@link renderEmailLayout}.
+ * labeled contact signature. Reused by every email via {@link renderEmailLayout}.
  * Edit here once to change the footer across all emails.
  */
 export function emailFooter(): string {

@@ -1,12 +1,12 @@
 'use server'
 
-import { auth } from '@/auth'
-import { isAdminOrAbove } from '@/lib/authUtils'
+import { requireAdminAction } from '@/lib/authUtils'
 import { summarizeConfig, type SpecsSummary, type WizardConfig } from '@/lib/print-providers'
 import { TPS_PAPERS, TPS_PRINT_TYPES } from '@/lib/print-providers/printspace'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { sendAdminOrderCancelledAlert } from '@/lib/emails/adminOrderCancelled'
 import { sendArtistPayoutEmail } from '@/lib/emails/artistPayout'
+import { sendInvoiceEmail } from '@/lib/emails/invoice'
 import { sendOrderCancelledEmail } from '@/lib/emails/orderCancelled'
 import { sendOrderDeliveredEmail } from '@/lib/emails/orderDelivered'
 import { sendOrderInProductionEmail } from '@/lib/emails/orderInProduction'
@@ -17,7 +17,11 @@ import { REORDER_REASONS, type ReorderReason } from '@/lib/orders/reorderReasons
 import { computeOrderPayout } from '@/lib/orders/orderPayout'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { captureError } from '@/lib/observability/captureError'
-import { logOrderEvent } from '@/lib/orders/logOrderEvent'
+import { logOrderEvent, type OrderEventActor } from '@/lib/orders/logOrderEvent'
+import { prepareInvoiceIssue } from '@/lib/invoices/prepareInvoiceIssue'
+import { getOrIssueInvoice } from '@/lib/invoices/getOrIssueInvoice'
+import { renderInvoicePdf } from '@/lib/invoices/renderInvoicePdf'
+import { buildInvoiceKey, uploadPrivateToR2, r2ObjectExists } from '@/lib/r2'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
 
@@ -61,13 +65,10 @@ export type AdminOrderRow = {
   reorderReason: string | null
 }
 
+// Kept under the historical local name; the implementation is the shared
+// guard in authUtils (one admin gate for every server-action file).
 async function requireAdminSession() {
-  const session = await auth()
-  if (!session?.user?.id) return { ok: false as const, error: 'Not signed in.' }
-  if (!isAdminOrAbove(session.user.userType)) {
-    return { ok: false as const, error: 'Admin access required.' }
-  }
-  return { ok: true as const, session }
+  return requireAdminAction()
 }
 
 export async function listOrders(): Promise<
@@ -225,6 +226,10 @@ export type AdminOrderDetail = AdminOrderRow & {
     mirroredInTpsAt: string | null
   } | null
   events: AdminOrderEvent[]
+  /** The first invoice issued for this order (type='invoice'), or null if none yet. */
+  invoice: { id: string; number: string } | null
+  /** The credit note (factura rectificativa) for this order, or null if none yet. */
+  creditNote: { id: string; number: string } | null
 }
 
 export type AdminPayoutRow = {
@@ -277,7 +282,7 @@ export async function listArtistPayouts(): Promise<
 
   // Legacy header payouts (single-print orders only). paidOutAt covers both
   // the Stripe path (transferId set) and manual payouts (transferId null) —
-  // identical to the prior behaviour so nothing single-print regresses.
+  // identical to the prior behavior so nothing single-print regresses.
   // `items: none` excludes cart orders so we never list a cart's deprecated
   // header rollup alongside its authoritative per-item rows.
   const headerRows = await prisma.printOrder.findMany({
@@ -544,6 +549,11 @@ export async function getOrderDetail(
       },
       events: { orderBy: { at: 'desc' } },
       editionNumber: { include: { variant: true } },
+      invoices: {
+        where: { type: { in: ['invoice', 'credit_note'] } },
+        select: { id: true, number: true, type: true },
+        orderBy: { issuedAt: 'asc' },
+      },
       items: {
         orderBy: { createdAt: 'asc' },
         include: {
@@ -618,7 +628,7 @@ export async function getOrderDetail(
   // (items.length === 0), in which case the UI uses the header fields. Each
   // item's specsSummary is derived display-only from its own printConfig +
   // the live catalog, falling back to an empty array on any failure (mirrors
-  // the header `specs` behaviour above).
+  // the header `specs` behavior above).
   const items: AdminOrderItem[] = await Promise.all(
     r.items.map(async (it) => {
       let specsSummary: SpecsSummary = []
@@ -716,6 +726,8 @@ export async function getOrderDetail(
     assetUrl: r.artwork.originalImageUrl ?? r.artwork.imageUrl ?? null,
     thumbnailUrl: r.artwork.imageUrl ?? r.artwork.originalImageUrl ?? null,
     edition,
+    invoice: r.invoices.find((i) => i.type === 'invoice') ?? null,
+    creditNote: r.invoices.find((i) => i.type === 'credit_note') ?? null,
     events: r.events.map((e) => ({
       id: e.id,
       at: e.at.toISOString(),
@@ -738,7 +750,11 @@ const STAGE_PLACED = 'Placed' // admin placed at TPS; payment captured
 const STAGE_STARTED = 'Started' // TPS started production
 const STAGE_SHIPPED = 'Shipped' // TPS shipped
 const STAGE_COMPLETE = 'Complete' // delivered; 14-day payout clock starts
-const STAGE_CANCELLED = 'Cancelled' // order pulled out before delivery: buyer asked to cancel, couldn't fulfil, TPS rejected the file, artist disabled prints, etc.
+const STAGE_CANCELLED = 'Cancelled' // order pulled out before delivery: buyer asked to cancel, couldn't fulfill, TPS rejected the file, artist disabled prints, etc.
+// Pre-rename value of 'Cancelled' — main wrote 'Rejected' until the AR-130
+// rename and the shared dev DB can still hold such rows. Treated as terminal
+// everywhere 'Cancelled' is; never written by new code.
+const STAGE_REJECTED_LEGACY = 'Rejected'
 
 /**
  * Release the artist's cut for a delivered order. Preconditions:
@@ -1312,7 +1328,7 @@ export async function refundOrder(
     // line was paid to its artist independently, so we claw back each
     // already-sent Stripe transfer here. Single-print orders skip this block
     // entirely (their header transfer is left as-is — see payoutAlreadyReleased
-    // below) preserving the legacy behaviour exactly.
+    // below) preserving the legacy behavior exactly.
     const reversedItemIds: string[] = []
     const manualClawbackItemIds: string[] = []
     const reversalFailures: { orderItemId: string; transferId: string; error: string }[] = []
@@ -1560,8 +1576,22 @@ export async function deleteOrder(
   const guard = await requireAdminSession()
   if (!guard.ok) return guard
 
-  const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
+  const order = await prisma.printOrder.findUnique({
+    where: { id: orderId },
+    include: { invoices: { select: { number: true }, take: 1 } },
+  })
   if (!order) return { ok: false, error: 'Order not found.' }
+
+  // Invoiced orders are undeletable (Invoice.orderId is onDelete: Restrict) —
+  // refuse BEFORE any side effect. Without this check the Stripe cancel +
+  // edition release below would run first and the FK failure would leave a
+  // half-destroyed order (sold number freed for resale, hold voided).
+  if (order.invoices.length > 0) {
+    return {
+      ok: false,
+      error: `This order has an issued factura (${order.invoices[0].number}) and cannot be deleted — issue a credit note instead. (Dev data: scripts/reset-invoicing.ts clears test invoices first.)`,
+    }
+  }
 
   const isTestOrder = order.paymentIntentId.startsWith('pi_tps_test_')
 
@@ -1835,7 +1865,7 @@ export async function markDelivered(
 /**
  * Admin CTA: cancel an order before delivery — the catch-all off-ramp for
  * any reason a sale doesn't go through (buyer asked to cancel, we couldn't
- * fulfil, artist disabled prints, TPS rejected the file, etc.). Terminal
+ * fulfill, artist disabled prints, TPS rejected the file, etc.). Terminal
  * state. If payment was still authorized we cancel the Stripe PI (releases
  * the hold, no charge); if it was already captured, the admin must use the
  * existing Refund flow to return funds.
@@ -1858,7 +1888,11 @@ export async function cancelOrder(
       error: `Order is ${order.paymentStatus} — it cannot be canceled (already terminal).`,
     }
   }
-  if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_CANCELLED) {
+  if (
+    order.fulfillmentStatus === STAGE_COMPLETE ||
+    order.fulfillmentStatus === STAGE_CANCELLED ||
+    order.fulfillmentStatus === STAGE_REJECTED_LEGACY
+  ) {
     return {
       ok: false,
       error: `Cannot reject from stage "${order.fulfillmentStatus}".`,
@@ -1898,8 +1932,8 @@ export async function cancelOrder(
     kind: 'admin_action',
     actor: `admin:${guard.session.user.id}`,
     message: voided
-      ? 'Order cancelled (Stripe auth voided)'
-      : 'Order cancelled (manual refund required)',
+      ? 'Order canceled (Stripe auth voided)'
+      : 'Order canceled (manual refund required)',
     payload: { reason: trimmedReason, voided, priorPaymentStatus: order.paymentStatus },
   })
 
@@ -1940,7 +1974,11 @@ async function advanceStage(
       error: `Order is ${order.paymentStatus} — no further fulfillment actions are allowed.`,
     }
   }
-  if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_CANCELLED) {
+  if (
+    order.fulfillmentStatus === STAGE_COMPLETE ||
+    order.fulfillmentStatus === STAGE_CANCELLED ||
+    order.fulfillmentStatus === STAGE_REJECTED_LEGACY
+  ) {
     return {
       ok: false,
       error: `Cannot advance from terminal stage "${order.fulfillmentStatus}".`,
@@ -2142,4 +2180,296 @@ async function maybeSendBuyerTransitionEmail(
       }
     }
   }
+}
+
+// ── Invoicing (AR-131) ────────────────────────────────────────────────────────
+
+type InvoiceDocType = 'invoice' | 'credit_note'
+
+type InvoiceActionResult =
+  | { ok: true; number: string; emailed: boolean }
+  | { ok: false; error: string }
+
+type InvoiceRenderInput = Parameters<typeof renderInvoicePdf>[0]
+
+function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+/**
+ * Render + archive + email one issued document, reading EVERYTHING from the
+ * stored Invoice row (snapshots + linesSnapshot) — never from the live order,
+ * so a later order/artwork edit can never alter an issued document. The
+ * archived PDF is write-once: if an object already exists at the row's r2Key
+ * it is left untouched.
+ */
+async function deliverInvoiceDocument(args: {
+  record: {
+    id: string
+    orderId: string
+    type: string
+    number: string
+    issuedAt: Date
+    r2Key: string
+    sellerSnapshot: unknown
+    buyerSnapshot: unknown
+    totalsSnapshot: unknown
+    linesSnapshot: unknown
+  }
+  buyer: { email: string; name: string }
+  correctsNumber?: string
+  actor: OrderEventActor
+  resend: boolean
+}): Promise<InvoiceActionResult> {
+  const { record, buyer } = args
+  const isCreditNote = record.type === 'credit_note'
+  const label = isCreditNote ? 'credit note' : 'invoice'
+  const stage = isCreditNote ? 'credit-note' : 'invoice'
+
+  const totals = record.totalsSnapshot as InvoiceRenderInput['totalsSnapshot'] & { reason?: string }
+  const lines = record.linesSnapshot as InvoiceRenderInput['lines'] | null
+  if (!Array.isArray(lines) || lines.length === 0) {
+    // Row created before linesSnapshot existed (pre-fix dev data). Rebuilding
+    // lines from the live order would let a mutated order change an issued
+    // document — refuse instead.
+    return {
+      ok: false,
+      error: `${label} ${record.number} predates line snapshots — reset dev invoicing data (scripts/reset-invoicing.ts) and re-issue.`,
+    }
+  }
+
+  let pdf: Buffer
+  try {
+    pdf = await renderInvoicePdf({
+      number: record.number,
+      issuedAt: record.issuedAt,
+      type: isCreditNote ? 'credit_note' : 'invoice',
+      correctsNumber: args.correctsNumber,
+      reason: totals.reason,
+      sellerSnapshot: record.sellerSnapshot as InvoiceRenderInput['sellerSnapshot'],
+      buyerSnapshot: record.buyerSnapshot as InvoiceRenderInput['buyerSnapshot'],
+      totalsSnapshot: totals,
+      lines,
+    })
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: `${stage}-render-pdf`,
+      extra: { orderId: record.orderId, invoiceId: record.id, number: record.number },
+      level: 'error',
+      fingerprint: [`${stage}:render-pdf-failed`],
+    })
+    // NUMBER-BURN RULE: the number stays committed; a retry re-renders from
+    // the same stored row.
+    return {
+      ok: false,
+      error: `PDF render failed (${label} ${record.number} is committed — retry to re-send): ${errMsg(err)}`,
+    }
+  }
+
+  // Archive is write-once: only upload when no object exists at the key yet.
+  try {
+    if (!(await r2ObjectExists(record.r2Key))) {
+      await uploadPrivateToR2(record.r2Key, pdf, 'application/pdf')
+    }
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: `${stage}-upload-pdf`,
+      extra: { orderId: record.orderId, invoiceId: record.id, number: record.number, key: record.r2Key },
+      level: 'error',
+      fingerprint: [`${stage}:upload-pdf-failed`],
+    })
+    // Non-fatal — the row is committed and the email attaches the buffer
+    // directly. The ZIP export flags rows whose PDF is missing.
+    console.warn(`[${stage}] R2 upload failed for ${record.number}:`, err)
+  }
+
+  const emailRes = await sendInvoiceEmail({
+    to: buyer.email,
+    buyerName: buyer.name,
+    number: record.number,
+    pdf,
+    ...(isCreditNote ? { isCreditNote: true } : {}),
+  })
+  await logOrderEvent({
+    orderId: record.orderId,
+    kind: emailRes.ok ? 'email_sent' : 'email_failed',
+    actor: args.actor,
+    message: `${isCreditNote ? 'credit_note' : 'invoice'}${args.resend ? '_resent' : ''}:${record.number}`,
+    payload: emailRes.ok
+      ? { to: buyer.email, resendId: emailRes.id, number: record.number }
+      : { to: buyer.email, error: emailRes.error, number: record.number },
+  })
+  if (!emailRes.ok) {
+    captureError(new Error(`${label} email failed: ${emailRes.error}`), {
+      flow: 'admin',
+      stage: `${stage}-send-email`,
+      extra: { orderId: record.orderId, invoiceId: record.id, number: record.number, to: buyer.email },
+      level: 'warning',
+      fingerprint: [`${stage}:send-email-failed`],
+    })
+  }
+
+  // emailed:false ⇒ the document is issued and archived but the buyer did NOT
+  // receive it — the UI must surface that, never treat it as a full success.
+  return { ok: true, number: record.number, emailed: emailRes.ok }
+}
+
+/** Shared issue-or-resend pipeline behind sendInvoice / issueCreditNote. */
+async function issueOrResendInvoiceDocument(
+  orderId: string,
+  opts: { type: InvoiceDocType; reason?: string; actor: OrderEventActor },
+): Promise<InvoiceActionResult> {
+  const isCreditNote = opts.type === 'credit_note'
+  const label = isCreditNote ? 'credit note' : 'invoice'
+
+  const order = await prisma.printOrder.findUnique({
+    where: { id: orderId },
+    include: {
+      artwork: { select: { title: true, slug: true } },
+      items: {
+        include: { artwork: { select: { title: true, slug: true } } },
+        orderBy: { createdAt: 'asc' },
+      },
+      invoices: { orderBy: { issuedAt: 'asc' } },
+    },
+  })
+  if (!order) return { ok: false, error: 'Order not found.' }
+
+  const originalInvoice = order.invoices.find((i) => i.type === 'invoice') ?? null
+  const existingCreditNote = order.invoices.find((i) => i.type === 'credit_note') ?? null
+
+  if (isCreditNote && !originalInvoice) {
+    return { ok: false, error: 'Issue the invoice before a credit note.' }
+  }
+  if (!isCreditNote && existingCreditNote) {
+    // The invoice was voided; re-sending it alone would tell a refunded buyer
+    // they owe the full amount again.
+    return {
+      ok: false,
+      error: `This invoice was voided by credit note ${existingCreditNote.number} — re-send the credit note instead.`,
+    }
+  }
+
+  const buyer = { email: order.buyerEmail, name: order.buyerName }
+  const correctsNumber = isCreditNote ? originalInvoice!.number : undefined
+
+  // ── Idempotent re-send: the document already exists → deliver from storage.
+  //    No fulfillment-stage gate anywhere in this flow — the admin issues
+  //    manually, at any stage (deliberate).
+  const existing = isCreditNote ? existingCreditNote : originalInvoice
+  if (existing) {
+    return deliverInvoiceDocument({
+      record: existing,
+      buyer,
+      correctsNumber,
+      actor: opts.actor,
+      resend: true,
+    })
+  }
+
+  // ── First issue. Validation runs BEFORE the number is minted: a defective
+  //    document (missing mandatory field, empty or non-reconciling lines, VAT
+  //    inconsistent with the stamped rate) must never burn a number.
+  let prepared: ReturnType<typeof prepareInvoiceIssue>
+  try {
+    prepared = prepareInvoiceIssue(order, { negate: isCreditNote, reason: opts.reason })
+  } catch (err) {
+    return { ok: false, error: `Cannot issue ${label}: ${errMsg(err)}` }
+  }
+
+  // Atomically mint the number + insert the row. Race-safe: a concurrent call
+  // that already minted this order's document wins the @@unique([orderId,
+  // type]) constraint and its row is reused — same number, never a second one.
+  // NUMBER-BURN RULE: render/email stay OUTSIDE this step.
+  let minted: Awaited<ReturnType<typeof getOrIssueInvoice>>
+  try {
+    minted = await getOrIssueInvoice({
+      type: opts.type,
+      orderId,
+      currency: order.currency,
+      r2Key: buildInvoiceKey(orderId, isCreditNote ? 'cn' : 'inv'),
+      sellerSnapshot: prepared.snapshots.sellerSnapshot,
+      buyerSnapshot: prepared.snapshots.buyerSnapshot,
+      totalsSnapshot: prepared.snapshots.totalsSnapshot,
+      linesSnapshot: prepared.lines,
+      ...(isCreditNote && originalInvoice ? { correctsInvoiceId: originalInvoice.id } : {}),
+    })
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: `${isCreditNote ? 'credit-note' : 'invoice'}-issue-record`,
+      extra: { orderId },
+      level: 'error',
+      fingerprint: [`${isCreditNote ? 'credit-note' : 'invoice'}:issue-record-failed`],
+    })
+    return { ok: false, error: `${label} numbering failed: ${errMsg(err)}` }
+  }
+
+  if (!minted.reused) {
+    await logOrderEvent({
+      orderId,
+      kind: isCreditNote ? 'credit_note_issued' : 'invoice_issued',
+      actor: opts.actor,
+      message: minted.invoice.number,
+      payload: isCreditNote
+        ? {
+            creditNoteId: minted.invoice.id,
+            number: minted.invoice.number,
+            correctsInvoiceId: originalInvoice?.id,
+          }
+        : { invoiceId: minted.invoice.id, number: minted.invoice.number },
+    })
+  }
+
+  return deliverInvoiceDocument({
+    record: minted.invoice,
+    buyer,
+    correctsNumber,
+    actor: opts.actor,
+    resend: minted.reused,
+  })
+}
+
+/**
+ * Issue (or re-send) the gallery factura for an order.
+ *
+ * No fulfillment-stage gate — the admin issues manually, at any stage.
+ * IDEMPOTENT: a second call re-sends the SAME document number, enforced at the
+ * DB level by @@unique([orderId, type]) — no double-billing even under a
+ * concurrent double-click.
+ * NUMBER-BURN RULE: the number is committed inside the minting transaction; a
+ * later PDF render / email failure does NOT roll it back. Re-sends render from
+ * the STORED snapshots + linesSnapshot, never from the live order, and never
+ * overwrite the archived PDF.
+ * Returns `emailed: false` when the document was issued but the buyer email
+ * failed — callers must surface that, not treat it as a full success.
+ */
+export async function sendInvoice(orderId: string): Promise<InvoiceActionResult> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+  return issueOrResendInvoiceDocument(orderId, {
+    type: 'invoice',
+    actor: `admin:${guard.session.user.id}`,
+  })
+}
+
+/**
+ * Issue (or re-send) a factura rectificativa (credit note) for an order that
+ * already has an invoice. Same idempotency / number-burn / stored-snapshot
+ * rules as sendInvoice. The optional `reason` is stored inside the credit
+ * note's totalsSnapshot JSON (no schema column) and read back on re-sends.
+ */
+export async function issueCreditNote(
+  orderId: string,
+  reason?: string,
+): Promise<InvoiceActionResult> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+  return issueOrResendInvoiceDocument(orderId, {
+    type: 'credit_note',
+    reason,
+    actor: `admin:${guard.session.user.id}`,
+  })
 }

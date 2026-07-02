@@ -57,8 +57,8 @@ export function renderAdminOrderCancelledEmail(
 
   const body =
     emailEyebrow(`Order #${safeId8}`) +
-    `<h2 style="margin:0 0 12px;font-size:18px;font-weight:700;line-height:1.3;color:#111111">Order cancelled</h2>` +
-    emailParagraph('You cancelled this order from the admin dashboard.') +
+    `<h2 style="margin:0 0 12px;font-size:18px;font-weight:700;line-height:1.3;color:#111111">Order canceled</h2>` +
+    emailParagraph('You canceled this order from the admin dashboard.') +
     emailButton('Open in admin', safeAdminUrl) +
     emailDivider() +
     (refundNeeded
@@ -75,17 +75,17 @@ export function renderAdminOrderCancelledEmail(
     ])
 
   return {
-    subject: `Order #${id8} cancelled — ${args.artworkTitle}${refundNeeded ? ' — REFUND NEEDED' : ''}`,
+    subject: `Order #${id8} canceled — ${args.artworkTitle}${refundNeeded ? ' — REFUND NEEDED' : ''}`,
     html: renderEmailLayout({
-      preheader: `Order #${id8} cancelled — ${args.artworkTitle}`,
+      preheader: `Order #${id8} canceled — ${args.artworkTitle}`,
       bodyHtml: body,
     }),
   }
 }
 
 /**
- * Alert the gallery admin when an order is cancelled. Fires on
- * admin-initiated rejections — the fulfilment portal doesn't expose a sync API,
+ * Alert the gallery admin when an order is canceled. Fires on
+ * admin-initiated rejections — the fulfillment portal doesn't expose a sync API,
  * so admin owns the cancellation flow.
  *
  * Key signal: whether a refund is still owed to the buyer.

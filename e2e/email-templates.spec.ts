@@ -102,7 +102,7 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
-  test('inquiry-admin email shows artwork info and enquirer contact details', async ({ page }) => {
+  test('inquiry-admin email shows artwork info and inquirer contact details', async ({ page }) => {
     await page.goto('/dev/emails/inquiry-admin')
     await expect(page.getByText(/new artwork inquiry/i)).toBeVisible()
     // Artwork detail rows — these also appear in the hidden preheader, so
@@ -117,10 +117,10 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
-  test('inquiry-user email shows thank-you copy and echoes the enquirer message', async ({ page }) => {
+  test('inquiry-user email shows thank-you copy and echoes the inquirer message', async ({ page }) => {
     await page.goto('/dev/emails/inquiry-user')
     await expect(page.getByText(/thank you for your inquiry/i)).toBeVisible()
-    // Personalised greeting + artwork reference
+    // Personalized greeting + artwork reference
     await expect(page.getByText(/dear jane/i)).toBeVisible()
     await expect(page.getByText(/puerta verde/i).last()).toBeVisible()
     // Echoed message text
@@ -132,7 +132,7 @@ test.describe('branded email layout (dev preview)', () => {
 
   test('admin-order email shows new order heading and artwork details', async ({ page }) => {
     await page.goto('/dev/emails/admin-order')
-    await expect(page.getByRole('heading', { name: /needs fulfilment/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /needs fulfillment/i })).toBeVisible()
     await expect(page.getByText(/puerta verde/i).last()).toBeVisible()
     await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)
     await expect(page.locator('body')).not.toContainText(/printspace/i)
@@ -141,7 +141,7 @@ test.describe('branded email layout (dev preview)', () => {
 
   test('admin-cart-order email shows cart order heading and all line items', async ({ page }) => {
     await page.goto('/dev/emails/admin-cart-order')
-    await expect(page.getByRole('heading', { name: /needs fulfilment/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /needs fulfillment/i })).toBeVisible()
     await expect(page.getByText(/puerta verde/i)).toBeVisible()
     await expect(page.getByText(/landscape and river/i)).toBeVisible()
     await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)
@@ -151,7 +151,7 @@ test.describe('branded email layout (dev preview)', () => {
 
   test('admin-order-cancelled email shows cancellation heading and REFUND NEEDED', async ({ page }) => {
     await page.goto('/dev/emails/admin-order-cancelled')
-    await expect(page.getByText(/order cancelled/i)).toBeVisible()
+    await expect(page.getByText(/order canceled/i)).toBeVisible()
     await expect(page.getByText(/refund needed/i)).toBeVisible()
     await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)
     await expect(page.locator('body')).not.toContainText(/printspace/i)

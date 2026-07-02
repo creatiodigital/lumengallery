@@ -52,7 +52,7 @@
 }
 
 // Down chevron beside the toggle label; flips to up when the list is expanded.
-// inline-flex + block svg so the glyph sits on the text's optical centre
+// inline-flex + block svg so the glyph sits on the text's optical center
 // (no inline-baseline descender gap).
 .chevron {
   display: inline-flex;

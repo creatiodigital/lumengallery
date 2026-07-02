@@ -54,7 +54,7 @@
     text-align: center;
   }
 
-  // Hidden once the line stacks into labelled rows (each row carries labels).
+  // Hidden once the line stacks into labeled rows (each row carries labels).
   @include media-down(tablet) {
     display: none;
   }

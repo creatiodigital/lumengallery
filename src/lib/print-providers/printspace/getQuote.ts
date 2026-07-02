@@ -60,7 +60,7 @@ export function getPrintspaceQuote(input: GetQuoteInput): Quote {
   // Hanging — flat per option, all currently €0.
   const hangingCents = isFramed ? (TPS_HANGING_SUPPLEMENT_CENTS[hangingId] ?? 0) : 0
   // Window mount (passepartout) — proportional to mount width when
-  // a non-'none' colour is picked AND the buyer has set a width.
+  // a non-'none' color is picked AND the buyer has set a width.
   const mountId = config.values.windowMount as string | undefined
   const mountWidthCm = config.borders?.['windowMountSize']?.allCm ?? 0
   const mountCents =
@@ -116,7 +116,7 @@ export function getPrintspaceQuote(input: GetQuoteInput): Quote {
     lines,
     subtotalCents,
     taxCents,
-    taxLabel: vatRate > 0 ? `VAT (${country.toUpperCase()} ${rateText})` : undefined,
+    taxLabel: vatRate > 0 ? `VAT (ES ${rateText})` : undefined,
     totalCents,
   }
 }

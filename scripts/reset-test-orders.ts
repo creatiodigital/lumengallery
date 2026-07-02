@@ -12,8 +12,11 @@
  *      hard-deleted in earlier testing, so each edition is a clean 1..N again
  *      (the next sale gets 1/N, not 3/N). Idempotent: a complete series adds
  *      nothing.
- *   3. Deletes every PrintOrder (cascades PrintOrderItem + PrintOrderEvent).
- *   4. Deletes every PendingCart (abandoned staged carts).
+ *   3. Deletes every Invoice + InvoiceCounter (and their R2 PDFs) — the
+ *      Invoice→PrintOrder FK is onDelete: Restrict, so invoiced test orders
+ *      would otherwise abort the whole reset.
+ *   4. Deletes every PrintOrder (cascades PrintOrderItem + PrintOrderEvent).
+ *   5. Deletes every PendingCart (abandoned staged carts).
  *
  * Dry run (safe — only counts):
  *   npx dotenv -e .env.local -- npx tsx scripts/reset-test-orders.ts
@@ -21,6 +24,7 @@
  *   npx dotenv -e .env.local -- npx tsx scripts/reset-test-orders.ts --confirm
  */
 import prisma from '@/lib/prisma'
+import { deletePrivateR2Key } from '@/lib/r2'
 
 const CONFIRM = process.argv.includes('--confirm')
 
@@ -32,7 +36,7 @@ async function main() {
 
   const dbHost = (process.env.POSTGRES_PRISMA_URL ?? '').match(/@([^/:]+)/)?.[1] ?? '(unknown)'
 
-  const [orders, items, events, carts, reservedOrSold, publishedVariants] = await Promise.all([
+  const [orders, items, events, carts, reservedOrSold, publishedVariants, invoiceRows, invoiceCounters] = await Promise.all([
     prisma.printOrder.count(),
     prisma.printOrderItem.count(),
     prisma.printOrderEvent.count(),
@@ -42,6 +46,8 @@ async function main() {
       where: { published: true },
       select: { id: true, name: true, editionSize: true, editionNumbers: { select: { number: true } } },
     }),
+    prisma.invoice.findMany({ select: { r2Key: true } }),
+    prisma.invoiceCounter.count(),
   ])
 
   // Which 1..editionSize slots are MISSING on each published variant (hard-deleted
@@ -59,13 +65,28 @@ async function main() {
   console.log('=== RESET TEST ORDERS ===')
   console.log('APP_ENV :', process.env.NEXT_PUBLIC_APP_ENV ?? '(unset)')
   console.log('DB host :', dbHost, '  (NOTE: local + staging share this DB)')
-  console.log('Will DELETE →', { printOrders: orders, printOrderItems: items, printOrderEvents: events, pendingCarts: carts })
+  console.log('Will DELETE →', { printOrders: orders, printOrderItems: items, printOrderEvents: events, pendingCarts: carts, invoices: invoiceRows.length, invoiceCounters })
   console.log('Will RESET to available → edition numbers currently reserved/sold:', reservedOrSold)
   console.log('Will BACKFILL missing slots →', totalBackfill, totalBackfill ? backfill.map((b) => `${b.name}: +${b.missing.length}`) : '(all editions complete)')
 
   if (!CONFIRM) {
     console.log('\nDRY RUN — nothing changed. Re-run with --confirm to execute.')
     return
+  }
+
+  // Delete invoice PDFs from R2 first (network I/O — kept outside the tx).
+  // Test facturas must go with their orders: Invoice.orderId is onDelete:
+  // Restrict, so leaving them would abort the printOrder.deleteMany below.
+  let invoicePdfsDeleted = 0
+  for (const inv of invoiceRows) {
+    if (inv.r2Key) {
+      try {
+        await deletePrivateR2Key(inv.r2Key)
+        invoicePdfsDeleted++
+      } catch (err) {
+        console.warn('R2 invoice PDF delete failed:', err instanceof Error ? err.message : err)
+      }
+    }
   }
 
   const result = await prisma.$transaction(async (tx) => {
@@ -91,16 +112,21 @@ async function main() {
       backfilled += created.count
     }
     const deletedCarts = await tx.pendingCart.deleteMany({})
+    // Invoices BEFORE orders (Restrict FK) + counters so numbering restarts.
+    const deletedInvoices = await tx.invoice.deleteMany({})
+    const deletedCounters = await tx.invoiceCounter.deleteMany({})
     const deletedOrders = await tx.printOrder.deleteMany({}) // cascades items + events
     return {
       editionNumbersReset: reset.count,
       editionSlotsBackfilled: backfilled,
       pendingCartsDeleted: deletedCarts.count,
+      invoicesDeleted: deletedInvoices.count,
+      invoiceCountersDeleted: deletedCounters.count,
       printOrdersDeleted: deletedOrders.count,
     }
   })
 
-  console.log('\n✅ DONE:', result)
+  console.log('\n✅ DONE:', { ...result, invoicePdfsDeleted })
   console.log('Edition series reset to available + backfilled; all orders + staged carts cleared.')
 }
 

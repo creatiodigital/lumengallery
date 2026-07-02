@@ -24,7 +24,7 @@ type ShippingAddress = {
   phone: string
 }
 
-/** One purchased line, with the specs the admin pastes into the fulfilment portal. */
+/** One purchased line, with the specs the admin pastes into the fulfillment portal. */
 export type AdminCartOrderLine = {
   artworkTitle: string
   artistName: string
@@ -99,7 +99,7 @@ export function renderAdminCartOrderNotificationEmail(
 
   const body =
     emailEyebrow(`Order #${safeId8}`) +
-    `<h2 style="margin:0 0 12px;font-size:18px;font-weight:700;line-height:1.3;color:#111111">New cart order &mdash; needs fulfilment</h2>` +
+    `<h2 style="margin:0 0 12px;font-size:18px;font-weight:700;line-height:1.3;color:#111111">New cart order &mdash; needs fulfillment</h2>` +
     emailParagraph(`Order #${safeId8} &middot; ${lineCount} item(s) &middot; ${total}`) +
     emailButton('Open in admin', safeAdminUrl) +
     emailDivider() +
@@ -117,9 +117,9 @@ export function renderAdminCartOrderNotificationEmail(
     )
 
   return {
-    subject: `New cart order #${id8} — ${lineCount} item(s) — needs fulfilment`,
+    subject: `New cart order #${id8} — ${lineCount} item(s) — needs fulfillment`,
     html: renderEmailLayout({
-      preheader: `New cart order #${id8} — ${lineCount} item(s) — needs fulfilment`,
+      preheader: `New cart order #${id8} — ${lineCount} item(s) — needs fulfillment`,
       bodyHtml: body,
     }),
   }
@@ -129,7 +129,7 @@ export function renderAdminCartOrderNotificationEmail(
  * Multi-item (cart) variant of {@link sendAdminOrderNotification}. Sent to
  * the gallery admin every time a cart order's card authorization succeeds.
  * Lists EVERY line item with its own specs so the admin can place each at the
- * fulfilment portal by hand (manual fulfillment mode).
+ * fulfillment portal by hand (manual fulfillment mode).
  *
  * Resolves with `{ ok: false }` on failure rather than throwing, so the
  * caller can log + continue without aborting the webhook.

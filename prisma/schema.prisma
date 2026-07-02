@@ -336,6 +336,12 @@ model PrintOrder {
   printConfig     Json // PrintConfig snapshot at checkout time
   country         String
 
+  // Buyer billing details for the factura (AR-131). B2C by default
+  // (individuals), so optional; only set if a business buyer requests an
+  // invoice with their tax id. No checkout UI in v1 — snapshotted at issue.
+  buyerCompany String?
+  buyerTaxId   String?
+
   // All amounts in minor units (cents) for the given currency. NOTE
   // (AR-129): for the multi-item cart flow these per-order item amounts
   // become rollups and the authoritative per-item money lives on
@@ -399,8 +405,9 @@ model PrintOrder {
   // links EditionNumber.orderItemId → PrintOrderItem instead.
   editionNumber EditionNumber? @relation("PrintOrderEditionNumber")
 
-  items  PrintOrderItem[]
-  events PrintOrderEvent[]
+  items    PrintOrderItem[]
+  events   PrintOrderEvent[]
+  invoices Invoice[]
 
   @@index([artistUserId])
   @@index([paymentStatus, fulfillmentStatus, transferStatus])
@@ -499,6 +506,66 @@ model PrintOrderEvent {
 
   @@index([orderId, at])
   @@index([kind, at])
+}
+
+// Gallery-issued factura / credit note (AR-131). ONE row per document.
+// Append-only + immutable: no code path ever updates or deletes a row after
+// issue. Seller/buyer/totals are frozen as JSON snapshots at issue time so a
+// later order/config edit never alters an issued document. Numbering is
+// gap-free per (series, year, month) via InvoiceCounter inside a transaction.
+model Invoice {
+  id      String     @id @default(uuid())
+  orderId String
+  order   PrintOrder @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  type   String // 'invoice' | 'credit_note'
+  series String // 'AR' | 'AR-R'
+  year   Int
+  month  Int
+  seq    Int
+  number String @unique // 'AR-06-2026-001'
+
+  // Set on credit notes → references the original invoice it rectifies.
+  correctsInvoiceId String?
+  correctsInvoice   Invoice?  @relation("InvoiceCorrections", fields: [correctsInvoiceId], references: [id])
+  corrections       Invoice[] @relation("InvoiceCorrections")
+
+  issuedAt DateTime @default(now())
+  currency String   @default("eur")
+
+  // PRIVATE R2 object key (never a public URL). Served via an admin-guarded
+  // download route, not the public bucket URL.
+  r2Key String
+
+  // Immutable snapshots frozen at issue time.
+  sellerSnapshot Json // gallery legal name, address, NIF
+  buyerSnapshot  Json // name, address, optional company + tax id
+  totalsSnapshot Json // base, VAT rate + amount, total (negative for credit notes)
+  // Line items frozen at issue time. Nullable only for rows created before
+  // this column existed (dev data) — re-sends REFUSE to rebuild lines from the
+  // live order, so such rows must be reset and re-issued.
+  linesSnapshot  Json?
+
+  createdAt DateTime @default(now())
+
+  // DB-level idempotency backstop: at most ONE invoice and ONE credit note per
+  // order. Two concurrent sendInvoice calls can no longer both mint a number —
+  // the loser hits this constraint and is rerouted to the existing document.
+  @@unique([orderId, type])
+  @@index([year, month])
+  @@index([orderId])
+}
+
+// Atomic, gap-free correlative numbering. Each (series, year, month) is its
+// own block, reset to 0 at the start of each month. Incremented inside the
+// same transaction that inserts the Invoice, so numbers have no gaps.
+model InvoiceCounter {
+  series     String
+  year       Int
+  month      Int
+  lastNumber Int    @default(0)
+
+  @@id([series, year, month])
 }
 
 model Exhibition {

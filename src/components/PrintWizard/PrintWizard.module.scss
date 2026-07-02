@@ -211,7 +211,7 @@
 
     &:disabled {
       // Match the shared Input's disabled treatment so a locked size reads as
-      // clearly disabled (was --color-surface-subtle = barely grey, looked editable).
+      // clearly disabled (was --color-surface-subtle = barely gray, looked editable).
       background: var(--color-surface-disabled);
       cursor: not-allowed;
     }
@@ -846,7 +846,7 @@
   user-select: none;
 }
 
-// Wraps the slider so we can position the centre-tick reset button
+// Wraps the slider so we can position the center-tick reset button
 // just above its midpoint. Slider keeps its full width inside the wrap.
 .tiltSliderWrap {
   position: relative;
@@ -854,7 +854,7 @@
   padding-top: 4px;
 }
 
-// Small clickable tick mark at the centre of the slider. Clicking
+// Small clickable tick mark at the center of the slider. Clicking
 // (or tapping) snaps the tilt back to 0° / head-on. Sits just above
 // the slider track so it reads as an anchor without overlapping the
 // drag handle.

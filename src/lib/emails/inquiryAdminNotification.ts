@@ -80,7 +80,7 @@ export function renderInquiryAdminNotificationEmail(
 /**
  * Sends the admin inquiry notification email.
  * Recipients are parsed from the INQUIRY_EMAIL_TO env var (comma-separated).
- * replyTo is set to the enquirer's email so the team can reply directly.
+ * replyTo is set to the inquirer's email so the team can reply directly.
  *
  * Resolves with `{ ok: false }` on failure rather than throwing.
  */

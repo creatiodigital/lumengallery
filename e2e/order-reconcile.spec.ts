@@ -12,7 +12,7 @@ import { cancelPaymentIntent } from './stripe-helpers'
  * Layer-3 reconcile cron — the safety net that makes order creation independent
  * of the Stripe webhook even after the buyer has left the confirmation page.
  *
- * Two behaviours, driven through the REAL `/api/cron/reconcile-orders` route:
+ * Two behaviors, driven through the REAL `/api/cron/reconcile-orders` route:
  *   A. RECOVER — an authorized PI with no PrintOrder gets one created (idempotent
  *      `ensureOrderForPaymentIntent`), with its reserved edition number bound.
  *   B. RELEASE — a reservation whose PI has died (canceled/abandoned) and was

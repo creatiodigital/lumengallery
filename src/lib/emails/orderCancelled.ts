@@ -59,7 +59,7 @@ export function renderOrderCancelledEmail(args: OrderCancelledArgs): { subject: 
   const body =
     emailHeading(`We&rsquo;re sorry, ${firstName}`) +
     emailParagraph(
-      'We&rsquo;re writing to let you know that your order has been cancelled and will not be printed or shipped. We&rsquo;re sorry for the inconvenience.',
+      'We&rsquo;re writing to let you know that your order has been canceled and will not be printed or shipped. We&rsquo;re sorry for the inconvenience.',
     ) +
     emailNotice(noticeVariant, moneyLine) +
     emailDivider() +
@@ -75,8 +75,8 @@ export function renderOrderCancelledEmail(args: OrderCancelledArgs): { subject: 
     emailParagraph('&mdash; The Art Room')
 
   return {
-    subject: 'Your order has been cancelled',
-    html: renderEmailLayout({ preheader: 'Your order has been cancelled', bodyHtml: body }),
+    subject: 'Your order has been canceled',
+    html: renderEmailLayout({ preheader: 'Your order has been canceled', bodyHtml: body }),
   }
 }
 

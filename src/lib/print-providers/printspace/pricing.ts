@@ -451,48 +451,20 @@ export const TPS_SUPPORTED_COUNTRIES: string[] = [
 // this rate. 40% per the artist↔gallery contract (was 0.45).
 export const TPS_GALLERY_MARKUP_RATE = 0.4
 
-// Per-destination standard VAT rate. Single source of truth for both
-// the checkout preview AND the PaymentIntent total — what's here is
-// what the buyer is charged. Keep in sync with the official EU rates
-// list (taxation-customs.europa.eu / TEDB); values below are 2025.
-//
-// Pre-launch accountant review pending: OSS thresholds, postal-aware
-// Canary/Ceuta/Melilla zero-rating, B2B reverse-charge — see
-// project_vat_todo memory.
-const TPS_VAT_RATES: Record<string, number> = {
-  AT: 0.2,
-  BE: 0.21,
-  BG: 0.2,
-  HR: 0.25,
-  CY: 0.19,
-  CZ: 0.21,
-  DK: 0.25,
-  EE: 0.22,
-  FI: 0.255,
-  FR: 0.2,
-  DE: 0.19,
-  GR: 0.24,
-  HU: 0.27,
-  IE: 0.23,
-  IT: 0.22,
-  LV: 0.21,
-  LT: 0.21,
-  LU: 0.17,
-  MT: 0.18,
-  NL: 0.21,
-  PL: 0.23,
-  PT: 0.23,
-  RO: 0.19,
-  SK: 0.23,
-  SI: 0.22,
-  ES: 0.21,
-  SE: 0.25,
-  GB: 0.2,
-}
+export const HOME_VAT_RATE = 0.21 // Spain; gallery is a Spanish seller (B2C, pre-OSS)
 
-/** Standard VAT rate the buyer sees at checkout for a given country.
- *  Returns 0 for any country we don't (yet) charge VAT for. */
+// EU-27 (VAT territory). UK excluded (post-Brexit -> export).
+export const EU_VAT_COUNTRIES: ReadonlySet<string> = new Set([
+  'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE',
+  'IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE',
+])
+
+/**
+ * Output VAT the gallery (Spanish seller) charges the buyer.
+ * B2C, below OSS threshold: EU buyer -> 21% Spanish; non-EU -> 0% export.
+ * Canary/Ceuta/Melilla 0% edge case deferred (flag for gestor).
+ */
 export function getVatRate(countryCode: string): number {
   if (!countryCode) return 0
-  return TPS_VAT_RATES[countryCode.toUpperCase()] ?? 0
+  return EU_VAT_COUNTRIES.has(countryCode.toUpperCase()) ? HOME_VAT_RATE : 0
 }

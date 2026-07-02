@@ -33,7 +33,9 @@ export function bucketOf(o: AdminOrderRow): Bucket {
   const f = o.fulfillmentStatus
   const p = o.paymentStatus
 
-  if (f === 'Cancelled') return 'cancelled'
+  // 'Rejected' is the pre-rename value of 'Cancelled' (still written by main);
+  // legacy rows must stay terminal, not fall through to 'attention'.
+  if (f === 'Cancelled' || f === 'Rejected') return 'cancelled'
   if (p === 'refunded') return 'refunded'
   if (p === 'failed' || p === 'canceled') return 'attention'
 
@@ -68,7 +70,10 @@ export function countByBucket(orders: AdminOrderRow[]): Record<Bucket, number> {
 // way with needsRefund=true, so the gallery owes a manual refund. NOT the
 // same as a `refunded` order (paymentStatus 'refunded' = already settled).
 export function isRefundOwed(o: AdminOrderRow): boolean {
-  return o.fulfillmentStatus === 'Cancelled' && o.paymentStatus === 'succeeded'
+  return (
+    (o.fulfillmentStatus === 'Cancelled' || o.fulfillmentStatus === 'Rejected') &&
+    o.paymentStatus === 'succeeded'
+  )
 }
 
 // The metrics the admin dashboard's "Needs your attention" cards surface.

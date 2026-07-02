@@ -4,7 +4,7 @@ import { makeCartItem, seedCart } from './cart-helpers'
 import { seedCookieConsent } from './consent-helpers'
 
 /**
- * Shopping cart — the `/cart` page and its many conditional behaviours, driven
+ * Shopping cart — the `/cart` page and its many conditional behaviors, driven
  * entirely off a localStorage-seeded cart (see cart-helpers). The print wizard
  * is NEVER mounted, so no R3F/Three.js WebGL runs in these tests.
  *

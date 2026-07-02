@@ -120,7 +120,7 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
     description: h.description,
   }))
 
-  // ── Window Mount / Passepartout colour (visible when framing) ─
+  // ── Window Mount / Passepartout color (visible when framing) ─
   const windowMountOptions: Option[] = TPS_WINDOW_MOUNTS.map((w) => ({
     id: w.id,
     label: w.label,
@@ -128,8 +128,8 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
   }))
 
   // Visibility list for "anything except 'none'" — used to gate the
-  // mount-board-size input so it only appears when a colour is picked.
-  const windowMountColourIds = TPS_WINDOW_MOUNTS.filter((w) => w.id !== 'none').map((w) => w.id)
+  // mount-board-size input so it only appears when a color is picked.
+  const windowMountColorIds = TPS_WINDOW_MOUNTS.filter((w) => w.id !== 'none').map((w) => w.id)
 
   // Dimension order mirrors TPS's "Order Prints" flow: paper-type
   // first, then print size + paper border, then mounting/framing
@@ -191,7 +191,7 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
     {
       kind: 'enum',
       id: 'moulding',
-      label: 'Moulding',
+      label: 'Molding', // id stays 'moulding' — stored in printConfig
       options: mouldingOptions,
       visibleWhen: { dimensionId: 'format', valueIn: ['framing'] },
     } satisfies EnumDimension,
@@ -220,7 +220,7 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
       visibleWhen: { dimensionId: 'frameType', valueIn: ['standard', 'box'] },
     } satisfies EnumDimension,
     // Mount board size — uniform width of the passepartout in cm.
-    // Visible only when a window-mount colour is chosen (not 'none').
+    // Visible only when a window-mount color is chosen (not 'none').
     {
       kind: 'border',
       id: 'windowMountSize',
@@ -229,7 +229,7 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
       maxCm: TPS_MOUNT_BOARD_BOUNDS.maxCm,
       stepCm: TPS_MOUNT_BOARD_BOUNDS.stepCm,
       defaultCm: TPS_MOUNT_BOARD_BOUNDS.defaultCm,
-      visibleWhen: { dimensionId: 'windowMount', valueIn: windowMountColourIds },
+      visibleWhen: { dimensionId: 'windowMount', valueIn: windowMountColorIds },
     } satisfies BorderDimension,
     // Hanging — visible when framing. Last so it sits after all
     // visual choices (frame / glass / mount).

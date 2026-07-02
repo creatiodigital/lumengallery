@@ -35,7 +35,7 @@ interface SummaryPanelProps {
    *  is committed. Resolve only on a successful add. */
   onAddToCart: () => Promise<void>
   /** Returns the buyer to where they came from (reuses the wizard's
-   *  CLOSE behaviour) after a successful add. */
+   *  CLOSE behavior) after a successful add. */
   onContinueShopping: () => void
   /** Limited editions only: "1/50" rendered on the preview. */
   editionLabel?: string
@@ -125,7 +125,7 @@ export const SummaryPanel = ({
   const moldingColorHex = visuals.frameColorHex ?? '#f2f2f2'
   const mattingColorHex = visuals.matColorHex ?? '#f6f3ec'
 
-  // Floating frame uses a coloured backboard instead of a passepartout —
+  // Floating frame uses a colored backboard instead of a passepartout —
   // surface that visually in the 2D schema so it doesn't read identically
   // to Standard. Backboard border matches the FloatingPreview default
   // (2 cm on every side, see scene/preview/FloatingPreview.tsx).

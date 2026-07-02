@@ -120,7 +120,7 @@ export async function GET(req: NextRequest) {
 
   // Phase A — auto-recover. `processing` PIs aren't yet authorized, so
   // ensureOrderForPaymentIntent returns ok:false for them BY DESIGN — count them
-  // as "still pending" (a few minutes from authorising), not a hard failure.
+  // as "still pending" (a few minutes from authorizing), not a hard failure.
   let recovered = 0
   let recoveryFailed = 0
   let stillPending = 0
@@ -164,12 +164,30 @@ export async function GET(req: NextRequest) {
       unresolvedLines.push(`${paymentIntentId} — PI could not be retrieved from Stripe`)
       continue
     }
-    const dead =
-      pi.status === 'canceled' ||
-      pi.status === 'requires_payment_method' ||
-      pi.status === 'requires_confirmation'
-    if (dead) {
-      // Abandoned/dead: return the number to the pool.
+    if (pi.status === 'canceled') {
+      // Genuinely dead: return the number to the pool.
+      await releaseEditionNumberForPaymentIntent(paymentIntentId)
+      reservationsReleased += 1
+    } else if (pi.status === 'requires_payment_method' || pi.status === 'requires_confirmation') {
+      // These are LIVE, still-confirmable statuses — the buyer may be typing
+      // card details right now (reservedAt dates from add-to-cart, not from
+      // reaching checkout). Cancel the PI FIRST so a later confirm can't
+      // succeed against a number we are about to free; release only when the
+      // cancel actually lands.
+      try {
+        await stripe.paymentIntents.cancel(paymentIntentId, {
+          cancellation_reason: 'abandoned',
+        })
+      } catch {
+        // Cancel refused — the PI advanced (confirm/processing/succeeded)
+        // between retrieve and cancel. The buyer is live: leave the hold and
+        // flag for a human instead of double-selling the number.
+        reservationsUnresolvedPI += 1
+        unresolvedLines.push(
+          `${paymentIntentId} — cancel refused (PI advanced mid-check); reservation left held`,
+        )
+        continue
+      }
       await releaseEditionNumberForPaymentIntent(paymentIntentId)
       reservationsReleased += 1
     }
@@ -220,7 +238,7 @@ export async function GET(req: NextRequest) {
         'Investigate WHY the webhook did not fire: check the Stripe Dashboard webhook endpoint, signing secret, and event subscription for this environment.',
         'For any order that could not be recovered: open the PaymentIntent in Stripe, grab its metadata + shipping address, and recreate the order — or refund the buyer and ask them to re-place.',
         'For any unresolved reservation: confirm the PI in Stripe; if dead, release the number from the edition-sales ledger; if live, recover its order.',
-        'Recovered orders are real and ready to fulfil; verify each one in /admin/orders.',
+        'Recovered orders are real and ready to fulfill; verify each one in /admin/orders.',
       ],
     })
   }

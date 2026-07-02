@@ -30,6 +30,8 @@ import {
   reorderForReprint,
   releaseItemPayout,
   releasePayout,
+  sendInvoice,
+  issueCreditNote,
   type AdminOrderDetail as Detail,
   type AdminOrderItem,
 } from '@/app/admin/orders/actions'
@@ -53,7 +55,7 @@ const DOT_COLORS = {
   red: '#ef4444',
   amber: '#f59e0b',
   blue: '#3b82f6',
-  grey: '#9ca3af',
+  gray: '#9ca3af',
 } as const
 type DotColor = keyof typeof DOT_COLORS
 
@@ -173,7 +175,7 @@ const eventDot = (kind: string): DotColor => {
   )
     return 'green'
   if (kind === 'admin_action') return 'blue'
-  return 'grey'
+  return 'gray'
 }
 
 // Per-line payout status pill for cart orders. Cart orders pay each
@@ -203,7 +205,7 @@ const ItemPayoutStatus = ({ item }: { item: AdminOrderItem }) => {
   }
   return (
     <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>
-      <Dot color="grey" />
+      <Dot color="gray" />
       Not paid
     </span>
   )
@@ -469,7 +471,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
 
   const [cancelOpen, setCancelOpen] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
-  const [cancelling, setCancelling] = useState(false)
+  const [canceling, setCanceling] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
 
   const [reorderOpen, setReorderOpen] = useState(false)
@@ -488,6 +490,15 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
   const [busyError, setBusyError] = useState<string | null>(null)
   const [shipOpen, setShipOpen] = useState(false)
   const [trackingUrlInput, setTrackingUrlInput] = useState('')
+
+  const [invoiceConfirmOpen, setInvoiceConfirmOpen] = useState(false)
+  const [sendingInvoice, setSendingInvoice] = useState(false)
+  const [invoiceError, setInvoiceError] = useState<string | null>(null)
+
+  const [creditNoteConfirmOpen, setCreditNoteConfirmOpen] = useState(false)
+  const [creditNoteReason, setCreditNoteReason] = useState('')
+  const [issuingCreditNote, setIssuingCreditNote] = useState(false)
+  const [creditNoteError, setCreditNoteError] = useState<string | null>(null)
 
   const [payOpen, setPayOpen] = useState(false)
   const [paying, setPaying] = useState(false)
@@ -541,10 +552,10 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
 
   const handleCancelOrder = useCallback(async () => {
     if (!order) return
-    setCancelling(true)
+    setCanceling(true)
     setCancelError(null)
     const res = await cancelOrder(order.id, cancelReason)
-    setCancelling(false)
+    setCanceling(false)
     if (!res.ok) {
       setCancelError(res.error)
       return
@@ -686,6 +697,53 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
     setManualNote('')
     await load()
   }, [order, manualMethod, manualReference, manualNote, load])
+
+  const handleSendInvoice = useCallback(async () => {
+    if (!order) return
+    setSendingInvoice(true)
+    setInvoiceError(null)
+    const res = await sendInvoice(order.id)
+    setSendingInvoice(false)
+    setInvoiceConfirmOpen(false)
+    if (!res.ok) {
+      setInvoiceError(res.error)
+      // Reload even on failure: per the number-burn rule the invoice row may
+      // already be committed (render/email failed after minting) — the UI
+      // must flip to the "invoice exists / re-send" state, not keep offering
+      // a first issue.
+      await load()
+      return
+    }
+    if (!res.emailed) {
+      setInvoiceError(
+        `Invoice ${res.number} was issued and archived, but the EMAIL FAILED — the buyer has NOT received it. Use "Send invoice again" to retry.`,
+      )
+    }
+    await load()
+  }, [order, load])
+
+  const handleIssueCreditNote = useCallback(async () => {
+    if (!order) return
+    setIssuingCreditNote(true)
+    setCreditNoteError(null)
+    const res = await issueCreditNote(order.id, creditNoteReason || undefined)
+    setIssuingCreditNote(false)
+    setCreditNoteConfirmOpen(false)
+    if (!res.ok) {
+      setCreditNoteError(res.error)
+      // Same number-burn rule as invoices — reload so a committed credit
+      // note shows up even when render/email failed.
+      await load()
+      return
+    }
+    if (!res.emailed) {
+      setCreditNoteError(
+        `Credit note ${res.number} was issued and archived, but the EMAIL FAILED — the buyer has NOT received it. Use "Send credit note again" to retry.`,
+      )
+    }
+    setCreditNoteReason('')
+    await load()
+  }, [order, creditNoteReason, load])
 
   if (loading) {
     return (
@@ -898,7 +956,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
       {isAuthExpired && (
         <IssueBanner tone="red" title="⚠️ Authorization expired — no payment collected">
           The buyer&apos;s card hold lapsed before the payment was captured, so{' '}
-          <strong>no money was taken</strong> and there is nothing to fulfil. If they still want the
+          <strong>no money was taken</strong> and there is nothing to fulfill. If they still want the
           print, they&apos;ll need to purchase again. You can remove this order from the Danger zone
           below.
         </IssueBanner>
@@ -907,7 +965,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
       {isPaymentFailed && (
         <IssueBanner tone="red" title="⛔ Payment failed — card declined">
           The buyer&apos;s card was declined, so <strong>no money was taken</strong> and there is
-          nothing to fulfil. No action is required unless you want to follow up. You can remove this
+          nothing to fulfill. No action is required unless you want to follow up. You can remove this
           order from the Danger zone below.
         </IssueBanner>
       )}
@@ -942,7 +1000,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           >
             <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>💸 Refund needed</p>
             <p style={{ margin: '0 0 8px 0' }}>
-              This order is cancelled but the buyer&apos;s card was already charged{' '}
+              This order is canceled but the buyer&apos;s card was already charged{' '}
               <strong>{formatEuro(order.totalCents)}</strong>. Use the <strong>Refund buyer</strong>{' '}
               button below to return the money.
             </p>
@@ -1034,7 +1092,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         >
           <h2 style={{ margin: 0, fontSize: 16 }}>Fulfillment</h2>
           {stage === 'Cancelled' ? (
-            <Badge label="Cancelled" variant="past" />
+            <Badge label="Canceled" variant="past" />
           ) : (
             buildLifecycle(order).map((s) => (
               <Badge key={s.label} label={s.label} variant={s.reached ? 'current' : 'neutral'} />
@@ -1202,7 +1260,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 {order.paymentStatus === 'authorized'
                   ? ' — the Stripe hold will be voided immediately (no money moves).'
                   : order.paymentStatus === 'succeeded'
-                    ? ' — the payment was already captured; after cancelling you’ll need to issue a refund separately.'
+                    ? ' — the payment was already captured; after canceling you’ll need to issue a refund separately.'
                     : '.'}
               </p>
               <label
@@ -1243,9 +1301,9 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 <Button
                   font="dashboard"
                   variant="danger"
-                  label={cancelling ? 'Cancelling…' : 'Cancel order'}
+                  label={canceling ? 'Canceling…' : 'Cancel order'}
                   onClick={handleCancelOrder}
-                  disabled={cancelling || cancelReason.trim().length === 0}
+                  disabled={canceling || cancelReason.trim().length === 0}
                 />
                 <Button
                   font="dashboard"
@@ -1256,7 +1314,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                     setCancelReason('')
                     setCancelError(null)
                   }}
-                  disabled={cancelling}
+                  disabled={canceling}
                 />
               </div>
             </div>
@@ -1938,6 +1996,215 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           </div>
         )}
 
+      {/* Invoice — two states (no fulfillment gate; admin issues at will):
+          1. Invoice exists → number + "See invoice" + "Send invoice again"
+             (re-send is idempotent — same PDF + number, as many times as needed).
+             When a credit note also exists, the original invoice is shown as Voided.
+          2. No invoice yet → "Send invoice" CTA (available at any stage). */}
+      <div className={dashboardStyles.section}>
+        <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>Invoice</h2>
+        {order.invoice ? (
+          <div style={{ marginTop: 12 }}>
+            {/* Actions row — number + all buttons on one line */}
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontFamily: 'monospace' }}>{order.invoice.number}</span>
+              {order.creditNote && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    borderRadius: 4,
+                    background: 'var(--color-badge-danger-bg)',
+                    color: 'var(--color-badge-danger-text)',
+                    letterSpacing: '0.03em',
+                  }}
+                >
+                  Voided
+                </span>
+              )}
+              <Button
+                font="dashboard"
+                variant="secondary"
+                size="small"
+                label="See invoice"
+                href={`/admin/invoices/${order.invoice.id}/download`}
+              />
+              {!order.creditNote && (
+                <>
+                  <Button
+                    font="dashboard"
+                    variant="primary"
+                    size="small"
+                    label={sendingInvoice ? 'Sending…' : 'Send invoice again'}
+                    onClick={() => {
+                      setInvoiceError(null)
+                      setInvoiceConfirmOpen(true)
+                    }}
+                    disabled={sendingInvoice}
+                  />
+                  <Button
+                    font="dashboard"
+                    variant="danger"
+                    size="small"
+                    label={issuingCreditNote ? 'Issuing…' : 'Issue credit note'}
+                    onClick={() => {
+                      setCreditNoteError(null)
+                      setCreditNoteConfirmOpen(true)
+                    }}
+                    disabled={issuingCreditNote}
+                  />
+                </>
+              )}
+            </div>
+
+            {/* Credit note row (if exists) */}
+            {order.creditNote && (
+              <div style={{ marginTop: 10 }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                  Credit note:
+                </p>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 13, fontFamily: 'monospace' }}>{order.creditNote.number}</span>
+                  <Button
+                    font="dashboard"
+                    variant="secondary"
+                    size="small"
+                    label="See credit note"
+                    href={`/admin/invoices/${order.creditNote.id}/download`}
+                  />
+                  <Button
+                    font="dashboard"
+                    variant="secondary"
+                    size="small"
+                    label={issuingCreditNote ? 'Sending…' : 'Send credit note again'}
+                    onClick={() => void handleIssueCreditNote()}
+                    disabled={issuingCreditNote}
+                  />
+                </div>
+              </div>
+            )}
+
+            {(invoiceError || creditNoteError) && (
+              <p style={{ margin: '8px 0 0 0', color: 'var(--color-error-text)', fontSize: 13 }}>
+                ⚠️ {invoiceError || creditNoteError}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div style={{ marginTop: 12 }}>
+            <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 12px 0' }}>
+              Issue the factura and email it to the buyer. The invoice number is minted
+              once — re-sending reuses the same number.
+            </p>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Button
+                font="dashboard"
+                variant="primary"
+                size="small"
+                label={sendingInvoice ? 'Sending…' : 'Send invoice'}
+                onClick={() => {
+                  setInvoiceError(null)
+                  setInvoiceConfirmOpen(true)
+                }}
+                disabled={sendingInvoice}
+              />
+            </div>
+            {invoiceError && (
+              <p style={{ margin: '8px 0 0 0', color: 'var(--color-error-text)', fontSize: 13 }}>
+                ⚠️ {invoiceError}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {invoiceConfirmOpen && order && (
+        <ConfirmModal
+          title={order.invoice ? 'Re-send invoice?' : 'Issue and send invoice?'}
+          message={
+            order.invoice ? (
+              <>
+                This will re-email invoice <code>{order.invoice.number}</code> to{' '}
+                <strong>{order.buyerEmail}</strong>. The same PDF and number are reused — no new
+                invoice is created.
+              </>
+            ) : (
+              <>
+                This will issue a factura for order <code>#{order.id.slice(0, 8)}</code> and email it
+                to <strong>{order.buyerEmail}</strong>. The invoice number is permanent — it cannot
+                be voided from this screen.
+              </>
+            )
+          }
+          confirmLabel={order.invoice ? 'Yes, re-send' : 'Yes, send invoice'}
+          cancelLabel="Cancel"
+          busy={sendingInvoice}
+          onConfirm={handleSendInvoice}
+          onCancel={() => setInvoiceConfirmOpen(false)}
+        />
+      )}
+
+      {creditNoteConfirmOpen && order && order.invoice && (
+        <ConfirmModal
+          title="Issue credit note (factura rectificativa)?"
+          message={
+            <div>
+              <p style={{ margin: '0 0 12px 0' }}>
+                This will issue a credit note correcting invoice{' '}
+                <code>{order.invoice.number}</code> and email it to{' '}
+                <strong>{order.buyerEmail}</strong>.
+              </p>
+              <p style={{ margin: '0 0 12px 0', fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                This cannot be undone. Both documents (invoice + credit note) go to the accountant and net to zero.
+              </p>
+              <div>
+                <label
+                  htmlFor="credit-note-reason"
+                  style={{
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    marginBottom: 6,
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
+                  Reason (optional)
+                </label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                  {['Refund', 'Issued in error'].map((preset) => (
+                    <Button
+                      key={preset}
+                      font="dashboard"
+                      variant="ghost"
+                      size="small"
+                      label={preset}
+                      onClick={() => setCreditNoteReason(preset)}
+                    />
+                  ))}
+                </div>
+                <Input
+                  id="credit-note-reason"
+                  type="text"
+                  placeholder="e.g. Order canceled by buyer"
+                  value={creditNoteReason}
+                  onChange={(e) => setCreditNoteReason(e.target.value)}
+                />
+              </div>
+            </div>
+          }
+          confirmLabel={issuingCreditNote ? 'Issuing…' : 'Yes, issue credit note'}
+          cancelLabel="Cancel"
+          busy={issuingCreditNote}
+          onConfirm={handleIssueCreditNote}
+          onCancel={() => {
+            setCreditNoteConfirmOpen(false)
+            setCreditNoteReason('')
+          }}
+        />
+      )}
+
       {sections.map((s) => (
         <div key={s.title} className={dashboardStyles.section}>
           <h2 style={{ margin: '0 0 12px 0', fontSize: 16 }}>{s.title}</h2>
@@ -2075,7 +2342,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 <>
                   <br />
                   <br />
-                  The Stripe card hold ({formatEuro(order.totalCents)}) will be cancelled
+                  The Stripe card hold ({formatEuro(order.totalCents)}) will be canceled
                   best-effort, releasing the funds back to the buyer&apos;s card.
                 </>
               )}

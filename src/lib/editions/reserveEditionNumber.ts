@@ -67,14 +67,17 @@ export async function reserveNextEditionNumber(args: {
   return { ok: true, numberId: row.id, number: row.number, editionSize: variant.editionSize }
 }
 
-/** Attach the Stripe PI id to a freshly reserved number. */
+/** Attach the Stripe PI id to a freshly reserved number. Also restarts the
+ *  reservation clock: reservedAt was stamped at add-to-cart, and the
+ *  reconcile cron's abandonment cutoff must count from checkout start — not
+ *  from browsing — or a slow browser can lose their number mid-payment. */
 export async function attachPaymentIntentToReservation(
   numberId: string,
   paymentIntentId: string,
 ): Promise<void> {
   await prisma.editionNumber.update({
     where: { id: numberId },
-    data: { paymentIntentId },
+    data: { paymentIntentId, reservedAt: new Date() },
   })
 }
 
@@ -121,12 +124,23 @@ export async function bindEditionNumbersToOrderItem(args: {
   numberIds: string[]
   orderItemId: string
   buyerEmail: string
+  paymentIntentId: string
 }): Promise<number> {
-  const { numberIds, orderItemId, buyerEmail } = args
+  const { numberIds, orderItemId, buyerEmail, paymentIntentId } = args
   if (numberIds.length === 0) return 0
 
+  // paymentIntentId in the WHERE is the ownership check (mirrors the
+  // single-print bindEditionNumberToOrder): a number that was released and
+  // re-reserved by ANOTHER buyer carries a different PI, so a delayed webhook
+  // replaying this order's stored numberIds can never steal it — it shows up
+  // as a bind shortfall (reconciliation alert) instead.
   const result = await prisma.editionNumber.updateMany({
-    where: { id: { in: numberIds }, state: 'reserved', orderItemId: null },
+    where: {
+      id: { in: numberIds },
+      state: 'reserved',
+      orderItemId: null,
+      paymentIntentId,
+    },
     data: { orderItemId, buyerEmail },
   })
   return result.count

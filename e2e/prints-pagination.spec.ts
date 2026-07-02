@@ -54,7 +54,7 @@ test('prints page: edition filter narrows results server-side', async ({ page })
   await page.goto('/prints')
   await expect(orderPrintLinks(page).first()).toBeVisible()
 
-  // Custom SelectDropdown: the closed control is a button labelled with the
+  // Custom SelectDropdown: the closed control is a button labeled with the
   // current value; opening it reveals role="option" entries.
   // Filter to Open editions → no Limited-edition card may remain.
   await page.getByRole('button', { name: 'All Editions', exact: true }).click()

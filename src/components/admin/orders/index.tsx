@@ -30,7 +30,7 @@ const DOT_COLORS: Record<string, string> = {
   red: '#ef4444',
   amber: '#f59e0b',
   blue: '#3b82f6',
-  grey: '#9ca3af',
+  gray: '#9ca3af',
 }
 
 const Dot = ({ color }: { color: keyof typeof DOT_COLORS }) => (
@@ -95,9 +95,9 @@ const BUCKET_META: Record<
     nextAction: 'View details',
   },
   cancelled: {
-    title: 'Cancelled',
+    title: 'Canceled',
     helper:
-      'Orders pulled out of the pipeline before delivery — buyer asked to cancel, we couldn’t fulfil, TPS rejected the file, artist disabled prints, etc. Refunds (if needed) are handled from the order detail page.',
+      'Orders pulled out of the pipeline before delivery — buyer asked to cancel, we couldn’t fulfill, TPS rejected the file, artist disabled prints, etc. Refunds (if needed) are handled from the order detail page.',
     nextAction: 'View details',
   },
   refunded: {

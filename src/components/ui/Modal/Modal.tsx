@@ -10,7 +10,7 @@ type ModalProps = {
    * ID of the element inside the modal that labels the dialog (usually
    * the modal's title heading). When provided it's forwarded to
    * `aria-labelledby` so screen readers announce the dialog by name on
-   * open. Falls back to an unlabelled dialog if omitted.
+   * open. Falls back to an unlabeled dialog if omitted.
    */
   titleId?: string
   /**

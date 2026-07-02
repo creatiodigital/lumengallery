@@ -34,7 +34,7 @@ type AdminOrderNotificationArgs = {
   totalCents: number
   currency: string
   /** Spec rows (Print type / Paper / Frame / etc.) the admin pastes
-   *  into the fulfilment portal by hand. */
+   *  into the fulfillment portal by hand. */
   skuAttributes: Record<string, string>
   adminOrderUrl: string
 }
@@ -79,7 +79,7 @@ export function renderAdminOrderNotificationEmail(
 
   const body =
     emailEyebrow(`Order #${safeId8}`) +
-    `<h2 style="margin:0 0 12px;font-size:18px;font-weight:700;line-height:1.3;color:#111111">New order &mdash; needs fulfilment</h2>` +
+    `<h2 style="margin:0 0 12px;font-size:18px;font-weight:700;line-height:1.3;color:#111111">New order &mdash; needs fulfillment</h2>` +
     emailParagraph(`Order #${safeId8} &middot; ${total}`) +
     emailButton('Open in admin', safeAdminUrl) +
     emailDivider() +
@@ -102,9 +102,9 @@ export function renderAdminOrderNotificationEmail(
     )
 
   return {
-    subject: `New order #${id8} — ${args.artworkTitle} — needs fulfilment`,
+    subject: `New order #${id8} — ${args.artworkTitle} — needs fulfillment`,
     html: renderEmailLayout({
-      preheader: `New order #${id8} — ${args.artworkTitle} — needs fulfilment`,
+      preheader: `New order #${id8} — ${args.artworkTitle} — needs fulfillment`,
       bodyHtml: body,
     }),
   }
@@ -113,7 +113,7 @@ export function renderAdminOrderNotificationEmail(
 /**
  * Sent to the gallery admin every time a buyer's card authorization
  * succeeds. Surfaces every field needed to place the order in the
- * fulfilment portal by hand (manual fulfillment mode).
+ * fulfillment portal by hand (manual fulfillment mode).
  *
  * Resolves with `{ ok: false }` on failure rather than throwing, so the
  * caller can log + continue without aborting the webhook.

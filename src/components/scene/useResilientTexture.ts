@@ -9,7 +9,7 @@ const MAX_RETRIES = 2
 const RETRY_DELAY_MS = 250
 
 // A single shared 1×1 opaque-white texture used when a map fails permanently.
-// A missing map then degrades to the material's base colour instead of an
+// A missing map then degrades to the material's base color instead of an
 // error — the floor still renders, just without that PBR channel.
 let fallbackTexture: Texture | null = null
 function getFallbackTexture(): Texture {

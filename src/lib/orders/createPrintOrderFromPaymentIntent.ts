@@ -10,7 +10,6 @@ import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { sendAdminOrderNotification } from '@/lib/emails/adminOrderNotification'
 import { sendOrderPlacedEmail } from '@/lib/emails/orderPlaced'
 import { captureError } from '@/lib/observability/captureError'
-import { countryName } from '@/utils/countryName'
 import { logOrderEvent } from './logOrderEvent'
 
 type StripePaymentIntent = {
@@ -364,8 +363,9 @@ export async function createPrintOrderFromPaymentIntent(
       itemTotalCents,
       shippingCents: order.productionShippingCents,
       vatCents: order.customerVatCents,
-      vatLabel:
-        order.customerVatCents > 0 ? `VAT (${countryName(shipCountry)} ${vatRate}%)` : undefined,
+      // Always the SELLER jurisdiction: it's Spanish VAT charged to every EU
+      // buyer, and the label must match checkout + the factura ("ES 21%").
+      vatLabel: order.customerVatCents > 0 ? `VAT (ES ${vatRate}%)` : undefined,
       totalCents: order.totalCents,
       currency: order.currency,
       shippingCountryCode: shipCountry,

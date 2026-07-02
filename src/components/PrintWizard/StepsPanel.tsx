@@ -398,7 +398,7 @@ const SizeAndBorderSection = ({
 // Bundles every framing-conditional dimension into one section. The
 // format dropdown is always rendered; the rest only show when the
 // buyer chose to frame. windowMountSize follows the catalog's own
-// visibility rule (only when a non-'none' mount colour is picked).
+// visibility rule (only when a non-'none' mount color is picked).
 
 interface FrameSectionProps {
   format: EnumDimension

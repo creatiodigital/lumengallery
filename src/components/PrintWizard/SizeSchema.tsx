@@ -25,7 +25,7 @@ interface SizeSchemaProps {
    *  buyer's print size is the image, the paper sheet is bigger. */
   paperBorderCm?: number
   /** Floating-frame only: visible backboard border extending past the
-   *  paper sheet on every side, in cm. Rendered as a coloured layer
+   *  paper sheet on every side, in cm. Rendered as a colored layer
    *  between the paper and the frame so the schema differentiates
    *  Floating from Standard (which has a passepartout instead). */
   backboardBorderCm?: number
@@ -179,7 +179,7 @@ export const SizeSchema = ({
           <rect x={matX} y={matY} width={matW} height={matH} fill={mattingColorHex} />
         )}
 
-        {/* Backboard (Floating frames only). Coloured sheet that
+        {/* Backboard (Floating frames only). Colored sheet that
             extends past the paper on every side, behind the print. */}
         {effectiveBackboard > 0 && (
           <rect

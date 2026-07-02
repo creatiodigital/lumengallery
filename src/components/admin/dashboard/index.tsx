@@ -18,7 +18,7 @@ import styles from './AdminDashboard.module.scss'
 // (same bucketOf logic as the orders tabs — single source of truth).
 // Ordered by urgency: buyer-money / legal exposure first, payouts last.
 // A card only takes its red/amber tone when its count > 0 (see render),
-// so a clean panel is all-grey and the eye lands on what needs action.
+// so a clean panel is all-gray and the eye lands on what needs action.
 type CounterCard = {
   label: string
   metric: AttentionMetric
@@ -80,6 +80,11 @@ const NAV_HUBS: Hub[] = [
     label: 'Payouts',
     description: 'Artist payout history, manual payouts, Stripe Connect status.',
     href: '/admin/payouts',
+  },
+  {
+    label: 'Invoices',
+    description: 'Gallery-issued facturas — view, filter by date & client, download, and export for the accountant.',
+    href: '/admin/invoices',
   },
 ]
 
@@ -143,7 +148,7 @@ export const DashboardAdmin = () => {
           {URGENT_COUNTERS.map((c) => {
             const count = metrics ? metrics[c.metric] : 0
             // Tone only kicks in when there's actually work — a 0 stays
-            // neutral grey so the eye lands on the cards that need action.
+            // neutral gray so the eye lands on the cards that need action.
             const toneClass = count > 0 && c.tone ? styles[`tone_${c.tone}`] : ''
             return (
               <Link key={c.label} href={c.href} className={`${styles.counterCard} ${toneClass}`}>

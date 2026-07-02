@@ -59,7 +59,7 @@ export function renderInquiryUserConfirmationEmail(
 }
 
 /**
- * Sends the user inquiry confirmation email to the enquirer.
+ * Sends the user inquiry confirmation email to the inquirer.
  *
  * Resolves with `{ ok: false }` on failure rather than throwing.
  */

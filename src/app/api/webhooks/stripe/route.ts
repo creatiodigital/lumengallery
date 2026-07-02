@@ -252,7 +252,7 @@ async function handlePaymentIntentAuthorized(pi: PaymentIntentLike) {
 async function handlePaymentIntentCaptured(pi: PaymentIntentLike) {
   const order = await prisma.printOrder.findUnique({
     where: { paymentIntentId: pi.id },
-    select: { id: true },
+    select: { id: true, paymentStatus: true },
   })
   if (!order) {
     console.warn(`[stripe-webhook] payment_intent.succeeded pi=${pi.id} → no PrintOrder found`)
@@ -274,6 +274,19 @@ async function handlePaymentIntentCaptured(pi: PaymentIntentLike) {
     })
     return
   }
+  // A capture event only ever advances authorized → succeeded. Stripe can
+  // redeliver (or an admin can resend) this event long after the order was
+  // refunded — flipping a terminal status back to 'succeeded' would re-arm
+  // every fulfillment action and the artist-payout release, so terminal
+  // states are never overwritten. Already-succeeded is an idempotent no-op.
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    console.warn(
+      `[stripe-webhook] payment_intent.succeeded pi=${pi.id} → order ${order.id} is '${order.paymentStatus}'; ignoring stale capture event`,
+    )
+    return
+  }
+  if (order.paymentStatus === 'succeeded') return
+
   await prisma.printOrder.update({
     where: { id: order.id },
     data: { paymentStatus: 'succeeded' },

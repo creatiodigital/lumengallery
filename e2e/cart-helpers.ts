@@ -8,7 +8,7 @@ import type { Page } from '@playwright/test'
  * wizard, we write a fully-formed cart straight into localStorage under the
  * provider's storage key, then load `/cart` — the `CartProvider` hydrates from
  * it on mount exactly as if the buyer had added the items. This lets us test
- * every cart-page behaviour (stepper, remove-confirm, edit link, spec toggle,
+ * every cart-page behavior (stepper, remove-confirm, edit link, spec toggle,
  * hold countdown, totals, badge) with zero 3D.
  *
  * `addInitScript` runs before the app's first script, so the cart is present at
