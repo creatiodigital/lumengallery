@@ -16,14 +16,14 @@
  */
 
 import prisma from '@/lib/prisma'
-import { issueInvoiceRecord, type IssueInvoiceInput, type IssuedInvoice } from './issueInvoiceRecord'
+import {
+  issueInvoiceRecord,
+  type IssueInvoiceInput,
+  type IssuedInvoice,
+} from './issueInvoiceRecord'
 
 function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    (err as { code?: string }).code === 'P2002'
-  )
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2002'
 }
 
 export async function getOrIssueInvoice(

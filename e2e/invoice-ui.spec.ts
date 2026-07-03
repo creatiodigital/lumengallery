@@ -102,6 +102,41 @@ test.describe('Invoice — send button UI', () => {
       await page.goto('/admin/invoices')
 
       await expect(page.getByText(theNumber)).toBeVisible({ timeout: 30_000 })
+
+      // ── 7. ORDER IS KING (dev/staging): deleting the order takes its
+      // invoice with it. Drive the real Danger-zone delete on an INVOICED
+      // order — in production this exact click is refused ("issue a credit
+      // note instead"), but e2e always runs with a non-production
+      // NEXT_PUBLIC_APP_ENV, so deleteOrder cascades: invoice rows + PDFs
+      // deleted, ledger number freed, order gone. Doubles as this spec's
+      // teardown — the finally-block becomes a no-op backstop.
+      await page.goto(`/admin/orders/${bought.orderId}`)
+      await page.getByRole('button', { name: 'Delete order' }).click()
+      await page.getByRole('button', { name: 'Yes, delete permanently' }).click()
+
+      // Order gone…
+      await expect
+        .poll(async () => prisma.printOrder.count({ where: { id: bought!.orderId } }), {
+          message: 'invoiced order deleted by the Danger zone (dev cascade)',
+          timeout: 15_000,
+        })
+        .toBe(0)
+      // …its invoice cascaded with it…
+      expect(
+        await prisma.invoice.count({ where: { orderId: bought!.orderId } }),
+        'invoice rows go with their order — ORDER is king',
+      ).toBe(0)
+      // …and its ledger entry is back in the pool.
+      const freed = await prisma.editionNumber.findFirst({
+        where: { variantId: bought.fixture.variantId, number: bought.number },
+        select: { state: true, paymentIntentId: true, orderId: true },
+      })
+      expect(freed?.state, 'ledger number freed with the order').toBe('available')
+      expect(freed?.paymentIntentId, 'freed number drops its PI').toBeNull()
+
+      // The register no longer shows the number.
+      await page.goto('/admin/invoices')
+      await expect(page.getByText(theNumber)).toHaveCount(0, { timeout: 30_000 })
     } finally {
       // ── Teardown (always runs — no Playwright order left on the dashboard). ─
       if (bought) {

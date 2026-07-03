@@ -438,7 +438,7 @@ export async function createPrintOrderFromCart(
       shippingCents: pending.shippingCents,
       vatCents: pending.customerVatCents,
       // Always the SELLER jurisdiction: it's Spanish VAT charged to every EU
-      // buyer, and the label must match checkout + the factura ("ES 21%").
+      // buyer, and the label must match checkout + the invoice ("ES 21%").
       vatLabel: pending.customerVatCents > 0 ? `VAT (ES ${vatRate}%)` : undefined,
       totalCents: pending.totalCents,
       currency: pending.currency,

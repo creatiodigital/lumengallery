@@ -86,8 +86,7 @@ export async function queryInvoices(filter: InvoiceFilter = {}): Promise<Invoice
   let invoices: InvoiceRow[] = rows.map((r) => {
     const buyer = r.buyerSnapshot as BuyerSnapshot
     const totals = r.totalsSnapshot as TotalsSnapshot
-    const rectifiedByNumber =
-      r.type === 'invoice' ? (r.corrections[0]?.number ?? null) : null
+    const rectifiedByNumber = r.type === 'invoice' ? (r.corrections[0]?.number ?? null) : null
     return {
       id: r.id,
       number: r.number,
@@ -114,8 +113,7 @@ export async function queryInvoices(filter: InvoiceFilter = {}): Promise<Invoice
   if (filter.client && filter.client.trim()) {
     const q = filter.client.trim().toLowerCase()
     invoices = invoices.filter(
-      (inv) =>
-        inv.buyerName.toLowerCase().includes(q) || inv.buyerEmail.toLowerCase().includes(q),
+      (inv) => inv.buyerName.toLowerCase().includes(q) || inv.buyerEmail.toLowerCase().includes(q),
     )
   }
 
@@ -136,7 +134,11 @@ export function exportPeriodLabel(filter: InvoiceFilter): string {
         ? `${filter.year}`
         : 'all'
   if (filter.client && filter.client.trim()) {
-    const slug = filter.client.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    const slug = filter.client
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
     return `${period}-PARTIAL${slug ? `-${slug}` : ''}`
   }
   return period

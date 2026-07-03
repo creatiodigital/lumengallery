@@ -89,9 +89,9 @@ export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => 
         Thank you — your order is confirmed.
       </Text>
       <Text as="p" size="md" className={styles.confirmBody}>
-        We&apos;ve placed a hold on your card and your order is now being prepared. We&apos;ll charge
-        your card once your prints enter production, and send a confirmation email with tracking
-        details as soon as they ship.
+        We&apos;ve placed a hold on your card and your order is now being prepared. We&apos;ll
+        charge your card once your prints enter production, and send a confirmation email with
+        tracking details as soon as they ship.
       </Text>
 
       <div className={styles.confirmReference}>

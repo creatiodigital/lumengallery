@@ -28,9 +28,10 @@ export type InquiryAdminNotificationArgs = {
  * Pure renderer — builds the subject and HTML for the admin inquiry notification.
  * No side effects; safe to call from preview routes.
  */
-export function renderInquiryAdminNotificationEmail(
-  args: InquiryAdminNotificationArgs,
-): { subject: string; html: string } {
+export function renderInquiryAdminNotificationEmail(args: InquiryAdminNotificationArgs): {
+  subject: string
+  html: string
+} {
   const safeFirstName = escapeHtml(args.firstName)
   const safeLastName = escapeHtml(args.lastName)
   const safeEmail = escapeHtml(args.email)
@@ -50,7 +51,10 @@ export function renderInquiryAdminNotificationEmail(
 
   const contactRows = [
     { label: 'Name', value: `${safeFirstName} ${safeLastName}` },
-    { label: 'Email', value: `<a href="mailto:${safeEmail}" style="color:inherit">${safeEmail}</a>` },
+    {
+      label: 'Email',
+      value: `<a href="mailto:${safeEmail}" style="color:inherit">${safeEmail}</a>`,
+    },
     { label: 'Phone', value: safePhone },
   ]
 

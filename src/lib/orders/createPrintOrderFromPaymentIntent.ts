@@ -364,7 +364,7 @@ export async function createPrintOrderFromPaymentIntent(
       shippingCents: order.productionShippingCents,
       vatCents: order.customerVatCents,
       // Always the SELLER jurisdiction: it's Spanish VAT charged to every EU
-      // buyer, and the label must match checkout + the factura ("ES 21%").
+      // buyer, and the label must match checkout + the invoice ("ES 21%").
       vatLabel: order.customerVatCents > 0 ? `VAT (ES ${vatRate}%)` : undefined,
       totalCents: order.totalCents,
       currency: order.currency,

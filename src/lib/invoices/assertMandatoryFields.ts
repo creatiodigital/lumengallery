@@ -1,9 +1,9 @@
 import type { InvoiceSnapshots } from './buildInvoiceSnapshots'
 import type { InvoiceLine } from './buildInvoiceLines'
 
-// Legally-required factura fields (Reglamento de facturación, RD 1619/2012).
+// Legally-required invoice fields (Reglamento de facturación, RD 1619/2012).
 // A document missing any mandatory field must FAIL to issue (loud error) —
-// never silently produce an invalid factura.
+// never silently produce an invalid invoice.
 //
 // Pass the built lines too: RD 1619/2012 also requires a description of every
 // operation, and lines must exist BEFORE the number is minted so a defective

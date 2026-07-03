@@ -40,12 +40,11 @@ export function renderAdminCriticalAlertEmail(args: CriticalAlertArgs): {
   const safePI = args.paymentIntentId ? escapeHtml(args.paymentIntentId) : null
   const stripeUrl = safePI ? `https://dashboard.stripe.com/payments/${safePI}` : null
 
-  const contextRows =
-    args.context
-      ? Object.entries(args.context)
-          .filter(([, v]) => v !== undefined && v !== null && v !== '')
-          .map(([k, v]) => ({ label: escapeHtml(k), value: escapeHtml(String(v)) }))
-      : []
+  const contextRows = args.context
+    ? Object.entries(args.context)
+        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]) => ({ label: escapeHtml(k), value: escapeHtml(String(v)) }))
+    : []
 
   const todoItems = args.whatToDo
     .map((step) => `<li style="margin:0 0 6px 0;">${escapeHtml(step)}</li>`)
@@ -60,9 +59,7 @@ export function renderAdminCriticalAlertEmail(args: CriticalAlertArgs): {
     `<p style="margin:0 0 8px;font-family:Lato,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#666">What broke</p>` +
     `<div style="margin:0 0 16px;padding:12px 14px;font-family:monospace,'Courier New';white-space:pre-wrap;font-size:12px;background:#f5f5f5;border:1px solid #d0d0d0">${safeProblem}</div>` +
     (stripeUrl ? emailButton('Open PaymentIntent in Stripe', stripeUrl) : '') +
-    (contextRows.length
-      ? emailDetailRows(contextRows)
-      : '') +
+    (contextRows.length ? emailDetailRows(contextRows) : '') +
     `<p style="margin:0 0 8px;font-family:Lato,sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#666">What to do</p>` +
     `<ol style="margin:0 0 16px;padding-left:20px;font-family:Lato,sans-serif;font-size:14px;line-height:1.65;color:#333">${todoItems}</ol>` +
     emailParagraph(

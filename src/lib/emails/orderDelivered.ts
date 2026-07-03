@@ -24,9 +24,10 @@ type OrderDeliveredArgs = {
  * Pure renderer — builds the subject and HTML for the order-delivered email.
  * No side effects; safe to call from preview routes.
  */
-export function renderOrderDeliveredEmail(
-  args: OrderDeliveredArgs,
-): { subject: string; html: string } {
+export function renderOrderDeliveredEmail(args: OrderDeliveredArgs): {
+  subject: string
+  html: string
+} {
   const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)
@@ -47,7 +48,9 @@ export function renderOrderDeliveredEmail(
     emailParagraph(
       `If anything looks wrong &mdash; damaged in transit, mis-printed, or simply not what you expected &mdash; just reply to this email with a photo and we&rsquo;ll make it right.`,
     ) +
-    emailParagraph(`Otherwise, enjoy living with the work. The artist will receive their payout shortly.`)
+    emailParagraph(
+      `Otherwise, enjoy living with the work. The artist will receive their payout shortly.`,
+    )
 
   return {
     subject: 'Your artwork has arrived',

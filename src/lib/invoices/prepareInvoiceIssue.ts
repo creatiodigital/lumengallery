@@ -42,7 +42,7 @@ export function prepareInvoiceIssue(
 
   assertMandatoryFields(snapshots, lines)
 
-  // Reconciliation: Σ line amounts MUST equal the taxable base. A factura
+  // Reconciliation: Σ line amounts MUST equal the taxable base. An invoice
   // whose lines don't sum to its own base is invalid for Hacienda — refuse to
   // issue rather than emit an internally inconsistent legal document.
   const sumLineCents = lines.reduce((s, l) => s + l.lineCents, 0)

@@ -114,8 +114,7 @@ export async function getPrintArtistOptions(): Promise<PrintArtistOption[]> {
   return rows
     .map((row) => {
       const label =
-        row.author?.trim() ||
-        [row.user.name, row.user.lastName].filter(Boolean).join(' ').trim()
+        row.author?.trim() || [row.user.name, row.user.lastName].filter(Boolean).join(' ').trim()
       return { value: row.userId, label }
     })
     .sort((a, b) => a.label.localeCompare(b.label))

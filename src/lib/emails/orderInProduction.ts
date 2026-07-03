@@ -35,9 +35,10 @@ type OrderInProductionArgs = {
  * Pure renderer — builds the subject and HTML for the order-in-production email.
  * No side effects; safe to call from preview routes.
  */
-export function renderOrderInProductionEmail(
-  args: OrderInProductionArgs,
-): { subject: string; html: string } {
+export function renderOrderInProductionEmail(args: OrderInProductionArgs): {
+  subject: string
+  html: string
+} {
   const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)

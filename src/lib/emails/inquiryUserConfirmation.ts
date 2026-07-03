@@ -1,12 +1,7 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
-import {
-  emailDivider,
-  emailHeading,
-  emailNotice,
-  emailParagraph,
-} from './components'
+import { emailDivider, emailHeading, emailNotice, emailParagraph } from './components'
 import { renderEmailLayout } from './layout'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -23,9 +18,10 @@ export type InquiryUserConfirmationArgs = {
  * Pure renderer — builds the subject and HTML for the buyer inquiry auto-reply.
  * No side effects; safe to call from preview routes.
  */
-export function renderInquiryUserConfirmationEmail(
-  args: InquiryUserConfirmationArgs,
-): { subject: string; html: string } {
+export function renderInquiryUserConfirmationEmail(args: InquiryUserConfirmationArgs): {
+  subject: string
+  html: string
+} {
   const safeFirstName = escapeHtml(args.firstName)
   const safeArtworkTitle = escapeHtml(args.artworkTitle)
   const safeArtworkArtist = escapeHtml(args.artworkArtist)
@@ -42,9 +38,7 @@ export function renderInquiryUserConfirmationEmail(
     emailParagraph('Our team will review your message and get back to you as soon as possible.') +
     emailNotice('info', `<strong>Your message:</strong><br>${safeMessage}`) +
     emailDivider() +
-    emailParagraph(
-      'Best regards,<br>The Art Room Team',
-    ) +
+    emailParagraph('Best regards,<br>The Art Room Team') +
     emailParagraph(
       '<span style="color:#888888;font-size:12px">This is an automated confirmation. Please do not reply to this email.</span>',
     )

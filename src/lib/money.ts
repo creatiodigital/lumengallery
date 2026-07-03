@@ -1,7 +1,7 @@
 /**
  * THE money display formatter. Every display surface (invoice PDF, emails,
  * wizard, admin tables) formats cents through here — with separate
- * implementations the same order rendered "€1,234.50" on the factura and
+ * implementations the same order rendered "€1,234.50" on the invoice and
  * "€1234.50" in the email. Thousands-grouped; Unicode minus for negatives
  * (credit notes).
  *

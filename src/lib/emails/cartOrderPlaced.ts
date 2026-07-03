@@ -52,7 +52,10 @@ type CartOrderPlacedArgs = {
  * Pure renderer — builds the subject and HTML for the cart order-placed email.
  * No side effects; safe to call from preview routes.
  */
-export function renderCartOrderPlacedEmail(args: CartOrderPlacedArgs): { subject: string; html: string } {
+export function renderCartOrderPlacedEmail(args: CartOrderPlacedArgs): {
+  subject: string
+  html: string
+} {
   const rawFirstName = args.buyerName.split(' ')[0] || 'there'
   const firstName = escapeHtml(rawFirstName)
   const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
@@ -85,7 +88,10 @@ export function renderCartOrderPlacedEmail(args: CartOrderPlacedArgs): { subject
     : [{ label: 'Total', value: total, strong: true }]
 
   const dutyNote = dutyLikely
-    ? emailNotice('caution', '<strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.')
+    ? emailNotice(
+        'caution',
+        '<strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.',
+      )
     : ''
 
   const body =
@@ -108,7 +114,10 @@ export function renderCartOrderPlacedEmail(args: CartOrderPlacedArgs): { subject
 
   return {
     subject: 'Your order at The Art Room has been placed',
-    html: renderEmailLayout({ preheader: 'Your order at The Art Room has been placed', bodyHtml: body }),
+    html: renderEmailLayout({
+      preheader: 'Your order at The Art Room has been placed',
+      bodyHtml: body,
+    }),
   }
 }
 

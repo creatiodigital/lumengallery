@@ -31,9 +31,10 @@ type AdminOrderCancelledArgs = {
  * Pure renderer — builds the subject and HTML for the admin order cancelled email.
  * No side effects; safe to call from preview routes.
  */
-export function renderAdminOrderCancelledEmail(
-  args: AdminOrderCancelledArgs,
-): { subject: string; html: string } {
+export function renderAdminOrderCancelledEmail(args: AdminOrderCancelledArgs): {
+  subject: string
+  html: string
+} {
   const id8 = args.orderId.slice(0, 8).toUpperCase()
   const safeId8 = escapeHtml(id8)
   const safeArtwork = escapeHtml(args.artworkTitle)
@@ -61,9 +62,7 @@ export function renderAdminOrderCancelledEmail(
     emailParagraph('You canceled this order from the admin dashboard.') +
     emailButton('Open in admin', safeAdminUrl) +
     emailDivider() +
-    (refundNeeded
-      ? emailNotice('alert', moneyNoticeHtml)
-      : emailNotice('info', moneyNoticeHtml)) +
+    (refundNeeded ? emailNotice('alert', moneyNoticeHtml) : emailNotice('info', moneyNoticeHtml)) +
     emailDivider() +
     emailEyebrow('Order') +
     emailDetailRows([

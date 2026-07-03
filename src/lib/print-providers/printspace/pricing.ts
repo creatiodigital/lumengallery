@@ -455,8 +455,33 @@ export const HOME_VAT_RATE = 0.21 // Spain; gallery is a Spanish seller (B2C, pr
 
 // EU-27 (VAT territory). UK excluded (post-Brexit -> export).
 export const EU_VAT_COUNTRIES: ReadonlySet<string> = new Set([
-  'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE',
-  'IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE',
+  'AT',
+  'BE',
+  'BG',
+  'HR',
+  'CY',
+  'CZ',
+  'DK',
+  'EE',
+  'FI',
+  'FR',
+  'DE',
+  'GR',
+  'HU',
+  'IE',
+  'IT',
+  'LV',
+  'LT',
+  'LU',
+  'MT',
+  'NL',
+  'PL',
+  'PT',
+  'RO',
+  'SK',
+  'SI',
+  'ES',
+  'SE',
 ])
 
 /**

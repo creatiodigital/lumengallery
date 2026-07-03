@@ -1,7 +1,13 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
-import { emailButton, emailCodeBlock, emailHeading, emailNotice, emailParagraph } from './components'
+import {
+  emailButton,
+  emailCodeBlock,
+  emailHeading,
+  emailNotice,
+  emailParagraph,
+} from './components'
 import { renderEmailLayout } from './layout'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -30,9 +36,7 @@ export function renderArtistInviteEmail(args: ArtistInviteArgs): { subject: stri
       'You&rsquo;ve been invited to join The Art Room as an artist. Your account is ready and waiting for you.',
     ) +
     `<p style="margin:0 0 8px;font-family:Helvetica,'Helvetica Neue',Arial,sans-serif;font-size:14px;font-weight:700;line-height:1.65;color:#111111">Your Login Details:</p>` +
-    emailParagraph(
-      `<strong>Email:</strong> ${safeEmail}`,
-    ) +
+    emailParagraph(`<strong>Email:</strong> ${safeEmail}`) +
     `<p style="margin:0 0 8px;font-family:Helvetica,'Helvetica Neue',Arial,sans-serif;font-size:14px;line-height:1.65;color:#333333"><strong>Temporary Password:</strong></p>` +
     emailCodeBlock(safeTempPassword) +
     emailNotice(

@@ -40,7 +40,6 @@ export class RetryTextureLoader extends TextureLoader {
     url: string,
     onLoad?: (data: Texture) => void,
     onProgress?: (event: ProgressEvent) => void,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _onError?: (err: unknown) => void,
   ): Texture {
     let attempts = 0

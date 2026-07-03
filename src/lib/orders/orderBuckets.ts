@@ -81,9 +81,7 @@ export function isRefundOwed(o: AdminOrderRow): boolean {
 // (see isRefundOwed) that no single bucket captures.
 export type AttentionMetric = 'new' | 'toPlace' | 'refundOwed' | 'deliveredUnpaid' | 'attention'
 
-export function countAttentionMetrics(
-  orders: AdminOrderRow[],
-): Record<AttentionMetric, number> {
+export function countAttentionMetrics(orders: AdminOrderRow[]): Record<AttentionMetric, number> {
   const buckets = countByBucket(orders)
   return {
     new: buckets.new,

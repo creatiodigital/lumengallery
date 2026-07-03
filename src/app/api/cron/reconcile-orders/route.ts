@@ -1,3 +1,5 @@
+import crypto from 'node:crypto'
+
 import { NextRequest, NextResponse } from 'next/server'
 
 import { findOrphanedReservations } from '@/lib/editions/findOrphanedReservations'
@@ -48,8 +50,13 @@ export async function GET(req: NextRequest) {
     console.error('[cron/reconcile-orders] CRON_SECRET not configured.')
     return NextResponse.json({ error: 'Cron not configured.' }, { status: 500 })
   }
-  const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${expected}`) {
+  // Constant-time compare — a plain !== leaks a timing oracle on the secret
+  // (same class of issue as the Apr-2026 webhook-timing fix).
+  const authHeader = req.headers.get('authorization') ?? ''
+  const expectedHeader = `Bearer ${expected}`
+  const a = Buffer.from(authHeader)
+  const b = Buffer.from(expectedHeader)
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
 
@@ -138,9 +145,7 @@ export async function GET(req: NextRequest) {
       recoveredIds.push(pi.id)
     } else {
       recoveryFailed += 1
-      const total = pi.amount
-        ? `${(pi.amount / 100).toFixed(2)} ${pi.currency.toUpperCase()}`
-        : '?'
+      const total = pi.amount ? `${(pi.amount / 100).toFixed(2)} ${pi.currency.toUpperCase()}` : '?'
       failedLines.push(`${pi.id} — ${pi.status} — ${total} — ${res.error}`)
     }
   }

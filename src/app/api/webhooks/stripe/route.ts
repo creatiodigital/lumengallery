@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
+import { markEditionNumberSold } from '@/lib/editions/reserveEditionNumber'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { createPrintOrderFromCart } from '@/lib/orders/createPrintOrderFromCart'
 import { createPrintOrderFromPaymentIntent } from '@/lib/orders/createPrintOrderFromPaymentIntent'
@@ -291,6 +292,12 @@ async function handlePaymentIntentCaptured(pi: PaymentIntentLike) {
     where: { id: order.id },
     data: { paymentStatus: 'succeeded' },
   })
+  // Reaching here means admin capturePayment died between the Stripe capture
+  // and its DB writes (the normal path already stamped 'succeeded' and was
+  // no-opped above). Repair the edition ledger too, or the captured order's
+  // number stays 'reserved' forever — mis-swept by reconciliation and absent
+  // from edition-sales. Idempotent: only flips rows still 'reserved'.
+  await markEditionNumberSold(pi.id)
   await logOrderEvent({
     orderId: order.id,
     kind: 'captured',

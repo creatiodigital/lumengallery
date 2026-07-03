@@ -1,5 +1,5 @@
 /**
- * AR-131 — Branded factura PDF component.
+ * AR-131 — Branded invoice PDF component.
  *
  * Renders a gallery-quality A4 invoice or credit note using @react-pdf/renderer.
  * Typography: Lora (serif, headings) + Manrope (sans, labels/figures).
@@ -8,15 +8,7 @@
 
 import path from 'path'
 
-import {
-  Document,
-  Font,
-  Image,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-} from '@react-pdf/renderer'
+import { Document, Font, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
 
 import { formatMoneyCents } from '@/lib/money'
 
@@ -113,7 +105,7 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     width: 130,
-    height: 'auto' as unknown as number,   // react-pdf accepts this at runtime
+    height: 'auto' as unknown as number, // react-pdf accepts this at runtime
   },
   sellerBlock: {
     textAlign: 'right',
@@ -196,7 +188,7 @@ const styles = StyleSheet.create({
   // ── Parties ─────────────────────────────────────────────────────────────
   partiesRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',   // buyer block on the left
+    justifyContent: 'flex-start', // buyer block on the left
     marginBottom: 28,
   },
   buyerBlock: {
@@ -317,7 +309,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   footerMonogram: {
-    width: 20,
+    width: 26,
     height: 'auto' as unknown as number, // react-pdf accepts this at runtime
     alignSelf: 'center',
     marginBottom: 8,
@@ -348,7 +340,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: BRAND.ink,
   },
-
 })
 
 // ---------------------------------------------------------------------------
@@ -399,7 +390,17 @@ export type InvoiceDocumentProps = {
 // ---------------------------------------------------------------------------
 
 export function InvoiceDocument(props: InvoiceDocumentProps) {
-  const { number, issuedAt, type, correctsNumber, reason, sellerSnapshot, buyerSnapshot, totalsSnapshot, lines } = props
+  const {
+    number,
+    issuedAt,
+    type,
+    correctsNumber,
+    reason,
+    sellerSnapshot,
+    buyerSnapshot,
+    totalsSnapshot,
+    lines,
+  } = props
   const cur = totalsSnapshot.currency
   const title = type === 'credit_note' ? 'Credit Note' : 'Invoice'
 
@@ -411,14 +412,15 @@ export function InvoiceDocument(props: InvoiceDocumentProps) {
       producer="@react-pdf/renderer"
     >
       <Page size="A4" style={styles.page}>
-
         {/* ── Header: wordmark + seller block ── */}
         <View style={styles.headerRow} fixed>
           <Image src={WORDMARK_PATH} style={styles.wordmark} />
           <View style={styles.sellerBlock}>
             <Text style={styles.sellerName}>{sellerSnapshot.legalName}</Text>
             {sellerSnapshot.addressLines.map((line, i) => (
-              <Text key={i} style={styles.sellerLine}>{line}</Text>
+              <Text key={i} style={styles.sellerLine}>
+                {line}
+              </Text>
             ))}
             <Text style={styles.sellerNif}>NIF: {sellerSnapshot.nif}</Text>
             <Text style={styles.sellerLine}>{sellerSnapshot.email}</Text>
@@ -459,7 +461,9 @@ export function InvoiceDocument(props: InvoiceDocumentProps) {
               <Text style={styles.buyerTaxId}>Tax ID: {buyerSnapshot.taxId}</Text>
             ) : null}
             {buyerSnapshot.addressLines.map((line, i) => (
-              <Text key={i} style={styles.buyerLine}>{line}</Text>
+              <Text key={i} style={styles.buyerLine}>
+                {line}
+              </Text>
             ))}
             <Text style={styles.buyerLine}>{buyerSnapshot.email}</Text>
           </View>
@@ -531,16 +535,21 @@ export function InvoiceDocument(props: InvoiceDocumentProps) {
           <View style={styles.footerRule} />
           <Image src={MONOGRAM_PATH} style={styles.footerMonogram} />
           <Text style={styles.footerLine}>
-            {[sellerSnapshot.legalName, `NIF ${sellerSnapshot.nif}`, ...sellerSnapshot.addressLines].join('  ·  ')}
+            {[
+              sellerSnapshot.legalName,
+              `NIF ${sellerSnapshot.nif}`,
+              ...sellerSnapshot.addressLines,
+            ].join('  ·  ')}
           </Text>
           <Text style={styles.footerLine}>
-            {[sellerSnapshot.email, sellerSnapshot.phone, sellerSnapshot.website].filter(Boolean).join('  ·  ')}
+            {[sellerSnapshot.email, sellerSnapshot.phone, sellerSnapshot.website]
+              .filter(Boolean)
+              .join('  ·  ')}
           </Text>
           <Text style={styles.footerNote}>
             This {title.toLowerCase()} was issued electronically and is valid without a signature.
           </Text>
         </View>
-
       </Page>
     </Document>
   )

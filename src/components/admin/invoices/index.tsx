@@ -258,9 +258,7 @@ export const AdminInvoices = () => {
               }}
               value={monthFilter ?? ''}
               disabled={yearFilter == null}
-              onChange={(e) =>
-                setMonthFilter(e.target.value ? Number(e.target.value) : undefined)
-              }
+              onChange={(e) => setMonthFilter(e.target.value ? Number(e.target.value) : undefined)}
             >
               <option value="">All months</option>
               {MONTH_OPTIONS.map((m) => (
@@ -386,9 +384,7 @@ export const AdminInvoices = () => {
 
         {(() => {
           if (loading) {
-            return (
-              <p className={dashboardStyles.sectionDescription}>Loading…</p>
-            )
+            return <p className={dashboardStyles.sectionDescription}>Loading…</p>
           }
           if (invoices.length === 0) {
             return (
@@ -426,7 +422,14 @@ export const AdminInvoices = () => {
                     <td style={{ whiteSpace: 'nowrap', fontWeight: 500 }}>{inv.number}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       {inv.type === 'invoice' ? (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            flexWrap: 'wrap',
+                          }}
+                        >
                           Invoice
                           {inv.voided && inv.rectifiedByNumber && (
                             <span
@@ -478,6 +481,9 @@ export const AdminInvoices = () => {
                       {formatEuro(inv.totalCents)}
                     </td>
                     <td style={{ textAlign: 'right' }}>
+                      {/* No per-invoice delete, anywhere: the ORDER owns its
+                          documents. Dev cleanup = delete the order (cascades
+                          its invoices) or the dashboard's wipe-all button. */}
                       <Button
                         variant="secondary"
                         size="small"

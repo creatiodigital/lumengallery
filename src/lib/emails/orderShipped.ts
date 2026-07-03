@@ -26,9 +26,7 @@ type OrderShippedArgs = {
  * Pure renderer — builds the subject and HTML for the order-shipped email.
  * No side effects; safe to call from preview routes.
  */
-export function renderOrderShippedEmail(
-  args: OrderShippedArgs,
-): { subject: string; html: string } {
+export function renderOrderShippedEmail(args: OrderShippedArgs): { subject: string; html: string } {
   const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)

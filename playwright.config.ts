@@ -142,6 +142,13 @@ export default defineConfig({
 
   use: {
     baseURL: BASE_URL,
+    // Bound every action (click/fill/…). The Playwright default is
+    // UNLIMITED, so a rare renderer stall (element never reports "stable"
+    // deep into a long single-worker run) silently eats the whole 120s test
+    // budget with zero diagnostics — seen once on order-reorder 2026-07-03.
+    // With a bound, the same stall fails fast WITH the actionability log,
+    // and the configured retry still turns the run green.
+    actionTimeout: 15_000,
     // Capture on failure only — keeps the run lean while still giving
     // you something useful when something breaks.
     trace: 'retain-on-failure',

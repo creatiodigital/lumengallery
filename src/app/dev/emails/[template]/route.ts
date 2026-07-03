@@ -36,8 +36,7 @@ const TEMPLATES: Record<string, () => string> = {
   'admin-critical-alert': () =>
     renderAdminCriticalAlertEmail({
       title: 'Order row missing after charge',
-      problem:
-        'createPrintOrderFromPaymentIntent threw: P2002 unique constraint …\n  at line 247',
+      problem: 'createPrintOrderFromPaymentIntent threw: P2002 unique constraint …\n  at line 247',
       paymentIntentId: 'pi_3Example',
       context: { buyerEmail: 'jane@example.com', amount: '€229.90' },
       whatToDo: [

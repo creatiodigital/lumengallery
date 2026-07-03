@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+import { requireAdmin } from '@/lib/authUtils'
 import { MAX_UPLOAD_SIZE } from '@/lib/imageConfig'
 import { processImage, isValidImageType } from '@/lib/imageProcessor'
 import prisma from '@/lib/prisma'
@@ -11,6 +12,9 @@ const MAX_FILE_SIZE = MAX_UPLOAD_SIZE
 // POST - Upload image for a slide
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error: authError } = await requireAdmin()
+    if (authError) return authError
+
     const { id } = await params
 
     const slide = await prisma.slide.findUnique({ where: { id } })
@@ -73,6 +77,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const { error: authError } = await requireAdmin()
+    if (authError) return authError
+
     const { id } = await params
 
     const slide = await prisma.slide.findUnique({ where: { id } })

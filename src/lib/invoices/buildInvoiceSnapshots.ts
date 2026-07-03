@@ -10,7 +10,7 @@ import { SELLER_IDENTITY } from './sellerIdentity'
 //
 // The shippingAddress is read through normalizeShippingAddress so BOTH stored
 // shapes (cart checkout vs legacy Stripe) produce a full street + country
-// address block — a factura without a street address is invalid (RD 1619/2012).
+// address block — an invoice without a street address is invalid (RD 1619/2012).
 
 export type SnapshotOrderLike = {
   buyerName: string

@@ -5,10 +5,7 @@ import prisma from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   // ── Admin-session guard (mirrors requireAdminSession in actions.ts) ──────
   const session = await auth()
   if (!session?.user?.id || !isAdminOrAbove(session.user.userType)) {

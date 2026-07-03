@@ -9,7 +9,11 @@ import {
   attachPaymentIntentToReservation,
   reserveNextEditionNumber,
 } from '@/lib/editions/reserveEditionNumber'
-import { releaseEditionNumberById } from '@/lib/editions/releaseEditionNumber'
+import {
+  releaseEditionNumberById,
+  releaseEditionNumberForPaymentIntent,
+} from '@/lib/editions/releaseEditionNumber'
+import { CART_HOLD_TTL_MS, extendCartHold } from '@/lib/editions/reserveForCart'
 import { captureError } from '@/lib/observability/captureError'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
@@ -90,7 +94,12 @@ export async function createCartPaymentIntent(
     const quantity = item.quantity
 
     // a. Verify the client-supplied ids: still-valid cart holds (reserved,
-    //    no PI, no order item) for THIS variant — these are reused as-is.
+    //    no PI, no order item, TTL not lapsed) for THIS variant — these are
+    //    reused as-is. The reservedAt cutoff mirrors sweepExpiredCartHolds:
+    //    an already-expired hold must count as deficit (fresh re-reserve
+    //    below), not be adopted — adopting it would carry a sweepable
+    //    reservedAt through the multi-second Stripe round-trip, exactly the
+    //    window in which a concurrent buyer's sweep can reclaim the row.
     const candidateIds = item.editionNumberIds ?? []
     let validIds: string[] = []
     if (candidateIds.length > 0) {
@@ -101,11 +110,15 @@ export async function createCartPaymentIntent(
           state: 'reserved',
           paymentIntentId: null,
           orderItemId: null,
+          reservedAt: { gte: new Date(Date.now() - CART_HOLD_TTL_MS) },
         },
         select: { id: true },
       })
       // Cap at quantity in case a stale tab sent more ids than it needs.
       validIds = validRows.slice(0, quantity).map((r) => r.id)
+      // Restart the adopted holds' clock now that checkout has begun, so a
+      // hold with (say) 20s of TTL left can't lapse mid-Stripe-call.
+      if (validIds.length > 0) await extendCartHold(validIds)
     }
 
     // b. Reserve the deficit (lapsed/swept holds) one number at a time.
@@ -298,10 +311,33 @@ export async function createCartPaymentIntent(
     } else {
       // First call. Bind every held number across all limited lines to this
       // PI, moving them out of cart-hold state so the TTL sweep no longer
-      // touches them.
+      // touches them. Attach is GUARDED (see reserveEditionNumber.ts): if a
+      // hold lapsed and another buyer claimed the row during the Stripe
+      // round-trip, the attach reports failure instead of clobbering their
+      // reservation. In that case unwind OUR rows only and bail — the buyer
+      // re-runs checkout with fresh holds; the untouched PI is reused by the
+      // idempotency key on retry.
+      const attachedIds = new Set<string>()
+      let lostHold = false
       for (const ids of lineNumberIds.values()) {
         for (const id of ids) {
-          await attachPaymentIntentToReservation(id, pi.id)
+          const attached = await attachPaymentIntentToReservation(id, pi.id)
+          if (attached) attachedIds.add(id)
+          else lostHold = true
+        }
+      }
+      if (lostHold) {
+        // Rows attached to our PI are provably ours — free them by PI. Fresh
+        // reserves that never got attached are freed by id; skip the attached
+        // ones (just freed above) so we can't re-release a row a faster buyer
+        // immediately re-claims. The stolen row itself is left alone — it
+        // belongs to its new owner.
+        await releaseEditionNumberForPaymentIntent(pi.id)
+        await releaseFreshlyReserved(freshlyReservedIds.filter((id) => !attachedIds.has(id)))
+        return {
+          ok: false,
+          error:
+            'Your hold on a limited edition expired during checkout. Please review your cart and try again.',
         }
       }
     }

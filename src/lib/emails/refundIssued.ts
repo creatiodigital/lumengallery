@@ -25,9 +25,7 @@ type RefundIssuedArgs = {
  * Pure renderer — builds the subject and HTML for the refund-issued email.
  * No side effects; safe to call from preview routes.
  */
-export function renderRefundIssuedEmail(
-  args: RefundIssuedArgs,
-): { subject: string; html: string } {
+export function renderRefundIssuedEmail(args: RefundIssuedArgs): { subject: string; html: string } {
   const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
   const safeOrderId = escapeHtml(args.orderId.slice(0, 8)).toUpperCase()
   const amount = formatAmount(args.amountCents, args.currency)

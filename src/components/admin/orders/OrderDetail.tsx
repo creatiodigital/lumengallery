@@ -39,6 +39,10 @@ import { REORDER_REASONS, REORDER_REASON_LABELS } from '@/lib/orders/reorderReas
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
 
+// Order hard-delete is a dev/staging cleanup tool only — in production the
+// Danger zone does not render (and the server action refuses regardless).
+const DEV_CLEANUP_ALLOWED = process.env.NEXT_PUBLIC_APP_ENV !== 'production'
+
 const formatDateTime = (iso: string | null) => {
   if (!iso) return '—'
   return new Date(iso).toLocaleString(undefined, {
@@ -87,9 +91,7 @@ const IssueBanner = ({
   children: ReactNode
 }) => {
   const palette =
-    tone === 'red'
-      ? { bg: '#fdecea', border: '#f5a5a0' }
-      : { bg: '#fef3c7', border: '#fcd34d' }
+    tone === 'red' ? { bg: '#fdecea', border: '#f5a5a0' } : { bg: '#fef3c7', border: '#fcd34d' }
   return (
     <div className={dashboardStyles.section}>
       <div
@@ -855,8 +857,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
   // actions at all (advancing one would, e.g., email an already-refunded buyer
   // "in production"). The "Delete order" escape hatch in the Danger zone is
   // exempt — it stays available in every state.
-  const isTerminalPayment =
-    order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled'
+  const isTerminalPayment = order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled'
 
   // Silent-failure states that need an explicit explanation. A `canceled`
   // order with no fulfillment stage was never a deliberate dashboard
@@ -921,9 +922,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                   ] ?? order.reorderReason}
                 </span>
               )}
-              {order.reorderNote && (
-                <span style={{ opacity: 0.6 }}> · “{order.reorderNote}”</span>
-              )}
+              {order.reorderNote && <span style={{ opacity: 0.6 }}> · “{order.reorderNote}”</span>}
               {order.reorderedAt && (
                 <span style={{ opacity: 0.6 }}> · {formatDateTime(order.reorderedAt)}</span>
               )}
@@ -956,17 +955,17 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
       {isAuthExpired && (
         <IssueBanner tone="red" title="⚠️ Authorization expired — no payment collected">
           The buyer&apos;s card hold lapsed before the payment was captured, so{' '}
-          <strong>no money was taken</strong> and there is nothing to fulfill. If they still want the
-          print, they&apos;ll need to purchase again. You can remove this order from the Danger zone
-          below.
+          <strong>no money was taken</strong> and there is nothing to fulfill. If they still want
+          the print, they&apos;ll need to purchase again. You can remove this order from the Danger
+          zone below.
         </IssueBanner>
       )}
 
       {isPaymentFailed && (
         <IssueBanner tone="red" title="⛔ Payment failed — card declined">
           The buyer&apos;s card was declined, so <strong>no money was taken</strong> and there is
-          nothing to fulfill. No action is required unless you want to follow up. You can remove this
-          order from the Danger zone below.
+          nothing to fulfill. No action is required unless you want to follow up. You can remove
+          this order from the Danger zone below.
         </IssueBanner>
       )}
 
@@ -981,8 +980,9 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         >
           Stripe holds the buyer&apos;s card for about {AUTH_HOLD_DAYS} days. This hold{' '}
           {authExpiresAt.getTime() <= Date.now() ? 'was expected to lapse' : 'lapses'} around{' '}
-          <strong>{formatDateTime(authExpiresAt.toISOString())}</strong>. Capture the payment (button
-          below) before then or the sale — <strong>{formatEuro(order.totalCents)}</strong> — is lost.
+          <strong>{formatDateTime(authExpiresAt.toISOString())}</strong>. Capture the payment
+          (button below) before then or the sale — <strong>{formatEuro(order.totalCents)}</strong> —
+          is lost.
         </IssueBanner>
       )}
 
@@ -1108,83 +1108,83 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               </span>
             ) : (
               <>
-            {/* Single stage-aware primary CTA. The fulfillment pipeline
+                {/* Single stage-aware primary CTA. The fulfillment pipeline
                 is strictly forward-only — backward steps would just send
                 contradictory emails to the buyer (the prior stage's
                 email already went out and can't be unsent). At any
                 moment there is exactly one "what to do next" button. */}
-            {stage === null && order.paymentStatus === 'authorized' && (
-              <Button
-                font="dashboard"
-                variant="primary"
-                label={busy === 'capture' ? 'Capturing…' : 'Capture payment'}
-                onClick={handleCapture}
-                disabled={busy !== null}
-              />
-            )}
-            {stage === null && order.paymentStatus === 'succeeded' && (
-              <Button
-                font="dashboard"
-                variant="primary"
-                label={busy === 'placed' ? 'Marking…' : 'Mark placed at TPS'}
-                onClick={handlePlacedAtTps}
-                disabled={busy !== null}
-              />
-            )}
-            {stage === 'Placed' && (
-              <Button
-                font="dashboard"
-                variant="primary"
-                label={busy === 'started' ? 'Marking…' : 'Mark in production (notify buyer)'}
-                onClick={handleStarted}
-                disabled={busy !== null}
-              />
-            )}
-            {stage === 'Started' && (
-              <Button
-                font="dashboard"
-                variant="primary"
-                label={busy === 'shipped' ? 'Marking…' : 'Mark shipped (notify buyer)'}
-                onClick={() => {
-                  setBusyError(null)
-                  setTrackingUrlInput(order.trackingUrl ?? '')
-                  setShipOpen(true)
-                }}
-                disabled={busy !== null}
-              />
-            )}
-            {stage === 'Shipped' && (
-              <Button
-                font="dashboard"
-                variant="primary"
-                label={busy === 'delivered' ? 'Marking…' : 'Mark delivered (notify buyer)'}
-                onClick={handleDelivered}
-                disabled={busy !== null}
-              />
-            )}
-            {/* Off-ramp, available until terminal. Not a forward step in
+                {stage === null && order.paymentStatus === 'authorized' && (
+                  <Button
+                    font="dashboard"
+                    variant="primary"
+                    label={busy === 'capture' ? 'Capturing…' : 'Capture payment'}
+                    onClick={handleCapture}
+                    disabled={busy !== null}
+                  />
+                )}
+                {stage === null && order.paymentStatus === 'succeeded' && (
+                  <Button
+                    font="dashboard"
+                    variant="primary"
+                    label={busy === 'placed' ? 'Marking…' : 'Mark placed at TPS'}
+                    onClick={handlePlacedAtTps}
+                    disabled={busy !== null}
+                  />
+                )}
+                {stage === 'Placed' && (
+                  <Button
+                    font="dashboard"
+                    variant="primary"
+                    label={busy === 'started' ? 'Marking…' : 'Mark in production (notify buyer)'}
+                    onClick={handleStarted}
+                    disabled={busy !== null}
+                  />
+                )}
+                {stage === 'Started' && (
+                  <Button
+                    font="dashboard"
+                    variant="primary"
+                    label={busy === 'shipped' ? 'Marking…' : 'Mark shipped (notify buyer)'}
+                    onClick={() => {
+                      setBusyError(null)
+                      setTrackingUrlInput(order.trackingUrl ?? '')
+                      setShipOpen(true)
+                    }}
+                    disabled={busy !== null}
+                  />
+                )}
+                {stage === 'Shipped' && (
+                  <Button
+                    font="dashboard"
+                    variant="primary"
+                    label={busy === 'delivered' ? 'Marking…' : 'Mark delivered (notify buyer)'}
+                    onClick={handleDelivered}
+                    disabled={busy !== null}
+                  />
+                )}
+                {/* Off-ramp, available until terminal. Not a forward step in
                 the pipeline — it pulls the order out of the flow
                 entirely (and triggers refund-needed messaging if the
                 card was already charged). */}
-            {canCancel && (
-              <Button
-                font="dashboard"
-                variant="secondary"
-                label="Cancel order"
-                onClick={() => {
-                  setCancelError(null)
-                  setCancelOpen(true)
-                }}
-                disabled={busy !== null}
-              />
-            )}
-            {stage === null &&
-              order.paymentStatus !== 'authorized' &&
-              order.paymentStatus !== 'succeeded' && (
-                <span style={{ fontSize: 12, opacity: 0.6 }}>
-                  Waiting for payment to authorize before you can capture.
-                </span>
-              )}
+                {canCancel && (
+                  <Button
+                    font="dashboard"
+                    variant="secondary"
+                    label="Cancel order"
+                    onClick={() => {
+                      setCancelError(null)
+                      setCancelOpen(true)
+                    }}
+                    disabled={busy !== null}
+                  />
+                )}
+                {stage === null &&
+                  order.paymentStatus !== 'authorized' &&
+                  order.paymentStatus !== 'succeeded' && (
+                    <span style={{ fontSize: 12, opacity: 0.6 }}>
+                      Waiting for payment to authorize before you can capture.
+                    </span>
+                  )}
               </>
             )}
           </div>
@@ -1889,10 +1889,10 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                 }}
               >
                 <p style={{ margin: '0 0 12px 0', fontSize: 14 }}>
-                  <strong>Re-order this print (replacement reprint)</strong> — resets the
-                  order to <strong>To place at TPS</strong> so you can send a fresh copy to
-                  the print partner. The buyer is <strong>not</strong> charged again and
-                  keeps their edition number.
+                  <strong>Re-order this print (replacement reprint)</strong> — resets the order to{' '}
+                  <strong>To place at TPS</strong> so you can send a fresh copy to the print
+                  partner. The buyer is <strong>not</strong> charged again and keeps their edition
+                  number.
                 </p>
 
                 {order.reorderCount >= 2 && (
@@ -1906,9 +1906,8 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
                       fontSize: 13,
                     }}
                   >
-                    ⚠️ This order has already been reprinted{' '}
-                    <strong>{order.reorderCount}</strong> times — a refund may serve the
-                    buyer better. You can still proceed.
+                    ⚠️ This order has already been reprinted <strong>{order.reorderCount}</strong>{' '}
+                    times — a refund may serve the buyer better. You can still proceed.
                   </p>
                 )}
 
@@ -2062,11 +2061,19 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             {/* Credit note row (if exists) */}
             {order.creditNote && (
               <div style={{ marginTop: 10 }}>
-                <p style={{ margin: '0 0 8px 0', fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                <p
+                  style={{
+                    margin: '0 0 8px 0',
+                    fontSize: 12,
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
                   Credit note:
                 </p>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 13, fontFamily: 'monospace' }}>{order.creditNote.number}</span>
+                  <span style={{ fontSize: 13, fontFamily: 'monospace' }}>
+                    {order.creditNote.number}
+                  </span>
                   <Button
                     font="dashboard"
                     variant="secondary"
@@ -2095,8 +2102,8 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         ) : (
           <div style={{ marginTop: 12 }}>
             <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 12px 0' }}>
-              Issue the factura and email it to the buyer. The invoice number is minted
-              once — re-sending reuses the same number.
+              Issue the invoice and email it to the buyer. The invoice number is minted once —
+              re-sending reuses the same number.
             </p>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <Button
@@ -2132,9 +2139,9 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               </>
             ) : (
               <>
-                This will issue a factura for order <code>#{order.id.slice(0, 8)}</code> and email it
-                to <strong>{order.buyerEmail}</strong>. The invoice number is permanent — it cannot
-                be voided from this screen.
+                This will issue an invoice for order <code>#{order.id.slice(0, 8)}</code> and email
+                it to <strong>{order.buyerEmail}</strong>. The invoice number is permanent — it
+                cannot be voided from this screen.
               </>
             )
           }
@@ -2148,16 +2155,18 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
 
       {creditNoteConfirmOpen && order && order.invoice && (
         <ConfirmModal
-          title="Issue credit note (factura rectificativa)?"
+          title="Issue credit note?"
           message={
             <div>
               <p style={{ margin: '0 0 12px 0' }}>
-                This will issue a credit note correcting invoice{' '}
-                <code>{order.invoice.number}</code> and email it to{' '}
-                <strong>{order.buyerEmail}</strong>.
+                This will issue a credit note correcting invoice <code>{order.invoice.number}</code>{' '}
+                and email it to <strong>{order.buyerEmail}</strong>.
               </p>
-              <p style={{ margin: '0 0 12px 0', fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                This cannot be undone. Both documents (invoice + credit note) go to the accountant and net to zero.
+              <p
+                style={{ margin: '0 0 12px 0', fontSize: 12, color: 'var(--color-text-secondary)' }}
+              >
+                This cannot be undone. Both documents (invoice + credit note) go to the accountant
+                and net to zero.
               </p>
               <div>
                 <label
@@ -2311,25 +2320,33 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         )}
       </div>
 
-      <div className={dashboardStyles.section}>
-        <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>Danger zone</h2>
-        <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
-          Permanently delete this order and its event history. Refunds and payout reversals are
-          handled separately — this only removes the order row.
-        </p>
-        {deleteError && (
-          <p style={{ margin: '0 0 12px 0', color: '#b91c1c', fontSize: 13 }}>⚠️ {deleteError}</p>
-        )}
-        <Button
-          font="dashboard"
-          variant="danger"
-          label="Delete order"
-          onClick={() => {
-            setDeleteError(null)
-            setDeleteConfirmOpen(true)
-          }}
-        />
-      </div>
+      {/* Danger zone — dev/staging ONLY. In production orders are never
+          deleted: they are business records (Stripe cross-reference, audit
+          trail, disputes) — 'Cancelled' is the terminal state there, and an
+          invoiced order is corrected via credit note. The server action
+          enforces this too; hiding the section is just honest UI. */}
+      {DEV_CLEANUP_ALLOWED && (
+        <div className={dashboardStyles.section}>
+          <h2 style={{ margin: '0 0 4px 0', fontSize: 16 }}>Danger zone</h2>
+          <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
+            Test-data cleanup ({process.env.NEXT_PUBLIC_APP_ENV ?? 'development'} only — not
+            available in production). Permanently deletes this order, its event history, its
+            invoices and their PDFs, and returns its edition numbers to the pool.
+          </p>
+          {deleteError && (
+            <p style={{ margin: '0 0 12px 0', color: '#b91c1c', fontSize: 13 }}>⚠️ {deleteError}</p>
+          )}
+          <Button
+            font="dashboard"
+            variant="danger"
+            label="Delete order"
+            onClick={() => {
+              setDeleteError(null)
+              setDeleteConfirmOpen(true)
+            }}
+          />
+        </div>
+      )}
 
       {deleteConfirmOpen && (
         <ConfirmModal

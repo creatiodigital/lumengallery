@@ -7,9 +7,21 @@ import Link from 'next/link'
 
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
+import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal'
 import { LoadingBar } from '@/components/ui/LoadingBar'
 import { listOrders } from '@/app/admin/orders/actions'
+import {
+  clearAllTestData,
+  getTestDataCounts,
+} from '@/app/admin/dev-cleanup/actions'
 import { type AttentionMetric, countAttentionMetrics } from '@/lib/orders/orderBuckets'
+
+// Dev/staging-only cleanup controls. NEXT_PUBLIC_APP_ENV is inlined at build
+// time, so on production this is a compile-time false and the whole section
+// (plus its imports' code paths) never renders. The server actions carry the
+// authoritative guard — this flag is just UI.
+const DEV_CLEANUP_ALLOWED = process.env.NEXT_PUBLIC_APP_ENV !== 'production'
 
 import styles from './AdminDashboard.module.scss'
 
@@ -83,7 +95,8 @@ const NAV_HUBS: Hub[] = [
   },
   {
     label: 'Invoices',
-    description: 'Gallery-issued facturas — view, filter by date & client, download, and export for the accountant.',
+    description:
+      'Gallery-issued invoices — view, filter by date & client, download, and export for the accountant.',
     href: '/admin/invoices',
   },
 ]
@@ -93,6 +106,12 @@ export const DashboardAdmin = () => {
   const router = useRouter()
 
   const [metrics, setMetrics] = useState<Record<AttentionMetric, number> | null>(null)
+
+  // Dev-cleanup state (section only renders outside production).
+  const [cleanupConfirmOpen, setCleanupConfirmOpen] = useState(false)
+  const [cleanupCounts, setCleanupCounts] = useState<string | null>(null)
+  const [cleaning, setCleaning] = useState(false)
+  const [cleanupResult, setCleanupResult] = useState<string | null>(null)
 
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
@@ -115,6 +134,38 @@ export const DashboardAdmin = () => {
   useEffect(() => {
     if (sessionStatus === 'authenticated') loadCounts()
   }, [sessionStatus, loadCounts])
+
+  const openCleanupConfirm = useCallback(async () => {
+    setCleanupResult(null)
+    setCleanupCounts(null)
+    setCleanupConfirmOpen(true)
+    const res = await getTestDataCounts()
+    setCleanupCounts(
+      res.ok
+        ? `${res.counts.printOrders} orders, ${res.counts.invoices} invoices, ` +
+            `${res.counts.pendingCarts} staged carts, ${res.counts.editionNumbersHeld} held edition numbers`
+        : res.error,
+    )
+  }, [])
+
+  const handleClearTestData = useCallback(async () => {
+    setCleaning(true)
+    const res = await clearAllTestData()
+    setCleaning(false)
+    setCleanupConfirmOpen(false)
+    if (res.ok) {
+      const s = res.summary
+      setCleanupResult(
+        `Cleared: ${s.printOrdersDeleted} orders, ${s.invoicesDeleted} invoices ` +
+          `(${s.invoicePdfsDeleted} PDFs), ${s.pendingCartsDeleted} staged carts. ` +
+          `${s.editionNumbersReset} edition numbers returned to the pool` +
+          (s.editionSlotsBackfilled ? `, ${s.editionSlotsBackfilled} slots backfilled.` : '.'),
+      )
+      loadCounts()
+    } else {
+      setCleanupResult(`Cleanup failed: ${res.error}`)
+    }
+  }, [loadCounts])
 
   if (sessionStatus === 'loading') {
     return (
@@ -207,6 +258,57 @@ export const DashboardAdmin = () => {
         </p>
         <div className={styles.placeholderBlock}>Reserved space for charts and tables.</div>
       </section>
+
+      {/* Dev cleanup — localhost + staging ONLY (compile-time gated above;
+          the server actions enforce it authoritatively). One button to clear
+          all the test noise: orders, invoices, staged carts, edition holds. */}
+      {DEV_CLEANUP_ALLOWED && (
+        <section className={dashboardStyles.section}>
+          <div className={dashboardStyles.sectionHeader}>
+            <h2 className={dashboardStyles.sectionTitle}>Dev cleanup</h2>
+          </div>
+          <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
+            Test environment only ({process.env.NEXT_PUBLIC_APP_ENV ?? 'development'}) — this
+            section does not exist in production. Wipes ALL orders, invoices (and their PDFs),
+            staged carts, and resets every limited-edition series to fully available. Local and
+            staging share this database.
+          </p>
+          <Button
+            font="dashboard"
+            variant="danger"
+            label="Clear all test orders & invoices"
+            onClick={() => void openCleanupConfirm()}
+          />
+          {cleanupResult && (
+            <p className={dashboardStyles.sectionDescription} style={{ margin: '12px 0 0 0' }}>
+              {cleanupResult}
+            </p>
+          )}
+        </section>
+      )}
+
+      {cleanupConfirmOpen && (
+        <ConfirmModal
+          title="Clear ALL test data?"
+          message={
+            <>
+              <p>
+                This deletes every order, invoice (register rows + PDFs), and staged cart, and
+                returns every limited-edition number to the pool — on the SHARED dev database
+                (localhost + staging together).
+              </p>
+              <p style={{ marginTop: 8 }}>
+                {cleanupCounts ? `Right now that is: ${cleanupCounts}.` : 'Counting…'}
+              </p>
+            </>
+          }
+          confirmLabel="Yes, clear everything"
+          destructive
+          busy={cleaning}
+          onConfirm={() => void handleClearTestData()}
+          onCancel={() => setCleanupConfirmOpen(false)}
+        />
+      )}
     </DashboardLayout>
   )
 }

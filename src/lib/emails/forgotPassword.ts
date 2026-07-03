@@ -25,7 +25,9 @@ export function renderForgotPasswordEmail(args: ForgotPasswordArgs): {
   const body =
     emailHeading('Reset Your Password') +
     emailParagraph(`Hi ${safeName},`) +
-    emailParagraph('We received a request to reset your password. Click the button below to create a new password:') +
+    emailParagraph(
+      'We received a request to reset your password. Click the button below to create a new password:',
+    ) +
     emailButton('Reset password', safeResetUrl) +
     emailParagraph(
       '<span style="color:#595959;font-size:13px">This link will expire in 1 hour. If you didn&rsquo;t request this, you can safely ignore this email.</span>',

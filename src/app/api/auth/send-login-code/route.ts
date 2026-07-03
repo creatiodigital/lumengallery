@@ -1,3 +1,5 @@
+import crypto from 'node:crypto'
+
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
@@ -26,9 +28,10 @@ function isRateLimited(ip: string): boolean {
   return false
 }
 
-// Generate a random 6-digit code
+// Generate a random 6-digit code. CSPRNG, not Math.random(): this code is a
+// second factor, so its entropy must not be predictable from engine state.
 function generateLoginCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString()
+  return crypto.randomInt(100000, 1000000).toString()
 }
 
 export async function POST(request: NextRequest) {

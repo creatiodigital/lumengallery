@@ -48,9 +48,13 @@ export async function reserveNextEditionNumber(args: {
 
   // Single-statement atomic claim. The inner SELECT locks just the one
   // chosen row; concurrent callers SKIP LOCKED past it to the next.
+  // Ownership columns are reset on claim so an `available` row that ever
+  // carried a stale PI/order link (however it got there) starts clean —
+  // otherwise the previous buyer's PI would corrupt bind/mark-sold matching.
   const claimed = await prisma.$queryRaw<{ id: string; number: number }[]>(Prisma.sql`
     UPDATE "EditionNumber"
-    SET "state" = 'reserved', "reservedAt" = now(), "buyerEmail" = ${buyerEmail}, "updatedAt" = now()
+    SET "state" = 'reserved', "reservedAt" = now(), "buyerEmail" = ${buyerEmail},
+        "paymentIntentId" = NULL, "orderItemId" = NULL, "orderId" = NULL, "updatedAt" = now()
     WHERE "id" = (
       SELECT "id" FROM "EditionNumber"
       WHERE "variantId" = ${variantId} AND "state" = 'available'
@@ -70,15 +74,23 @@ export async function reserveNextEditionNumber(args: {
 /** Attach the Stripe PI id to a freshly reserved number. Also restarts the
  *  reservation clock: reservedAt was stamped at add-to-cart, and the
  *  reconcile cron's abandonment cutoff must count from checkout start — not
- *  from browsing — or a slow browser can lose their number mid-payment. */
+ *  from browsing — or a slow browser can lose their number mid-payment.
+ *
+ *  Guarded, not update-by-id: between the caller's hold verification and
+ *  this attach sits a multi-second Stripe round-trip, during which the TTL
+ *  sweep can free the row and another buyer can re-reserve it. The WHERE
+ *  ensures we only ever stamp a row that is still an un-attached, un-bound
+ *  hold — never one that now belongs to someone else's checkout. Returns
+ *  false when the hold was lost so the caller can bail out cleanly. */
 export async function attachPaymentIntentToReservation(
   numberId: string,
   paymentIntentId: string,
-): Promise<void> {
-  await prisma.editionNumber.update({
-    where: { id: numberId },
+): Promise<boolean> {
+  const result = await prisma.editionNumber.updateMany({
+    where: { id: numberId, state: 'reserved', paymentIntentId: null, orderItemId: null },
     data: { paymentIntentId, reservedAt: new Date() },
   })
+  return result.count === 1
 }
 
 /**

@@ -1,11 +1,7 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
-import {
-  emailDetailRows,
-  emailHeading,
-  emailParagraph,
-} from './components'
+import { emailDetailRows, emailHeading, emailParagraph } from './components'
 import { formatAmount } from './format'
 import { renderEmailLayout } from './layout'
 
@@ -38,7 +34,9 @@ export function renderArtistPayoutEmail(args: ArtistPayoutArgs): {
     emailParagraph(
       `Someone bought a print of your work <strong>${safeArtwork}</strong>. The order has been produced, shipped and accepted &mdash; so we&rsquo;ve just released your share.`,
     ) +
-    emailDetailRows([{ label: 'Your share', value: `<strong style="font-size:18px">${amount}</strong>` }]) +
+    emailDetailRows([
+      { label: 'Your share', value: `<strong style="font-size:18px">${amount}</strong>` },
+    ]) +
     emailParagraph(
       `The money is on its way to your connected Stripe account. Stripe will pay it out to your bank on your usual payout schedule &mdash; you can check the status any time from your Stripe dashboard.`,
     ) +

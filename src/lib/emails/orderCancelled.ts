@@ -32,7 +32,10 @@ type OrderCancelledArgs = {
  * Copy adapts to the current Stripe payment state so we never promise money
  * that isn't actually moving.
  */
-export function renderOrderCancelledEmail(args: OrderCancelledArgs): { subject: string; html: string } {
+export function renderOrderCancelledEmail(args: OrderCancelledArgs): {
+  subject: string
+  html: string
+} {
   const rawFirstName = args.buyerName.split(' ')[0] || 'there'
   const firstName = escapeHtml(rawFirstName)
   const safeArtwork = escapeHtml(args.artworkTitle)

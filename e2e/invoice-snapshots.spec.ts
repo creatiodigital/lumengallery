@@ -56,7 +56,7 @@ test('credit-note snapshots are the exact negative of the invoice', () => {
 // ── Address-shape normalization (legacy single-print orders store the Stripe
 // shape {line1, line2, state, country}, not the cart shape) ─────────────────
 
-test('legacy Stripe address shape keeps its street + country on the factura', () => {
+test('legacy Stripe address shape keeps its street + country on the invoice', () => {
   const legacy = {
     ...order,
     shippingAddress: {

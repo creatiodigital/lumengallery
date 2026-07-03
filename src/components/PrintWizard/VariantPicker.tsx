@@ -44,9 +44,7 @@ export const VariantPicker = ({ variants, selectedVariantId, onSelect }: Props) 
             {formatDualDimensions(v.widthCm, v.heightCm)} · Unframed
           </span>
           <span className={styles.variantCardMeta}>Printed by The Print Space</span>
-          <span className={styles.variantCardStock}>
-            Edition of {v.editionSize}
-          </span>
+          <span className={styles.variantCardStock}>Edition of {v.editionSize}</span>
           <span className={styles.variantCardPrice}>{formatEuro(v.priceCents)}</span>
         </button>
       )

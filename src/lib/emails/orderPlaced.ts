@@ -54,7 +54,8 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
     label: escapeHtml(s.label),
     value: escapeHtml(s.value),
   }))
-  const itemPrice = args.itemTotalCents != null ? formatAmount(args.itemTotalCents, args.currency) : undefined
+  const itemPrice =
+    args.itemTotalCents != null ? formatAmount(args.itemTotalCents, args.currency) : undefined
 
   // Full price breakdown when the money fields are supplied; otherwise just the total.
   const hasBreakdown =
@@ -72,7 +73,10 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
   const dutyLikely = mayOweImportDuty(args.shippingCountryCode)
 
   const dutyNote = dutyLikely
-    ? emailNotice('caution', '<strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.')
+    ? emailNotice(
+        'caution',
+        '<strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.',
+      )
     : ''
 
   const body =
@@ -107,7 +111,10 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
 
   return {
     subject: 'Your order at The Art Room has been placed',
-    html: renderEmailLayout({ preheader: 'Your order at The Art Room has been placed', bodyHtml: body }),
+    html: renderEmailLayout({
+      preheader: 'Your order at The Art Room has been placed',
+      bodyHtml: body,
+    }),
   }
 }
 

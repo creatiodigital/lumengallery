@@ -43,9 +43,10 @@ type AdminOrderNotificationArgs = {
  * Pure renderer — builds the subject and HTML for the admin order notification email.
  * No side effects; safe to call from preview routes.
  */
-export function renderAdminOrderNotificationEmail(
-  args: AdminOrderNotificationArgs,
-): { subject: string; html: string } {
+export function renderAdminOrderNotificationEmail(args: AdminOrderNotificationArgs): {
+  subject: string
+  html: string
+} {
   const id8 = args.orderId.slice(0, 8).toUpperCase()
   const safeId8 = escapeHtml(id8)
   const safeOrderIdFull = escapeHtml(args.orderId)

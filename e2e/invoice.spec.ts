@@ -123,7 +123,7 @@ test.describe('Invoice — server layer', () => {
       // prepareInvoiceIssue builds snapshots + lines and runs EVERY validation
       // (mandatory fields, line descriptions, Σlines == base, VAT-vs-rate
       // consistency) BEFORE any number can be minted — it throws loudly here
-      // if the order can't produce a legal factura.
+      // if the order can't produce a legal invoice.
       const { snapshots, lines } = prepareInvoiceIssue(order)
 
       // ── 5. Issue the invoice (first time).

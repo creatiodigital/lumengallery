@@ -30,9 +30,7 @@ export function computeOrderPayout(
     const complete = items.every((it) => !!it.paidOutAt && it.transferStatus !== 'reversed')
     const dates = items.map((it) => it.paidOutAt).filter((d): d is Date => !!d)
     const at =
-      complete && dates.length > 0
-        ? new Date(Math.max(...dates.map((d) => d.getTime())))
-        : null
+      complete && dates.length > 0 ? new Date(Math.max(...dates.map((d) => d.getTime()))) : null
     const manual = complete && items.every((it) => it.transferStatus === 'paid_manual')
     return { complete, at, manual }
   }
