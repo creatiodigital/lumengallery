@@ -12,6 +12,9 @@ import { Document, Font, Image, Page, StyleSheet, Text, View } from '@react-pdf/
 
 import { formatMoneyCents } from '@/lib/money'
 
+import type { InvoiceLine } from './buildInvoiceLines'
+import type { BuyerSnapshot, SellerSnapshot, TotalsSnapshot } from './buildInvoiceSnapshots'
+
 // ---------------------------------------------------------------------------
 // Font registration — server-side paths relative to process.cwd() (repo root)
 // ---------------------------------------------------------------------------
@@ -354,35 +357,12 @@ export type InvoiceDocumentProps = {
   /** Optional correction reason — only rendered on credit notes. Stored inside
    *  totalsSnapshot.reason (no schema column needed). */
   reason?: string
-  sellerSnapshot: {
-    legalName: string
-    nif: string
-    addressLines: string[]
-    email: string
-    phone: string
-    website: string
-  }
-  buyerSnapshot: {
-    name: string
-    email: string
-    company: string | null
-    taxId: string | null
-    addressLines: string[]
-    countryCode: string
-  }
-  totalsSnapshot: {
-    currency: string
-    baseCents: number
-    vatRatePct: number
-    vatCents: number
-    totalCents: number
-  }
-  lines: Array<{
-    description: string
-    qty: number
-    unitCents: number
-    lineCents: number
-  }>
+  // The canonical snapshot/line shapes — a stored-JSON change breaks here at
+  // compile time instead of rendering an incomplete PDF.
+  sellerSnapshot: SellerSnapshot
+  buyerSnapshot: BuyerSnapshot
+  totalsSnapshot: TotalsSnapshot
+  lines: InvoiceLine[]
 }
 
 // ---------------------------------------------------------------------------

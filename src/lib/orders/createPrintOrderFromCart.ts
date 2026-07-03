@@ -5,30 +5,13 @@ import type { AdminCartOrderLine } from '@/lib/emails/adminCartOrderNotification
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { sendCartOrderPlacedEmail } from '@/lib/emails/cartOrderPlaced'
 import type { CartOrderPlacedLine } from '@/lib/emails/cartOrderPlaced'
+import type { PendingCartItem } from '@/lib/cart/pendingCartItem'
 import { captureError } from '@/lib/observability/captureError'
-import type { SpecsSummary, WizardConfig } from '@/lib/print-providers'
+import type { SpecsSummary } from '@/lib/print-providers'
 import { summarizeConfig } from '@/lib/print-providers'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import prisma from '@/lib/prisma'
 import { logOrderEvent } from './logOrderEvent'
-
-/**
- * One validated cart line as persisted on the PendingCart `items` JSON by
- * createCartPaymentIntent. Mirrors that writer's shape exactly.
- */
-type CartItem = {
-  lineId: string
-  artworkId: string
-  artistUserId: string
-  variantId?: string | null
-  editionType: 'open' | 'limited'
-  printConfig: WizardConfig
-  quantity: number
-  productionCents: number
-  artistCents: number
-  galleryCents: number
-  editionNumberIds: string[]
-}
 
 /**
  * Minimal PaymentIntent shape the cart builder needs. Everything else
@@ -108,9 +91,9 @@ export async function createPrintOrderFromCart(
   }
 
   // ── 2. Parse the staged line items.
-  let items: CartItem[]
+  let items: PendingCartItem[]
   try {
-    items = pending.items as unknown as CartItem[]
+    items = pending.items as unknown as PendingCartItem[]
     if (!Array.isArray(items) || items.length === 0) {
       throw new Error('PendingCart.items is empty or not an array')
     }

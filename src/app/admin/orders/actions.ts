@@ -19,6 +19,12 @@ import { devCleanupAllowed } from '@/lib/admin/resetTestData'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { captureError } from '@/lib/observability/captureError'
 import { logOrderEvent, type OrderEventActor } from '@/lib/orders/logOrderEvent'
+import type { InvoiceLine } from '@/lib/invoices/buildInvoiceLines'
+import type {
+  BuyerSnapshot,
+  SellerSnapshot,
+  TotalsSnapshot,
+} from '@/lib/invoices/buildInvoiceSnapshots'
 import { prepareInvoiceIssue } from '@/lib/invoices/prepareInvoiceIssue'
 import { getOrIssueInvoice } from '@/lib/invoices/getOrIssueInvoice'
 import { renderInvoicePdf } from '@/lib/invoices/renderInvoicePdf'
@@ -2251,8 +2257,6 @@ type InvoiceActionResult =
   | { ok: true; number: string; emailed: boolean }
   | { ok: false; error: string }
 
-type InvoiceRenderInput = Parameters<typeof renderInvoicePdf>[0]
-
 function errMsg(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
@@ -2265,6 +2269,8 @@ function errMsg(err: unknown): string {
  * it is left untouched.
  */
 async function deliverInvoiceDocument(args: {
+  // Snapshot fields use the canonical shapes from buildInvoiceSnapshots /
+  // buildInvoiceLines — the same symbols the writer was checked against.
   record: {
     id: string
     orderId: string
@@ -2272,10 +2278,10 @@ async function deliverInvoiceDocument(args: {
     number: string
     issuedAt: Date
     r2Key: string
-    sellerSnapshot: unknown
-    buyerSnapshot: unknown
-    totalsSnapshot: unknown
-    linesSnapshot: unknown
+    sellerSnapshot: SellerSnapshot
+    buyerSnapshot: BuyerSnapshot
+    totalsSnapshot: TotalsSnapshot
+    linesSnapshot: InvoiceLine[] | null
   }
   buyer: { email: string; name: string }
   correctsNumber?: string
@@ -2287,8 +2293,8 @@ async function deliverInvoiceDocument(args: {
   const label = isCreditNote ? 'credit note' : 'invoice'
   const stage = isCreditNote ? 'credit-note' : 'invoice'
 
-  const totals = record.totalsSnapshot as InvoiceRenderInput['totalsSnapshot'] & { reason?: string }
-  const lines = record.linesSnapshot as InvoiceRenderInput['lines'] | null
+  const totals = record.totalsSnapshot
+  const lines = record.linesSnapshot
   if (!Array.isArray(lines) || lines.length === 0) {
     // Row created before linesSnapshot existed (pre-fix dev data). Rebuilding
     // lines from the live order would let a mutated order change an issued
@@ -2307,8 +2313,8 @@ async function deliverInvoiceDocument(args: {
       type: isCreditNote ? 'credit_note' : 'invoice',
       correctsNumber: args.correctsNumber,
       reason: totals.reason,
-      sellerSnapshot: record.sellerSnapshot as InvoiceRenderInput['sellerSnapshot'],
-      buyerSnapshot: record.buyerSnapshot as InvoiceRenderInput['buyerSnapshot'],
+      sellerSnapshot: record.sellerSnapshot,
+      buyerSnapshot: record.buyerSnapshot,
       totalsSnapshot: totals,
       lines,
     })
@@ -2432,7 +2438,9 @@ async function issueOrResendInvoiceDocument(
   const existing = isCreditNote ? existingCreditNote : originalInvoice
   if (existing) {
     return deliverInvoiceDocument({
-      record: existing,
+      // Prisma-Json → typed boundary: this row was written by
+      // issueInvoiceRecord from the same canonical types.
+      record: existing as unknown as Parameters<typeof deliverInvoiceDocument>[0]['record'],
       buyer,
       correctsNumber,
       actor: opts.actor,

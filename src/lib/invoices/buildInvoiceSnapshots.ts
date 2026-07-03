@@ -26,27 +26,47 @@ export type SnapshotOrderLike = {
   shippingAddress?: unknown
 }
 
+/**
+ * THE canonical snapshot shapes. Every writer (buildInvoiceSnapshots →
+ * issueInvoiceRecord) and every reader (IssuedInvoice, queryInvoices, the
+ * PDF's InvoiceDocumentProps, the admin issue/re-send pipeline) must
+ * reference these — never re-declare a structural copy, or a shape change
+ * ships silently and the stored JSON drifts from what readers expect.
+ */
+export type SellerSnapshot = {
+  legalName: string
+  nif: string
+  addressLines: string[]
+  email: string
+  phone: string
+  website: string
+}
+
+export type BuyerSnapshot = {
+  name: string
+  email: string
+  company: string | null
+  taxId: string | null
+  addressLines: string[]
+  countryCode: string
+}
+
+export type TotalsSnapshot = {
+  currency: string
+  baseCents: number
+  vatRatePct: number
+  vatCents: number
+  totalCents: number
+  /** Optional correction reason stored inside the snapshot JSON for credit
+   *  notes (no separate schema column). Set after buildInvoiceSnapshots()
+   *  returns, before passing to issueInvoiceRecord(). */
+  reason?: string
+}
+
 export type InvoiceSnapshots = {
-  sellerSnapshot: typeof SELLER_IDENTITY
-  buyerSnapshot: {
-    name: string
-    email: string
-    company: string | null
-    taxId: string | null
-    addressLines: string[]
-    countryCode: string
-  }
-  totalsSnapshot: {
-    currency: string
-    baseCents: number
-    vatRatePct: number
-    vatCents: number
-    totalCents: number
-    /** Optional correction reason stored inside the snapshot JSON for credit
-     *  notes (no separate schema column). Set after buildInvoiceSnapshots()
-     *  returns, before passing to issueInvoiceRecord(). */
-    reason?: string
-  }
+  sellerSnapshot: SellerSnapshot
+  buyerSnapshot: BuyerSnapshot
+  totalsSnapshot: TotalsSnapshot
 }
 
 export function buildInvoiceSnapshots(

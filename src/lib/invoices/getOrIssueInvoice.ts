@@ -33,7 +33,9 @@ export async function getOrIssueInvoice(
     where: { orderId: input.orderId, type: input.type },
     orderBy: { issuedAt: 'asc' },
   })
-  if (existing) return { invoice: existing as IssuedInvoice, reused: true }
+  // Prisma-Json → typed boundary: rows are only ever written by
+  // issueInvoiceRecord from the canonical snapshot types.
+  if (existing) return { invoice: existing as unknown as IssuedInvoice, reused: true }
 
   try {
     return { invoice: await issueInvoiceRecord(input), reused: false }
@@ -44,7 +46,7 @@ export async function getOrIssueInvoice(
       where: { orderId: input.orderId, type: input.type },
       orderBy: { issuedAt: 'asc' },
     })
-    if (winner) return { invoice: winner as IssuedInvoice, reused: true }
+    if (winner) return { invoice: winner as unknown as IssuedInvoice, reused: true }
     // Otherwise it was the first-of-month counter-row race — one clean retry.
     return { invoice: await issueInvoiceRecord(input), reused: false }
   }

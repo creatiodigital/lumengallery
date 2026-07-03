@@ -11,23 +11,8 @@
 
 import prisma from '@/lib/prisma'
 
-// Snapshot shapes — mirror buildInvoiceSnapshots types.
-type BuyerSnapshot = {
-  name: string
-  email: string
-  company: string | null
-  taxId: string | null
-  addressLines: string[]
-  countryCode: string
-}
-
-type TotalsSnapshot = {
-  currency: string
-  baseCents: number
-  vatRatePct: number
-  vatCents: number
-  totalCents: number
-}
+// The canonical snapshot shapes — imported, never re-declared.
+import type { BuyerSnapshot, TotalsSnapshot } from './buildInvoiceSnapshots'
 
 export type InvoiceRow = {
   id: string

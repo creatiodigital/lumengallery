@@ -3,6 +3,7 @@
 import crypto from 'node:crypto'
 
 import { Prisma } from '@/generated/prisma'
+import type { PendingCartItem } from '@/lib/cart/pendingCartItem'
 import type { CartLikeItem, CartTotals } from '@/lib/cart/validateCart'
 import { validateCart } from '@/lib/cart/validateCart'
 import {
@@ -346,7 +347,7 @@ export async function createCartPaymentIntent(
     //    per-line money/identity/config + the resolved edition numbers. Upsert
     //    keyed by paymentIntentId so an idempotent re-submit (same PI) just
     //    rewrites the same row.
-    const cartItems = items.map((item) => {
+    const cartItems: PendingCartItem[] = items.map((item): PendingCartItem => {
       // validateCart returns a priced entry for every line it didn't fail, and
       // we already bailed on !validation.ok above — so a miss here is a logic
       // error, not a benign absence. Throw rather than persist an empty/zero

@@ -54,10 +54,11 @@ export type IssuedInvoice = {
   r2Key: string
   issuedAt: Date
   currency: string
-  sellerSnapshot: unknown
-  buyerSnapshot: unknown
-  totalsSnapshot: unknown
-  linesSnapshot: unknown
+  sellerSnapshot: InvoiceSnapshots['sellerSnapshot']
+  buyerSnapshot: InvoiceSnapshots['buyerSnapshot']
+  totalsSnapshot: InvoiceSnapshots['totalsSnapshot']
+  /** Nullable only for rows created before the column existed (dev data). */
+  linesSnapshot: InvoiceLine[] | null
   correctsInvoiceId: string | null
 }
 
@@ -112,5 +113,8 @@ export async function issueInvoiceRecord(input: IssueInvoiceInput): Promise<Issu
     return row
   })
 
-  return invoice
+  // Single Json→typed boundary: the row's snapshot columns are Prisma Json,
+  // but they were written THIS call from the typed input above, so the cast
+  // is re-asserting what the compiler just checked.
+  return invoice as unknown as IssuedInvoice
 }
