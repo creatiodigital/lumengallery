@@ -18,6 +18,7 @@ import { computeOrderPayout } from '@/lib/orders/orderPayout'
 import { devCleanupAllowed } from '@/lib/admin/resetTestData'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { captureError } from '@/lib/observability/captureError'
+import { EMAIL_BRAND } from '@/lib/emails/brand'
 import { logOrderEvent, type OrderEventActor } from '@/lib/orders/logOrderEvent'
 import type { InvoiceLine } from '@/lib/invoices/buildInvoiceLines'
 import type {
@@ -2217,7 +2218,7 @@ async function maybeSendBuyerTransitionEmail(
       select: { id: true },
     })
     if (!adminAlreadySent) {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://theartroom.gallery'
+      const siteUrl = EMAIL_BRAND.siteUrl
       const adminRes = await sendAdminOrderCancelledAlert({
         orderId: order.id,
         artworkTitle: order.artwork.title ?? '',

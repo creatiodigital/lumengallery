@@ -1,5 +1,16 @@
 // Brand tokens for transactional emails. Red appears ONLY in the marks.
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://theartroom.gallery'
+
+// Absolute-URL base for email assets and links. Explicit env wins; otherwise
+// production uses the real domain and EVERY other environment (staging,
+// localhost, previews) uses staging: Gmail's image proxy can't reach
+// localhost, and staging shares the dev database, so both the brand marks
+// and the links inside test emails resolve against the data the email
+// describes. Production needs no env at all.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.NEXT_PUBLIC_APP_ENV === 'production'
+    ? 'https://theartroom.gallery'
+    : 'https://staging.theartroom.gallery')
 
 export const EMAIL_BRAND = {
   red: '#bd1622',

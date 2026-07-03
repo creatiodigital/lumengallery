@@ -3,6 +3,7 @@ import { editionLabel } from '@/lib/editions/editionLabel'
 import { sendAdminCartOrderNotification } from '@/lib/emails/adminCartOrderNotification'
 import type { AdminCartOrderLine } from '@/lib/emails/adminCartOrderNotification'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
+import { EMAIL_BRAND } from '@/lib/emails/brand'
 import { sendCartOrderPlacedEmail } from '@/lib/emails/cartOrderPlaced'
 import type { CartOrderPlacedLine } from '@/lib/emails/cartOrderPlaced'
 import type { PendingCartItem } from '@/lib/cart/pendingCartItem'
@@ -456,7 +457,7 @@ export async function createPrintOrderFromCart(
     select: { id: true },
   })
   if (!alreadyNotifiedAdmin) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://theartroom.gallery'
+    const siteUrl = EMAIL_BRAND.siteUrl
     const adminLines: AdminCartOrderLine[] = items.map((it) => ({
       artworkTitle: artworkTitleFor(it.artworkId),
       artistName: artistNameFor(it.artworkId),

@@ -7,6 +7,7 @@ import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { bindEditionNumberToOrder } from '@/lib/editions/reserveEditionNumber'
 import { editionLabel } from '@/lib/editions/editionLabel'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
+import { EMAIL_BRAND } from '@/lib/emails/brand'
 import { sendAdminOrderNotification } from '@/lib/emails/adminOrderNotification'
 import { sendOrderPlacedEmail } from '@/lib/emails/orderPlaced'
 import { captureError } from '@/lib/observability/captureError'
@@ -404,7 +405,7 @@ export async function createPrintOrderFromPaymentIntent(
     select: { id: true },
   })
   if (!alreadyNotifiedAdmin) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://theartroom.gallery'
+    const siteUrl = EMAIL_BRAND.siteUrl
     const artistName = [artwork.user?.name, artwork.user?.lastName].filter(Boolean).join(' ').trim()
     const attributes: Record<string, string> = Object.fromEntries(
       specs.map((row) => [row.label, row.value]),
