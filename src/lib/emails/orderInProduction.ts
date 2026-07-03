@@ -1,8 +1,24 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
+import {
+  emailDetailRows,
+  emailDivider,
+  emailEyebrow,
+  emailHeading,
+  emailParagraph,
+} from './components'
+import { renderEmailLayout } from './layout'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+/** One numbered limited-edition copy on the order. Open-edition lines have no
+ *  number, so they never appear here. */
+type EditionAssignment = {
+  artworkTitle: string
+  number: number
+  editionSize: number
+}
 
 type OrderInProductionArgs = {
   to: string
@@ -10,6 +26,82 @@ type OrderInProductionArgs = {
   orderId: string
   artworkTitle: string
   artistName: string
+  /** Limited-edition copies on this order. Empty/undefined for open editions —
+   *  the edition block is then omitted entirely. */
+  editions?: EditionAssignment[]
+}
+
+/**
+ * Pure renderer — builds the subject and HTML for the order-in-production email.
+ * No side effects; safe to call from preview routes.
+ */
+export function renderOrderInProductionEmail(args: OrderInProductionArgs): {
+  subject: string
+  html: string
+} {
+  const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
+  const safeArtwork = escapeHtml(args.artworkTitle)
+  const safeArtist = escapeHtml(args.artistName)
+  const safeOrderId = escapeHtml(args.orderId.slice(0, 8)).toUpperCase()
+
+  const editions = args.editions ?? []
+  const hasEditions = editions.length > 0
+  const isSingleEdition = editions.length === 1
+
+  // Reinforces, in restrained terms, exactly what the buyer was promised at
+  // checkout: the copy is individually numbered (printed into the margin) and
+  // arrives with an artist-signed Certificate of Authenticity. No hype — the
+  // authenticity marks themselves carry the prestige.
+  const editionParagraph = !hasEditions
+    ? ''
+    : isSingleEdition
+      ? emailParagraph(
+          `This work is a limited edition, and your copy is <strong>No. ${editions[0].number} of ${editions[0].editionSize}</strong>. The number is printed into the margin of the print, and it arrives with a Certificate of Authenticity, signed by ${safeArtist}.`,
+        )
+      : emailParagraph(
+          `These are limited editions. Each copy is individually numbered — printed into the margin — and arrives with a Certificate of Authenticity signed by the artist.`,
+        )
+
+  const detailRows = [
+    { label: 'Artwork', value: safeArtwork },
+    { label: 'Artist', value: safeArtist },
+    ...(isSingleEdition
+      ? [{ label: 'Edition', value: `No. ${editions[0].number} of ${editions[0].editionSize}` }]
+      : []),
+  ]
+
+  // For a multi-copy cart, list each numbered copy under its own heading.
+  const editionsList =
+    hasEditions && !isSingleEdition
+      ? emailEyebrow('Your editions') +
+        emailDetailRows(
+          editions.map((e) => ({
+            label: escapeHtml(e.artworkTitle) || 'Print',
+            value: `No. ${e.number} of ${e.editionSize}`,
+          })),
+        )
+      : ''
+
+  const body =
+    emailHeading(`Good news, ${firstName}`) +
+    emailParagraph(
+      `Your print is now being produced by our fine-art print lab. Everything is in hand.`,
+    ) +
+    editionParagraph +
+    emailParagraph(
+      `We&rsquo;ll send you another email with tracking details as soon as it ships.`,
+    ) +
+    emailDivider() +
+    emailEyebrow(`Order ${safeOrderId}`) +
+    emailDetailRows(detailRows) +
+    editionsList +
+    emailDivider() +
+    emailParagraph(`If anything changes with your order, we&rsquo;ll be in touch right away.`)
+
+  return {
+    subject: 'Your print is being produced',
+    html: renderEmailLayout({ preheader: 'Your print is being produced', bodyHtml: body }),
+  }
 }
 
 /**
@@ -28,39 +120,14 @@ export async function sendOrderInProductionEmail(
   }
 
   const fromEmail = process.env.FROM_EMAIL || 'contact@theartroom.gallery'
-
-  const safeBuyerName = escapeHtml(args.buyerName || 'there')
-  const safeArtwork = escapeHtml(args.artworkTitle)
-  const safeArtist = escapeHtml(args.artistName)
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
+  const { subject, html } = renderOrderInProductionEmail(args)
 
   try {
     const res = await resend.emails.send({
       from: `The Art Room <${fromEmail}>`,
       to: args.to,
-      subject: 'Your print is being produced',
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 560px; margin: 0 auto; color: #111;">
-          <h2 style="font-size: 22px; margin: 0 0 16px 0;">Your print is being produced</h2>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">Hi ${safeBuyerName},</p>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">
-            Good news &mdash; your print is now being produced by our fine-art print lab.
-          </p>
-
-          <p style="margin: 0 0 24px 0; line-height: 1.55;">
-            We&rsquo;ll send you another email with tracking details as soon as it ships.
-          </p>
-
-          <div style="background:#f6f6f6; padding:16px 20px; margin: 0 0 24px 0;">
-            <p style="margin:0 0 8px 0;"><strong>Order</strong> #${safeOrderId}</p>
-            <p style="margin:0;">${safeArtwork} &mdash; ${safeArtist}</p>
-          </div>
-
-          <p style="margin: 24px 0 0 0; color:#666; font-size: 13px;">&mdash; The Art Room</p>
-        </div>
-      `,
+      subject,
+      html,
     })
 
     if (res.error) {

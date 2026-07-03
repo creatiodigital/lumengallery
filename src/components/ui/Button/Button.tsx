@@ -37,6 +37,7 @@ type ButtonProps = {
   'aria-haspopup'?: boolean | 'menu' | 'listbox' | 'dialog' | 'tree' | 'grid'
   'aria-selected'?: boolean
   'aria-invalid'?: boolean
+  'aria-current'?: React.AriaAttributes['aria-current']
   role?: string
 }
 
@@ -68,6 +69,7 @@ export const Button = React.memo(
     'aria-haspopup': ariaHaspopup,
     'aria-selected': ariaSelected,
     'aria-invalid': ariaInvalid,
+    'aria-current': ariaCurrent,
     role,
   }: ButtonProps) => {
     const isIconOnly = icon && !label && !children
@@ -97,7 +99,14 @@ export const Button = React.memo(
     // Render as Link if href is provided
     if (href) {
       return (
-        <Link href={href} className={classNames} title={title} style={style} aria-label={ariaLabel}>
+        <Link
+          href={href}
+          className={classNames}
+          title={title}
+          style={style}
+          aria-label={ariaLabel}
+          aria-current={ariaCurrent}
+        >
           {content}
         </Link>
       )
@@ -122,6 +131,7 @@ export const Button = React.memo(
         aria-haspopup={ariaHaspopup}
         aria-selected={ariaSelected}
         aria-invalid={ariaInvalid}
+        aria-current={ariaCurrent}
       >
         {content}
       </button>

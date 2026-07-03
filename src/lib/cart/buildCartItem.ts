@@ -15,6 +15,8 @@ type BuildCartItemInput = {
   providerId: ProviderId
   editionType: 'open' | 'limited'
   variantId?: string
+  /** Display name of the chosen limited-edition variant (e.g. "Medium"). */
+  editionName?: string
   config: WizardConfig
   quote: Quote
   /** Artist's share in cents (printPriceCents or variant.priceCents). */
@@ -29,8 +31,17 @@ type BuildCartItemInput = {
  * createPaymentIntent.ts — the server re-derives it at payment.
  */
 export function buildCartItem(input: BuildCartItemInput): Omit<CartItem, 'lineId'> {
-  const { artwork, providerId, editionType, variantId, config, quote, artistCents, specsSummary } =
-    input
+  const {
+    artwork,
+    providerId,
+    editionType,
+    variantId,
+    editionName,
+    config,
+    quote,
+    artistCents,
+    specsSummary,
+  } = input
 
   const galleryCents = Math.round(artistCents * TPS_GALLERY_MARKUP_RATE)
   const artworkLineCents = quote.lines.find((l) => l.id === 'artwork')?.amountCents ?? 0
@@ -42,6 +53,7 @@ export function buildCartItem(input: BuildCartItemInput): Omit<CartItem, 'lineId
     providerId,
     editionType,
     ...(variantId !== undefined ? { variantId } : {}),
+    ...(editionName !== undefined ? { editionName } : {}),
     config,
     quantity: 1,
     unitArtistCents: artistCents,

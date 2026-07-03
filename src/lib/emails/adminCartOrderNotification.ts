@@ -1,16 +1,18 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
+import {
+  emailButton,
+  emailDetailRows,
+  emailDivider,
+  emailEyebrow,
+  emailParagraph,
+} from './components'
+import { formatAmount } from './format'
+import { renderEmailLayout } from './layout'
+import { ADMIN_EMAIL_TO, ADMIN_EMAIL_CC } from './recipients'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-export const ADMIN_CART_ORDER_NOTIFICATION_TO = 'contact@theartroom.gallery'
-export const ADMIN_CART_ORDER_NOTIFICATION_CC = 'contact@creatio.art'
-
-function formatAmount(cents: number, currency: string): string {
-  const symbol = currency.toLowerCase() === 'eur' ? '€' : currency.toUpperCase() + ' '
-  return `${symbol}${(cents / 100).toFixed(2)}`
-}
 
 type ShippingAddress = {
   line1: string
@@ -22,7 +24,7 @@ type ShippingAddress = {
   phone: string
 }
 
-/** One purchased line, with the specs the admin pastes into TPS. */
+/** One purchased line, with the specs the admin pastes into the fulfillment portal. */
 export type AdminCartOrderLine = {
   artworkTitle: string
   artistName: string
@@ -43,10 +45,92 @@ type AdminCartOrderNotificationArgs = {
 }
 
 /**
+ * Pure renderer — builds the subject and HTML for the admin cart order notification email.
+ * No side effects; safe to call from preview routes.
+ */
+export function renderAdminCartOrderNotificationEmail(args: AdminCartOrderNotificationArgs): {
+  subject: string
+  html: string
+} {
+  const id8 = args.orderId.slice(0, 8).toUpperCase()
+  const safeId8 = escapeHtml(id8)
+  const safeOrderIdFull = escapeHtml(args.orderId)
+  const safeBuyerName = escapeHtml(args.buyerName || '—')
+  const safeBuyerEmail = escapeHtml(args.buyerEmail || '—')
+  const safeAdminUrl = escapeHtml(args.adminOrderUrl)
+  const total = formatAmount(args.totalCents, args.currency)
+  const lineCount = args.lines.length
+
+  const addr = args.shippingAddress
+  const addrParts = [
+    escapeHtml(addr.line1),
+    addr.line2 ? escapeHtml(addr.line2) : null,
+    `${escapeHtml(addr.postalCode)} ${escapeHtml(addr.city)}${addr.state ? ', ' + escapeHtml(addr.state) : ''}`,
+    escapeHtml(addr.country),
+  ].filter(Boolean) as string[]
+  const safeAddress = addrParts.join('<br>')
+
+  const lineBlocks = args.lines
+    .map((line, i) => {
+      const specRows = Object.entries(line.skuAttributes).map(([k, v]) => ({
+        label: escapeHtml(k),
+        value: escapeHtml(v),
+      }))
+      const safeTitle = escapeHtml(line.artworkTitle)
+      const safeArtist = escapeHtml(line.artistName)
+      const qtyStr = `${line.quantity}`
+      return (
+        emailEyebrow(`Item ${i + 1} of ${lineCount}`) +
+        emailDetailRows([
+          { label: 'Title', value: safeTitle },
+          { label: 'Artist', value: safeArtist },
+          { label: 'Quantity', value: qtyStr },
+        ]) +
+        emailDetailRows(specRows)
+      )
+    })
+    .join(emailDivider())
+
+  const recipientRows = [
+    { label: 'Name', value: safeBuyerName },
+    { label: 'Email', value: safeBuyerEmail },
+    ...(addr.phone ? [{ label: 'Phone', value: escapeHtml(addr.phone) }] : []),
+    { label: 'Address', value: safeAddress },
+  ]
+
+  const body =
+    emailEyebrow(`Order #${safeId8}`) +
+    `<h2 style="margin:0 0 12px;font-size:18px;font-weight:700;line-height:1.3;color:#111111">New cart order &mdash; needs fulfillment</h2>` +
+    emailParagraph(`Order #${safeId8} &middot; ${lineCount} item(s) &middot; ${total}`) +
+    emailButton('Open in admin', safeAdminUrl) +
+    emailDivider() +
+    lineBlocks +
+    emailDivider() +
+    emailParagraph(
+      'The print assets are available in the admin order page above. They are never linked from email &mdash; the original artwork is sale-sensitive content.',
+    ) +
+    emailDivider() +
+    emailEyebrow('Recipient') +
+    emailDetailRows(recipientRows) +
+    emailDetailRows([{ label: 'Shipping', value: 'Standard' }]) +
+    emailParagraph(
+      `<span style="color:#888888;font-size:12px">Full order ID: <span style="font-family:monospace">${safeOrderIdFull}</span></span>`,
+    )
+
+  return {
+    subject: `New cart order #${id8} — ${lineCount} item(s) — needs fulfillment`,
+    html: renderEmailLayout({
+      preheader: `New cart order #${id8} — ${lineCount} item(s) — needs fulfillment`,
+      bodyHtml: body,
+    }),
+  }
+}
+
+/**
  * Multi-item (cart) variant of {@link sendAdminOrderNotification}. Sent to
  * the gallery admin every time a cart order's card authorization succeeds.
- * Lists EVERY line item with its own specs so the admin can place each on
- * theprintspace's portal by hand (manual fulfillment mode).
+ * Lists EVERY line item with its own specs so the admin can place each at the
+ * fulfillment portal by hand (manual fulfillment mode).
  *
  * Resolves with `{ ok: false }` on failure rather than throwing, so the
  * caller can log + continue without aborting the webhook.
@@ -59,79 +143,15 @@ export async function sendAdminCartOrderNotification(
   }
 
   const fromEmail = process.env.FROM_EMAIL || 'contact@theartroom.gallery'
-
-  const safeBuyerName = escapeHtml(args.buyerName || '—')
-  const safeBuyerEmail = escapeHtml(args.buyerEmail || '—')
-  const safeOrderIdShort = escapeHtml(args.orderId.slice(0, 8))
-  const safeOrderIdFull = escapeHtml(args.orderId)
-  const safeAdminUrl = escapeHtml(args.adminOrderUrl)
-  const total = formatAmount(args.totalCents, args.currency)
-  const lineCount = args.lines.length
-
-  const addr = args.shippingAddress
-  const addrLines = [
-    escapeHtml(addr.line1),
-    addr.line2 ? escapeHtml(addr.line2) : null,
-    `${escapeHtml(addr.postalCode)} ${escapeHtml(addr.city)}${addr.state ? ', ' + escapeHtml(addr.state) : ''}`,
-    escapeHtml(addr.country),
-  ].filter(Boolean)
-
-  const lineBlocks = args.lines
-    .map((line, i) => {
-      const attrRows = Object.entries(line.skuAttributes)
-        .map(
-          ([k, v]) =>
-            `<tr><td style="padding:2px 12px 2px 0;color:#666;">${escapeHtml(k)}</td><td style="padding:2px 0;">${escapeHtml(v)}</td></tr>`,
-        )
-        .join('')
-      const qty = line.quantity > 1 ? ` &times;${line.quantity}` : ''
-      return `
-        <div style="border-top:1px solid #eee;padding-top:16px;margin-top:16px;">
-          <p style="margin:0 0 4px 0;color:#999;font-size:12px;">Item ${i + 1} of ${lineCount}</p>
-          <p style="margin:0 0 8px 0;"><strong>${escapeHtml(line.artworkTitle)}</strong> — ${escapeHtml(line.artistName)}${qty}</p>
-          <table style="border-collapse:collapse;font-size:14px;">${attrRows}</table>
-        </div>
-      `
-    })
-    .join('')
+  const { subject, html } = renderAdminCartOrderNotificationEmail(args)
 
   try {
     const res = await resend.emails.send({
       from: `The Art Room Orders <${fromEmail}>`,
-      to: ADMIN_CART_ORDER_NOTIFICATION_TO,
-      cc: ADMIN_CART_ORDER_NOTIFICATION_CC,
-      subject: `New cart order #${args.orderId.slice(0, 8)} — ${lineCount} item(s) — needs placement at TPS`,
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 640px; margin: 0 auto; color: #111;">
-          <h2 style="font-size: 20px; margin: 0 0 8px 0;">New cart order — needs placement at TPS</h2>
-          <p style="margin: 0 0 20px 0; color:#666;">Order #${safeOrderIdShort} · ${lineCount} item(s) · ${total}</p>
-
-          <p style="margin: 0 0 20px 0;">
-            <a href="${safeAdminUrl}" style="background:#111;color:#fff;padding:10px 16px;text-decoration:none;display:inline-block;">Open in admin</a>
-          </p>
-
-          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin:24px 0 8px 0;">Items</h3>
-          ${lineBlocks}
-
-          <p style="margin:20px 0 0 0;font-size:13px;color:#666;">
-            The print assets are available in the admin order page above. They are
-            never linked from email — the original artwork is sale-sensitive content.
-          </p>
-
-          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin:24px 0 8px 0;">Recipient</h3>
-          <p style="margin:0 0 2px 0;">${safeBuyerName}</p>
-          <p style="margin:0 0 2px 0;">${safeBuyerEmail}</p>
-          ${addr.phone ? `<p style="margin:0 0 2px 0;">${escapeHtml(addr.phone)}</p>` : ''}
-          ${addrLines.map((l) => `<p style="margin:0 0 2px 0;">${l}</p>`).join('')}
-
-          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin:24px 0 8px 0;">Shipping method</h3>
-          <p style="margin:0;">Standard</p>
-
-          <p style="margin: 32px 0 0 0; color:#666; font-size: 12px;">
-            Order ID: <span style="font-family:monospace;">${safeOrderIdFull}</span>
-          </p>
-        </div>
-      `,
+      to: ADMIN_EMAIL_TO,
+      cc: ADMIN_EMAIL_CC,
+      subject,
+      html,
     })
 
     if (res.error) {

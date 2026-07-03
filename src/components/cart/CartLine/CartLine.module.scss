@@ -1,6 +1,9 @@
+@use '@/styles/mixins' as *;
+
 // Item card: details (image + artist/title/specs) on the left, and a vertical
 // price · quantity · subtotal · remove panel on the right, split by a divider.
-// Below 640px the panel drops beneath the details.
+// Below 1024px (lg) the panel drops beneath the details — see the note on the
+// media query below for why the cart stacks earlier than most components.
 .line {
   display: flex;
   align-items: stretch;
@@ -10,7 +13,11 @@
   // White gap between item cards — the page background shows through.
   margin-bottom: var(--space-6);
 
-  @media (max-width: 560px) {
+  // Stack below 1024px (lg). The side-by-side layout reserves a fixed 220px
+  // panel + 140px thumb + a 23ch spec-label column; in the tablet band that
+  // squeezed the spec VALUE column to ~1ch, breaking long values one letter
+  // per line. The cart therefore stacks earlier (lg) than lighter components.
+  @include media-down(lg) {
     flex-direction: column;
   }
 }
@@ -46,7 +53,7 @@
     background: var(--color-border-light);
   }
 
-  @media (max-width: 560px) {
+  @include media-down(lg) {
     width: auto;
     border-top: 1px solid var(--color-border-light);
 
@@ -75,6 +82,21 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+
+  // −, + and the qty-1 trash all render at one consistent width, whether they
+  // carry a text glyph or an (icon-only) icon — the icon variant's tighter
+  // padding would otherwise make the trash narrower than −/+.
+  button {
+    min-width: 40px;
+    justify-content: center;
+  }
+
+  // The trash icon that replaces "−" at qty 1 — keep it in scale with the
+  // "−"/"+" glyphs rather than the button's default 20px icon size.
+  svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .qty {
@@ -83,6 +105,11 @@
   color: var(--color-text-primary);
 }
 
-.remove {
-  color: var(--color-text-secondary);
+// Edit / Delete CTAs — stacked, equal width (both fullWidth) so the panel
+// reads as one tidy action column.
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
 }

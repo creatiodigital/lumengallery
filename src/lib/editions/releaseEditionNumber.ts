@@ -4,7 +4,7 @@
  *
  * Called whenever a reservation/order dies — Stripe `payment_intent`
  * `canceled` (covers auth-hold expiry) / `payment_failed`, and admin
- * `markRejected` / `deleteOrder` / `refundOrder`. Idempotent: releasing
+ * `cancelOrder` / `deleteOrder` / `refundOrder`. Idempotent: releasing
  * an already-available number is a no-op.
  *
  * By default a `sold` number is NOT released (a captured, fulfilled

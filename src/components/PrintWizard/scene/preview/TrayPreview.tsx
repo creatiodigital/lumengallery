@@ -21,7 +21,7 @@ interface TrayPreviewProps {
 
 // Visible XY gap between the print's edge and the moulding's
 // inner wall — the "tray slot". Looking through this slot you
-// see the moulding-coloured floor of the tray going down, which
+// see the moulding-colored floor of the tray going down, which
 // is the signature read that distinguishes Tray from Standard.
 const TRAY_SLOT_M = 0.008
 
@@ -49,7 +49,7 @@ const FRAME_FRONT_Z = 0.02
  * (sits behind the moulding's front face) AND inset on XY (sits
  * inboard of the moulding's inner wall), leaving a visible slot
  * all around the print. Through the slot you see the tray floor
- * and the moulding's inner walls in the frame's own colour. No
+ * and the moulding's inner walls in the frame's own color. No
  * mat, no paper border, no visible backboard around the print.
  */
 export const TrayPreview = ({
@@ -78,7 +78,7 @@ export const TrayPreview = ({
 
   return (
     <>
-      {/* Tray floor — moulding-coloured plate filling the cavity
+      {/* Tray floor — moulding-colored plate filling the cavity
           behind the paper sheet. Visible through the slot. */}
       <mesh position={[0, 0, TRAY_FLOOR_Z]}>
         <planeGeometry args={[cavityWidthM, cavityHeightM]} />
@@ -96,7 +96,7 @@ export const TrayPreview = ({
 
       {/* Paper sheet + image pushed forward to sit just behind the
           moulding's front face. The paper sits flush; the image is
-          centred on it with the paper border showing around it. */}
+          centered on it with the paper border showing around it. */}
       <group position={[0, 0, PRINT_FORWARD_Z]}>
         {paperBorderM > 0 && (
           <PaperSheet widthM={paperWidthM} heightM={paperHeightM} roughness={paperRoughness} />

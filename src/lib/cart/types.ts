@@ -8,6 +8,8 @@ export type CartItem = {
   providerId: ProviderId
   editionType: 'open' | 'limited'
   variantId?: string // limited only
+  /** Display name of the chosen limited-edition variant (e.g. "Medium"). Limited only. */
+  editionName?: string
   config: WizardConfig
   quantity: number
   // Display snapshot captured at add time (re-validated server-side at checkout).

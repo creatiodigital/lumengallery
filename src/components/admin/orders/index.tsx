@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { type Bucket, BUCKET_ORDER, bucketOf } from '@/lib/orders/orderBuckets'
 import { daysSinceDelivered, PAYOUT_SAFE_WINDOW_DAYS } from '@/lib/orders/payoutPolicy'
 import { formatEuro } from '@/lib/print-providers/format'
 
@@ -29,7 +30,7 @@ const DOT_COLORS: Record<string, string> = {
   red: '#ef4444',
   amber: '#f59e0b',
   blue: '#3b82f6',
-  grey: '#9ca3af',
+  gray: '#9ca3af',
 }
 
 const Dot = ({ color }: { color: keyof typeof DOT_COLORS }) => (
@@ -47,31 +48,6 @@ const Dot = ({ color }: { color: keyof typeof DOT_COLORS }) => (
   />
 )
 
-// Workflow buckets — each bucket corresponds to one tab on the orders
-// page. Order matters (it's the user's mental left-to-right pipeline).
-type Bucket =
-  | 'new'
-  | 'at-tps'
-  | 'production'
-  | 'shipped'
-  | 'delivered'
-  | 'done'
-  | 'rejected'
-  | 'refunded'
-  | 'attention'
-
-const BUCKET_ORDER: Bucket[] = [
-  'new',
-  'at-tps',
-  'production',
-  'shipped',
-  'delivered',
-  'done',
-  'rejected',
-  'refunded',
-  'attention',
-]
-
 const BUCKET_META: Record<
   Bucket,
   {
@@ -83,8 +59,14 @@ const BUCKET_META: Record<
   new: {
     title: 'New',
     helper:
-      'Buyer paid; card is on hold. Place the order on theprintspace, then click Capture & mark placed to charge the buyer and advance.',
-    nextAction: 'Capture & mark placed',
+      'Buyer paid; card is on hold. Capture the payment FIRST — once it succeeds the order moves to “To place at TPS”. Never place at TPS before capturing.',
+    nextAction: 'Capture payment',
+  },
+  'to-place': {
+    title: 'To place at TPS',
+    helper:
+      'Payment captured — you hold the buyer’s money. Now place + pay the order on theprintspace, then click Mark placed at TPS to advance.',
+    nextAction: 'Mark placed at TPS',
   },
   'at-tps': {
     title: 'At TPS',
@@ -112,10 +94,10 @@ const BUCKET_META: Record<
     helper: 'Order delivered and artist paid. Archived view.',
     nextAction: 'View details',
   },
-  rejected: {
-    title: 'Rejected',
+  cancelled: {
+    title: 'Canceled',
     helper:
-      'Orders pulled out of the pipeline before delivery — TPS rejected the file, artist disabled prints, etc. Refunds (if needed) are handled from the order detail page.',
+      'Orders pulled out of the pipeline before delivery — buyer asked to cancel, we couldn’t fulfill, TPS rejected the file, artist disabled prints, etc. Refunds (if needed) are handled from the order detail page.',
     nextAction: 'View details',
   },
   refunded: {
@@ -130,27 +112,6 @@ const BUCKET_META: Record<
       'Failed payments, rejected orders, refunds. Each case differs — open the order to refund, cancel, or close it out.',
     nextAction: 'Open & resolve →',
   },
-}
-
-function bucketOf(o: AdminOrderRow): Bucket {
-  const f = o.fulfillmentStatus
-  const p = o.paymentStatus
-
-  if (f === 'Rejected') return 'rejected'
-  if (p === 'refunded') return 'refunded'
-  if (p === 'failed' || p === 'canceled') return 'attention'
-
-  if (f === null && p === 'authorized') return 'new'
-  if (f === 'Placed') return 'at-tps'
-  if (f === 'Started') return 'production'
-  if (f === 'Shipped') return 'shipped'
-  // `paidOutAt` is the universal "artist has been paid" signal — set
-  // by both Stripe Connect transfers and out-of-band manual payments.
-  // `transferId` only tracks the Stripe path.
-  if (f === 'Complete' && !o.paidOutAt) return 'delivered'
-  if (f === 'Complete' && o.paidOutAt) return 'done'
-
-  return 'attention'
 }
 
 export const AdminOrders = () => {
@@ -186,12 +147,13 @@ export const AdminOrders = () => {
   const grouped = useMemo(() => {
     const map: Record<Bucket, AdminOrderRow[]> = {
       new: [],
+      'to-place': [],
       'at-tps': [],
       production: [],
       shipped: [],
       delivered: [],
       done: [],
-      rejected: [],
+      cancelled: [],
       refunded: [],
       attention: [],
     }
@@ -230,7 +192,7 @@ export const AdminOrders = () => {
           const meta = BUCKET_META[b]
           const count = grouped[b].length
           const active = b === activeBucket
-          const isAttention = b === 'attention' || b === 'rejected'
+          const isAttention = b === 'attention' || b === 'cancelled'
           const isRefunded = b === 'refunded'
           const hasItems = count > 0
           // Refunded only goes orange when there's *more than one* —
@@ -348,6 +310,18 @@ export const AdminOrders = () => {
                           </div>
                         </>
                       )}
+                      {o.reorderCount > 0 && (
+                        <div
+                          style={{
+                            fontSize: 'var(--text-xs)',
+                            marginTop: 2,
+                            color: '#7c3aed',
+                            fontWeight: 600,
+                          }}
+                        >
+                          ⟳ Replacement{o.reorderCount > 1 ? ` ×${o.reorderCount}` : ''}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <div>{o.buyerName}</div>
@@ -366,14 +340,14 @@ export const AdminOrders = () => {
                     {(activeBucket === 'delivered' || activeBucket === 'done') && (
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {(() => {
-                          if (o.paidOutAt) {
-                            const isManual = o.transferStatus === 'paid_manual'
+                          if (o.payoutComplete) {
                             return (
                               <>
                                 <Dot color="green" />
                                 <span style={{ fontSize: 'var(--text-xs)' }}>
-                                  {formatEuro(o.artistCents)} · {formatDate(o.paidOutAt)}
-                                  {isManual ? ' (manual)' : ''}
+                                  {formatEuro(o.artistCents)}
+                                  {o.payoutAt ? ` · ${formatDate(o.payoutAt)}` : ''}
+                                  {o.payoutManual ? ' (manual)' : ''}
                                 </span>
                               </>
                             )
@@ -416,10 +390,10 @@ export const AdminOrders = () => {
 const NextActionCell = ({ order, bucket }: { order: AdminOrderRow; bucket: Bucket }) => {
   const meta = BUCKET_META[bucket]
 
-  // Every row in every bucket is just a doorway to the detail page.
-  // Real actions (capture, mark in production, refund, pay artist…)
-  // only fire from the detail page, where the admin sees full context
-  // and can't trip them with an accidental table tap.
+  // The row's only action is a doorway to the detail page — every real
+  // workflow action (capture, mark in production, refund, pay artist, and
+  // deleting the order) fires there, with full context, so an accidental
+  // table tap can't trip them.
   const linkStyle: React.CSSProperties = {
     display: 'inline-block',
     padding: '6px 12px',
@@ -432,8 +406,10 @@ const NextActionCell = ({ order, bucket }: { order: AdminOrderRow; bucket: Bucke
   }
 
   return (
-    <Link href={`/admin/orders/${order.id}`} style={linkStyle}>
-      {meta.nextAction}
-    </Link>
+    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <Link href={`/admin/orders/${order.id}`} style={linkStyle}>
+        {meta.nextAction}
+      </Link>
+    </div>
   )
 }

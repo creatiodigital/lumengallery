@@ -19,6 +19,8 @@ type Artwork = {
   year?: string | null
   technique?: string | null
   dimensions?: string | null
+  /** 'open' | 'limited' — drives the edition tag shown with the Order Print CTA. */
+  editionType?: string | null
   imageUrl?: string | null
   // Real pixel dimensions when known. Used per-tile so next/image
   // reserves the correct slot — fixes CLS without forcing a square crop.
@@ -85,6 +87,9 @@ export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: Ar
               )}
               {withOrderPrint && (
                 <div className={styles.orderAction}>
+                  <Text as="span" className={styles.editionTag}>
+                    {artwork.editionType === 'limited' ? 'Limited Edition' : 'Open Edition'}
+                  </Text>
                   <Button
                     href={`/artworks/${artwork.slug}/print`}
                     label="Order Print"

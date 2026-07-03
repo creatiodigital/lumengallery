@@ -1,16 +1,18 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
+import {
+  emailButton,
+  emailDetailRows,
+  emailDivider,
+  emailEyebrow,
+  emailParagraph,
+} from './components'
+import { formatAmount } from './format'
+import { renderEmailLayout } from './layout'
+import { ADMIN_EMAIL_TO, ADMIN_EMAIL_CC } from './recipients'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-export const ADMIN_ORDER_NOTIFICATION_TO = 'contact@theartroom.gallery'
-export const ADMIN_ORDER_NOTIFICATION_CC = 'contact@creatio.art'
-
-function formatAmount(cents: number, currency: string): string {
-  const symbol = currency.toLowerCase() === 'eur' ? '€' : currency.toUpperCase() + ' '
-  return `${symbol}${(cents / 100).toFixed(2)}`
-}
 
 type ShippingAddress = {
   line1: string
@@ -32,15 +34,87 @@ type AdminOrderNotificationArgs = {
   totalCents: number
   currency: string
   /** Spec rows (Print type / Paper / Frame / etc.) the admin pastes
-   *  into theprintspace's "Order Prints" form. */
+   *  into the fulfillment portal by hand. */
   skuAttributes: Record<string, string>
   adminOrderUrl: string
 }
 
 /**
+ * Pure renderer — builds the subject and HTML for the admin order notification email.
+ * No side effects; safe to call from preview routes.
+ */
+export function renderAdminOrderNotificationEmail(args: AdminOrderNotificationArgs): {
+  subject: string
+  html: string
+} {
+  const id8 = args.orderId.slice(0, 8).toUpperCase()
+  const safeId8 = escapeHtml(id8)
+  const safeOrderIdFull = escapeHtml(args.orderId)
+  const safeArtwork = escapeHtml(args.artworkTitle)
+  const safeArtist = escapeHtml(args.artistName)
+  const safeBuyerName = escapeHtml(args.buyerName || '—')
+  const safeBuyerEmail = escapeHtml(args.buyerEmail || '—')
+  const safeAdminUrl = escapeHtml(args.adminOrderUrl)
+  const total = formatAmount(args.totalCents, args.currency)
+
+  const addr = args.shippingAddress
+  const addrParts = [
+    escapeHtml(addr.line1),
+    addr.line2 ? escapeHtml(addr.line2) : null,
+    `${escapeHtml(addr.postalCode)} ${escapeHtml(addr.city)}${addr.state ? ', ' + escapeHtml(addr.state) : ''}`,
+    escapeHtml(addr.country),
+  ].filter(Boolean) as string[]
+  const safeAddress = addrParts.join('<br>')
+
+  const specRows = Object.entries(args.skuAttributes).map(([k, v]) => ({
+    label: escapeHtml(k),
+    value: escapeHtml(v),
+  }))
+
+  const recipientRows = [
+    { label: 'Name', value: safeBuyerName },
+    { label: 'Email', value: safeBuyerEmail },
+    ...(addr.phone ? [{ label: 'Phone', value: escapeHtml(addr.phone) }] : []),
+    { label: 'Address', value: safeAddress },
+  ]
+
+  const body =
+    emailEyebrow(`Order #${safeId8}`) +
+    `<h2 style="margin:0 0 12px;font-size:18px;font-weight:700;line-height:1.3;color:#111111">New order &mdash; needs fulfillment</h2>` +
+    emailParagraph(`Order #${safeId8} &middot; ${total}`) +
+    emailButton('Open in admin', safeAdminUrl) +
+    emailDivider() +
+    emailEyebrow('Artwork') +
+    emailDetailRows([
+      { label: 'Title', value: safeArtwork },
+      { label: 'Artist', value: safeArtist },
+    ]) +
+    emailEyebrow('Specs') +
+    emailDetailRows(specRows) +
+    emailParagraph(
+      'The print asset is available in the admin order page above. It is never linked from email &mdash; the original artwork is sale-sensitive content.',
+    ) +
+    emailDivider() +
+    emailEyebrow('Recipient') +
+    emailDetailRows(recipientRows) +
+    emailDetailRows([{ label: 'Shipping', value: 'Standard' }]) +
+    emailParagraph(
+      `<span style="color:#888888;font-size:12px">Full order ID: <span style="font-family:monospace">${safeOrderIdFull}</span></span>`,
+    )
+
+  return {
+    subject: `New order #${id8} — ${args.artworkTitle} — needs fulfillment`,
+    html: renderEmailLayout({
+      preheader: `New order #${id8} — ${args.artworkTitle} — needs fulfillment`,
+      bodyHtml: body,
+    }),
+  }
+}
+
+/**
  * Sent to the gallery admin every time a buyer's card authorization
  * succeeds. Surfaces every field needed to place the order in the
- * theprintspace's portal by hand (manual fulfillment mode).
+ * fulfillment portal by hand (manual fulfillment mode).
  *
  * Resolves with `{ ok: false }` on failure rather than throwing, so the
  * caller can log + continue without aborting the webhook.
@@ -53,71 +127,15 @@ export async function sendAdminOrderNotification(
   }
 
   const fromEmail = process.env.FROM_EMAIL || 'contact@theartroom.gallery'
-
-  const safeArtwork = escapeHtml(args.artworkTitle)
-  const safeArtist = escapeHtml(args.artistName)
-  const safeBuyerName = escapeHtml(args.buyerName || '—')
-  const safeBuyerEmail = escapeHtml(args.buyerEmail || '—')
-  const safeOrderIdShort = escapeHtml(args.orderId.slice(0, 8))
-  const safeOrderIdFull = escapeHtml(args.orderId)
-  const safeAdminUrl = escapeHtml(args.adminOrderUrl)
-  const total = formatAmount(args.totalCents, args.currency)
-
-  const addr = args.shippingAddress
-  const addrLines = [
-    escapeHtml(addr.line1),
-    addr.line2 ? escapeHtml(addr.line2) : null,
-    `${escapeHtml(addr.postalCode)} ${escapeHtml(addr.city)}${addr.state ? ', ' + escapeHtml(addr.state) : ''}`,
-    escapeHtml(addr.country),
-  ].filter(Boolean)
-
-  const attrRows = Object.entries(args.skuAttributes)
-    .map(
-      ([k, v]) =>
-        `<tr><td style="padding:2px 12px 2px 0;color:#666;">${escapeHtml(k)}</td><td style="padding:2px 0;">${escapeHtml(v)}</td></tr>`,
-    )
-    .join('')
+  const { subject, html } = renderAdminOrderNotificationEmail(args)
 
   try {
     const res = await resend.emails.send({
       from: `The Art Room Orders <${fromEmail}>`,
-      to: ADMIN_ORDER_NOTIFICATION_TO,
-      cc: ADMIN_ORDER_NOTIFICATION_CC,
-      subject: `New order #${args.orderId.slice(0, 8)} — ${args.artworkTitle} — needs placement at TPS`,
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 640px; margin: 0 auto; color: #111;">
-          <h2 style="font-size: 20px; margin: 0 0 8px 0;">New order — needs placement at TPS</h2>
-          <p style="margin: 0 0 20px 0; color:#666;">Order #${safeOrderIdShort} · ${total}</p>
-
-          <p style="margin: 0 0 20px 0;">
-            <a href="${safeAdminUrl}" style="background:#111;color:#fff;padding:10px 16px;text-decoration:none;display:inline-block;">Open in admin</a>
-          </p>
-
-          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin:24px 0 8px 0;">Artwork</h3>
-          <p style="margin:0 0 4px 0;"><strong>${safeArtwork}</strong> — ${safeArtist}</p>
-
-          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin:24px 0 8px 0;">Specs</h3>
-          <table style="border-collapse:collapse;font-size:14px;">${attrRows}</table>
-
-          <p style="margin:20px 0 0 0;font-size:13px;color:#666;">
-            The print asset is available in the admin order page above. It is
-            never linked from email — the original artwork is sale-sensitive content.
-          </p>
-
-          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin:24px 0 8px 0;">Recipient</h3>
-          <p style="margin:0 0 2px 0;">${safeBuyerName}</p>
-          <p style="margin:0 0 2px 0;">${safeBuyerEmail}</p>
-          ${addr.phone ? `<p style="margin:0 0 2px 0;">${escapeHtml(addr.phone)}</p>` : ''}
-          ${addrLines.map((l) => `<p style="margin:0 0 2px 0;">${l}</p>`).join('')}
-
-          <h3 style="font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:#666;margin:24px 0 8px 0;">Shipping method</h3>
-          <p style="margin:0;">Standard</p>
-
-          <p style="margin: 32px 0 0 0; color:#666; font-size: 12px;">
-            Order ID: <span style="font-family:monospace;">${safeOrderIdFull}</span>
-          </p>
-        </div>
-      `,
+      to: ADMIN_EMAIL_TO,
+      cc: ADMIN_EMAIL_CC,
+      subject,
+      html,
     })
 
     if (res.error) {

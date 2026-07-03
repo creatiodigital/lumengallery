@@ -94,6 +94,18 @@
   --color-slider-track: var(--color-gray-55);
   --color-toggle-off: var(--color-gray-65);
 
+  // Dark chrome (3D scene overlays, wallview editor surfaces)
+  --color-dark-surface: #1a1a1a;
+  --color-dark-surface-raised: #2a2a2a;
+  --color-dark-button-bg: var(--color-gray-80);
+  --color-dark-button-hover-bg: #444444;
+  --color-dark-border: #555555;
+  --color-dark-text-muted: #999999;
+
+  // Wallview editor guides
+  --color-guide: #00dcff;
+  --color-guide-selected: #00e6a0;
+
   // Errors
   --color-error-text: var(--color-red-60);
   --color-error-bg: var(--color-red-30);

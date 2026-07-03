@@ -8,7 +8,7 @@
 
   // Decorative header only — hide on mobile where the SVG badge and
   // flanking rules eat too much vertical space for no real signal.
-  @media (max-width: 768px) {
+  @include media-down(md) {
     display: none;
   }
 }

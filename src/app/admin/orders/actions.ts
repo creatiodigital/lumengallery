@@ -1,21 +1,34 @@
 'use server'
 
-import { auth } from '@/auth'
-import { isAdminOrAbove } from '@/lib/authUtils'
+import { requireAdminAction } from '@/lib/authUtils'
 import { summarizeConfig, type SpecsSummary, type WizardConfig } from '@/lib/print-providers'
 import { TPS_PAPERS, TPS_PRINT_TYPES } from '@/lib/print-providers/printspace'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { sendAdminOrderCancelledAlert } from '@/lib/emails/adminOrderCancelled'
 import { sendArtistPayoutEmail } from '@/lib/emails/artistPayout'
+import { sendInvoiceEmail } from '@/lib/emails/invoice'
 import { sendOrderCancelledEmail } from '@/lib/emails/orderCancelled'
 import { sendOrderDeliveredEmail } from '@/lib/emails/orderDelivered'
 import { sendOrderInProductionEmail } from '@/lib/emails/orderInProduction'
 import { sendOrderShippedEmail } from '@/lib/emails/orderShipped'
 import { sendRefundIssuedEmail } from '@/lib/emails/refundIssued'
 import { markEditionNumberSold } from '@/lib/editions/reserveEditionNumber'
+import { REORDER_REASONS, type ReorderReason } from '@/lib/orders/reorderReasons'
+import { computeOrderPayout } from '@/lib/orders/orderPayout'
+import { devCleanupAllowed } from '@/lib/admin/resetTestData'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { captureError } from '@/lib/observability/captureError'
-import { logOrderEvent } from '@/lib/orders/logOrderEvent'
+import { logOrderEvent, type OrderEventActor } from '@/lib/orders/logOrderEvent'
+import type { InvoiceLine } from '@/lib/invoices/buildInvoiceLines'
+import type {
+  BuyerSnapshot,
+  SellerSnapshot,
+  TotalsSnapshot,
+} from '@/lib/invoices/buildInvoiceSnapshots'
+import { prepareInvoiceIssue } from '@/lib/invoices/prepareInvoiceIssue'
+import { getOrIssueInvoice } from '@/lib/invoices/getOrIssueInvoice'
+import { renderInvoicePdf } from '@/lib/invoices/renderInvoicePdf'
+import { buildInvoiceKey, deletePrivateR2Key, uploadPrivateToR2, r2ObjectExists } from '@/lib/r2'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
 
@@ -43,19 +56,26 @@ export type AdminOrderRow = {
   transferId: string | null
   transferStatus: string | null
   paidOutAt: string | null
+  /** Artist-payout rollup that is cart-aware (every line paid) AND legacy-aware
+   *  (header paidOutAt). Drives the "Artist paid" bucket + payout column so a
+   *  fully-paid cart order doesn't get stranded in "Delivered". */
+  payoutComplete: boolean
+  payoutAt: string | null
+  payoutManual: boolean
   latestEvent: { kind: string; message: string | null; at: string } | null
   /** Number of PrintOrderItem line rows. 0 = legacy single-print order
    *  (data on the header), > 0 = cart order. */
   itemCount: number
+  /** Replacement-reprint marker. > 0 = this order has been re-ordered (see
+   *  reorderReason); drives the permanent "⟳ Replacement" badge. */
+  reorderCount: number
+  reorderReason: string | null
 }
 
+// Kept under the historical local name; the implementation is the shared
+// guard in authUtils (one admin gate for every server-action file).
 async function requireAdminSession() {
-  const session = await auth()
-  if (!session?.user?.id) return { ok: false as const, error: 'Not signed in.' }
-  if (!isAdminOrAbove(session.user.userType)) {
-    return { ok: false as const, error: 'Admin access required.' }
-  }
-  return { ok: true as const, session }
+  return requireAdminAction()
 }
 
 export async function listOrders(): Promise<
@@ -83,43 +103,52 @@ export async function listOrders(): Promise<
         take: 1,
         select: { kind: true, message: true, at: true },
       },
+      items: { select: { paidOutAt: true, transferStatus: true } },
       _count: { select: { items: true } },
     },
   })
 
-  const orders: AdminOrderRow[] = rows.map((r) => ({
-    id: r.id,
-    paymentIntentId: r.paymentIntentId,
-    createdAt: r.createdAt.toISOString(),
-    artwork: {
-      id: r.artwork.id,
-      slug: r.artwork.slug,
-      title: r.artwork.title,
-    },
-    artist: {
-      id: r.artistUser.id,
-      name: `${r.artistUser.name} ${r.artistUser.lastName}`.trim(),
-      stripeAccountId: r.artistUser.stripeAccountId,
-      stripeOnboardingComplete: r.artistUser.stripeOnboardingComplete,
-    },
-    buyerEmail: r.buyerEmail,
-    buyerName: r.buyerName,
-    country: r.country,
-    totalCents: r.totalCents,
-    artistCents: r.artistCents,
-    currency: r.currency,
-    paymentStatus: r.paymentStatus,
-    fulfillmentStatus: r.fulfillmentStatus,
-    trackingUrl: r.trackingUrl,
-    shippedAt: r.shippedAt?.toISOString() ?? null,
-    transferId: r.transferId,
-    transferStatus: r.transferStatus,
-    paidOutAt: r.paidOutAt?.toISOString() ?? null,
-    latestEvent: r.events[0]
-      ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
-      : null,
-    itemCount: r._count.items,
-  }))
+  const orders: AdminOrderRow[] = rows.map((r) => {
+    const payout = computeOrderPayout(r.items, r.paidOutAt, r.transferStatus)
+    return {
+      id: r.id,
+      paymentIntentId: r.paymentIntentId,
+      createdAt: r.createdAt.toISOString(),
+      artwork: {
+        id: r.artwork.id,
+        slug: r.artwork.slug,
+        title: r.artwork.title,
+      },
+      artist: {
+        id: r.artistUser.id,
+        name: `${r.artistUser.name} ${r.artistUser.lastName}`.trim(),
+        stripeAccountId: r.artistUser.stripeAccountId,
+        stripeOnboardingComplete: r.artistUser.stripeOnboardingComplete,
+      },
+      buyerEmail: r.buyerEmail,
+      buyerName: r.buyerName,
+      country: r.country,
+      totalCents: r.totalCents,
+      artistCents: r.artistCents,
+      currency: r.currency,
+      paymentStatus: r.paymentStatus,
+      fulfillmentStatus: r.fulfillmentStatus,
+      trackingUrl: r.trackingUrl,
+      shippedAt: r.shippedAt?.toISOString() ?? null,
+      transferId: r.transferId,
+      transferStatus: r.transferStatus,
+      paidOutAt: r.paidOutAt?.toISOString() ?? null,
+      payoutComplete: payout.complete,
+      payoutAt: payout.at?.toISOString() ?? null,
+      payoutManual: payout.manual,
+      latestEvent: r.events[0]
+        ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
+        : null,
+      itemCount: r._count.items,
+      reorderCount: r.reorderCount,
+      reorderReason: r.reorderReason,
+    }
+  })
 
   return { ok: true, orders }
 }
@@ -153,6 +182,9 @@ export type AdminOrderItem = {
   /** Display-only spec rows derived from this line's printConfig + the
    *  live catalog. Empty fallback on any catalog/summarize failure. */
   specsSummary: SpecsSummary
+  /** Limited-edition variant display name (e.g. "Medium"); null for open
+   *  editions. Sourced from the bound edition numbers' shared variant. */
+  editionName: string | null
   /** Edition labels like ['29/50', '30/50'] for limited lines; empty for
    *  open editions. */
   editionLabels: string[]
@@ -164,6 +196,9 @@ export type AdminOrderItem = {
 }
 
 export type AdminOrderDetail = AdminOrderRow & {
+  /** Replacement-reprint detail for the header badge + history. */
+  reorderNote: string | null
+  reorderedAt: string | null
   shippingAddress: unknown
   printConfig: unknown
   productionCents: number
@@ -198,6 +233,10 @@ export type AdminOrderDetail = AdminOrderRow & {
     mirroredInTpsAt: string | null
   } | null
   events: AdminOrderEvent[]
+  /** The first invoice issued for this order (type='invoice'), or null if none yet. */
+  invoice: { id: string; number: string } | null
+  /** The credit note for this order, or null if none yet. */
+  creditNote: { id: string; number: string } | null
 }
 
 export type AdminPayoutRow = {
@@ -250,7 +289,7 @@ export async function listArtistPayouts(): Promise<
 
   // Legacy header payouts (single-print orders only). paidOutAt covers both
   // the Stripe path (transferId set) and manual payouts (transferId null) —
-  // identical to the prior behaviour so nothing single-print regresses.
+  // identical to the prior behavior so nothing single-print regresses.
   // `items: none` excludes cart orders so we never list a cart's deprecated
   // header rollup alongside its authoritative per-item rows.
   const headerRows = await prisma.printOrder.findMany({
@@ -324,6 +363,7 @@ export type EditionSaleRow = {
   id: string
   artworkTitle: string
   artworkSlug: string | null
+  artistName: string
   variantName: string
   number: number
   editionSize: number
@@ -365,7 +405,18 @@ export async function listEditionSales(): Promise<
     orderBy: [{ soldAt: 'desc' }, { reservedAt: 'desc' }],
     take: 1000,
     include: {
-      variant: { include: { artwork: { select: { title: true, slug: true } } } },
+      variant: {
+        include: {
+          artwork: {
+            select: {
+              title: true,
+              slug: true,
+              author: true,
+              user: { select: { name: true, lastName: true } },
+            },
+          },
+        },
+      },
       order: { select: orderSelect },
       orderItem: { select: { order: { select: orderSelect } } },
     },
@@ -379,6 +430,14 @@ export async function listEditionSales(): Promise<
       id: r.id,
       artworkTitle: r.variant.artwork.title ?? '(untitled)',
       artworkSlug: r.variant.artwork.slug,
+      // Artist display: the per-work `author` override if set, else the
+      // owning user's name (same convention as the public grid).
+      artistName:
+        r.variant.artwork.author?.trim() ||
+        [r.variant.artwork.user.name, r.variant.artwork.user.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim(),
       variantName: r.variant.name,
       number: r.number,
       editionSize: r.variant.editionSize,
@@ -394,6 +453,78 @@ export async function listEditionSales(): Promise<
   })
 
   return { ok: true, sales }
+}
+
+/**
+ * RELEASE a single ORPHANED edition number from the ledger — a reserved/sold
+ * copy no longer attached to any order (abandoned cart holds / abandoned
+ * checkouts). Sets it back to `available` and clears its bindings: the row
+ * (the numbered slot) stays, so the edition is never gapped — it just drops
+ * out of this ledger (which lists reserved/sold) and can sell again.
+ *
+ * NOTE: we deliberately release rather than hard-delete. Deleting the row
+ * removes the slot permanently, so the next sale skips that number (e.g. an
+ * edition would start at 3/30 instead of 1/30). Release keeps 1..N intact.
+ *
+ * Refuses a number still bound to a live order: that would desync the order
+ * from its copy. Cancel or refund that order instead — that path releases it.
+ */
+export async function releaseOrphanedEditionNumber(
+  numberId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const row = await prisma.editionNumber.findUnique({
+    where: { id: numberId },
+    include: {
+      order: { select: { id: true } },
+      orderItem: { select: { order: { select: { id: true } } } },
+    },
+  })
+  if (!row) return { ok: false, error: 'Edition number not found.' }
+  if (row.state === 'available') {
+    return { ok: false, error: 'This number is already available — nothing to release.' }
+  }
+
+  const boundOrderId = row.order?.id ?? row.orderItem?.order?.id ?? null
+  if (boundOrderId) {
+    return {
+      ok: false,
+      error: `This copy is attached to order #${boundOrderId.slice(0, 8)}. Cancel or refund that order instead.`,
+    }
+  }
+
+  try {
+    // Reserved OR sold orphan → back to available, all bindings cleared. The
+    // numbered slot itself is preserved (no gap in the edition).
+    await prisma.editionNumber.updateMany({
+      where: { id: numberId, state: { in: ['reserved', 'sold'] } },
+      data: {
+        state: 'available',
+        paymentIntentId: null,
+        orderId: null,
+        orderItemId: null,
+        buyerEmail: null,
+        reservedAt: null,
+        soldAt: null,
+      },
+    })
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: 'release-orphaned-edition-number',
+      extra: { numberId },
+      level: 'error',
+      fingerprint: ['admin:release-orphan-edition-failed'],
+    })
+    return {
+      ok: false,
+      error: `Release failed: ${err instanceof Error ? err.message : String(err)}`,
+    }
+  }
+
+  return { ok: true }
 }
 
 export async function getOrderDetail(
@@ -425,6 +556,11 @@ export async function getOrderDetail(
       },
       events: { orderBy: { at: 'desc' } },
       editionNumber: { include: { variant: true } },
+      invoices: {
+        where: { type: { in: ['invoice', 'credit_note'] } },
+        select: { id: true, number: true, type: true },
+        orderBy: { issuedAt: 'asc' },
+      },
       items: {
         orderBy: { createdAt: 'asc' },
         include: {
@@ -499,7 +635,7 @@ export async function getOrderDetail(
   // (items.length === 0), in which case the UI uses the header fields. Each
   // item's specsSummary is derived display-only from its own printConfig +
   // the live catalog, falling back to an empty array on any failure (mirrors
-  // the header `specs` behaviour above).
+  // the header `specs` behavior above).
   const items: AdminOrderItem[] = await Promise.all(
     r.items.map(async (it) => {
       let specsSummary: SpecsSummary = []
@@ -539,12 +675,16 @@ export async function getOrderDetail(
         transferStatus: it.transferStatus,
         paidOutAt: it.paidOutAt?.toISOString() ?? null,
         specsSummary,
+        // All numbers on a line share one variant, so the first carries the name.
+        editionName: it.editionNumbers[0]?.variant.name ?? null,
         editionLabels: it.editionNumbers.map((en) => `${en.number}/${en.variant.editionSize}`),
         tpsSkus,
       }
     }),
   )
   const isCart = items.length > 0
+
+  const payout = computeOrderPayout(r.items, r.paidOutAt, r.transferStatus)
 
   const order: AdminOrderDetail = {
     id: r.id,
@@ -570,10 +710,17 @@ export async function getOrderDetail(
     transferId: r.transferId,
     transferStatus: r.transferStatus,
     paidOutAt: r.paidOutAt?.toISOString() ?? null,
+    payoutComplete: payout.complete,
+    payoutAt: payout.at?.toISOString() ?? null,
+    payoutManual: payout.manual,
     latestEvent: r.events[0]
       ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
       : null,
     itemCount: items.length,
+    reorderCount: r.reorderCount,
+    reorderReason: r.reorderReason,
+    reorderNote: r.reorderNote,
+    reorderedAt: r.reorderedAt?.toISOString() ?? null,
     shippingAddress: r.shippingAddress,
     printConfig: r.printConfig,
     productionCents: r.productionCents,
@@ -586,6 +733,8 @@ export async function getOrderDetail(
     assetUrl: r.artwork.originalImageUrl ?? r.artwork.imageUrl ?? null,
     thumbnailUrl: r.artwork.imageUrl ?? r.artwork.originalImageUrl ?? null,
     edition,
+    invoice: r.invoices.find((i) => i.type === 'invoice') ?? null,
+    creditNote: r.invoices.find((i) => i.type === 'credit_note') ?? null,
     events: r.events.map((e) => ({
       id: e.id,
       at: e.at.toISOString(),
@@ -608,7 +757,22 @@ const STAGE_PLACED = 'Placed' // admin placed at TPS; payment captured
 const STAGE_STARTED = 'Started' // TPS started production
 const STAGE_SHIPPED = 'Shipped' // TPS shipped
 const STAGE_COMPLETE = 'Complete' // delivered; 14-day payout clock starts
-const STAGE_REJECTED = 'Rejected' // admin marked rejected / cancelled
+const STAGE_CANCELLED = 'Cancelled' // order pulled out before delivery: buyer asked to cancel, couldn't fulfill, TPS rejected the file, artist disabled prints, etc.
+// Pre-rename value of 'Cancelled' — main wrote 'Rejected' until the AR-130
+// rename and the shared dev DB can still hold such rows. Treated as terminal
+// everywhere 'Cancelled' is; never written by new code.
+const STAGE_REJECTED_LEGACY = 'Rejected'
+
+/**
+ * Whether a cancel/refund may return the order's edition number(s) to the
+ * pool. From 'Started' onward a physical numbered print exists (or is being
+ * made) — releasing then would let e.g. copy 29/50 sell twice, two physical
+ * prints with the same number. Before production start the copy was never
+ * made, so the number is safe to resell. Mirrors the refund policy:
+ * cutoff = production start (see memory/project_capture_tps_money_flow).
+ */
+const stageAllowsEditionRelease = (stage: string | null) =>
+  stage !== STAGE_STARTED && stage !== STAGE_SHIPPED && stage !== STAGE_COMPLETE
 
 /**
  * Release the artist's cut for a delivered order. Preconditions:
@@ -1039,6 +1203,77 @@ export async function markItemPaidManually(
 }
 
 /**
+ * Re-order / replacement reprint — the faulty-goods remedy when the buyer wants a
+ * reprint instead of a refund. Resets the SAME order back to step ② "To place at
+ * TPS" so the replacement walks the normal pipeline again, WITHOUT re-charging
+ * (paymentStatus stays 'succeeded', so capturePayment can't run) and WITHOUT
+ * touching the edition number or payout — the same numbered copy is remade.
+ * Records the reason + bumps reorderCount for the permanent "⟳ Replacement"
+ * badge. The soft cap (warn from the 3rd) is a UI concern; the server allows any
+ * count. Spec: docs/superpowers/specs/2026-06-26-reorder-reprint-design.md
+ */
+export async function reorderForReprint(
+  orderId: string,
+  opts: { reason: string; note?: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+  const adminId = guard.session.user.id
+
+  const reason = (opts.reason ?? '').trim()
+  if (!REORDER_REASONS.includes(reason as ReorderReason)) {
+    return { ok: false, error: 'A valid reason is required to re-order.' }
+  }
+  const note = (opts.note ?? '').trim().slice(0, 500) || null
+
+  const order = await prisma.printOrder.findUnique({
+    where: { id: orderId },
+    select: { id: true, paymentStatus: true, fulfillmentStatus: true, reorderCount: true },
+  })
+  if (!order) return { ok: false, error: 'Order not found.' }
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return { ok: false, error: `Order is ${order.paymentStatus} — no further actions.` }
+  }
+  if (order.paymentStatus !== 'succeeded') {
+    return { ok: false, error: 'Only a captured order can be re-ordered.' }
+  }
+  // A reprint only makes sense once a print physically exists (produced /
+  // shipped / delivered) — not for an order still pending placement at TPS.
+  const reprintable = [STAGE_STARTED, STAGE_SHIPPED, STAGE_COMPLETE]
+  if (!order.fulfillmentStatus || !reprintable.includes(order.fulfillmentStatus)) {
+    return {
+      ok: false,
+      error: `Re-order is only available once the print has been produced (current: ${order.fulfillmentStatus ?? 'pending placement'}).`,
+    }
+  }
+
+  // Reset to "To place at TPS" (succeeded + pending) with a fresh shipment; keep
+  // the edition number sold and the payout untouched (the sale stands).
+  await prisma.printOrder.update({
+    where: { id: order.id },
+    data: {
+      fulfillmentStatus: STAGE_PENDING,
+      trackingUrl: null,
+      shippedAt: null,
+      reorderReason: reason,
+      reorderNote: note,
+      reorderedAt: new Date(),
+      reorderCount: { increment: 1 },
+    },
+  })
+
+  await logOrderEvent({
+    orderId: order.id,
+    kind: 'reorder',
+    actor: `admin:${adminId}`,
+    message: `Replacement reprint (#${order.reorderCount + 1}) — ${reason}${note ? `: ${note}` : ''}`,
+    payload: { reason, note, count: order.reorderCount + 1 },
+  })
+
+  return { ok: true }
+}
+
+/**
  * Full refund of a buyer's order. Handles both pre-capture (authorized,
  * no money moved) and post-capture (succeeded, money in our balance)
  * states.
@@ -1111,7 +1346,7 @@ export async function refundOrder(
     // line was paid to its artist independently, so we claw back each
     // already-sent Stripe transfer here. Single-print orders skip this block
     // entirely (their header transfer is left as-is — see payoutAlreadyReleased
-    // below) preserving the legacy behaviour exactly.
+    // below) preserving the legacy behavior exactly.
     const reversedItemIds: string[] = []
     const manualClawbackItemIds: string[] = []
     const reversalFailures: { orderItemId: string; transferId: string; error: string }[] = []
@@ -1191,9 +1426,22 @@ export async function refundOrder(
       data: { paymentStatus: 'refunded' },
     })
 
-    // Return the edition number to the pool on refund (default policy:
-    // release + audit). Idempotent; no-op for open editions.
-    await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
+    // Return the edition number to the pool on refund — but ONLY while no
+    // physical print exists (pre-production). A refunded buyer who keeps a
+    // delivered print keeps its number too; releasing it would sell a second
+    // physical copy of the same number. Idempotent; no-op for open editions.
+    if (stageAllowsEditionRelease(order.fulfillmentStatus)) {
+      await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
+    } else {
+      await logOrderEvent({
+        orderId: order.id,
+        kind: 'admin_action',
+        actor: `admin:${adminId}`,
+        message:
+          'Edition number retained (print already produced — not returned to the pool)',
+        payload: { fulfillmentStatus: order.fulfillmentStatus },
+      })
+    }
 
     await logOrderEvent({
       orderId: order.id,
@@ -1344,9 +1592,16 @@ export async function createTestOrder(): Promise<
 }
 
 /**
- * Hard-delete an order from the DB. Admin owns refund / payout reversal
- * decisions outside this flow — this just removes the order row + its
- * event history.
+ * Hard-delete an order — DEV/STAGING CLEANUP ONLY, never production.
+ *
+ * ORDER IS KING: the delete takes everything the order owns with it —
+ * its invoices (register rows + R2 PDFs), its event history, and its
+ * ledger entries (edition numbers freed back to the pool, regardless of
+ * fulfillment stage). In PRODUCTION this action refuses outright: orders
+ * are business records (Stripe cross-reference, audit trail, disputes) —
+ * 'Cancelled' is the terminal state there, and an invoiced order is
+ * corrected via credit note (issued numbers must stay gap-free for the
+ * tax authority; Invoice.orderId onDelete: Restrict backs this at the DB).
  *
  * Best-effort: if the buyer's card is currently authorized (hold but
  * not captured), we try to cancel the Stripe PaymentIntent first so
@@ -1359,7 +1614,18 @@ export async function deleteOrder(
   const guard = await requireAdminSession()
   if (!guard.ok) return guard
 
-  const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
+  if (!devCleanupAllowed()) {
+    return {
+      ok: false,
+      error:
+        'Deleting orders is disabled in production — cancel the order instead (and issue a credit note if it is invoiced).',
+    }
+  }
+
+  const order = await prisma.printOrder.findUnique({
+    where: { id: orderId },
+    include: { invoices: { select: { id: true, number: true, r2Key: true } } },
+  })
   if (!order) return { ok: false, error: 'Order not found.' }
 
   const isTestOrder = order.paymentIntentId.startsWith('pi_tps_test_')
@@ -1382,12 +1648,32 @@ export async function deleteOrder(
     }
   }
 
-  // Free any held edition number before the order row goes away (the FK
-  // would null out on delete, but we also want the state reset).
+  // Free the order's ledger entries (edition numbers) before the row goes
+  // away (the FK would null out on delete, but we also want the state reset).
+  // Unconditional — this is test-data cleanup (production already returned
+  // above), so even a Started/sold number goes back to `available`.
   await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
+
+  // The order's invoice PDFs go too. Best-effort and outside the tx — an
+  // orphaned PDF in the private bucket is harmless and swept by reconcile-r2.
+  for (const inv of order.invoices) {
+    if (inv.r2Key) {
+      try {
+        await deletePrivateR2Key(inv.r2Key)
+      } catch (err) {
+        console.warn(
+          '[deleteOrder] invoice PDF delete failed (dev cleanup):',
+          err instanceof Error ? err.message : err,
+        )
+      }
+    }
+  }
 
   try {
     await prisma.$transaction([
+      // Invoice rows first (Restrict FK). Empty/no-op in production — an
+      // invoiced order never reaches this point there.
+      prisma.invoice.deleteMany({ where: { orderId } }),
       prisma.printOrderEvent.deleteMany({ where: { orderId } }),
       prisma.printOrder.delete({ where: { id: orderId } }),
     ])
@@ -1413,7 +1699,19 @@ export async function deleteOrder(
  * auth (auth → succeeded) and advances stage to Placed. No buyer email
  * at this stage — Placed is internal.
  */
-export async function markPlaced(
+/**
+ * Step ① of fulfillment: CAPTURE the buyer's payment, WITHOUT placing the order
+ * at TPS. Capture-first is the money-safety rule — the gallery must hold the
+ * buyer's money before spending its own at TPS (TPS charges at placement with no
+ * account billing, so paying TPS before a successful capture risks a hard loss).
+ * See docs/superpowers/specs/2026-06-24-capture-place-split-design.md.
+ *
+ * Leaves `fulfillmentStatus` at STAGE_PENDING (null) — the order then sits in the
+ * "To place at TPS" queue until the admin places it and calls `markPlacedAtTps`.
+ * On a Stripe capture failure (dead/expired card, fraud block) the order is left
+ * untouched and recoverable, and crucially TPS has been paid nothing.
+ */
+export async function capturePayment(
   orderId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const guard = await requireAdminSession()
@@ -1421,6 +1719,9 @@ export async function markPlaced(
 
   const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
   if (!order) return { ok: false, error: 'Order not found.' }
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return { ok: false, error: `Order is ${order.paymentStatus} — no further actions.` }
+  }
   if (order.fulfillmentStatus !== STAGE_PENDING) {
     return {
       ok: false,
@@ -1439,25 +1740,26 @@ export async function markPlaced(
   } catch (err) {
     captureError(err, {
       flow: 'admin',
-      stage: 'mark-placed-capture',
+      stage: 'capture-payment',
       extra: { orderId, paymentIntentId: order.paymentIntentId },
       level: 'error',
-      fingerprint: ['admin:mark-placed-capture-failed'],
+      fingerprint: ['admin:capture-payment-failed'],
     })
     return {
       ok: false,
-      error: `Stripe capture failed: ${err instanceof Error ? err.message : String(err)}`,
+      error: `Stripe capture failed: ${err instanceof Error ? err.message : String(err)}. The buyer's card may be canceled or the hold expired — contact the buyer or cancel the order. TPS has not been paid.`,
     }
   }
 
+  // Money taken, but NOT placed at TPS — fulfillment stays pending.
   await prisma.printOrder.update({
     where: { id: order.id },
-    data: { fulfillmentStatus: STAGE_PLACED, paymentStatus: 'succeeded' },
+    data: { paymentStatus: 'succeeded' },
   })
 
-  // Confirm the held edition number as sold at capture (limited editions
-  // only; a no-op for open orders). Our ledger is authoritative — the
-  // admin still mirrors this number as sold in TPS by hand.
+  // Confirm the held edition number as sold at capture (money collected =
+  // sale final; limited editions only, a no-op for open orders). Our ledger is
+  // authoritative — the admin still mirrors this number as sold in TPS by hand.
   await markEditionNumberSold(order.paymentIntentId)
   // Resolve the order's edition number for the timeline event. Single-print
   // orders bind via the deprecated EditionNumber.orderId; cart orders bind
@@ -1479,9 +1781,56 @@ export async function markPlaced(
 
   await logOrderEvent({
     orderId: order.id,
+    kind: 'captured',
+    actor: `admin:${guard.session.user.id}`,
+    message: 'Payment captured (buyer charged)',
+    payload: {},
+  })
+
+  return { ok: true }
+}
+
+/**
+ * Step ② of fulfillment: record that the admin has placed + paid the order at
+ * TPS. Requires a SUCCEEDED capture first (so it's impossible to place an order
+ * the gallery hasn't been paid for), and does no Stripe work — the capture
+ * already happened in `capturePayment`. Advances STAGE_PENDING → STAGE_PLACED.
+ */
+export async function markPlacedAtTps(
+  orderId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
+  if (!order) return { ok: false, error: 'Order not found.' }
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return { ok: false, error: `Order is ${order.paymentStatus} — no further actions.` }
+  }
+  if (order.fulfillmentStatus !== STAGE_PENDING) {
+    return {
+      ok: false,
+      error: `Already advanced past pending (status: ${order.fulfillmentStatus}).`,
+    }
+  }
+  if (order.paymentStatus !== 'succeeded') {
+    return {
+      ok: false,
+      error:
+        'Capture the payment first — you cannot place an order at TPS before the buyer has been charged.',
+    }
+  }
+
+  await prisma.printOrder.update({
+    where: { id: order.id },
+    data: { fulfillmentStatus: STAGE_PLACED },
+  })
+
+  await logOrderEvent({
+    orderId: order.id,
     kind: 'admin_action',
     actor: `admin:${guard.session.user.id}`,
-    message: 'Marked placed at The Print Space (payment captured)',
+    message: 'Marked placed at The Print Space',
     payload: {},
   })
 
@@ -1570,12 +1919,14 @@ export async function markDelivered(
 }
 
 /**
- * Admin CTA: order rejected (artist disabled prints, file unusable, etc.)
- * Terminal state. If payment was still authorized we cancel the Stripe
- * PI (releases the hold); if it was already captured, admin must use
- * the existing Refund flow to return funds.
+ * Admin CTA: cancel an order before delivery — the catch-all off-ramp for
+ * any reason a sale doesn't go through (buyer asked to cancel, we couldn't
+ * fulfill, artist disabled prints, TPS rejected the file, etc.). Terminal
+ * state. If payment was still authorized we cancel the Stripe PI (releases
+ * the hold, no charge); if it was already captured, the admin must use the
+ * existing Refund flow to return funds.
  */
-export async function markRejected(
+export async function cancelOrder(
   orderId: string,
   reason: string,
 ): Promise<{ ok: true; needsRefund: boolean } | { ok: false; error: string }> {
@@ -1587,7 +1938,17 @@ export async function markRejected(
 
   const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
   if (!order) return { ok: false, error: 'Order not found.' }
-  if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_REJECTED) {
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return {
+      ok: false,
+      error: `Order is ${order.paymentStatus} — it cannot be canceled (already terminal).`,
+    }
+  }
+  if (
+    order.fulfillmentStatus === STAGE_COMPLETE ||
+    order.fulfillmentStatus === STAGE_CANCELLED ||
+    order.fulfillmentStatus === STAGE_REJECTED_LEGACY
+  ) {
     return {
       ok: false,
       error: `Cannot reject from stage "${order.fulfillmentStatus}".`,
@@ -1602,10 +1963,10 @@ export async function markRejected(
     } catch (err) {
       captureError(err, {
         flow: 'admin',
-        stage: 'mark-rejected-cancel-pi',
+        stage: 'cancel-order-cancel-pi',
         extra: { orderId, paymentIntentId: order.paymentIntentId },
         level: 'error',
-        fingerprint: ['admin:mark-rejected-cancel-failed'],
+        fingerprint: ['admin:cancel-order-pi-failed'],
       })
       return {
         ok: false,
@@ -1617,7 +1978,7 @@ export async function markRejected(
   await prisma.printOrder.update({
     where: { id: order.id },
     data: {
-      fulfillmentStatus: STAGE_REJECTED,
+      fulfillmentStatus: STAGE_CANCELLED,
       ...(voided ? { paymentStatus: 'canceled' } : {}),
     },
   })
@@ -1627,17 +1988,28 @@ export async function markRejected(
     kind: 'admin_action',
     actor: `admin:${guard.session.user.id}`,
     message: voided
-      ? 'Marked rejected (Stripe auth voided)'
-      : 'Marked rejected (manual refund required)',
+      ? 'Order canceled (Stripe auth voided)'
+      : 'Order canceled (manual refund required)',
     payload: { reason: trimmedReason, voided, priorPaymentStatus: order.paymentStatus },
   })
 
-  // Return the edition number to the pool. The print was never produced
-  // on a reject, so even a captured (sold) number is freed. Idempotent
+  // Return the edition number to the pool — only while the print was never
+  // produced (pre-production cancel). Cancelling a Started/Shipped order
+  // keeps the number: a physical copy carrying it already exists. Idempotent
   // and a no-op for open editions.
-  await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
+  if (stageAllowsEditionRelease(order.fulfillmentStatus)) {
+    await releaseEditionNumberForPaymentIntent(order.paymentIntentId, { allowSold: true })
+  } else {
+    await logOrderEvent({
+      orderId: order.id,
+      kind: 'admin_action',
+      actor: `admin:${guard.session.user.id}`,
+      message: 'Edition number retained (print already produced — not returned to the pool)',
+      payload: { fulfillmentStatus: order.fulfillmentStatus },
+    })
+  }
 
-  await maybeSendBuyerTransitionEmail(order.id, STAGE_REJECTED, { trackingUrl: null })
+  await maybeSendBuyerTransitionEmail(order.id, STAGE_CANCELLED, { trackingUrl: null })
 
   const needsRefund = order.paymentStatus === 'succeeded' && !order.transferId
   return { ok: true, needsRefund }
@@ -1663,7 +2035,17 @@ async function advanceStage(
 
   const order = await prisma.printOrder.findUnique({ where: { id: orderId } })
   if (!order) return { ok: false, error: 'Order not found.' }
-  if (order.fulfillmentStatus === STAGE_COMPLETE || order.fulfillmentStatus === STAGE_REJECTED) {
+  if (order.paymentStatus === 'refunded' || order.paymentStatus === 'canceled') {
+    return {
+      ok: false,
+      error: `Order is ${order.paymentStatus} — no further fulfillment actions are allowed.`,
+    }
+  }
+  if (
+    order.fulfillmentStatus === STAGE_COMPLETE ||
+    order.fulfillmentStatus === STAGE_CANCELLED ||
+    order.fulfillmentStatus === STAGE_REJECTED_LEGACY
+  ) {
     return {
       ok: false,
       error: `Cannot advance from terminal stage "${order.fulfillmentStatus}".`,
@@ -1715,7 +2097,7 @@ async function maybeSendBuyerTransitionEmail(
     newStage !== STAGE_STARTED &&
     newStage !== STAGE_SHIPPED &&
     newStage !== STAGE_COMPLETE &&
-    newStage !== STAGE_REJECTED
+    newStage !== STAGE_CANCELLED
   ) {
     return
   }
@@ -1749,6 +2131,30 @@ async function maybeSendBuyerTransitionEmail(
     .join(' ')
     .trim()
 
+  // For the in-production email, surface the buyer's assigned limited-edition
+  // number(s). Bound to the order via either the legacy single-print path
+  // (orderId) or the cart path (orderItem.orderId). Empty for open editions.
+  const editions =
+    newStage === STAGE_STARTED
+      ? (
+          await prisma.editionNumber.findMany({
+            where: {
+              state: { in: ['reserved', 'sold'] },
+              OR: [{ orderId: order.id }, { orderItem: { orderId: order.id } }],
+            },
+            select: {
+              number: true,
+              variant: { select: { editionSize: true, artwork: { select: { title: true } } } },
+            },
+            orderBy: { number: 'asc' },
+          })
+        ).map((e) => ({
+          artworkTitle: e.variant.artwork.title ?? '',
+          number: e.number,
+          editionSize: e.variant.editionSize,
+        }))
+      : []
+
   const emailRes =
     newStage === STAGE_STARTED
       ? await sendOrderInProductionEmail({
@@ -1757,6 +2163,7 @@ async function maybeSendBuyerTransitionEmail(
           orderId: order.id,
           artworkTitle: order.artwork.title ?? '',
           artistName,
+          editions,
         })
       : newStage === STAGE_SHIPPED
         ? await sendOrderShippedEmail({
@@ -1804,7 +2211,7 @@ async function maybeSendBuyerTransitionEmail(
     })
   }
 
-  if (newStage === STAGE_REJECTED) {
+  if (newStage === STAGE_CANCELLED) {
     const adminAlreadySent = await prisma.printOrderEvent.findFirst({
       where: { orderId, kind: 'email_sent', message: 'admin_order_cancelled' },
       select: { id: true },
@@ -1840,4 +2247,308 @@ async function maybeSendBuyerTransitionEmail(
       }
     }
   }
+}
+
+// ── Invoicing (AR-131) ────────────────────────────────────────────────────────
+
+type InvoiceDocType = 'invoice' | 'credit_note'
+
+type InvoiceActionResult =
+  | { ok: true; number: string; emailed: boolean }
+  | { ok: false; error: string }
+
+function errMsg(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+/**
+ * Render + archive + email one issued document, reading EVERYTHING from the
+ * stored Invoice row (snapshots + linesSnapshot) — never from the live order,
+ * so a later order/artwork edit can never alter an issued document. The
+ * archived PDF is write-once: if an object already exists at the row's r2Key
+ * it is left untouched.
+ */
+async function deliverInvoiceDocument(args: {
+  // Snapshot fields use the canonical shapes from buildInvoiceSnapshots /
+  // buildInvoiceLines — the same symbols the writer was checked against.
+  record: {
+    id: string
+    orderId: string
+    type: string
+    number: string
+    issuedAt: Date
+    r2Key: string
+    sellerSnapshot: SellerSnapshot
+    buyerSnapshot: BuyerSnapshot
+    totalsSnapshot: TotalsSnapshot
+    linesSnapshot: InvoiceLine[] | null
+  }
+  buyer: { email: string; name: string }
+  correctsNumber?: string
+  actor: OrderEventActor
+  resend: boolean
+}): Promise<InvoiceActionResult> {
+  const { record, buyer } = args
+  const isCreditNote = record.type === 'credit_note'
+  const label = isCreditNote ? 'credit note' : 'invoice'
+  const stage = isCreditNote ? 'credit-note' : 'invoice'
+
+  const totals = record.totalsSnapshot
+  const lines = record.linesSnapshot
+  if (!Array.isArray(lines) || lines.length === 0) {
+    // Row created before linesSnapshot existed (pre-fix dev data). Rebuilding
+    // lines from the live order would let a mutated order change an issued
+    // document — refuse instead.
+    return {
+      ok: false,
+      error: `${label} ${record.number} predates line snapshots — reset dev invoicing data (scripts/reset-invoicing.ts) and re-issue.`,
+    }
+  }
+
+  let pdf: Buffer
+  try {
+    pdf = await renderInvoicePdf({
+      number: record.number,
+      issuedAt: record.issuedAt,
+      type: isCreditNote ? 'credit_note' : 'invoice',
+      correctsNumber: args.correctsNumber,
+      reason: totals.reason,
+      sellerSnapshot: record.sellerSnapshot,
+      buyerSnapshot: record.buyerSnapshot,
+      totalsSnapshot: totals,
+      lines,
+    })
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: `${stage}-render-pdf`,
+      extra: { orderId: record.orderId, invoiceId: record.id, number: record.number },
+      level: 'error',
+      fingerprint: [`${stage}:render-pdf-failed`],
+    })
+    // NUMBER-BURN RULE: the number stays committed; a retry re-renders from
+    // the same stored row.
+    return {
+      ok: false,
+      error: `PDF render failed (${label} ${record.number} is committed — retry to re-send): ${errMsg(err)}`,
+    }
+  }
+
+  // Archive is write-once: only upload when no object exists at the key yet.
+  try {
+    if (!(await r2ObjectExists(record.r2Key))) {
+      await uploadPrivateToR2(record.r2Key, pdf, 'application/pdf')
+    }
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: `${stage}-upload-pdf`,
+      extra: {
+        orderId: record.orderId,
+        invoiceId: record.id,
+        number: record.number,
+        key: record.r2Key,
+      },
+      level: 'error',
+      fingerprint: [`${stage}:upload-pdf-failed`],
+    })
+    // Non-fatal — the row is committed and the email attaches the buffer
+    // directly. The ZIP export flags rows whose PDF is missing.
+    console.warn(`[${stage}] R2 upload failed for ${record.number}:`, err)
+  }
+
+  const emailRes = await sendInvoiceEmail({
+    to: buyer.email,
+    buyerName: buyer.name,
+    number: record.number,
+    pdf,
+    ...(isCreditNote ? { isCreditNote: true } : {}),
+  })
+  await logOrderEvent({
+    orderId: record.orderId,
+    kind: emailRes.ok ? 'email_sent' : 'email_failed',
+    actor: args.actor,
+    message: `${isCreditNote ? 'credit_note' : 'invoice'}${args.resend ? '_resent' : ''}:${record.number}`,
+    payload: emailRes.ok
+      ? { to: buyer.email, resendId: emailRes.id, number: record.number }
+      : { to: buyer.email, error: emailRes.error, number: record.number },
+  })
+  if (!emailRes.ok) {
+    captureError(new Error(`${label} email failed: ${emailRes.error}`), {
+      flow: 'admin',
+      stage: `${stage}-send-email`,
+      extra: {
+        orderId: record.orderId,
+        invoiceId: record.id,
+        number: record.number,
+        to: buyer.email,
+      },
+      level: 'warning',
+      fingerprint: [`${stage}:send-email-failed`],
+    })
+  }
+
+  // emailed:false ⇒ the document is issued and archived but the buyer did NOT
+  // receive it — the UI must surface that, never treat it as a full success.
+  return { ok: true, number: record.number, emailed: emailRes.ok }
+}
+
+/** Shared issue-or-resend pipeline behind sendInvoice / issueCreditNote. */
+async function issueOrResendInvoiceDocument(
+  orderId: string,
+  opts: { type: InvoiceDocType; reason?: string; actor: OrderEventActor },
+): Promise<InvoiceActionResult> {
+  const isCreditNote = opts.type === 'credit_note'
+  const label = isCreditNote ? 'credit note' : 'invoice'
+
+  const order = await prisma.printOrder.findUnique({
+    where: { id: orderId },
+    include: {
+      artwork: { select: { title: true, slug: true } },
+      items: {
+        include: { artwork: { select: { title: true, slug: true } } },
+        orderBy: { createdAt: 'asc' },
+      },
+      invoices: { orderBy: { issuedAt: 'asc' } },
+    },
+  })
+  if (!order) return { ok: false, error: 'Order not found.' }
+
+  const originalInvoice = order.invoices.find((i) => i.type === 'invoice') ?? null
+  const existingCreditNote = order.invoices.find((i) => i.type === 'credit_note') ?? null
+
+  if (isCreditNote && !originalInvoice) {
+    return { ok: false, error: 'Issue the invoice before a credit note.' }
+  }
+  if (!isCreditNote && existingCreditNote) {
+    // The invoice was voided; re-sending it alone would tell a refunded buyer
+    // they owe the full amount again.
+    return {
+      ok: false,
+      error: `This invoice was voided by credit note ${existingCreditNote.number} — re-send the credit note instead.`,
+    }
+  }
+
+  const buyer = { email: order.buyerEmail, name: order.buyerName }
+  const correctsNumber = isCreditNote ? originalInvoice!.number : undefined
+
+  // ── Idempotent re-send: the document already exists → deliver from storage.
+  //    No fulfillment-stage gate anywhere in this flow — the admin issues
+  //    manually, at any stage (deliberate).
+  const existing = isCreditNote ? existingCreditNote : originalInvoice
+  if (existing) {
+    return deliverInvoiceDocument({
+      // Prisma-Json → typed boundary: this row was written by
+      // issueInvoiceRecord from the same canonical types.
+      record: existing as unknown as Parameters<typeof deliverInvoiceDocument>[0]['record'],
+      buyer,
+      correctsNumber,
+      actor: opts.actor,
+      resend: true,
+    })
+  }
+
+  // ── First issue. Validation runs BEFORE the number is minted: a defective
+  //    document (missing mandatory field, empty or non-reconciling lines, VAT
+  //    inconsistent with the stamped rate) must never burn a number.
+  let prepared: ReturnType<typeof prepareInvoiceIssue>
+  try {
+    prepared = prepareInvoiceIssue(order, { negate: isCreditNote, reason: opts.reason })
+  } catch (err) {
+    return { ok: false, error: `Cannot issue ${label}: ${errMsg(err)}` }
+  }
+
+  // Atomically mint the number + insert the row. Race-safe: a concurrent call
+  // that already minted this order's document wins the @@unique([orderId,
+  // type]) constraint and its row is reused — same number, never a second one.
+  // NUMBER-BURN RULE: render/email stay OUTSIDE this step.
+  let minted: Awaited<ReturnType<typeof getOrIssueInvoice>>
+  try {
+    minted = await getOrIssueInvoice({
+      type: opts.type,
+      orderId,
+      currency: order.currency,
+      r2Key: buildInvoiceKey(orderId, isCreditNote ? 'cn' : 'inv'),
+      sellerSnapshot: prepared.snapshots.sellerSnapshot,
+      buyerSnapshot: prepared.snapshots.buyerSnapshot,
+      totalsSnapshot: prepared.snapshots.totalsSnapshot,
+      linesSnapshot: prepared.lines,
+      ...(isCreditNote && originalInvoice ? { correctsInvoiceId: originalInvoice.id } : {}),
+    })
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: `${isCreditNote ? 'credit-note' : 'invoice'}-issue-record`,
+      extra: { orderId },
+      level: 'error',
+      fingerprint: [`${isCreditNote ? 'credit-note' : 'invoice'}:issue-record-failed`],
+    })
+    return { ok: false, error: `${label} numbering failed: ${errMsg(err)}` }
+  }
+
+  if (!minted.reused) {
+    await logOrderEvent({
+      orderId,
+      kind: isCreditNote ? 'credit_note_issued' : 'invoice_issued',
+      actor: opts.actor,
+      message: minted.invoice.number,
+      payload: isCreditNote
+        ? {
+            creditNoteId: minted.invoice.id,
+            number: minted.invoice.number,
+            correctsInvoiceId: originalInvoice?.id,
+          }
+        : { invoiceId: minted.invoice.id, number: minted.invoice.number },
+    })
+  }
+
+  return deliverInvoiceDocument({
+    record: minted.invoice,
+    buyer,
+    correctsNumber,
+    actor: opts.actor,
+    resend: minted.reused,
+  })
+}
+
+/**
+ * Issue (or re-send) the gallery invoice for an order.
+ *
+ * No fulfillment-stage gate — the admin issues manually, at any stage.
+ * IDEMPOTENT: a second call re-sends the SAME document number, enforced at the
+ * DB level by @@unique([orderId, type]) — no double-billing even under a
+ * concurrent double-click.
+ * NUMBER-BURN RULE: the number is committed inside the minting transaction; a
+ * later PDF render / email failure does NOT roll it back. Re-sends render from
+ * the STORED snapshots + linesSnapshot, never from the live order, and never
+ * overwrite the archived PDF.
+ * Returns `emailed: false` when the document was issued but the buyer email
+ * failed — callers must surface that, not treat it as a full success.
+ */
+export async function sendInvoice(orderId: string): Promise<InvoiceActionResult> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+  return issueOrResendInvoiceDocument(orderId, {
+    type: 'invoice',
+    actor: `admin:${guard.session.user.id}`,
+  })
+}
+
+/**
+ * Issue (or re-send) a credit note for an order that
+ * already has an invoice. Same idempotency / number-burn / stored-snapshot
+ * rules as sendInvoice. The optional `reason` is stored inside the credit
+ * note's totalsSnapshot JSON (no schema column) and read back on re-sends.
+ */
+export async function issueCreditNote(
+  orderId: string,
+  reason?: string,
+): Promise<InvoiceActionResult> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+  return issueOrResendInvoiceDocument(orderId, {
+    type: 'credit_note',
+    reason,
+    actor: `admin:${guard.session.user.id}`,
+  })
 }

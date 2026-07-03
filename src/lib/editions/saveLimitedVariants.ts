@@ -59,9 +59,13 @@ export async function saveLimitedVariants(args: {
       id: true,
       published: true,
       blocked: true,
+      name: true,
+      paperId: true,
       widthCm: true,
       heightCm: true,
+      borderCm: true,
       editionSize: true,
+      priceCents: true,
     },
   })
   const existingById = new Map(existing.map((v) => [v.id, v]))
@@ -101,14 +105,23 @@ export async function saveLimitedVariants(args: {
       const prev = existingById.get(v.id)
       if (prev?.published) {
         if (prev.blocked) {
-          // Blocked = fully frozen. Nothing about it may change.
+          // Blocked = on sale. Everything is frozen EXCEPT the price, which can
+          // be raised as the edition sells (price escalation). Reject any change
+          // to a non-price field; the price itself is persisted in the write loop.
           const sizeChanged =
             Math.abs(prev.widthCm - v.widthCm) >= 0.05 ||
             Math.abs(prev.heightCm - v.heightCm) >= 0.05
-          if (sizeChanged || prev.editionSize !== v.editionSize) {
+          const nonPriceChanged =
+            sizeChanged ||
+            prev.editionSize !== v.editionSize ||
+            prev.name !== v.name.trim() ||
+            prev.paperId !== v.paperId ||
+            Math.abs(prev.borderCm - v.borderCm) >= 0.005
+          if (nonPriceChanged) {
             return {
               ok: false,
-              error: 'A published variant is locked. Ask an admin to unblock it before editing.',
+              error:
+                'A published variant is locked while on sale — only its price can change. Ask an admin to unblock it to edit anything else.',
             }
           }
         } else {
@@ -153,8 +166,18 @@ export async function saveLimitedVariants(args: {
       const { input, printTypeId } = validated[i]
       const prev = input.id ? existingById.get(input.id) : undefined
 
-      // Blocked published variants are frozen — skip writes entirely.
-      if (prev?.published && prev.blocked) continue
+      // Blocked published variants are frozen EXCEPT for the price — persist
+      // only the (possibly raised) price and skip every other field. The guard
+      // above has already rejected any non-price change.
+      if (prev?.published && prev.blocked) {
+        if (prev.priceCents !== input.priceCents) {
+          await tx.limitedVariant.update({
+            where: { id: prev.id },
+            data: { priceCents: input.priceCents },
+          })
+        }
+        continue
+      }
 
       const data = {
         name: input.name.trim(),

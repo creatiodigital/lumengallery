@@ -124,8 +124,8 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
               }}
               className={styles.inquireButton}
             />
-            <div className={styles.catalogueNote}>
-              <Link href="/prints" className={styles.catalogueLink}>
+            <div className={styles.catalogNote}>
+              <Link href="/prints" className={styles.catalogLink}>
                 See all available prints →
               </Link>
             </div>

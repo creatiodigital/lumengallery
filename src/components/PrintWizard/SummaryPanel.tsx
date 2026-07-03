@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal'
 import {
   type Catalog,
   type Quote,
@@ -34,13 +35,19 @@ interface SummaryPanelProps {
    *  is committed. Resolve only on a successful add. */
   onAddToCart: () => Promise<void>
   /** Returns the buyer to where they came from (reuses the wizard's
-   *  CLOSE behaviour) after a successful add. */
+   *  CLOSE behavior) after a successful add. */
   onContinueShopping: () => void
   /** Limited editions only: "1/50" rendered on the preview. */
   editionLabel?: string
   /** Limited editions only: a friendly message when the reservation failed
    *  (sold out / only N left). Rendered above the CTA; not an error throw. */
   addError?: string | null
+  /** True when the buyer arrived via the cart's "Edit item" link — the line
+   *  is already in the cart, so the CTA reads "Update cart" not "Add to cart". */
+  isEditing?: boolean
+  /** True when the current configuration exactly matches a line already in the
+   *  cart — adding would merge into a quantity bump, so we confirm first. */
+  isDuplicate?: boolean
 }
 
 export const SummaryPanel = ({
@@ -55,11 +62,16 @@ export const SummaryPanel = ({
   onContinueShopping,
   editionLabel,
   addError,
+  isEditing = false,
+  isDuplicate = false,
 }: SummaryPanelProps) => {
+  const ctaLabel = isEditing ? 'Update cart' : 'Add to cart'
+  const ctaBusyLabel = isEditing ? 'Updating…' : 'Adding…'
   // Local add-to-cart state. Once an item has been added we swap the
   // single CTA for the "Continue shopping / Go to cart" pair.
   const [added, setAdded] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [confirmDupOpen, setConfirmDupOpen] = useState(false)
 
   // Reset add-to-cart state when the buyer changes their configuration
   // or switches variant — the previously added item no longer reflects
@@ -69,7 +81,7 @@ export const SummaryPanel = ({
     setAdding(false)
   }, [config, editionLabel])
 
-  const handleAddToCart = async () => {
+  const performAdd = async () => {
     if (adding) return
     setAdding(true)
     try {
@@ -82,6 +94,17 @@ export const SummaryPanel = ({
     } finally {
       setAdding(false)
     }
+  }
+
+  const handleAddToCart = () => {
+    // The exact same print is already in the cart → confirm before merging
+    // into a quantity bump, so a buyer reaching for "another size" isn't
+    // surprised when an identical config silently increments instead.
+    if (isDuplicate) {
+      setConfirmDupOpen(true)
+      return
+    }
+    void performAdd()
   }
   // Effective print size — preset OR custom. Drives schema + label.
   // Sizes are stored in the artwork's natural orientation; the schema
@@ -102,7 +125,7 @@ export const SummaryPanel = ({
   const moldingColorHex = visuals.frameColorHex ?? '#f2f2f2'
   const mattingColorHex = visuals.matColorHex ?? '#f6f3ec'
 
-  // Floating frame uses a coloured backboard instead of a passepartout —
+  // Floating frame uses a colored backboard instead of a passepartout —
   // surface that visually in the 2D schema so it doesn't read identically
   // to Standard. Backboard border matches the FloatingPreview default
   // (2 cm on every side, see scene/preview/FloatingPreview.tsx).
@@ -127,7 +150,7 @@ export const SummaryPanel = ({
           fullWidth
           onClick={handleAddToCart}
           disabled
-          label="Add to cart"
+          label={ctaLabel}
           className={styles.ctaButton}
         />
       </aside>
@@ -210,10 +233,23 @@ export const SummaryPanel = ({
             fullWidth
             onClick={handleAddToCart}
             disabled={!canContinue || adding}
-            label={adding ? 'Adding…' : 'Add to cart'}
+            label={adding ? ctaBusyLabel : ctaLabel}
             className={styles.ctaButton}
           />
         </>
+      )}
+
+      {confirmDupOpen && (
+        <ConfirmModal
+          title="Already in your cart"
+          message="You already have this exact print in your cart. Add it again and we’ll just increase that item’s quantity."
+          confirmLabel="Add anyway"
+          onConfirm={() => {
+            setConfirmDupOpen(false)
+            void performAdd()
+          }}
+          onCancel={() => setConfirmDupOpen(false)}
+        />
       )}
     </aside>
   )

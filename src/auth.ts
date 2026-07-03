@@ -108,12 +108,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           (user as { mustChangePassword?: boolean }).mustChangePassword ?? false
       }
 
-      // Handle impersonation updates from client
+      // Handle impersonation updates from client. The role check MUST live
+      // here, server-side: `update({ impersonating })` is a client-callable
+      // NextAuth API, so the check in useEffectiveUser is UX, not security —
+      // without this gate any signed-in artist could impersonate any user
+      // and inherit their ownership scope (requireOwnership/getEffectiveUserId).
       if (trigger === 'update' && session) {
         if (session.impersonating) {
-          token.impersonatingId = session.impersonating.id
-          token.impersonatingName = session.impersonating.name
-          token.impersonatingHandler = session.impersonating.handler
+          // Re-read the REAL caller's role from the DB (token.userType can be
+          // stale after a demotion) and verify the target actually exists.
+          const [realUser, target] = await Promise.all([
+            prisma.user.findUnique({
+              where: { id: token.id as string },
+              select: { userType: true },
+            }),
+            prisma.user.findUnique({
+              where: { id: session.impersonating.id as string },
+              select: { id: true, userType: true },
+            }),
+          ])
+          const callerIsAdmin =
+            realUser?.userType === 'admin' || realUser?.userType === 'superAdmin'
+          // superAdmin accounts can never be impersonated (their scope
+          // includes user management itself).
+          if (callerIsAdmin && target && target.userType !== 'superAdmin') {
+            token.impersonatingId = session.impersonating.id
+            token.impersonatingName = session.impersonating.name
+            token.impersonatingHandler = session.impersonating.handler
+          }
         } else if (session.impersonating === null) {
           delete token.impersonatingId
           delete token.impersonatingName

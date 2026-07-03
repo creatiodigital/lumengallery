@@ -70,6 +70,28 @@ const emailSkipEnv: Record<string, string> = sendEmails
       SKIP_LOGIN_OTP: 'true',
     }
 
+// The skip flags above are injected into the spawned dev server (webServer.env
+// below) — which protects every email sent FROM the server (browser checkout,
+// Stripe webhooks). But some specs build orders IN-PROCESS: e2e/order-helpers.ts
+// calls createPrintOrderFromCart directly in the test-runner process, and its
+// buyer/admin email senders read SKIP_EMAILS from THIS process's env — which
+// webServer.env never touches. So apply the same skip to the runner itself.
+// This runs at config-load time in every worker (exactly like loadDotenv above),
+// so the in-process money-path short-circuits its sends instead of emailing for
+// real. No-op when E2E_SEND_EMAILS=true (emailSkipEnv is empty), so the opt-in
+// send-emails run is unaffected.
+Object.assign(process.env, emailSkipEnv)
+
+// The reconcile-orders cron route 401s without `Authorization: Bearer
+// <CRON_SECRET>` and 500s if CRON_SECRET is unset. It isn't in .env.local (it's a
+// Vercel-only prod var), so pin a fixed dev value here and inject it into BOTH the
+// dev server (webServer.env, so the route reads it) AND the runner's process.env
+// (so order-reconcile.spec.ts can send the matching Bearer header). Honors a real
+// CRON_SECRET if one is already present.
+const CRON_SECRET = process.env.CRON_SECRET ?? 'e2e-reconcile-cron-secret'
+process.env.CRON_SECRET = CRON_SECRET
+const cronEnv: Record<string, string> = { CRON_SECRET }
+
 // Opt-in: run the suite against a real production build (`next build &&
 // next start`) instead of the default `next dev`. Use sparingly — for
 // big refactors, `'use client'` ↔ server-component conversions, dep
@@ -100,6 +122,10 @@ export default defineConfig({
   // so authenticated specs don't each re-trigger send-login-code (which
   // rate-limits at 5/min per IP).
   globalSetup: './e2e/globalSetup.ts',
+  // Safety-net sweep after the whole run: removes any e2e-created fixture/order,
+  // even ones a TIMED-OUT test left behind (per-spec finally{} doesn't run on
+  // timeout). Surgical — only e2e-tagged data; never a blanket wipe. See the file.
+  globalTeardown: './e2e/globalTeardown.ts',
   // Sequential by default — most flows touch shared dev DB state, and
   // we'd rather not chase flake from parallel writes until we have a
   // reason to opt back in per-spec.
@@ -116,6 +142,13 @@ export default defineConfig({
 
   use: {
     baseURL: BASE_URL,
+    // Bound every action (click/fill/…). The Playwright default is
+    // UNLIMITED, so a rare renderer stall (element never reports "stable"
+    // deep into a long single-worker run) silently eats the whole 120s test
+    // budget with zero diagnostics — seen once on order-reorder 2026-07-03.
+    // With a bound, the same stall fails fast WITH the actionability log,
+    // and the configured retry still turns the run green.
+    actionTimeout: 15_000,
     // Capture on failure only — keeps the run lean while still giving
     // you something useful when something breaks.
     trace: 'retain-on-failure',
@@ -136,7 +169,7 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: prodBuild ? 180_000 : 120_000,
     env: prodBuild
-      ? { ...emailSkipEnv, ...gaEnv, AUTH_TRUST_HOST: 'true' }
-      : { ...emailSkipEnv, ...gaEnv },
+      ? { ...emailSkipEnv, ...gaEnv, ...cronEnv, AUTH_TRUST_HOST: 'true' }
+      : { ...emailSkipEnv, ...gaEnv, ...cronEnv },
   },
 })

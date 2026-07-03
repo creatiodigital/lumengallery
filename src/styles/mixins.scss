@@ -1,3 +1,5 @@
+@use 'sass:map';
+
 @mixin xlargeSans($size: var(--text-xl), $weight: 500, $lineHeight: 1.2) {
   font-family: var(--font-sans), var(--font-sans-fallback);
   font-size: $size;
@@ -69,38 +71,59 @@
 }
 
 // =============================================================================
-// Responsive Breakpoints (Mobile-First)
+// Responsive Breakpoints — single source of truth
 // =============================================================================
-// Usage: @include breakpoint(md) { ... }
-// This will apply styles at 768px and above
+// ONE map drives every breakpoint. Never write a raw `@media (max-width: …px)`
+// in a component — use these mixins so the values stay consistent and reusable:
+//   @include media-up(lg)   { … }  // min-width: 1024px  (mobile-first)
+//   @include media-down(lg) { … }  // max-width: 1024px  (desktop-first)
+//   @include breakpoint(lg) { … }  // alias of media-up (back-compat)
+//
+// sm/md/lg/xl/xxl are the standard scale. `tablet` (900) and `wide` (1100) are
+// real, in-use breakpoints kept as named tokens so existing layouts that switch
+// at those widths don't shift.
+$breakpoints: (
+  sm: 640px,
+  md: 768px,
+  tablet: 900px,
+  lg: 1024px,
+  wide: 1100px,
+  xl: 1280px,
+  xxl: 1440px,
+);
 
-$breakpoint-sm: 640px;
-$breakpoint-md: 768px;
-$breakpoint-lg: 1024px;
-$breakpoint-xl: 1280px;
-$breakpoint-2xl: 1440px;
+// Back-compat single vars (derived from the map — do not add new hardcoded px).
+$breakpoint-sm: map.get($breakpoints, sm);
+$breakpoint-md: map.get($breakpoints, md);
+$breakpoint-lg: map.get($breakpoints, lg);
+$breakpoint-xl: map.get($breakpoints, xl);
+$breakpoint-2xl: map.get($breakpoints, xxl);
 
-@mixin breakpoint($size) {
-  @if $size == sm {
-    @media (min-width: $breakpoint-sm) {
-      @content;
-    }
-  } @else if $size == md {
-    @media (min-width: $breakpoint-md) {
-      @content;
-    }
-  } @else if $size == lg {
-    @media (min-width: $breakpoint-lg) {
-      @content;
-    }
-  } @else if $size == xl {
-    @media (min-width: $breakpoint-xl) {
-      @content;
-    }
-  } @else if $size == 2xl {
-    @media (min-width: $breakpoint-2xl) {
-      @content;
-    }
+@function bp($name) {
+  @if not map.has-key($breakpoints, $name) {
+    @error "Unknown breakpoint `#{$name}`. Valid names: #{map.keys($breakpoints)}.";
+  }
+  @return map.get($breakpoints, $name);
+}
+
+// min-width — styles apply at the breakpoint and ABOVE (mobile-first).
+@mixin media-up($name) {
+  @media (min-width: bp($name)) {
+    @content;
+  }
+}
+
+// max-width — styles apply AT/BELOW the breakpoint (desktop-first).
+@mixin media-down($name) {
+  @media (max-width: bp($name)) {
+    @content;
+  }
+}
+
+// Back-compat alias: existing call sites use breakpoint() as mobile-first.
+@mixin breakpoint($name) {
+  @include media-up($name) {
+    @content;
   }
 }
 

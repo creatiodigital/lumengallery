@@ -411,7 +411,14 @@ export async function createPaymentIntent(
       if (piEditionNumberId && piEditionNumberId !== reservedNumberId) {
         await releaseEditionNumberById(reservedNumberId)
       } else {
-        await attachPaymentIntentToReservation(reservedNumberId, pi.id)
+        const attached = await attachPaymentIntentToReservation(reservedNumberId, pi.id)
+        if (!attached) {
+          // The hold advanced out from under us (should be impossible for a
+          // reservation made milliseconds ago — defensive symmetry with the
+          // cart flow). The row now belongs to whoever claimed it, so we
+          // release nothing; just don't hand out a PI whose number we lost.
+          return { ok: false, error: 'This edition has just sold out.' }
+        }
       }
     }
 

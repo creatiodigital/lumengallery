@@ -185,6 +185,7 @@ export const LimitedVariantsEditor = ({
               aria-expanded={isOpen}
             >
               <span className={styles.variantTag}>{variant.name || `Variant ${index + 1}`}</span>
+              {isLive && <span className={styles.sellingTag}>Currently Selling</span>}
               <ChevronDown
                 size={16}
                 strokeWidth={ICON_STROKE_WIDTH}
@@ -287,7 +288,10 @@ export const LimitedVariantsEditor = ({
                     inputMode="decimal"
                     size="medium"
                     value={variant.priceEuros ?? ''}
-                    disabled={variantLocked}
+                    // Price stays editable even when the variant is locked — the
+                    // artist can raise it as the edition sells. Every other field
+                    // is frozen (size + edition size are materialised).
+                    disabled={false}
                     placeholder="Add your price here"
                     invalid={!!errFor('price')}
                     onChange={(e) =>
@@ -296,7 +300,11 @@ export const LimitedVariantsEditor = ({
                       })
                     }
                   />
-                  <span className={styles.hint}>What you earn per print of this variant</span>
+                  <span className={styles.hint}>
+                    {variantLocked
+                      ? 'The edition is live — you can still adjust the price; every other field is locked.'
+                      : 'What you earn per print of this variant'}
+                  </span>
                   <ErrorText>{errFor('price')}</ErrorText>
                 </div>
 

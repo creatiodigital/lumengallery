@@ -6,9 +6,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
+import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { EmptyState } from '@/components/ui/EmptyState'
 
-import { listEditionSales, type EditionSaleRow } from '@/app/admin/orders/actions'
+import {
+  listEditionSales,
+  releaseOrphanedEditionNumber,
+  type EditionSaleRow,
+} from '@/app/admin/orders/actions'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
 
@@ -34,6 +40,12 @@ export const AdminEditionSales = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Per-row release (manual cleanup of orphaned, order-less reservations —
+  // frees the number back to available without removing the slot).
+  const [releaseTarget, setReleaseTarget] = useState<EditionSaleRow | null>(null)
+  const [releasing, setReleasing] = useState(false)
+  const [releaseError, setReleaseError] = useState<string | null>(null)
+
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
       router.push('/')
@@ -54,6 +66,26 @@ export const AdminEditionSales = () => {
   useEffect(() => {
     if (sessionStatus === 'authenticated') load()
   }, [sessionStatus, load])
+
+  const handleRelease = async () => {
+    if (!releaseTarget) return
+    setReleasing(true)
+    setReleaseError(null)
+    const res = await releaseOrphanedEditionNumber(releaseTarget.id)
+    setReleasing(false)
+    if (res.ok) {
+      setReleaseTarget(null)
+      await load()
+    } else {
+      setReleaseError(res.error)
+    }
+  }
+
+  const closeRelease = () => {
+    if (releasing) return
+    setReleaseTarget(null)
+    setReleaseError(null)
+  }
 
   return (
     <DashboardLayout backLink="/admin/dashboard" backLabel="← Back to Admin Dashboard">
@@ -91,6 +123,7 @@ export const AdminEditionSales = () => {
                   <th>Status</th>
                   <th>TPS</th>
                   <th>Order</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -98,15 +131,22 @@ export const AdminEditionSales = () => {
                   <tr key={s.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
                     <td>
-                      {s.artworkSlug ? (
-                        <Link
-                          href={`/artworks/${s.artworkSlug}`}
-                          style={{ textDecoration: 'underline' }}
-                        >
-                          {s.artworkTitle}
-                        </Link>
-                      ) : (
-                        s.artworkTitle
+                      <div>
+                        {s.artworkSlug ? (
+                          <Link
+                            href={`/artworks/${s.artworkSlug}`}
+                            style={{ textDecoration: 'underline' }}
+                          >
+                            {s.artworkTitle}
+                          </Link>
+                        ) : (
+                          s.artworkTitle
+                        )}
+                      </div>
+                      {s.artistName && (
+                        <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>
+                          {s.artistName}
+                        </div>
                       )}
                     </td>
                     <td>{s.variantName}</td>
@@ -135,6 +175,25 @@ export const AdminEditionSales = () => {
                         '—'
                       )}
                     </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {/* Orphaned (order-less) rows can be released from here —
+                          freed back to available, keeping the numbered slot.
+                          Order-bound copies are managed via their order. */}
+                      {s.orderId ? (
+                        '—'
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          font="dashboard"
+                          size="small"
+                          label="Release"
+                          onClick={() => {
+                            setReleaseError(null)
+                            setReleaseTarget(s)
+                          }}
+                        />
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -142,6 +201,38 @@ export const AdminEditionSales = () => {
           </>
         )}
       </div>
+
+      {releaseTarget && (
+        <ConfirmModal
+          title="Release this number?"
+          message={
+            <>
+              This frees copy{' '}
+              <strong>
+                {releaseTarget.number}/{releaseTarget.editionSize}
+              </strong>{' '}
+              of <strong>{releaseTarget.artworkTitle}</strong> ({releaseTarget.variantName}) back to{' '}
+              <strong>available</strong> — it leaves this ledger and can be sold again. The numbered
+              slot stays in place, so the edition isn&apos;t gapped.
+            </>
+          }
+          warning={
+            releaseError ? (
+              <>⚠️ {releaseError}</>
+            ) : releaseTarget.state === 'sold' ? (
+              <>
+                This copy is marked <strong>sold</strong> — only release it if the print was never
+                produced.
+              </>
+            ) : null
+          }
+          confirmLabel="Yes, release it"
+          cancelLabel="Keep it"
+          busy={releasing}
+          onConfirm={handleRelease}
+          onCancel={closeRelease}
+        />
+      )}
     </DashboardLayout>
   )
 }

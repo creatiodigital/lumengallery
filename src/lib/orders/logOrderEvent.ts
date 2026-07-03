@@ -14,6 +14,10 @@ export type OrderEventKind =
   | 'admin_action'
   | 'payout_released'
   | 'note'
+  | 'reorder'
+  // Invoicing (AR-131)
+  | 'invoice_issued'
+  | 'credit_note_issued'
   // Limited-edition ledger
   | 'edition_reserved'
   | 'edition_sold'

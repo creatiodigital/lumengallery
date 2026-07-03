@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .header {
   border-bottom: 1px solid var(--color-border-default);
   background: var(--color-white);
@@ -6,7 +8,7 @@
   margin: 0 auto;
   width: calc(100% - var(--site-padding) * 2);
 
-  @media (max-width: 1020px) {
+  @include media-down(lg) {
     width: calc(100% - var(--space-6) * 2);
     padding: var(--space-4) 0;
   }

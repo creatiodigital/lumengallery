@@ -49,8 +49,8 @@
   line-height: 1.35;
 }
 
-// Tone is applied only when the counter has items > 0 (wired in
-// follow-up). With placeholder zeros, the neutral baseline shows.
+// Tone is applied (by the component) only when the counter has items
+// > 0. A zero keeps the neutral baseline, so a clean panel reads gray.
 .tone_red {
   .counterValue {
     color: var(--color-badge-danger-text);

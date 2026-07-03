@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
 import crypto from 'crypto'
 
-import { escapeHtml } from '@/utils/escapeHtml'
 import prisma from '@/lib/prisma'
 import { isEmail } from '@/lib/validation'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { sendForgotPasswordEmail } from '@/lib/emails/forgotPassword'
 
 // Rate limiting
 const rateLimitStore = new Map<string, { count: number; timestamp: number }>()
@@ -87,41 +84,7 @@ export async function POST(request: NextRequest) {
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`
 
     // Send reset email
-    const fromEmail = process.env.FROM_EMAIL || 'contact@theartroom.gallery'
-
-    await resend.emails.send({
-      from: `The Art Room <${fromEmail}>`,
-      to: email,
-      subject: 'Reset your password',
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="font-size: 24px; margin-bottom: 24px;">Reset Your Password</h2>
-          
-          <p>Hi ${escapeHtml(user.name)},</p>
-          
-          <p>We received a request to reset your password. Click the button below to create a new password:</p>
-          
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${resetUrl}" style="display: inline-block; padding: 12px 32px; background-color: #000; color: #fff; text-decoration: none; font-size: 16px;">
-              Reset Password
-            </a>
-          </div>
-          
-          <p style="color: #666; font-size: 14px;">
-            This link will expire in 1 hour. If you didn't request this, you can safely ignore this email.
-          </p>
-          
-          <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;" />
-          
-          <p style="color: #666; font-size: 12px;">
-            If the button doesn't work, copy and paste this link into your browser:<br/>
-            <a href="${resetUrl}" style="color: #666;">${resetUrl}</a>
-          </p>
-        </div>
-      `,
-    })
-
-    // Password reset email sent
+    await sendForgotPasswordEmail({ to: email, name: user.name, resetUrl })
 
     return NextResponse.json({ success: true })
   } catch (error) {

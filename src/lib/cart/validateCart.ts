@@ -15,6 +15,7 @@
  * single shipping line).
  */
 import type { ProviderId, WizardConfig } from '@/lib/print-providers'
+import type { SpecsSummary } from '@/lib/print-providers/specs'
 import { getVatRate } from '@/lib/print-providers/printspace/pricing'
 import { validateAndPriceItem } from '@/lib/checkout/validateAndPriceItem'
 import type { ItemPricing } from '@/lib/checkout/validateAndPriceItem'
@@ -48,6 +49,9 @@ export type CartTotals = {
      *  Carried through from validateAndPriceItem. */
     artworkId: string
     artistUserId: string
+    /** Title + buyer-facing spec rows, for the Stripe PI order summary. */
+    title: string
+    specsSummary: SpecsSummary
     /** Server-pinned config (for a limited line this is the variant's
      *  canonical config, NOT the client's). Persisted as PendingCart
      *  printConfig so the webhook records what was actually ordered. */
@@ -98,6 +102,8 @@ export async function validateCart(
     artworkId: string
     artistUserId: string
     effectiveConfig: WizardConfig
+    title: string
+    specsSummary: SpecsSummary
   }> = []
 
   for (const item of items) {
@@ -130,6 +136,8 @@ export async function validateCart(
       artworkId: result.artworkId,
       artistUserId: result.artistUserId,
       effectiveConfig: result.effectiveConfig,
+      title: result.title,
+      specsSummary: result.specsSummary,
     })
   }
 
@@ -141,17 +149,21 @@ export async function validateCart(
   // artwork line ONLY (shipping-free by contract — see validateAndPriceItem),
   // so itemsPreTaxCents below holds artwork-only subtotals and the single
   // consolidated shipping line is added exactly once into the taxable base.
-  const perItem = priced.map(({ item, pricing, artworkId, artistUserId, effectiveConfig }) => ({
-    lineId: item.lineId,
-    artworkId,
-    artistUserId,
-    effectiveConfig,
-    lineProductionCents: pricing.productionCents * item.quantity,
-    lineArtistCents: pricing.artistCents * item.quantity,
-    lineGalleryCents: pricing.galleryCents * item.quantity,
-    linePreTaxCents: pricing.preTaxCents * item.quantity,
-    quantity: item.quantity,
-  }))
+  const perItem = priced.map(
+    ({ item, pricing, artworkId, artistUserId, effectiveConfig, title, specsSummary }) => ({
+      lineId: item.lineId,
+      artworkId,
+      artistUserId,
+      effectiveConfig,
+      title,
+      specsSummary,
+      lineProductionCents: pricing.productionCents * item.quantity,
+      lineArtistCents: pricing.artistCents * item.quantity,
+      lineGalleryCents: pricing.galleryCents * item.quantity,
+      linePreTaxCents: pricing.preTaxCents * item.quantity,
+      quantity: item.quantity,
+    }),
+  )
 
   const itemsPreTaxCents = perItem.reduce((sum, l) => sum + l.linePreTaxCents, 0)
 

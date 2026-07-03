@@ -62,6 +62,9 @@
 // Placed after .control/.controlOpen so it overrides their border/background
 // at equal-or-higher specificity.
 .controlPlain {
+  width: auto;
+  justify-content: flex-start;
+  gap: var(--space-2);
   padding: var(--space-2) 0;
   background: transparent;
   border: none;
@@ -95,15 +98,13 @@
   }
 }
 
-// Plain variant has no chevron — just the label.
-.wrapperPlain .chevron {
-  display: none;
-}
-
-// Plain menu spans the (fixed-width) wrapper and never narrower than its
-// content, so option labels don't wrap. Scoped to the plain variant.
+// Plain menu is independent of the (content-width) control: a comfortable
+// floor width, anchored left, growing to fit long labels (which never wrap).
+// This lets the closed triggers sit close together without the menu being tied
+// to their narrow width.
 .wrapperPlain .menu {
-  min-width: max-content;
+  right: auto;
+  min-width: 12rem;
 }
 
 .wrapperPlain .optionLabel {
@@ -112,6 +113,12 @@
 
 .controlLabel {
   flex: 1;
+}
+
+// Plain variant hugs its content so the chevron sits right after the label
+// (not pushed to a far edge).
+.wrapperPlain .controlLabel {
+  flex: 0 0 auto;
 }
 
 .controlBadge {

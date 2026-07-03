@@ -85,6 +85,21 @@ export async function requireOwnership(resourceUserId: string) {
 }
 
 /**
+ * Server-ACTION variant of the admin gate: returns a plain {ok, error}
+ * result instead of a NextResponse (actions return values to the client,
+ * they don't short-circuit with a Response). THE single admin guard for
+ * server actions — do not copy it into action files.
+ */
+export async function requireAdminAction() {
+  const session = await auth()
+  if (!session?.user?.id) return { ok: false as const, error: 'Not signed in.' }
+  if (!isAdminOrAbove(session.user.userType)) {
+    return { ok: false as const, error: 'Admin access required.' }
+  }
+  return { ok: true as const, session }
+}
+
+/**
  * Require admin or superAdmin role
  */
 export async function requireAdminOrAbove() {

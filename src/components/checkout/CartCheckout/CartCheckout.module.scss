@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .empty {
   display: flex;
   flex-direction: column;
@@ -25,7 +27,7 @@
   // Breathing room between the CTA / content and the page's bottom border.
   padding-bottom: var(--space-12);
 
-  @media (max-width: 1024px) {
+  @include media-down(lg) {
     grid-template-columns: 1fr;
     gap: var(--space-8);
   }
@@ -238,7 +240,7 @@
   gap: var(--space-10);
   align-items: start;
 
-  @media (max-width: 900px) {
+  @include media-down(tablet) {
     grid-template-columns: 1fr;
     gap: var(--space-8);
   }

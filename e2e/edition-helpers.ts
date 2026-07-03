@@ -156,6 +156,7 @@ export async function setupOpenFixture(): Promise<OpenFixture> {
 
 /** Delete the throwaway open artwork. */
 export async function teardownOpenFixture(fixture: OpenFixture): Promise<void> {
+  if (process.env.E2E_KEEP_DATA === '1') return // keep for manual inspection
   try {
     await prisma.artwork.deleteMany({ where: { id: fixture.artworkId } })
   } catch (err) {
@@ -168,6 +169,7 @@ export async function teardownOpenFixture(fixture: OpenFixture): Promise<void> {
 
 /** Delete the throwaway artwork — cascades its variant + edition numbers. */
 export async function teardownLimitedFixture(fixture: LimitedFixture): Promise<void> {
+  if (process.env.E2E_KEEP_DATA === '1') return // keep for manual inspection
   try {
     await prisma.artwork.deleteMany({ where: { id: fixture.artworkId } })
   } catch (err) {

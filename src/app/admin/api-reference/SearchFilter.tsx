@@ -34,7 +34,7 @@ export default function SearchFilter({ onFilterChange }: SearchFilterProps) {
         background: 'rgba(255, 255, 255, 0.04)',
         border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: 8,
-        color: '#e2e2e8',
+        color: 'var(--ref-text)', // scoped on the page's .container
         fontSize: '0.82rem',
         fontFamily: 'inherit',
         outline: 'none',

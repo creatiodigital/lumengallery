@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { CartIcon } from '@/components/cart/CartIcon'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +14,7 @@ import Logo from '@/icons/logo.svg'
 import Monogram from '@/icons/monogram.svg'
 
 import { buildCartItem } from '@/lib/cart/buildCartItem'
+import { hasMatchingCartLine } from '@/lib/cart/cartMath'
 import { useCart } from '@/lib/cart/useCart'
 import { type Catalog, type Quote, summarizeConfig } from '@/lib/print-providers'
 import { getProviderQuote } from '@/lib/print-providers/quote'
@@ -55,13 +56,25 @@ function readCountryFromStash(slug: string): string {
  */
 export const LimitedWizard = ({ artwork, catalog }: Props) => {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // Set when the buyer came from the cart's "Edit item" link — re-adding
+  // replaces this line (removed just before the add) instead of duplicating it.
+  const editLineId = searchParams.get('editLineId')
 
   // Sold-out variants are hidden — only buyable ones are offered.
   const available = useMemo(
     () => (artwork.variants ?? []).filter((v) => v.remaining > 0),
     [artwork.variants],
   )
-  const [selectedVariantId, setSelectedVariantId] = useState(available[0]?.id ?? '')
+  // Restore the buyer's chosen variant when re-entering via the cart's "Edit
+  // item" link (which passes `?variant=<id>`); otherwise default to the first
+  // available edition. Without this, editing always reset to the first variant.
+  const requestedVariantId = searchParams.get('variant')
+  const [selectedVariantId, setSelectedVariantId] = useState(() =>
+    requestedVariantId && available.some((v) => v.id === requestedVariantId)
+      ? requestedVariantId
+      : (available[0]?.id ?? ''),
+  )
   const [country] = useState<string>(() => readCountryFromStash(artwork.slug))
 
   // Edition-details modal — opened ONLY when the buyer clicks "See Details" on
@@ -106,7 +119,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
     [available, country, catalog.providerId, artwork.printPriceCents],
   )
 
-  const { addItem } = useCart()
+  const { addItem, removeItem, items } = useCart()
   const [addError, setAddError] = useState<string | null>(null)
   const [cartAddedOpen, setCartAddedOpen] = useState(false)
 
@@ -121,18 +134,36 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
     router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
   }
 
+  // Same variant + config already in the cart (ignoring any line being edited)
+  // → adding merges into a quantity bump, so we confirm first.
+  const isDuplicate = useMemo(
+    () =>
+      !!config &&
+      hasMatchingCartLine(
+        items,
+        { artworkId: artwork.id, variantId: selected?.id, config },
+        editLineId ?? undefined,
+      ),
+    [items, artwork.id, selected?.id, config, editLineId],
+  )
+
   const handleAddToCart = async () => {
     if (!selected || !config || !quote) return
 
     setAddError(null)
+
+    // Editing: carry the original line's quantity (the edit applies to the
+    // whole line), then drop that line so the re-add replaces it.
+    const quantity = editLineId ? (items.find((i) => i.lineId === editLineId)?.quantity ?? 1) : 1
+    if (editLineId) await removeItem(editLineId)
 
     // `addItem` reserves the edition number server-side BEFORE committing the
     // line; on sold-out / insufficient stock it throws so we surface a
     // friendly message and leave the cart untouched. Re-throw so SummaryPanel
     // does not flip to its "added" state.
     try {
-      await addItem(
-        buildCartItem({
+      await addItem({
+        ...buildCartItem({
           artwork: {
             id: artwork.id,
             slug: artwork.slug,
@@ -143,12 +174,14 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
           providerId: catalog.providerId,
           editionType: 'limited',
           variantId: selected.id,
+          editionName: selected.name,
           config,
           quote,
           artistCents: selected.priceCents ?? artwork.printPriceCents,
           specsSummary: summarizeConfig(catalog, config),
         }),
-      )
+        quantity,
+      })
       setCartAddedOpen(true)
     } catch (error) {
       const reason = error instanceof Error ? error.message : ''
@@ -211,6 +244,8 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
               onContinueShopping={close}
               editionLabel={`1/${selected.editionSize}`}
               addError={addError}
+              isEditing={editLineId !== null}
+              isDuplicate={isDuplicate}
             />
           </>
         ) : (
@@ -221,54 +256,69 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
       </main>
 
       {cartAddedOpen && (
-        <CartAddedModal onClose={() => setCartAddedOpen(false)} onContinueShopping={close} />
+        <CartAddedModal onClose={() => setCartAddedOpen(false)} edited={editLineId !== null} />
       )}
 
       {introOpen && detailVariant && (
-        <Modal onClose={dismissIntro} titleId="print-intro-title">
+        <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px">
           <div className={styles.introModal}>
             <Monogram className={styles.introMonogram} aria-hidden="true" />
             <p id="print-intro-title" className={styles.detailLead}>
-              <strong>{artwork.title}</strong> by <strong>{artwork.artistName}</strong> is a{' '}
-              <strong>limited edition</strong> — a fixed, numbered run.
+              <strong>{artwork.title}</strong> by <strong>{artwork.artistName}</strong>.
             </p>
-            <p className={styles.detailSubhead}>The print</p>
-            <ul className={styles.detailList}>
-              <li>
-                <strong>Numbered</strong> — each print shows its own edition number (e.g. 1/
-                {detailVariant.editionSize}) just below the image.
-              </li>
-              <li>
-                Comes with a <strong>Certificate of Authenticity (COA)</strong>, hand-signed by the
-                artist — the signature is on the certificate, not the print.
-              </li>
-              <li>
-                Sold <strong>unframed</strong>, on premium archival paper — frame it your way.
-              </li>
-            </ul>
-            <p className={styles.detailSubhead}>Good to know</p>
-            <ul className={styles.detailList}>
-              <li>
-                <strong>Price might rise</strong> as the edition sells.
-              </li>
-              <li>
-                Your <strong>edition number is allocated at the point of sale</strong>.
-              </li>
-              <li>
-                Final <strong>VAT</strong> is calculated when you confirm your delivery address at
-                checkout.
-              </li>
-              <li>
-                Sales are strictly limited to <strong>one edition per household</strong>.
-              </li>
-              <li>
-                Editions <strong>may not be resold</strong> to a third party for a period of two
-                years.
-              </li>
-            </ul>
-            <p className={styles.introEdition}>
-              Once the edition sells out, it is closed for good.
-            </p>
+            <div className={styles.detailSections}>
+              <p className={styles.detailSubhead}>Terms of sale</p>
+              <ul className={styles.detailList}>
+                <li>
+                  <strong>Individually numbered</strong> — each print carries its own number in the
+                  margin below the image.
+                </li>
+                <li>
+                  Comes with a <strong>Certificate of Authenticity (COA)</strong>, hand-signed by
+                  the artist — the signature is on the certificate, not the print.
+                </li>
+                <li>
+                  Sold <strong>unframed</strong>, on premium archival paper — frame it your way.
+                </li>
+                <li>
+                  <strong>Price might rise</strong> as the edition sells.
+                </li>
+                <li>
+                  Your <strong>edition number is allocated at the point of sale</strong>.
+                </li>
+                <li>
+                  Final <strong>VAT</strong> is calculated when you confirm your delivery address at
+                  checkout.
+                </li>
+                <li>
+                  Sales are strictly limited to <strong>one edition per household</strong>.
+                </li>
+                <li>We reserve the right to cancel or refund an order if needed.</li>
+              </ul>
+              <p className={styles.detailSubhead}>Shipping</p>
+              <ul className={styles.detailList}>
+                <li>
+                  All editions are <strong>packaged to the highest standards</strong>, managed at
+                  our warehouse using archival materials.
+                </li>
+                <li>
+                  <strong>Shipping is calculated at checkout</strong>, based on your delivery
+                  address.
+                </li>
+                <li>
+                  Most editions are <strong>dispatched within about two weeks</strong> of purchase.
+                </li>
+                <li>
+                  Sent with <strong>tracked delivery</strong> &mdash; we&rsquo;ll email you the
+                  tracking when it&rsquo;s on its way.
+                </li>
+                <li>
+                  Delivery is typically <strong>1&ndash;2 weeks in Europe</strong> and{' '}
+                  <strong>2&ndash;4 weeks internationally</strong> (international orders may be
+                  subject to customs and local import duties).
+                </li>
+              </ul>
+            </div>
             <p className={styles.detailTerms}>
               Please read our{' '}
               <Link href="/terms-of-sale" target="_blank" rel="noopener noreferrer">

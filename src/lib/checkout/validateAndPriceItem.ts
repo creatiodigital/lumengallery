@@ -36,6 +36,7 @@ import {
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { TPS_GALLERY_MARKUP_RATE } from '@/lib/print-providers/printspace/pricing'
 import { getProviderQuote } from '@/lib/print-providers/quote'
+import { summarizeConfig, type SpecsSummary } from '@/lib/print-providers/specs'
 import type { PrintRestrictions } from '@/lib/print-providers/types'
 import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
 import prisma from '@/lib/prisma'
@@ -78,6 +79,11 @@ export type ItemValidationResult =
        *  Additive — the single-print path doesn't read these. */
       artworkId: string
       artistUserId: string
+      /** Human-readable artwork title + buyer-facing spec rows, for the order
+       *  summary written onto the Stripe PaymentIntent (cart path). Additive
+       *  and cosmetic — the single-print path doesn't read these. */
+      title: string
+      specsSummary: SpecsSummary
     }
   | { ok: false; error: string }
 
@@ -231,11 +237,23 @@ export async function validateAndPriceItem(
   const preTaxCents = artworkLineCents
   const currency = quote.currency.toLowerCase()
 
+  // Buyer-facing spec rows for the order summary written onto the Stripe
+  // PaymentIntent (see createCartPaymentIntent). Cosmetic — never fail pricing
+  // over a summary, so default to [] if it throws.
+  let specsSummary: SpecsSummary = []
+  try {
+    specsSummary = summarizeConfig(catalog, effectiveConfig)
+  } catch {
+    // an order can be priced without a pretty summary
+  }
+
   return {
     ok: true,
     effectiveConfig,
     artworkId: artwork.id,
     artistUserId: artwork.userId,
+    title: artwork.title ?? artwork.slug,
+    specsSummary,
     pricing: {
       artistCents,
       galleryCents,

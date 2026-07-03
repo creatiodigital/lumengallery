@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .empty {
   display: flex;
   flex-direction: column;
@@ -20,7 +22,7 @@
 
   // Keep items + summary side by side on laptops (incl. 13" ≈ 1280px); only
   // stack on tablet/mobile.
-  @media (max-width: 1024px) {
+  @include media-down(lg) {
     grid-template-columns: 1fr;
     gap: var(--space-8);
   }
@@ -52,8 +54,8 @@
     text-align: center;
   }
 
-  // Hidden once the line stacks into labelled rows (each row carries labels).
-  @media (max-width: 900px) {
+  // Hidden once the line stacks into labeled rows (each row carries labels).
+  @include media-down(tablet) {
     display: none;
   }
 }
@@ -69,7 +71,7 @@
   border-bottom: 1px solid var(--color-border-default);
 
   // Stops being a sticky sidebar once it drops below the table (see .cartGrid).
-  @media (max-width: 1024px) {
+  @include media-down(lg) {
     position: static;
   }
 }

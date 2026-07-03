@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs'
 
+import { requireAdminOrAbove, isSuperAdmin } from '@/lib/authUtils'
 import prisma from '@/lib/prisma'
 import { generateProvisionalPassword, validatePassword } from '@/utils/password'
 
@@ -28,9 +29,15 @@ export async function GET() {
   }
 }
 
-// POST create new artist
+// POST create new artist — admin only (sole consumer: AddArtistModal in the
+// admin dashboard). userType is an allowlist; creating an 'admin' requires
+// superAdmin (mirrors the modal, which only offers it to superAdmins), and
+// 'superAdmin' can never be minted through this route.
 export async function POST(request: NextRequest) {
   try {
+    const { session, error } = await requireAdminOrAbove()
+    if (error) return error
+
     const body = await request.json()
     const { name, lastName, handler, email, biography, password, userType } = body
 
@@ -40,6 +47,15 @@ export async function POST(request: NextRequest) {
         { error: 'Name, lastName, handler, and email are required' },
         { status: 400 },
       )
+    }
+
+    const allowedTypes = isSuperAdmin(session!.user.userType)
+      ? ['artist', 'curator', 'admin']
+      : ['artist', 'curator']
+    if (userType && !allowedTypes.includes(userType)) {
+      return NextResponse.json({ error: `userType must be one of: ${allowedTypes.join(', ')}` }, {
+        status: 403,
+      })
     }
 
     // Determine password: use provided or auto-generate provisional
@@ -72,6 +88,17 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         mustChangePassword: isProvisional,
         userType: userType || 'artist',
+      },
+      // Never return the full row — it carries the password hash and the
+      // login/reset secret columns.
+      select: {
+        id: true,
+        name: true,
+        lastName: true,
+        handler: true,
+        email: true,
+        biography: true,
+        userType: true,
       },
     })
 

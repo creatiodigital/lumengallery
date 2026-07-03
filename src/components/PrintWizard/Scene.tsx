@@ -45,7 +45,7 @@ export const Scene = ({ imageUrl, catalog, config, configReady, editionLabel }: 
   }, [])
 
   // Snap near-zero values to exactly 0° so the handle lines up with
-  // the centre tick without needing pixel-precise drags.
+  // the center tick without needing pixel-precise drags.
   const handleTiltChange = (value: number) => {
     setTiltDeg(Math.abs(value) <= SNAP_TO_ZERO_DEG ? 0 : value)
   }

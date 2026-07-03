@@ -48,15 +48,29 @@ export const email =
     isEmail(value) ? undefined : message
 
 /**
- * A usable phone number: at least 8 digits and not all the same digit.
- * Lenient on formatting (spaces, dashes, parens are stripped) — we only need
- * something a carrier can dial, not strict E.164.
+ * A usable phone number from a single free-text field (the buyer types the
+ * whole number, optionally with their own "+<country code>"). Lenient on
+ * formatting but rejects junk:
+ *   - a trailing extension ("x12", "ext. 12", "extension 12") is accepted and
+ *     ignored for the digit count;
+ *   - only phone-shaped characters: an optional leading "+", then digits and
+ *     common separators (space, dash, dot, slash, parens — "030/12345678" is
+ *     standard German notation) — letters or a value pasted from the wrong
+ *     field are rejected;
+ *   - 8–15 significant digits (E.164 cap); an international "00" dial prefix
+ *     doesn't count against the 15;
+ *   - not all the same digit (e.g. "00000000").
  */
 export const phone =
   (message = 'Please enter a valid phone number.'): Validator =>
   (value) => {
-    const digits = value.trim().replace(/\D/g, '')
-    if (digits.length < 8) return message
+    const trimmed = value.trim()
+    // Split off a trailing extension before validating the dialable part.
+    const main = trimmed.replace(/\s*(?:ext(?:ension)?\.?|x)\s*\d{1,6}$/i, '')
+    if (!/^\+?[\d\s()./-]+$/.test(main)) return message
+    let digits = main.replace(/\D/g, '')
+    if (digits.startsWith('00')) digits = digits.slice(2) // international prefix
+    if (digits.length < 8 || digits.length > 15) return message
     if (/^(\d)\1+$/.test(digits)) return message
     return undefined
   }

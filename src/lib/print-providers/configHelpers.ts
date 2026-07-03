@@ -38,7 +38,7 @@ function passesVisibility(
  * catalog is provided — the parent dimension it depends on is itself
  * visible. Without the transitive check, stale values persist across
  * choices (e.g. switching format=framing → print-only leaves a mount
- * colour set, so `windowMountSize` would otherwise stay visible).
+ * color set, so `windowMountSize` would otherwise stay visible).
  */
 export function isDimensionVisible(
   dim: Dimension,

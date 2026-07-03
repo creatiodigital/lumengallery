@@ -34,6 +34,20 @@ interface PreviewArtworkProps {
 // falls back to its default font if it's missing.
 const EDITION_FONT_URL = '/fonts/caveat-regular.ttf'
 
+// Simulates a real edition number an artist pencils in the bottom margin:
+// a roughly constant physical size no matter how big the print is. troika
+// renders digits at ~70% of the em size, so 0.022m em ≈ 15mm digits —
+// legible in-preview while still reading as hand-written. FIXED, never
+// scaled to the print's dimensions; only shrunk if the paper border is too
+// thin to hold it (the border is a fixed cm per variant, itself independent
+// of the print size). Kept in sync with EDITION_NUMBER_HEIGHT_CM (SizeSchema).
+const EDITION_NUMBER_HEIGHT_M = 0.022
+
+// Fixed gap from the bottom edge of the image to the number's baseline so the
+// spacing stays constant across prints — it does NOT scale with the print or
+// the border. Capped only so the number can't fall outside a thin border.
+const EDITION_NUMBER_GAP_M = 0.014
+
 const ARTWORK_Z = 0.012
 
 // Sane fallbacks if the catalog's option visuals don't carry a hint.
@@ -132,8 +146,12 @@ export const PreviewArtwork = ({
             color="#111111"
             anchorX="left"
             anchorY="middle"
-            fontSize={Math.min(paperBorderM * 0.5, heightM * 0.06)}
-            position={[-widthM / 2, -(heightM / 2 + paperBorderM * 0.5), 0.002]}
+            fontSize={Math.min(EDITION_NUMBER_HEIGHT_M, paperBorderM * 0.7)}
+            position={[
+              -widthM / 2,
+              -(heightM / 2 + Math.min(EDITION_NUMBER_GAP_M, paperBorderM * 0.6)),
+              0.002,
+            ]}
           >
             {editionLabel}
           </Text>

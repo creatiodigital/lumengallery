@@ -22,7 +22,11 @@ test('artist logout: signs out and clears the session', async ({ page }) => {
         const data = await res.json()
         return data?.user
       },
-      { message: 'session should be empty after logout', timeout: 5_000 },
+      // Generous window: Auth.js rotates the session cookie on session
+      // reads, so a straggler response can briefly resurrect the session
+      // right after the signout clear. Logout.tsx verifies-and-retries to
+      // defeat that race; this poll allows for those retry round-trips.
+      { message: 'session should be empty after logout', timeout: 15_000 },
     )
     .toBeFalsy()
 })
