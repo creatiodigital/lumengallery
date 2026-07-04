@@ -17,7 +17,9 @@
 .cartGrid {
   display: grid;
   grid-template-columns: 1fr 340px;
-  gap: var(--space-10);
+  // Matches the checkout steps' column gutter so the two surfaces breathe
+  // the same.
+  gap: var(--space-16);
   align-items: start;
 
   // Keep items + summary side by side on laptops (incl. 13" ≈ 1280px); only

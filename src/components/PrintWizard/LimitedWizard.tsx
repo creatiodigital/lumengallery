@@ -19,6 +19,7 @@ import { useCart } from '@/lib/cart/useCart'
 import { type Catalog, type Quote, summarizeConfig } from '@/lib/print-providers'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 import { CartAddedModal } from './CartAddedModal'
 import { EditionBadge } from './EditionBadge'
@@ -57,6 +58,10 @@ function readCountryFromStash(slug: string): string {
 export const LimitedWizard = ({ artwork, catalog }: Props) => {
   const router = useRouter()
   const searchParams = useSearchParams()
+  // Desktop-only 3D preview — same rationale and breakpoint as the open
+  // wizard: never mount the WebGL canvas on mobile. 901 = media-down(tablet)'s
+  // max-width: 900px, inclusive.
+  const isMobile = useIsMobile(901)
   // Set when the buyer came from the cart's "Edit item" link — re-adding
   // replaces this line (removed just before the add) instead of duplicating it.
   const editLineId = searchParams.get('editLineId')
@@ -225,13 +230,15 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
               selectedVariantId={selected.id}
               onSelect={setSelectedVariantId}
             />
-            <Scene
-              imageUrl={artwork.imageUrl}
-              catalog={catalog}
-              config={config}
-              configReady
-              editionLabel={`1/${selected.editionSize}`}
-            />
+            {!isMobile && (
+              <Scene
+                imageUrl={artwork.imageUrl}
+                catalog={catalog}
+                config={config}
+                configReady
+                editionLabel={`1/${selected.editionSize}`}
+              />
+            )}
             <SummaryPanel
               artwork={artwork}
               catalog={catalog}
@@ -270,52 +277,36 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
               <p className={styles.detailSubhead}>Terms of sale</p>
               <ul className={styles.detailList}>
                 <li>
-                  <strong>Individually numbered</strong> — each print carries its own number in the
-                  margin below the image.
+                  Individually numbered — each print carries its own number in the margin below the
+                  image.
                 </li>
                 <li>
-                  Comes with a <strong>Certificate of Authenticity (COA)</strong>, hand-signed by
-                  the artist — the signature is on the certificate, not the print.
+                  Comes with a Certificate of Authenticity (COA), hand-signed by the artist — the
+                  signature is on the certificate, not the print.
                 </li>
-                <li>
-                  Sold <strong>unframed</strong>, on premium archival paper — frame it your way.
-                </li>
-                <li>
-                  <strong>Price might rise</strong> as the edition sells.
-                </li>
-                <li>
-                  Your <strong>edition number is allocated at the point of sale</strong>.
-                </li>
-                <li>
-                  Final <strong>VAT</strong> is calculated when you confirm your delivery address at
-                  checkout.
-                </li>
-                <li>
-                  Sales are strictly limited to <strong>one edition per household</strong>.
-                </li>
+                <li>Sold unframed, on premium archival paper — frame it your way.</li>
+                <li>Price might rise as the edition sells.</li>
+                <li>Your edition number is allocated at the point of sale.</li>
+                <li>Final VAT is calculated when you confirm your delivery address at checkout.</li>
+                <li>Sales are strictly limited to one edition per household.</li>
                 <li>We reserve the right to cancel or refund an order if needed.</li>
               </ul>
               <p className={styles.detailSubhead}>Shipping</p>
               <ul className={styles.detailList}>
                 <li>
-                  All editions are <strong>packaged to the highest standards</strong>, managed at
-                  our warehouse using archival materials.
+                  All editions are packaged to the highest standards, managed at our warehouse using
+                  archival materials.
+                </li>
+                <li>Shipping is calculated at checkout, based on your delivery address.</li>
+                <li>Most editions are dispatched within about two weeks of purchase.</li>
+                <li>
+                  Sent with tracked delivery &mdash; we&rsquo;ll email you the tracking when
+                  it&rsquo;s on its way.
                 </li>
                 <li>
-                  <strong>Shipping is calculated at checkout</strong>, based on your delivery
-                  address.
-                </li>
-                <li>
-                  Most editions are <strong>dispatched within about two weeks</strong> of purchase.
-                </li>
-                <li>
-                  Sent with <strong>tracked delivery</strong> &mdash; we&rsquo;ll email you the
-                  tracking when it&rsquo;s on its way.
-                </li>
-                <li>
-                  Delivery is typically <strong>1&ndash;2 weeks in Europe</strong> and{' '}
-                  <strong>2&ndash;4 weeks internationally</strong> (international orders may be
-                  subject to customs and local import duties).
+                  Delivery is typically 1&ndash;2 weeks in Europe and 2&ndash;4 weeks
+                  internationally (international orders may be subject to customs and local import
+                  duties).
                 </li>
               </ul>
             </div>
