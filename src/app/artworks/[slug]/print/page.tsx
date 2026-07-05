@@ -2,10 +2,12 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { PrintWizard } from '@/components/PrintWizard'
+import { PurchasesPausedNotice } from '@/components/checkout/PurchasesPausedNotice'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 import type { LimitedVariantView } from '@/lib/editions/types'
 import prisma from '@/lib/prisma'
+import { getPurchasesPaused } from '@/lib/settings'
 
 interface PrintWizardPageProps {
   params: Promise<{ slug: string }>
@@ -29,6 +31,12 @@ export async function generateMetadata({ params }: PrintWizardPageProps): Promis
 
 const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
   const { slug } = await params
+
+  // Purchases kill switch — covers deep links / bookmarks straight into the
+  // wizard while the CTAs that normally lead here are hidden.
+  if (await getPurchasesPaused()) {
+    return <PurchasesPausedNotice title="Order a print" />
+  }
 
   const artwork = await prisma.artwork.findUnique({
     where: { slug },

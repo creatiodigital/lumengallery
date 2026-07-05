@@ -126,16 +126,3 @@
   line-height: 1.5;
   color: var(--color-text-secondary);
 }
-
-// Placeholder blocks for unbuilt sections (Action queue, Analytics).
-// Same visual weight as counter / hub cards so the layout reads as
-// "ready slot" not "broken / missing".
-.placeholderBlock {
-  padding: var(--space-6) var(--space-5);
-  background: var(--color-gray-10);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--color-text-secondary);
-}

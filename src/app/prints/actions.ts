@@ -8,6 +8,22 @@ import {
   type PrintArtwork,
 } from '@/components/prints/types'
 import prisma from '@/lib/prisma'
+import { getPurchasesPaused } from '@/lib/settings'
+
+/**
+ * Public read of the purchases kill switch — client purchase surfaces
+ * (Order Print CTAs) call this to hide themselves when the admin pauses
+ * sales. Not sensitive, so no auth. Fail open (false): if the read breaks
+ * we prefer a visible button (the wizard + payment actions still enforce
+ * the pause server-side) over hiding commerce because of a blip.
+ */
+export async function getPublicPurchasesPaused(): Promise<boolean> {
+  try {
+    return await getPurchasesPaused()
+  } catch {
+    return false
+  }
+}
 
 // Fields the prints grid renders. Kept in one place so the SSR'd first page and
 // every client fetch return the same `PrintArtwork` shape.

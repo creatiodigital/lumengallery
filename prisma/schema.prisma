@@ -809,6 +809,20 @@ model PageContent {
   updatedAt      DateTime @updatedAt
 }
 
+// Single-row site-wide switches, read per request. Row id is always 1 —
+// absence of the row means every flag is at its default.
+model SiteSettings {
+  id Int @id @default(1)
+
+  // Emergency kill switch: hides every purchase surface on the public site
+  // (prints catalog, Order Print CTAs, wizard, cart, checkout — including
+  // deep links) and refuses new payment intents. Per-artwork print flags are
+  // untouched, so switching back restores the previous state exactly.
+  purchasesPaused Boolean @default(false)
+
+  updatedAt DateTime @updatedAt
+}
+
 model WallGuide {
   id           String     @id @default(uuid())
   exhibitionId String

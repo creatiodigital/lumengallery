@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { PrintsPage } from '@/components/prints'
 import prisma from '@/lib/prisma'
+import { getPurchasesPaused } from '@/lib/settings'
 
 import { getPrintArtistOptions, getPrintsCatalogPage } from './actions'
 
@@ -19,6 +20,30 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 const Prints = async () => {
+  // Kill switch (admin dashboard): render the same "coming soon" state the
+  // page shows when zero artworks are print-enabled — catalog, filters and
+  // cart all disappear without touching any per-artwork flag.
+  const paused = await getPurchasesPaused()
+  if (paused) {
+    const pausedPageRaw = await prisma.pageContent.findUnique({ where: { slug: 'prints' } })
+    return (
+      <PrintsPage
+        initialItems={[]}
+        initialTotal={0}
+        artistOptions={[]}
+        pageContent={
+          pausedPageRaw
+            ? {
+                title: pausedPageRaw.title,
+                content: pausedPageRaw.content ?? '',
+                bannerImageUrl: pausedPageRaw.bannerImageUrl ?? null,
+              }
+            : null
+        }
+      />
+    )
+  }
+
   // SSR the first, unfiltered page + the artist options + the CMS copy in one
   // round-trip group. The browser then drives pages/filters via the same action.
   const [{ items, totalCount }, artistOptions, pageRaw] = await Promise.all([

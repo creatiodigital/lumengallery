@@ -13,6 +13,7 @@ import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { getVatRate, TPS_GALLERY_MARKUP_RATE } from '@/lib/print-providers/printspace/pricing'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import type { PrintRestrictions } from '@/lib/print-providers/types'
+import { getPurchasesPaused } from '@/lib/settings'
 import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
 import {
   reserveNextEditionNumber,
@@ -131,6 +132,13 @@ export async function createPaymentIntent(
   input: CreatePaymentIntentInput,
 ): Promise<CreatePaymentIntentResult> {
   const { artworkSlug, providerId, config, variantId, address } = input
+
+  // Purchases kill switch — authoritative refusal for buyers who already
+  // had the payment step open when the admin paused sales. New intents
+  // only; authorized payments are untouched.
+  if (await getPurchasesPaused()) {
+    return { ok: false, error: 'Purchases are temporarily paused — please check back soon.' }
+  }
 
   // ── Defensive input validation ──────────────────────────────
   // These run BEFORE we hit the DB / catalog / Stripe. A malformed

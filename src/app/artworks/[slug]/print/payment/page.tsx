@@ -2,7 +2,9 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { PrintPayment } from '@/components/checkout/PrintPayment'
+import { PurchasesPausedNotice } from '@/components/checkout/PurchasesPausedNotice'
 import prisma from '@/lib/prisma'
+import { getPurchasesPaused } from '@/lib/settings'
 
 interface PaymentPageProps {
   params: Promise<{ slug: string }>
@@ -22,6 +24,13 @@ function pickString(v: string | string[] | undefined): string | undefined {
 const PaymentPage = async ({ params, searchParams }: PaymentPageProps) => {
   const { slug } = await params
   const sp = await searchParams
+
+  // Purchases kill switch — deep links straight to the payment step. The
+  // 3DS return lands on /print/confirmation (left open), so an in-flight
+  // authorization still completes its confirmation screen.
+  if (await getPurchasesPaused()) {
+    return <PurchasesPausedNotice title="Payment" />
+  }
 
   const artwork = await prisma.artwork.findUnique({
     where: { slug },

@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { PrintCheckout } from '@/components/checkout/PrintCheckout'
+import { PurchasesPausedNotice } from '@/components/checkout/PurchasesPausedNotice'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import prisma from '@/lib/prisma'
+import { getPurchasesPaused } from '@/lib/settings'
 
 interface CheckoutPageProps {
   params: Promise<{ slug: string }>
@@ -23,6 +25,11 @@ function pickString(v: string | string[] | undefined): string | undefined {
 const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
   const { slug } = await params
   const sp = await searchParams
+
+  // Purchases kill switch — deep links into the single-print checkout.
+  if (await getPurchasesPaused()) {
+    return <PurchasesPausedNotice title="Checkout" />
+  }
 
   const artwork = await prisma.artwork.findUnique({
     where: { slug },

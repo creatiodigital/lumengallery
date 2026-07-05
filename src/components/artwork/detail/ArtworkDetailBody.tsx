@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { InquireSidebar } from '@/components/ui/InquireSidebar'
 import { Share } from '@/components/ui/Share'
 import { setPrintReturnUrl } from '@/components/checkout/printReturnUrl'
+import { getPublicPurchasesPaused } from '@/app/prints/actions'
 import { isRichTextEmpty } from '@/lib/textUtils'
 import { reportImageError } from '@/lib/observability/reportImageError'
 
@@ -55,6 +56,16 @@ interface ArtworkDetailBodyProps {
 export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) => {
   const router = useRouter()
   const [isInquireOpen, setIsInquireOpen] = useState(false)
+
+  // Purchases kill switch (admin dashboard). Read client-side because this
+  // body is shared by the artwork page and the in-exhibition modal — one
+  // check covers both. Defaults to "not paused" so normal operation never
+  // waits on the read; when paused, the wizard route and the payment actions
+  // still enforce the block server-side.
+  const [purchasesPaused, setPurchasesPaused] = useState(false)
+  useEffect(() => {
+    getPublicPurchasesPaused().then(setPurchasesPaused)
+  }, [])
 
   const displayTitle = artwork.title || artwork.name || ''
   const displayAuthor = artwork.author || `${artist.name} ${artist.lastName}`.trim()
@@ -109,7 +120,7 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
           onClick={() => setIsInquireOpen(true)}
           className={styles.inquireButton}
         />
-        {artwork.printEnabled && artwork.printPriceCents ? (
+        {!purchasesPaused && artwork.printEnabled && artwork.printPriceCents ? (
           <>
             <Button
               variant="primary"
