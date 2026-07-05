@@ -3,10 +3,12 @@ import { revalidateTag, revalidatePath } from 'next/cache'
 
 import type { Prisma } from '@/generated/prisma'
 import { UserType as UserTypeEnum } from '@/generated/prisma'
+import { auth } from '@/auth'
 import {
   requireAdminOrAbove,
   requireSuperAdmin,
   canModifyUser,
+  isAdminOrAbove,
   isSuperAdmin,
 } from '@/lib/authUtils'
 import prisma from '@/lib/prisma'
@@ -40,6 +42,18 @@ const PROTECTED_ROLES: UserTypeValue[] = ['admin', 'superAdmin']
 export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
+
+    // Self-or-admin: this returns email/role/signature, which must not be
+    // enumerable by id. "Self" includes the impersonated identity — the
+    // dashboard profile page fetches by effective user id.
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const isSelf = id === session.user.id || id === session.impersonating?.id
+    if (!isSelf && !isAdminOrAbove(session.user.userType)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const user = await prisma.user.findUnique({
       where: { id },

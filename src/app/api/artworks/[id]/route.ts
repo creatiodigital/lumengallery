@@ -269,7 +269,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       printEditionLimited,
       printEditionTotal,
       // Prisma's nullable-Json update slot doesn't accept a bare `null`
-      // — the DB NULL value is signalled via Prisma.DbNull sentinel.
+      // — the DB NULL value is signaled via Prisma.DbNull sentinel.
       printOptions:
         printOptions === null ? Prisma.DbNull : (printOptions as unknown as Prisma.InputJsonValue),
       printRecommendations:

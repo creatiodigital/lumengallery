@@ -152,43 +152,47 @@ const CartPaymentForm = ({ totals, address, onSuccess, onBack }: CartPaymentForm
 
   return (
     <div className={styles.paymentStep}>
-      <div className={styles.paymentPanel}>
-        <Text as="h2" font="serif" size="lg" className={styles.recapTitle}>
-          Pay with card
-        </Text>
-        <Text as="p" size="sm" className={styles.paymentHelp}>
-          All payments are processed securely by Stripe. Your card details never touch our servers.
-          We&apos;ll hold your card now and charge it once your order enters production.
-        </Text>
-        <Text as="p" size="sm" className={styles.paymentHelp}>
-          By placing your order you agree to our{' '}
-          <a href="/terms-of-sale" target="_blank" rel="noopener noreferrer">
-            Online Terms of Sale
-          </a>
-          .
-        </Text>
+      <div className={styles.paymentMain}>
+        <div className={styles.paymentPanel}>
+          <Text as="h2" font="serif" size="lg" className={styles.recapTitle}>
+            Pay with card
+          </Text>
+          <Text as="p" size="sm" className={styles.paymentHelp}>
+            All payments are processed securely by Stripe. Your card details never touch our
+            servers. We&apos;ll hold your card now and charge it once your order enters production.
+          </Text>
+          <Text as="p" size="sm" className={styles.paymentHelp}>
+            By placing your order you agree to our{' '}
+            <a href="/terms-of-sale" target="_blank" rel="noopener noreferrer">
+              Online Terms of Sale
+            </a>
+            .
+          </Text>
 
-        <form id="cart-payment-form" onSubmit={handleSubmit} className={styles.paymentForm}>
-          <PaymentElement
-            options={{
-              layout: 'tabs',
-              fields: {
-                billingDetails: {
-                  name: 'never',
-                  email: 'never',
-                  phone: 'never',
-                  address: 'never',
+          <form id="cart-payment-form" onSubmit={handleSubmit} className={styles.paymentForm}>
+            <PaymentElement
+              options={{
+                layout: 'tabs',
+                fields: {
+                  billingDetails: {
+                    name: 'never',
+                    email: 'never',
+                    phone: 'never',
+                    address: 'never',
+                  },
                 },
-              },
-            }}
-          />
-          {error && (
-            <Text as="p" size="sm" className={styles.paymentError}>
-              {error}
-            </Text>
-          )}
-        </form>
+              }}
+            />
+            {error && (
+              <Text as="p" size="sm" className={styles.paymentError}>
+                {error}
+              </Text>
+            )}
+          </form>
+        </div>
 
+        {/* Outside the card panel on purpose: the box holds only what the buyer
+            needs to complete payment; navigation back sits below it. */}
         <div className={styles.backRow}>
           <Button
             variant="secondary"

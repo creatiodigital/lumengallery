@@ -33,16 +33,16 @@ export const ArtworkModal = () => {
   // Backfill the fields the scene doesn't hold (description, print, dims, full artist).
   useEffect(() => {
     if (!slug) return
-    let cancelled = false
+    let canceled = false
     setFetched(null)
     fetch(`/api/artworks/by-slug/${slug}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: FetchedDetail | null) => {
-        if (!cancelled && data) setFetched(data)
+        if (!canceled && data) setFetched(data)
       })
       .catch(() => {})
     return () => {
-      cancelled = true
+      canceled = true
     }
   }, [slug])
 

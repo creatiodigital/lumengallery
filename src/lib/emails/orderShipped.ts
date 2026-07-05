@@ -1,6 +1,15 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
+import {
+  emailButton,
+  emailDetailRows,
+  emailDivider,
+  emailEyebrow,
+  emailHeading,
+  emailParagraph,
+} from './components'
+import { renderEmailLayout } from './layout'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -11,6 +20,41 @@ type OrderShippedArgs = {
   artworkTitle: string
   artistName: string
   trackingUrl: string | null
+}
+
+/**
+ * Pure renderer — builds the subject and HTML for the order-shipped email.
+ * No side effects; safe to call from preview routes.
+ */
+export function renderOrderShippedEmail(args: OrderShippedArgs): { subject: string; html: string } {
+  const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
+  const safeArtwork = escapeHtml(args.artworkTitle)
+  const safeArtist = escapeHtml(args.artistName)
+  const safeOrderId = escapeHtml(args.orderId.slice(0, 8)).toUpperCase()
+  const safeTrackingUrl = args.trackingUrl ? escapeHtml(args.trackingUrl) : null
+
+  const body =
+    emailHeading(`It&rsquo;s on its way, ${firstName}`) +
+    emailParagraph(
+      `Your print has shipped. It&rsquo;s now in the carrier&rsquo;s hands and heading your way.`,
+    ) +
+    (safeTrackingUrl ? emailButton('Track your shipment', safeTrackingUrl) : '') +
+    emailDivider() +
+    emailEyebrow(`Order ${safeOrderId}`) +
+    emailDetailRows([
+      { label: 'Artwork', value: safeArtwork },
+      { label: 'Artist', value: safeArtist },
+    ]) +
+    emailDivider() +
+    emailParagraph(
+      `Please unwrap carefully when it arrives. If anything looks wrong on delivery, just reply to this email with a photo and we&rsquo;ll sort it out.`,
+    ) +
+    emailParagraph(`Enjoy the work.`)
+
+  return {
+    subject: 'Your artwork is on its way',
+    html: renderEmailLayout({ preheader: 'Your artwork is on its way', bodyHtml: body }),
+  }
 }
 
 /**
@@ -29,49 +73,14 @@ export async function sendOrderShippedEmail(
   }
 
   const fromEmail = process.env.FROM_EMAIL || 'contact@theartroom.gallery'
-
-  const safeBuyerName = escapeHtml(args.buyerName || 'there')
-  const safeArtwork = escapeHtml(args.artworkTitle)
-  const safeArtist = escapeHtml(args.artistName)
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
-  const safeTrackingUrl = args.trackingUrl ? escapeHtml(args.trackingUrl) : null
+  const { subject, html } = renderOrderShippedEmail(args)
 
   try {
     const res = await resend.emails.send({
       from: `The Art Room <${fromEmail}>`,
       to: args.to,
-      subject: 'Your artwork is on its way',
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 560px; margin: 0 auto; color: #111;">
-          <h2 style="font-size: 22px; margin: 0 0 16px 0;">Your artwork is on its way</h2>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">Hi ${safeBuyerName},</p>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">
-            Your print has shipped. It&rsquo;s now in the carrier&rsquo;s hands and heading your way.
-          </p>
-
-          ${
-            safeTrackingUrl
-              ? `<p style="margin: 0 0 24px 0;">
-                   <a href="${safeTrackingUrl}" style="background:#111;color:#fff;padding:10px 18px;text-decoration:none;display:inline-block;">Track your shipment</a>
-                 </p>`
-              : ''
-          }
-
-          <div style="background:#f6f6f6; padding:16px 20px; margin: 0 0 24px 0;">
-            <p style="margin:0 0 8px 0;"><strong>Order</strong> #${safeOrderId}</p>
-            <p style="margin:0;">${safeArtwork} &mdash; ${safeArtist}</p>
-          </div>
-
-          <p style="margin: 0 0 8px 0; line-height: 1.55;">
-            Please unwrap carefully when it arrives. If anything looks wrong on delivery, just
-            reply to this email with a photo and we&rsquo;ll sort it out.
-          </p>
-
-          <p style="margin: 24px 0 0 0; color:#666; font-size: 13px;">&mdash; The Art Room</p>
-        </div>
-      `,
+      subject,
+      html,
     })
 
     if (res.error) {

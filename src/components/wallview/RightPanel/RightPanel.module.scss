@@ -179,7 +179,7 @@
   color: var(--color-black);
 }
 
-// Labelled input above each slider (wizard-style stack).
+// Labeled input above each slider (wizard-style stack).
 .sizeField {
   display: flex;
   flex-direction: column;
@@ -196,8 +196,8 @@
   height: 16px;
 }
 
-// Spans the thumb's centre-travel range exactly: the native range
-// thumb's centre moves from thumb_radius to width - thumb_radius, so
+// Spans the thumb's center-travel range exactly: the native range
+// thumb's center moves from thumb_radius to width - thumb_radius, so
 // inset by 6px on each side (half the 12px thumb). Markers using
 // `left: X%` inside this overlay align 1:1 with the thumb position.
 .markerTrack {
@@ -215,7 +215,7 @@
   bottom: 0;
   width: 1px;
   background: var(--color-red-50);
-  // Empirical nudge: native thumb's visual centre sits ~3px right
+  // Empirical nudge: native thumb's visual center sits ~3px right
   // of where pure left:% math puts the marker. Adjust here if your
   // browser renders it differently.
   transform: translateX(calc(-50% + 2px));

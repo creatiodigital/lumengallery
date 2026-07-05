@@ -234,6 +234,7 @@ export async function getPaymentIntentStatus(paymentIntentId: string): Promise<s
 
 /** Best-effort cleanup: release the auth so we don't leave dangling holds. */
 export async function cancelPaymentIntent(paymentIntentId: string): Promise<void> {
+  if (process.env.E2E_KEEP_DATA === '1') return // keep the PI in its real state for comparison
   try {
     await stripe.paymentIntents.cancel(paymentIntentId)
   } catch (err) {

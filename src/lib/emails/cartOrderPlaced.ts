@@ -1,80 +1,32 @@
 import { Resend } from 'resend'
 
 import { escapeHtml } from '@/utils/escapeHtml'
+import {
+  emailDivider,
+  emailEyebrow,
+  emailHeading,
+  emailLineItems,
+  emailNotice,
+  emailParagraph,
+  type EmailLineItem,
+  type EmailSpec,
+  type EmailSummaryRow,
+} from './components'
+import { formatAmount } from './format'
+import { renderEmailLayout } from './layout'
+import { estimateDeliveryWindow, mayOweImportDuty } from './delivery'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-function formatAmount(cents: number, currency: string): string {
-  const symbol = currency.toLowerCase() === 'eur' ? '€' : currency.toUpperCase() + ' '
-  return `${symbol}${(cents / 100).toFixed(2)}`
-}
-
-// EU member states (2026) — destinations where flat 21% VAT applies
-// at checkout via OSS, so no import duty greets the buyer.
-const EU_ISO_CODES = new Set([
-  'AT',
-  'BE',
-  'BG',
-  'HR',
-  'CY',
-  'CZ',
-  'DK',
-  'EE',
-  'FI',
-  'FR',
-  'DE',
-  'GR',
-  'HU',
-  'IE',
-  'IT',
-  'LV',
-  'LT',
-  'LU',
-  'MT',
-  'NL',
-  'PL',
-  'PT',
-  'RO',
-  'SK',
-  'SI',
-  'ES',
-  'SE',
-])
-
-/**
- * Rough end-to-end delivery window by destination (production + shipping
- * on theprintspace's Standard tier). Indicative, not guaranteed —
- * framed orders can push the upper bound.
- */
-function estimateDeliveryWindow(countryCode: string): { minDays: number; maxDays: number } {
-  const cc = countryCode.toUpperCase()
-  if (cc === 'GB') return { minDays: 3, maxDays: 7 }
-  if (EU_ISO_CODES.has(cc)) return { minDays: 6, maxDays: 10 }
-  if (cc === 'US' || cc === 'CA') return { minDays: 7, maxDays: 14 }
-  if (cc === 'AU' || cc === 'NZ') return { minDays: 10, maxDays: 20 }
-  return { minDays: 10, maxDays: 21 }
-}
-
-/**
- * True when the destination is likely to hit cross-border customs on
- * delivery. the print provider ships from the UK; UK domestic and IOSS-covered
- * EU orders stay clean. Anywhere else, the shipment crosses a border
- * and the buyer may owe local tax/duty. We disclose it upfront so
- * there's no surprise at the door.
- */
-function mayOweImportDuty(countryCode: string): boolean {
-  const cc = countryCode.toUpperCase()
-  if (cc === 'GB') return false
-  if (cc === 'US') return false
-  if (EU_ISO_CODES.has(cc)) return false
-  return true
-}
 
 /** One purchased line, summarized for the buyer's confirmation email. */
 export type CartOrderPlacedLine = {
   artworkTitle: string
   artistName: string
   quantity: number
+  /** Chosen print options (size, paper, frame, edition…) for this line. */
+  specs?: EmailSpec[]
+  /** Retail price for the line (unit retail × quantity), in cents. */
+  lineTotalCents?: number
 }
 
 type CartOrderPlacedArgs = {
@@ -82,10 +34,91 @@ type CartOrderPlacedArgs = {
   buyerName: string
   orderId: string
   lines: CartOrderPlacedLine[]
+  /** Sum of line retail prices (pre-shipping, pre-VAT), in cents. */
+  subtotalCents?: number
+  /** Shipping charged to the buyer, in cents. */
+  shippingCents?: number
+  /** VAT charged to the buyer, in cents. */
+  vatCents?: number
+  /** Label for the VAT line, e.g. 'VAT (ES 21%)'. Defaults to 'VAT'. */
+  vatLabel?: string
   totalCents: number
   currency: string
   /** ISO-2 shipping destination — shapes the delivery estimate + duty note. */
   shippingCountryCode: string
+}
+
+/**
+ * Pure renderer — builds the subject and HTML for the cart order-placed email.
+ * No side effects; safe to call from preview routes.
+ */
+export function renderCartOrderPlacedEmail(args: CartOrderPlacedArgs): {
+  subject: string
+  html: string
+} {
+  const rawFirstName = args.buyerName.split(' ')[0] || 'there'
+  const firstName = escapeHtml(rawFirstName)
+  const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
+
+  const deliveryWindow = estimateDeliveryWindow(args.shippingCountryCode)
+  const dutyLikely = mayOweImportDuty(args.shippingCountryCode)
+
+  const items: EmailLineItem[] = args.lines.map((l) => ({
+    title: escapeHtml(l.artworkTitle),
+    artist: escapeHtml(l.artistName),
+    specs: l.specs?.map((s) => ({ label: escapeHtml(s.label), value: escapeHtml(s.value) })),
+    quantity: l.quantity,
+    unitPrice:
+      l.lineTotalCents != null
+        ? formatAmount(Math.round(l.lineTotalCents / l.quantity), args.currency)
+        : undefined,
+    lineTotal: l.lineTotalCents != null ? formatAmount(l.lineTotalCents, args.currency) : undefined,
+  }))
+
+  const total = formatAmount(args.totalCents, args.currency)
+  const hasBreakdown =
+    args.subtotalCents != null && args.shippingCents != null && args.vatCents != null
+  const summary: EmailSummaryRow[] = hasBreakdown
+    ? [
+        { label: 'Subtotal', value: formatAmount(args.subtotalCents!, args.currency) },
+        { label: 'Shipping', value: formatAmount(args.shippingCents!, args.currency) },
+        { label: args.vatLabel ?? 'VAT', value: formatAmount(args.vatCents!, args.currency) },
+        { label: 'Total', value: total, strong: true },
+      ]
+    : [{ label: 'Total', value: total, strong: true }]
+
+  const dutyNote = dutyLikely
+    ? emailNotice(
+        'caution',
+        '<strong>Heads up on local taxes:</strong> Depending on the import rules in your country, you may be asked to pay a small amount of local tax or duty on delivery. This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.',
+      )
+    : ''
+
+  const body =
+    emailHeading(`Thank you, ${firstName}`) +
+    emailParagraph(
+      `Thanks for your order. We&rsquo;ve received all your details and your prints are being prepared.`,
+    ) +
+    emailParagraph(
+      `<strong>Expected delivery:</strong> ${deliveryWindow.minDays}&ndash;${deliveryWindow.maxDays} business days from today. Framed prints can occasionally take a few days longer to make.`,
+    ) +
+    emailParagraph(
+      `A temporary hold has been placed on your card &mdash; we&rsquo;ll only charge it once your prints enter production. We&rsquo;ll email your invoice with that charge, and send tracking details as soon as your order ships.`,
+    ) +
+    emailDivider() +
+    emailEyebrow(`Order ${safeOrderId.toUpperCase()}`) +
+    emailLineItems(items, summary) +
+    dutyNote +
+    emailDivider() +
+    emailParagraph(`If anything changes with your order, we&rsquo;ll be in touch right away.`)
+
+  return {
+    subject: 'Your order at The Art Room has been placed',
+    html: renderEmailLayout({
+      preheader: 'Your order at The Art Room has been placed',
+      bodyHtml: body,
+    }),
+  }
 }
 
 /**
@@ -106,70 +139,14 @@ export async function sendCartOrderPlacedEmail(
   }
 
   const fromEmail = process.env.FROM_EMAIL || 'contact@theartroom.gallery'
-
-  const safeBuyerName = escapeHtml(args.buyerName || 'there')
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
-  const total = formatAmount(args.totalCents, args.currency)
-
-  const deliveryWindow = estimateDeliveryWindow(args.shippingCountryCode)
-  const dutyLikely = mayOweImportDuty(args.shippingCountryCode)
-
-  const lineRows = args.lines
-    .map((line) => {
-      const qty = line.quantity > 1 ? ` &times;${line.quantity}` : ''
-      return `<p style="margin:0 0 8px 0;">${escapeHtml(line.artworkTitle)} &mdash; ${escapeHtml(line.artistName)}${qty}</p>`
-    })
-    .join('')
+  const { subject, html } = renderCartOrderPlacedEmail(args)
 
   try {
     const res = await resend.emails.send({
       from: `The Art Room <${fromEmail}>`,
       to: args.to,
-      subject: 'Your order at The Art Room has been placed',
-      html: `
-        <div style="font-family: Lato, sans-serif; max-width: 560px; margin: 0 auto; color: #111;">
-          <h2 style="font-size: 22px; margin: 0 0 16px 0;">Your order has been placed</h2>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">Hi ${safeBuyerName},</p>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">
-            Thanks for your order. We&rsquo;ve received all your details and your prints are being prepared.
-          </p>
-
-          <p style="margin: 0 0 16px 0; line-height: 1.55;">
-            <strong>Expected delivery:</strong> ${deliveryWindow.minDays}&ndash;${deliveryWindow.maxDays}
-            business days from today. Framed prints can occasionally take a few days longer to make.
-          </p>
-
-          <p style="margin: 0 0 24px 0; line-height: 1.55;">
-            A temporary hold has been placed on your card &mdash; we&rsquo;ll only charge it once your prints
-            enter production. You&rsquo;ll get another email from us when that happens, and one more
-            with tracking details as soon as your order ships.
-          </p>
-
-          <div style="background:#f6f6f6; padding:16px 20px; margin: 0 0 24px 0;">
-            <p style="margin:0 0 8px 0;"><strong>Order</strong> #${safeOrderId}</p>
-            ${lineRows}
-            <p style="margin:8px 0 0 0;"><strong>Total</strong> ${total}</p>
-          </div>
-
-          ${
-            dutyLikely
-              ? `<p style="margin:0 0 16px 0; padding:12px 14px; background:#fff8e1; border:1px solid #f0c36d; font-size:13px; line-height:1.5;">
-                   <strong>Heads up on local taxes:</strong> Depending on the import rules in your
-                   country, you may be asked to pay a small amount of local tax or duty on delivery.
-                   This isn&rsquo;t something we charge &mdash; it goes to your local customs authority.
-                 </p>`
-              : ''
-          }
-
-          <p style="margin: 0 0 8px 0; line-height: 1.55;">
-            If anything changes with your order, we&rsquo;ll be in touch right away.
-          </p>
-
-          <p style="margin: 24px 0 0 0; color:#666; font-size: 13px;">&mdash; The Art Room</p>
-        </div>
-      `,
+      subject,
+      html,
     })
 
     if (res.error) {

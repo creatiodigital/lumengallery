@@ -5,7 +5,9 @@ import type { SpecsSummary, WizardConfig } from '@/lib/print-providers'
 import { summarizeConfig } from '@/lib/print-providers'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { bindEditionNumberToOrder } from '@/lib/editions/reserveEditionNumber'
+import { editionLabel } from '@/lib/editions/editionLabel'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
+import { EMAIL_BRAND } from '@/lib/emails/brand'
 import { sendAdminOrderNotification } from '@/lib/emails/adminOrderNotification'
 import { sendOrderPlacedEmail } from '@/lib/emails/orderPlaced'
 import { captureError } from '@/lib/observability/captureError'
@@ -328,15 +330,46 @@ export async function createPrintOrderFromPaymentIntent(
   })
   if (!alreadyEmailed && order.buyerEmail) {
     const artistName = [artwork.user?.name, artwork.user?.lastName].filter(Boolean).join(' ').trim()
+    // Lead the buyer's spec list with the edition. For a limited print we
+    // resolve the variant's display name (e.g. "Medium") so the receipt reads
+    // "Limited Edition · Medium", matching what the buyer saw in the cart.
+    const editionType: 'open' | 'limited' = md.editionType === 'limited' ? 'limited' : 'open'
+    let variantName: string | null = null
+    if (editionType === 'limited' && md.variantId) {
+      const variant = await prisma.limitedVariant.findUnique({
+        where: { id: md.variantId },
+        select: { name: true },
+      })
+      variantName = variant?.name ?? null
+    }
+    const buyerSpecs = [
+      { label: 'Edition', value: editionLabel(editionType, variantName) },
+      ...specs.map((row) => ({ label: row.label, value: row.value })),
+    ]
+    // Buyer-facing retail price for the item = artist + gallery + production
+    // (NOT productionCents alone — that's the lab cost). Shipping + VAT are
+    // separate order-level lines; subtotal = item retail. VAT is added on top
+    // of (items + shipping), matching checkout.
+    const shipCountry = addr.country ?? country
+    const itemTotalCents = order.productionCents + order.artistCents + order.galleryCents
+    const vatBase = itemTotalCents + order.productionShippingCents
+    const vatRate = vatBase > 0 ? Math.round((order.customerVatCents * 100) / vatBase) : 0
     const emailRes = await sendOrderPlacedEmail({
       to: order.buyerEmail,
       buyerName: order.buyerName,
       orderId: order.id,
       artworkTitle: artwork.title ?? '',
       artistName,
+      specs: buyerSpecs,
+      itemTotalCents,
+      shippingCents: order.productionShippingCents,
+      vatCents: order.customerVatCents,
+      // Always the SELLER jurisdiction: it's Spanish VAT charged to every EU
+      // buyer, and the label must match checkout + the invoice ("ES 21%").
+      vatLabel: order.customerVatCents > 0 ? `VAT (ES ${vatRate}%)` : undefined,
       totalCents: order.totalCents,
       currency: order.currency,
-      shippingCountryCode: addr.country ?? country,
+      shippingCountryCode: shipCountry,
     })
     await logOrderEvent({
       orderId: order.id,
@@ -372,7 +405,7 @@ export async function createPrintOrderFromPaymentIntent(
     select: { id: true },
   })
   if (!alreadyNotifiedAdmin) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://theartroom.gallery'
+    const siteUrl = EMAIL_BRAND.siteUrl
     const artistName = [artwork.user?.name, artwork.user?.lastName].filter(Boolean).join(' ').trim()
     const attributes: Record<string, string> = Object.fromEntries(
       specs.map((row) => [row.label, row.value]),

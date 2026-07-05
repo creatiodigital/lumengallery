@@ -8,7 +8,7 @@ import { Icon } from '@/components/ui/Icon'
 import { Input } from '@/components/ui/Input'
 import { SelectDropdown, type SelectOption } from '@/components/ui/SelectDropdown'
 import { useFormValidation } from '@/hooks/useFormValidation'
-import { COUNTRY_NAMES, DIAL_CODES, getCountryName } from '@/lib/print-providers/dialCodes'
+import { COUNTRY_NAMES, getCountryName } from '@/lib/print-providers/dialCodes'
 import { shippingValidators, type ShippingFieldName } from '@/lib/validation'
 import type { ShippingAddress } from '@/components/checkout/PrintCheckout/createPaymentIntent'
 
@@ -36,6 +36,9 @@ type AddressFormProps = {
   /** Country codes to offer in the picker. Defaults to every known country
    *  (per-line shippability is enforced server-side by validateCart). */
   countryCodes?: string[]
+  /** Pre-fill every field — used when the buyer returns via "Change address"
+   *  so their entries aren't lost on the form's remount. */
+  initialAddress?: ShippingAddress | null
 }
 
 /**
@@ -52,21 +55,25 @@ export const AddressForm = ({
   submitLabel = 'Continue',
   initialCountry = '',
   countryCodes,
+  initialAddress = null,
 }: AddressFormProps) => {
-  const [country, setCountry] = useState(initialCountry)
-  const [fullName, setFullName] = useState('')
-  const [emailField, setEmailField] = useState('')
-  const [phoneField, setPhoneField] = useState('')
-  const [address1, setAddress1] = useState('')
-  const [address2, setAddress2] = useState('')
-  const [city, setCity] = useState('')
-  const [stateOrRegion, setStateOrRegion] = useState('')
-  const [postalCode, setPostalCode] = useState('')
-  // Independent of `country` by design — a buyer might keep a foreign phone
-  // after relocating or be sending a gift to another country. We seed it
-  // from the initial shipping country (best guess) but never auto-sync
-  // after that; the buyer owns the choice.
-  const [phoneDial, setPhoneDial] = useState(() => DIAL_CODES[initialCountry] ?? DIAL_CODES.ES)
+  // Seed from a previously-submitted address when present (the buyer came back
+  // via "Change address"); the form remounts each time it's shown, so these
+  // lazy initializers re-read the latest values on every return.
+  const [country, setCountry] = useState(initialAddress?.countryCode || initialCountry)
+  const [fullName, setFullName] = useState(initialAddress?.fullName ?? '')
+  const [emailField, setEmailField] = useState(initialAddress?.email ?? '')
+  // Single free-text phone field (Amazon-style): the buyer types the whole
+  // number, including their own "+<code>" if it's a foreign phone. We capture
+  // the country separately above, so no dial-code dropdown is needed — and with
+  // one input there's no second place a country code can live, which is what
+  // used to produce "+34 +34…".
+  const [phoneField, setPhoneField] = useState(initialAddress?.phone ?? '')
+  const [address1, setAddress1] = useState(initialAddress?.address1 ?? '')
+  const [address2, setAddress2] = useState(initialAddress?.address2 ?? '')
+  const [city, setCity] = useState(initialAddress?.city ?? '')
+  const [stateOrRegion, setStateOrRegion] = useState(initialAddress?.stateOrRegion ?? '')
+  const [postalCode, setPostalCode] = useState(initialAddress?.postalCode ?? '')
 
   // Per-field error state + the house validation flow, shared across every
   // checkout surface via the same `shippingValidators`.
@@ -79,17 +86,6 @@ export const AddressForm = ({
       label: getCountryName(code),
     }))
   }, [countryCodes])
-
-  // Phone-prefix options: unique dial codes only (many countries share a
-  // prefix — e.g. +1 covers US/CA/Caribbean — and the digits a buyer types
-  // work the same regardless), sorted numerically. Independent of the
-  // shipping country: the buyer's phone can be from anywhere.
-  const phoneDialOptions: SelectOption<string>[] = useMemo(() => {
-    const unique = Array.from(new Set(Object.values(DIAL_CODES)))
-    return unique
-      .sort((a, b) => Number(a) - Number(b))
-      .map((dial) => ({ value: dial, label: `+${dial}` }))
-  }, [])
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -105,16 +101,10 @@ export const AddressForm = ({
     }
     if (!validateAll(fieldValues)) return
 
-    // Combine the dial-code dropdown choice with the digits the buyer typed.
-    // Parent gets a single E.164-ish string ("+34 612345678") it can pass
-    // straight to TPS / show in admin orders.
-    const rawPhone = phoneField.trim()
-    const phoneCombined = rawPhone && phoneDial ? `+${phoneDial} ${rawPhone}` : rawPhone
-
     onSubmit({
       fullName: fullName.trim(),
       email: emailField.trim(),
-      phone: phoneCombined,
+      phone: phoneField.trim(),
       countryCode: country,
       address1: address1.trim(),
       address2: address2.trim(),
@@ -193,33 +183,22 @@ export const AddressForm = ({
           <label className={styles.fieldLabel} htmlFor="phone">
             Phone (for carrier)
           </label>
-          <div className={styles.phoneRow}>
-            <SelectDropdown<string>
-              className={styles.phoneDial}
-              options={phoneDialOptions}
-              value={phoneDial}
-              onChange={setPhoneDial}
-            />
-            <div className={styles.phoneNumberCol}>
-              <Input
-                id="phone"
-                name="phone"
-                className={styles.phoneNumber}
-                size="bare"
-                inputClassName={styles.fieldInput}
-                type="tel"
-                autoComplete="tel"
-                required
-                maxLength={32}
-                invalid={!!fieldError('phone')}
-                value={phoneField}
-                onChange={(e) => {
-                  setPhoneField(e.target.value)
-                  handleChange('phone', e.target.value)
-                }}
-              />
-            </div>
-          </div>
+          <Input
+            id="phone"
+            name="phone"
+            size="bare"
+            inputClassName={styles.fieldInput}
+            type="tel"
+            autoComplete="tel"
+            required
+            maxLength={32}
+            invalid={!!fieldError('phone')}
+            value={phoneField}
+            onChange={(e) => {
+              setPhoneField(e.target.value)
+              handleChange('phone', e.target.value)
+            }}
+          />
         </FormField>
 
         <FormField className={styles.fieldFull} error={fieldError('address1')}>

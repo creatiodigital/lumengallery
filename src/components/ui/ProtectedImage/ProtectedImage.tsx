@@ -38,7 +38,7 @@ export const ProtectedImage = ({
     return (
       <div
         className={`${wrapperStyle}${wrapperClassName ? ` ${wrapperClassName}` : ''}`}
-        style={{ backgroundColor: 'var(--color-grey-100, #f0f0f0)' }}
+        style={{ backgroundColor: 'var(--color-gray-20)' }}
       />
     )
   }

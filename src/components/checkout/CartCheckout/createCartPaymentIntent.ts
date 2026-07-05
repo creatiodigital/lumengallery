@@ -3,13 +3,19 @@
 import crypto from 'node:crypto'
 
 import { Prisma } from '@/generated/prisma'
+import type { PendingCartItem } from '@/lib/cart/pendingCartItem'
 import type { CartLikeItem, CartTotals } from '@/lib/cart/validateCart'
 import { validateCart } from '@/lib/cart/validateCart'
+import { getPurchasesPaused } from '@/lib/settings'
 import {
   attachPaymentIntentToReservation,
   reserveNextEditionNumber,
 } from '@/lib/editions/reserveEditionNumber'
-import { releaseEditionNumberById } from '@/lib/editions/releaseEditionNumber'
+import {
+  releaseEditionNumberById,
+  releaseEditionNumberForPaymentIntent,
+} from '@/lib/editions/releaseEditionNumber'
+import { CART_HOLD_TTL_MS, extendCartHold } from '@/lib/editions/reserveForCart'
 import { captureError } from '@/lib/observability/captureError'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
@@ -46,6 +52,14 @@ export async function createCartPaymentIntent(
   input: CreateCartPaymentIntentInput,
 ): Promise<CreateCartPaymentIntentResult> {
   const { items, address } = input
+
+  // ── 0. Purchases kill switch ──────────────────────────────────────
+  // The UI hides all purchase surfaces while paused, but a buyer with the
+  // payment step already open can still submit — this is the authoritative
+  // refusal. New intents only; anything already authorized is untouched.
+  if (await getPurchasesPaused()) {
+    return { ok: false, error: 'Purchases are temporarily paused — please check back soon.' }
+  }
 
   // ── 1. Server-authoritative re-validation + pricing ──────────────
   // The cart lives in localStorage; we re-price every line against the
@@ -90,7 +104,12 @@ export async function createCartPaymentIntent(
     const quantity = item.quantity
 
     // a. Verify the client-supplied ids: still-valid cart holds (reserved,
-    //    no PI, no order item) for THIS variant — these are reused as-is.
+    //    no PI, no order item, TTL not lapsed) for THIS variant — these are
+    //    reused as-is. The reservedAt cutoff mirrors sweepExpiredCartHolds:
+    //    an already-expired hold must count as deficit (fresh re-reserve
+    //    below), not be adopted — adopting it would carry a sweepable
+    //    reservedAt through the multi-second Stripe round-trip, exactly the
+    //    window in which a concurrent buyer's sweep can reclaim the row.
     const candidateIds = item.editionNumberIds ?? []
     let validIds: string[] = []
     if (candidateIds.length > 0) {
@@ -101,11 +120,15 @@ export async function createCartPaymentIntent(
           state: 'reserved',
           paymentIntentId: null,
           orderItemId: null,
+          reservedAt: { gte: new Date(Date.now() - CART_HOLD_TTL_MS) },
         },
         select: { id: true },
       })
       // Cap at quantity in case a stale tab sent more ids than it needs.
       validIds = validRows.slice(0, quantity).map((r) => r.id)
+      // Restart the adopted holds' clock now that checkout has begun, so a
+      // hold with (say) 20s of TTL left can't lapse mid-Stripe-call.
+      if (validIds.length > 0) await extendCartHold(validIds)
     }
 
     // b. Reserve the deficit (lapsed/swept holds) one number at a time.
@@ -162,6 +185,60 @@ export async function createCartPaymentIntent(
   // ── 4–7. Create the PI, bind numbers, persist PendingCart ────────
   // Wrap from PI creation onward so a Stripe failure releases ONLY the
   // replacements we reserved this call.
+  // Best-effort human summary of WHAT was bought, written onto the PI so the
+  // order is identifiable + fulfillable from Stripe alone — never just
+  // "Cart: N item(s)". Cosmetic: any failure here falls back to the bland
+  // description so it can NEVER block the payment.
+  let piDescription = `Cart: ${items.length} item(s)`
+  const piMetadata: Record<string, string> = { kind: 'cart' }
+  try {
+    const allNumberIds = Array.from(lineNumberIds.values()).flat()
+    const numberRows = allNumberIds.length
+      ? await prisma.editionNumber.findMany({
+          where: { id: { in: allNumberIds } },
+          select: { id: true, number: true },
+        })
+      : []
+    const numberById = new Map(numberRows.map((r) => [r.id, r.number]))
+
+    const variantIds = items.map((i) => i.variantId).filter((v): v is string => Boolean(v))
+    const variantRows = variantIds.length
+      ? await prisma.limitedVariant.findMany({
+          where: { id: { in: variantIds } },
+          select: { id: true, editionSize: true },
+        })
+      : []
+    const sizeByVariant = new Map(variantRows.map((v) => [v.id, v.editionSize]))
+
+    const lineStrings = items.map((item) => {
+      const priced = pricedByLine.get(item.lineId)
+      const title = priced?.title ?? item.artworkSlug
+      const specs = (priced?.specsSummary ?? []).map((s) => s.value).join(', ')
+      const ids = lineNumberIds.get(item.lineId) ?? []
+      const nums = ids
+        .map((id) => numberById.get(id))
+        .filter((n): n is number => n != null)
+        .sort((a, b) => a - b)
+      const size = item.variantId ? sizeByVariant.get(item.variantId) : undefined
+      const edition = nums.length && size ? ` · No.${nums.join(',')}/${size}` : ''
+      const qty = item.quantity > 1 ? ` ×${item.quantity}` : ''
+      return `${title}${specs ? ` — ${specs}` : ''}${edition}${qty}`.trim()
+    })
+
+    // Stripe caps description at 1000 chars; truncate safely.
+    const joined = lineStrings.join(' | ')
+    if (joined) piDescription = joined.length > 990 ? `${joined.slice(0, 986)} …` : joined
+    // Per-item metadata: ≤50 keys / ≤500 chars each (Stripe limits).
+    lineStrings.slice(0, 40).forEach((s, i) => {
+      piMetadata[`item_${i + 1}`] = s.length > 500 ? `${s.slice(0, 497)}…` : s
+    })
+  } catch (summaryErr) {
+    console.warn(
+      '[create-cart-pi] order summary build failed (non-fatal):',
+      summaryErr instanceof Error ? summaryErr.message : summaryErr,
+    )
+  }
+
   try {
     const pi = await stripe.paymentIntents.create(
       {
@@ -172,7 +249,7 @@ export async function createCartPaymentIntent(
         // places the order at the provider. One PI for the whole cart.
         capture_method: 'manual',
         receipt_email: address.email || undefined,
-        description: `Cart: ${items.length} item(s)`,
+        description: piDescription,
         shipping: {
           name: address.fullName,
           phone: address.phone || undefined,
@@ -185,9 +262,10 @@ export async function createCartPaymentIntent(
             country: address.countryCode,
           },
         },
-        // Items are too large for Stripe metadata (500-char values); the
-        // PendingCart row is the authoritative item source for the webhook.
-        metadata: { kind: 'cart' },
+        // A per-item order summary (title · specs · edition no · qty), so the
+        // order is identifiable from Stripe alone. The PendingCart row remains
+        // the AUTHORITATIVE item source for the webhook; this is for humans.
+        metadata: piMetadata,
       },
       { idempotencyKey },
     )
@@ -243,10 +321,33 @@ export async function createCartPaymentIntent(
     } else {
       // First call. Bind every held number across all limited lines to this
       // PI, moving them out of cart-hold state so the TTL sweep no longer
-      // touches them.
+      // touches them. Attach is GUARDED (see reserveEditionNumber.ts): if a
+      // hold lapsed and another buyer claimed the row during the Stripe
+      // round-trip, the attach reports failure instead of clobbering their
+      // reservation. In that case unwind OUR rows only and bail — the buyer
+      // re-runs checkout with fresh holds; the untouched PI is reused by the
+      // idempotency key on retry.
+      const attachedIds = new Set<string>()
+      let lostHold = false
       for (const ids of lineNumberIds.values()) {
         for (const id of ids) {
-          await attachPaymentIntentToReservation(id, pi.id)
+          const attached = await attachPaymentIntentToReservation(id, pi.id)
+          if (attached) attachedIds.add(id)
+          else lostHold = true
+        }
+      }
+      if (lostHold) {
+        // Rows attached to our PI are provably ours — free them by PI. Fresh
+        // reserves that never got attached are freed by id; skip the attached
+        // ones (just freed above) so we can't re-release a row a faster buyer
+        // immediately re-claims. The stolen row itself is left alone — it
+        // belongs to its new owner.
+        await releaseEditionNumberForPaymentIntent(pi.id)
+        await releaseFreshlyReserved(freshlyReservedIds.filter((id) => !attachedIds.has(id)))
+        return {
+          ok: false,
+          error:
+            'Your hold on a limited edition expired during checkout. Please review your cart and try again.',
         }
       }
     }
@@ -255,7 +356,7 @@ export async function createCartPaymentIntent(
     //    per-line money/identity/config + the resolved edition numbers. Upsert
     //    keyed by paymentIntentId so an idempotent re-submit (same PI) just
     //    rewrites the same row.
-    const cartItems = items.map((item) => {
+    const cartItems: PendingCartItem[] = items.map((item): PendingCartItem => {
       // validateCart returns a priced entry for every line it didn't fail, and
       // we already bailed on !validation.ok above — so a miss here is a logic
       // error, not a benign absence. Throw rather than persist an empty/zero

@@ -38,6 +38,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'artworks array is required' }, { status: 400 })
     }
 
+    // Ownership gate for the upsert's UPDATE branch: the ids are
+    // client-supplied, so without this check any signed-in user could pass
+    // another artist's artwork id and overwrite their row (the CREATE branch
+    // binds userId, but existing rows take the unscoped UPDATE path).
+    const existing = await prisma.artwork.findMany({
+      where: { id: { in: artworks.map((a) => a.id) } },
+      select: { id: true, userId: true },
+    })
+    const foreign = existing.filter((row) => row.userId !== userId)
+    if (foreign.length > 0) {
+      return NextResponse.json(
+        { error: 'One or more artworks belong to another user', ids: foreign.map((r) => r.id) },
+        { status: 403 },
+      )
+    }
+
     // Use upsert to avoid duplicates (if artwork already exists, update it)
     const results = await Promise.all(
       artworks.map(async (artwork) => {

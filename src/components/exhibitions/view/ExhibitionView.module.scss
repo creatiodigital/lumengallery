@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .loadingOverlay {
   position: fixed;
   top: 0;
@@ -42,7 +44,7 @@
   z-index: 1000;
   display: none;
 
-  @media (min-width: 1024px) {
+  @include media-up(lg) {
     display: block;
   }
 }
@@ -77,7 +79,7 @@
   padding: 30px;
   background-color: var(--color-surface-subtle);
 
-  @media (min-width: 1024px) {
+  @include media-up(lg) {
     display: none;
   }
 }
@@ -142,7 +144,7 @@
   border-radius: 6px;
   cursor: pointer;
 
-  @media (min-width: 1024px) {
+  @include media-up(lg) {
     display: flex;
   }
 

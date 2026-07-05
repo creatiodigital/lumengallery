@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { PrintCheckout } from '@/components/checkout/PrintCheckout'
+import { PurchasesPausedNotice } from '@/components/checkout/PurchasesPausedNotice'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import prisma from '@/lib/prisma'
+import { getPurchasesPaused } from '@/lib/settings'
 
 interface CheckoutPageProps {
   params: Promise<{ slug: string }>
@@ -24,12 +26,21 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
   const { slug } = await params
   const sp = await searchParams
 
-  const artwork = await prisma.artwork.findUnique({
-    where: { slug },
-    include: {
-      user: { select: { name: true, lastName: true } },
-    },
-  })
+  // Kill-switch read runs alongside the artwork query (independent) —
+  // covers deep links into the single-print checkout.
+  const [paused, artwork] = await Promise.all([
+    getPurchasesPaused(),
+    prisma.artwork.findUnique({
+      where: { slug },
+      include: {
+        user: { select: { name: true, lastName: true } },
+      },
+    }),
+  ])
+
+  if (paused) {
+    return <PurchasesPausedNotice title="Checkout" />
+  }
 
   if (!artwork || !artwork.imageUrl) notFound()
   if (!artwork.printEnabled || !artwork.printPriceCents) notFound()

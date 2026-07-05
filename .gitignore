@@ -60,3 +60,16 @@ scripts/seed.js
 package-lock.json
 
 
+
+# Brainstorming visual-companion artifacts
+.superpowers/
+
+# Working specs — keep local, never commit/push (per user 2026-06-19)
+docs/superpowers/specs/2026-06-19-invoicing-system-design.md
+docs/superpowers/specs/2026-06-19-email-design-system-design.md
+docs/superpowers/plans/2026-06-19-email-design-system.md
+docs/superpowers/NEXT-SESSION.md
+docs/superpowers/email-template-locked.html
+docs/superpowers/specs/2026-06-21-prints-pagination-design.md
+docs/superpowers/plans/2026-06-21-admin-fulfillment-audit.md
+docs/superpowers/plans/2026-06-19-email-migration-all.md

@@ -9,11 +9,11 @@
   position: absolute;
   pointer-events: auto;
   z-index: 5;
-  background-color: #00dcff;
+  background-color: var(--color-guide);
   transition: background-color 0.15s ease;
 
   &.selected {
-    background-color: #00e6a0;
+    background-color: var(--color-guide-selected);
   }
 
   &.dragging {

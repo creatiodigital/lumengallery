@@ -2,6 +2,13 @@
 
 import styles from './PrintWizard.module.scss'
 
+// Edition number = a fixed PHYSICAL size (cm), mirroring the 3D preview
+// (EDITION_NUMBER_HEIGHT_M / _GAP_M in PreviewArtwork.tsx), so it reads like a
+// pencil number and does NOT shrink with the print. Converted to schema px via
+// the print's own scale; capped so it stays inside the paper margin.
+const EDITION_NUMBER_HEIGHT_CM = 2.2
+const EDITION_NUMBER_GAP_CM = 1.4
+
 interface SizeSchemaProps {
   printWidthCm: number
   printHeightCm: number
@@ -18,7 +25,7 @@ interface SizeSchemaProps {
    *  buyer's print size is the image, the paper sheet is bigger. */
   paperBorderCm?: number
   /** Floating-frame only: visible backboard border extending past the
-   *  paper sheet on every side, in cm. Rendered as a coloured layer
+   *  paper sheet on every side, in cm. Rendered as a colored layer
    *  between the paper and the frame so the schema differentiates
    *  Floating from Standard (which has a passepartout instead). */
   backboardBorderCm?: number
@@ -136,6 +143,18 @@ export const SizeSchema = ({
   const hasOuter =
     showFrame || effectiveMatting > 0 || effectiveBackboard > 0 || effectivePaperBorder > 0
 
+  // Edition number sizing — fixed physical size + gap (see constants above),
+  // converted to schema px via the print's own scale (so it reflects the real
+  // number-to-print ratio, like the 3D), capped to stay inside the margin.
+  const editionFontPx = Math.max(
+    7,
+    Math.min(EDITION_NUMBER_HEIGHT_CM * printScale, paperBorderW * 0.8),
+  )
+  const editionGapPx = Math.min(
+    EDITION_NUMBER_GAP_CM * printScale,
+    Math.max(0, paperBorderW - editionFontPx),
+  )
+
   return (
     <div className={styles.schemaWrapper}>
       <svg
@@ -160,7 +179,7 @@ export const SizeSchema = ({
           <rect x={matX} y={matY} width={matW} height={matH} fill={mattingColorHex} />
         )}
 
-        {/* Backboard (Floating frames only). Coloured sheet that
+        {/* Backboard (Floating frames only). Colored sheet that
             extends past the paper on every side, behind the print. */}
         {effectiveBackboard > 0 && (
           <rect
@@ -220,13 +239,13 @@ export const SizeSchema = ({
         {editionLabel && paperBorderW > 0 && (
           <text
             x={printX}
-            y={printY + printH + Math.min(paperBorderW * 0.7, paperBorderW - 1)}
+            y={printY + printH + editionGapPx + editionFontPx * 0.72}
             textAnchor="start"
             dominantBaseline="alphabetic"
             fill="#111111"
             style={{
               fontFamily: 'var(--font-caveat), cursive',
-              fontSize: Math.max(6, Math.min(paperBorderW * 0.55, printH * 0.12)),
+              fontSize: editionFontPx,
             }}
           >
             {editionLabel}

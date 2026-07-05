@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .page {
   padding: var(--space-8);
   width: 100%;
@@ -218,7 +220,7 @@
   font-size: var(--text-sm);
   color: var(--color-text-primary);
 
-  @media (max-width: 768px) {
+  @include media-down(md) {
     display: none;
   }
 }

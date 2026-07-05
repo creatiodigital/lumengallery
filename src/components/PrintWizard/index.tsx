@@ -14,6 +14,7 @@ import Logo from '@/icons/logo.svg'
 import Monogram from '@/icons/monogram.svg'
 
 import { buildCartItem } from '@/lib/cart/buildCartItem'
+import { hasMatchingCartLine } from '@/lib/cart/cartMath'
 import { useCart } from '@/lib/cart/useCart'
 import {
   type Catalog,
@@ -28,6 +29,7 @@ import {
 } from '@/lib/print-providers'
 import { getPrintLongEdgeBounds } from '@/lib/print-providers/printspace'
 import { getProviderQuote } from '@/lib/print-providers/quote'
+import { TABLET_BREAKPOINT_PX, useIsMobile } from '@/hooks/useIsMobile'
 
 import type { LimitedVariantView } from '@/lib/editions/types'
 
@@ -87,6 +89,20 @@ export const PrintWizard = (props: PrintWizardProps) => {
 const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWizardProps) => {
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // The 3D room preview is desktop-only: on phones it eats most of the
+  // viewport without aiding the size decision, and the WebGL canvas is
+  // heavy on mobile GPUs/battery — so we skip mounting it entirely
+  // rather than hiding it with CSS.
+  const isMobile = useIsMobile(TABLET_BREAKPOINT_PX + 1)
+  // The Scene renders only after mount: SSR and the first client render must
+  // agree (hydration), and the server can't know the viewport — so neither
+  // renders it, and the WebGL canvas never mounts at all on phones. Desktop
+  // gets it one tick later, which is invisible (the canvas paints async).
+  const [sceneReady, setSceneReady] = useState(false)
+  useEffect(() => {
+    setSceneReady(true)
+  }, [])
 
   // Synchronous availability check, rebuilt only when the catalog
   // identity changes (i.e. essentially never within one wizard session).
@@ -173,10 +189,10 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
   const updateConfig = (patch: Record<string, string>) => {
     setConfig((prev) => {
       const nextValues = { ...prev.values, ...patch }
-      // Picking 'None' for the passepartout colour hides the mount-size
+      // Picking 'None' for the passepartout color hides the mount-size
       // input via cascade; reset the stored size so it doesn't re-appear
       // (e.g. 4.5 cm sticking around) when the buyer later switches back
-      // to a coloured mount.
+      // to a colored mount.
       let nextBorders = prev.borders
       if (patch.windowMount === 'none' && prev.borders?.windowMountSize) {
         nextBorders = { ...prev.borders, windowMountSize: { allCm: 0 } }
@@ -251,17 +267,34 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
   )
   const quoteLoading = false
 
-  const { addItem } = useCart()
+  const { addItem, removeItem, items } = useCart()
   const [cartAddedOpen, setCartAddedOpen] = useState(false)
+
+  // When the buyer arrived via the cart's "Edit item" link, the line's id rides
+  // in the URL. Re-adding replaces that line (removed just before the add) so
+  // editing reconfigures in place instead of leaving a duplicate behind.
+  const editLineId = searchParams.get('editLineId')
 
   const close = () => {
     clearPrintSession(artwork.slug)
     router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
   }
 
+  // The current config already sits in the cart as its own line (ignoring the
+  // line being edited) → adding merges into a quantity bump, so we confirm.
+  const isDuplicate = useMemo(
+    () => hasMatchingCartLine(items, { artworkId: artwork.id, config }, editLineId ?? undefined),
+    [items, artwork.id, config, editLineId],
+  )
+
   const handleAddToCart = async () => {
-    await addItem(
-      buildCartItem({
+    // Editing: carry the original line's quantity so the edit applies to the
+    // whole line (a qty-2 line stays qty 2), then drop that line so the re-add
+    // replaces it — merging into an identical line if one now matches.
+    const quantity = editLineId ? (items.find((i) => i.lineId === editLineId)?.quantity ?? 1) : 1
+    if (editLineId) await removeItem(editLineId)
+    await addItem({
+      ...buildCartItem({
         artwork: {
           id: artwork.id,
           slug: artwork.slug,
@@ -276,7 +309,8 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
         artistCents: artwork.printPriceCents,
         specsSummary: summarizeConfig(catalog, config),
       }),
-    )
+      quantity,
+    })
     setCartAddedOpen(true)
   }
 
@@ -314,7 +348,9 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
           restrictions={restrictions}
           recommendations={recommendations}
         />
-        <Scene imageUrl={artwork.imageUrl} catalog={catalog} config={config} configReady />
+        {sceneReady && !isMobile && (
+          <Scene imageUrl={artwork.imageUrl} catalog={catalog} config={config} configReady />
+        )}
         <SummaryPanel
           artwork={artwork}
           catalog={catalog}
@@ -325,46 +361,60 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
           configReady
           onAddToCart={handleAddToCart}
           onContinueShopping={close}
+          isEditing={editLineId !== null}
+          isDuplicate={isDuplicate}
         />
       </main>
 
       {cartAddedOpen && (
-        <CartAddedModal onClose={() => setCartAddedOpen(false)} onContinueShopping={close} />
+        <CartAddedModal onClose={() => setCartAddedOpen(false)} edited={editLineId !== null} />
       )}
 
       {introOpen && (
-        <Modal onClose={dismissIntro} titleId="print-intro-title">
+        <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px">
           <div className={styles.introModal}>
             <Monogram className={styles.introMonogram} aria-hidden="true" />
             <p id="print-intro-title" className={styles.detailLead}>
               Your print of <strong>{artwork.title}</strong> by{' '}
-              <strong>{artwork.artistName}</strong> is an <strong>open edition</strong> — made to
-              order, with no fixed run and no edition limit.
+              <strong>{artwork.artistName}</strong> is an <strong>open edition</strong>.
             </p>
-            <p className={styles.detailSubhead}>The print</p>
-            <ul className={styles.detailList}>
-              <li>
-                <strong>Made to order</strong> on premium archival paper (giclée or C-Type),
-                hand-inspected and finished by a specialist fine-art print lab.
-              </li>
-              <li>
-                <strong>Fully configurable</strong> — choose your size, paper and framing (framed or
-                print-only).
-              </li>
-              <li>
-                <strong>Not numbered</strong> and not a limited run — available on an ongoing basis.
-              </li>
-            </ul>
-            <p className={styles.detailSubhead}>Good to know</p>
-            <ul className={styles.detailList}>
-              <li>
-                <strong>No purchase limits</strong> — order as many as you like.
-              </li>
-              <li>
-                Final <strong>VAT</strong> is calculated when you confirm your delivery address at
-                checkout.
-              </li>
-            </ul>
+            <div className={styles.detailSections}>
+              <p className={styles.detailSubhead}>Terms of sale</p>
+              <ul className={styles.detailList}>
+                <li>
+                  Made to order on premium archival paper (giclée or C-Type), hand-inspected and
+                  finished by a specialist fine-art print lab.
+                </li>
+                <li>
+                  Fully configurable — choose your size, paper and framing (framed or print-only).
+                </li>
+                <li>Not numbered and not a limited run — available on an ongoing basis.</li>
+                <li>No purchase limits — order as many as you like.</li>
+                <li>Final VAT is calculated when you confirm your delivery address at checkout.</li>
+                <li>We reserve the right to cancel or refund an order if needed.</li>
+              </ul>
+              <p className={styles.detailSubhead}>Shipping</p>
+              <ul className={styles.detailList}>
+                <li>
+                  All prints are packaged to the highest standards, managed at our warehouse using
+                  archival materials.
+                </li>
+                <li>Shipping is calculated at checkout, based on your delivery address.</li>
+                <li>
+                  Most orders are dispatched within about two weeks; framed pieces can take a little
+                  longer.
+                </li>
+                <li>
+                  Sent with tracked delivery &mdash; we&rsquo;ll email you the tracking when
+                  it&rsquo;s on its way.
+                </li>
+                <li>
+                  Delivery is typically 1&ndash;2 weeks in Europe and 2&ndash;4 weeks
+                  internationally (international orders may be subject to customs and local import
+                  duties).
+                </li>
+              </ul>
+            </div>
             <p className={styles.detailTerms}>
               Please read our{' '}
               <Link href="/terms-of-sale" target="_blank" rel="noopener noreferrer">

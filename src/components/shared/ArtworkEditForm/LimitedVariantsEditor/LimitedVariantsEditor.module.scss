@@ -35,6 +35,33 @@
   color: var(--color-text-primary);
 }
 
+// "Currently Selling" badge — shown next to the name only for a live
+// (published + on-sale) variant, so the artist sees at a glance which
+// editions are locked and earning.
+.sellingTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-badge-success-bg);
+  color: var(--color-badge-success-text);
+  font-family: var(--font-dashboard), var(--font-dashboard-fallback);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success);
+    flex-shrink: 0;
+  }
+}
+
 // Chevron pushed to the right edge; rotates to point up when expanded.
 .chevron {
   margin-left: auto;

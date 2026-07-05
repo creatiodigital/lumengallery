@@ -1,28 +1,64 @@
 .container {
+  // Local dark theme for this internal reference page — scoped here on
+  // purpose so the global (light) palette in variables.scss stays clean.
+  --ref-bg: #0a0a0f;
+  --ref-text: #e2e2e8;
+  --ref-text-bright: #f0f0f5;
+  --ref-text-strong: #d0d0e0;
+  --ref-text-soft: #c8c8d8;
+  --ref-text-stat: #c0c0d0;
+  --ref-text-mid: #a0a0b8;
+  --ref-text-dim: #8888a0;
+  --ref-text-muted: #6b6b80;
+  --ref-text-faint: #4b4b60;
+
+  --ref-surface: rgba(255, 255, 255, 0.02);
+  --ref-surface-header: rgba(255, 255, 255, 0.025);
+  --ref-surface-raised: rgba(255, 255, 255, 0.03);
+  --ref-surface-pill: rgba(255, 255, 255, 0.05);
+  --ref-border: rgba(255, 255, 255, 0.05);
+  --ref-border-strong: rgba(255, 255, 255, 0.06);
+  --ref-border-soft: rgba(255, 255, 255, 0.04);
+  --ref-border-faint: rgba(255, 255, 255, 0.03);
+
+  --ref-green: #4ade80;
+  --ref-green-tint: rgba(74, 222, 128, 0.12);
+  --ref-blue: #60a5fa;
+  --ref-blue-tint: rgba(96, 165, 250, 0.12);
+  --ref-amber: #fbbf24;
+  --ref-amber-tint: rgba(251, 191, 36, 0.12);
+  --ref-red: #f87171;
+  --ref-red-tint: rgba(248, 113, 113, 0.12);
+  --ref-purple: #c084fc;
+  --ref-purple-tint: rgba(192, 132, 252, 0.12);
+  --ref-indigo: #818cf8;
+  --ref-violet: #c4b5fd;
+  --ref-pink: #f0abfc;
+
   min-height: 100vh;
-  background: #0a0a0f;
-  color: #e2e2e8;
+  background: var(--ref-bg);
+  color: var(--ref-text);
   padding: 2rem 3rem;
   font-family: var(--font-dashboard), 'Inter', system-ui, sans-serif;
 }
 
 .header {
   margin-bottom: 2.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--ref-border-strong);
   padding-bottom: 1.5rem;
 }
 
 .title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: #f0f0f5;
+  color: var(--ref-text-bright);
   margin: 0 0 0.35rem;
   letter-spacing: -0.02em;
 }
 
 .subtitle {
   font-size: 0.85rem;
-  color: #6b6b80;
+  color: var(--ref-text-muted);
   margin: 0;
 }
 
@@ -37,16 +73,16 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.78rem;
-  color: #8888a0;
-  background: rgba(255, 255, 255, 0.03);
+  color: var(--ref-text-dim);
+  background: var(--ref-surface-raised);
   padding: 0.35rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ref-border);
 }
 
 .statValue {
   font-weight: 600;
-  color: #c0c0d0;
+  color: var(--ref-text-stat);
   font-variant-numeric: tabular-nums;
 }
 
@@ -59,7 +95,7 @@
 .sectionTitle {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #c8c8d8;
+  color: var(--ref-text-soft);
   margin: 0 0 1.25rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -70,8 +106,8 @@
 
 .group {
   margin-bottom: 1.5rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--ref-surface);
+  border: 1px solid var(--ref-border);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -81,21 +117,21 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.025);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--ref-surface-header);
+  border-bottom: 1px solid var(--ref-border-soft);
 }
 
 .groupName {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #d0d0e0;
+  color: var(--ref-text-strong);
   text-transform: capitalize;
 }
 
 .groupCount {
   font-size: 0.7rem;
-  color: #6b6b80;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--ref-text-muted);
+  background: var(--ref-surface-pill);
   padding: 0.15rem 0.5rem;
   border-radius: 10px;
 }
@@ -111,7 +147,7 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--ref-border-faint);
   font-size: 0.82rem;
   transition: background 0.15s;
 }
@@ -121,7 +157,7 @@
 }
 
 .routeItem:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--ref-surface);
 }
 
 .methods {
@@ -142,42 +178,42 @@
 
 .methodGET {
   composes: method;
-  background: rgba(74, 222, 128, 0.12);
-  color: #4ade80;
+  background: var(--ref-green-tint);
+  color: var(--ref-green);
 }
 
 .methodPOST {
   composes: method;
-  background: rgba(96, 165, 250, 0.12);
-  color: #60a5fa;
+  background: var(--ref-blue-tint);
+  color: var(--ref-blue);
 }
 
 .methodPUT {
   composes: method;
-  background: rgba(251, 191, 36, 0.12);
-  color: #fbbf24;
+  background: var(--ref-amber-tint);
+  color: var(--ref-amber);
 }
 
 .methodDELETE {
   composes: method;
-  background: rgba(248, 113, 113, 0.12);
-  color: #f87171;
+  background: var(--ref-red-tint);
+  color: var(--ref-red);
 }
 
 .methodPATCH {
   composes: method;
-  background: rgba(192, 132, 252, 0.12);
-  color: #c084fc;
+  background: var(--ref-purple-tint);
+  color: var(--ref-purple);
 }
 
 .routePath {
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.8rem;
-  color: #a0a0b8;
+  color: var(--ref-text-mid);
 }
 
 .routePath span {
-  color: #818cf8;
+  color: var(--ref-indigo);
   font-weight: 500;
 }
 
@@ -190,8 +226,8 @@
 }
 
 .model {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--ref-surface);
+  border: 1px solid var(--ref-border);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -201,21 +237,21 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.7rem 1rem;
-  background: rgba(255, 255, 255, 0.025);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--ref-surface-header);
+  border-bottom: 1px solid var(--ref-border-soft);
 }
 
 .modelName {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #c4b5fd;
+  color: var(--ref-violet);
 }
 
 .modelMeta {
   display: flex;
   gap: 0.75rem;
   font-size: 0.68rem;
-  color: #6b6b80;
+  color: var(--ref-text-muted);
 }
 
 .fieldList {
@@ -236,11 +272,11 @@
 }
 
 .field:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--ref-surface);
 }
 
 .fieldName {
-  color: #d0d0e0;
+  color: var(--ref-text-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -248,21 +284,21 @@
 
 .fieldNameId {
   composes: fieldName;
-  color: #fbbf24;
+  color: var(--ref-amber);
 }
 
 .fieldNameRelation {
   composes: fieldName;
-  color: #818cf8;
+  color: var(--ref-indigo);
 }
 
 .fieldType {
-  color: #6b6b80;
+  color: var(--ref-text-muted);
   white-space: nowrap;
 }
 
 .fieldDefault {
-  color: #4b4b60;
+  color: var(--ref-text-faint);
   font-size: 0.72rem;
   white-space: nowrap;
   overflow: hidden;
@@ -283,14 +319,14 @@
 
 .badgeId {
   composes: fieldBadge;
-  background: rgba(251, 191, 36, 0.12);
-  color: #fbbf24;
+  background: var(--ref-amber-tint);
+  color: var(--ref-amber);
 }
 
 .badgeUnique {
   composes: fieldBadge;
-  background: rgba(192, 132, 252, 0.12);
-  color: #c084fc;
+  background: var(--ref-purple-tint);
+  color: var(--ref-purple);
 }
 
 /* ---------- Enums ---------- */
@@ -302,19 +338,19 @@
 }
 
 .enum {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--ref-surface);
+  border: 1px solid var(--ref-border);
   border-radius: 10px;
   overflow: hidden;
 }
 
 .enumHeader {
   padding: 0.6rem 1rem;
-  background: rgba(255, 255, 255, 0.025);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--ref-surface-header);
+  border-bottom: 1px solid var(--ref-border-soft);
   font-size: 0.85rem;
   font-weight: 600;
-  color: #f0abfc;
+  color: var(--ref-pink);
 }
 
 .enumValues {
@@ -325,7 +361,7 @@
   display: block;
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.78rem;
-  color: #a0a0b8;
+  color: var(--ref-text-mid);
   padding: 0.2rem 0;
 }
 
@@ -334,7 +370,7 @@
 .noResults {
   text-align: center;
   padding: 3rem 1rem;
-  color: #4b4b60;
+  color: var(--ref-text-faint);
   font-size: 0.85rem;
 }
 
@@ -345,12 +381,12 @@
   align-items: center;
   gap: 0.35rem;
   font-size: 0.78rem;
-  color: #6b6b80;
+  color: var(--ref-text-muted);
   text-decoration: none;
   margin-bottom: 1.25rem;
   transition: color 0.15s;
 }
 
 .backLink:hover {
-  color: #a0a0b8;
+  color: var(--ref-text-mid);
 }

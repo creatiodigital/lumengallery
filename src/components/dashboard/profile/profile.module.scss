@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 /* Profile-specific styles (shared styles now come from DashboardLayout.module.scss) */
 
 .imageSection {
@@ -19,7 +21,7 @@
   gap: 14px;
   align-items: stretch;
 
-  @media (max-width: 768px) {
+  @include media-down(md) {
     flex-direction: column;
 
     .imageSection {

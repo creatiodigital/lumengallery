@@ -51,14 +51,14 @@ export const PayoutsPage = () => {
   // server-side) so this list never drifts from what `accounts.create`
   // will actually accept.
   useEffect(() => {
-    let cancelled = false
+    let canceled = false
     getConnectCountries().then((res) => {
-      if (cancelled) return
+      if (canceled) return
       if (res.ok) setCountries(res.countries)
       else setError(res.error)
     })
     return () => {
-      cancelled = true
+      canceled = true
     }
   }, [])
 

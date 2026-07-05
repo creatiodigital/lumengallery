@@ -5,8 +5,10 @@
  * handled their order.
  */
 
+import { formatMoneyCents } from '@/lib/money'
+
 export function formatEuro(cents: number): string {
-  return `€${(cents / 100).toFixed(2)}`
+  return formatMoneyCents(cents, 'eur')
 }
 
 // Output follows art-gallery convention: height × width.

@@ -1,6 +1,10 @@
+import { randomUUID } from 'crypto'
+
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
   DeleteObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
@@ -21,6 +25,12 @@ const r2 = new S3Client({
 
 const BUCKET = process.env.R2_BUCKET_NAME!
 const PUBLIC_URL = process.env.R2_PUBLIC_URL!
+
+// Dedicated bucket for invoice PDFs — must have NO public domain attached.
+// Falls back to the main (public) bucket when unset so local dev keeps
+// working, but production MUST set R2_PRIVATE_BUCKET_NAME before invoicing
+// goes live: on the main bucket the only protection is key secrecy.
+const PRIVATE_BUCKET = process.env.R2_PRIVATE_BUCKET_NAME || BUCKET
 
 // ── Environment prefix ───────────────────────────────────────────────────────
 
@@ -65,6 +75,64 @@ export async function uploadToR2(key: string, body: Buffer, contentType: string)
     }),
   )
   return `${PUBLIC_URL}/${key}`
+}
+
+// ── Private invoice storage (AR-131) ──────────────────────────────────────────
+
+/**
+ * Build a private R2 key for an invoice PDF. The suffix is a cryptographically
+ * random UUID (never Math.random — its state is recoverable from the public
+ * asset keys minted by the same process). The key is stored on the Invoice row
+ * and the PDF is only ever served through the admin-guarded download route.
+ */
+export function buildInvoiceKey(orderId: string, number: string): string {
+  return `${getEnvPrefix()}/invoices/${orderId}/${number}-${randomUUID()}.pdf`
+}
+
+/**
+ * Upload a private object to the private bucket. Returns nothing — the
+ * caller stores the `key`, never a public URL. Used for invoice PDFs.
+ */
+export async function uploadPrivateToR2(
+  key: string,
+  body: Buffer,
+  contentType: string,
+): Promise<void> {
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: PRIVATE_BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      CacheControl: 'private, no-store',
+    }),
+  )
+}
+
+/** True when an object already exists at `key` in the private bucket. Used to
+ *  make invoice PDF uploads write-once: an archived document is never
+ *  overwritten by a re-send. */
+export async function r2ObjectExists(key: string): Promise<boolean> {
+  try {
+    await r2.send(new HeadObjectCommand({ Bucket: PRIVATE_BUCKET, Key: key }))
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Fetch a private object's bytes as a Buffer (server-side only). */
+export async function getR2ObjectBuffer(key: string): Promise<Buffer> {
+  const res = await r2.send(new GetObjectCommand({ Bucket: PRIVATE_BUCKET, Key: key }))
+  if (!res.Body) throw new Error(`R2 object not found: ${key}`)
+  const bytes = await res.Body.transformToByteArray()
+  return Buffer.from(bytes)
+}
+
+/** Delete a private-bucket object by key. Dev reset tooling only — invoice
+ *  PDFs are immutable in normal operation. */
+export async function deletePrivateR2Key(key: string): Promise<void> {
+  await r2.send(new DeleteObjectCommand({ Bucket: PRIVATE_BUCKET, Key: key }))
 }
 
 // ── URL → key helpers ────────────────────────────────────────────────────────

@@ -1,3 +1,5 @@
+@use '@/styles/mixins' as *;
+
 .imageSection {
   width: 100%;
 
@@ -32,7 +34,7 @@
   gap: var(--space-6);
   align-items: stretch;
 
-  @media (max-width: 1024px) {
+  @include media-down(lg) {
     flex-direction: column;
   }
 }
@@ -42,7 +44,7 @@
   min-width: 0;
   display: flex;
 
-  @media (max-width: 1024px) {
+  @include media-down(lg) {
     width: 100%;
     flex: 1 1 auto;
   }
@@ -53,7 +55,7 @@
   min-width: 0;
   display: flex;
 
-  @media (max-width: 1024px) {
+  @include media-down(lg) {
     width: 100%;
     flex: 1 1 auto;
   }

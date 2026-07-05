@@ -91,7 +91,7 @@ export const TPS_PAPERS: TpsPaper[] = [
     id: 'ilford-cotton-textured',
     label: 'Ilford Cotton Textured',
     description:
-      '100% cotton, lightly textured surface. Soft tonal transitions and excellent dynamic range for both monochrome and colour work.',
+      '100% cotton, lightly textured surface. Soft tonal transitions and excellent dynamic range for both monochrome and color work.',
     printType: 'giclee',
     paperRoughness: 0.85,
   },
@@ -107,7 +107,7 @@ export const TPS_PAPERS: TpsPaper[] = [
     id: 'hahnemuhle-photo-rag',
     label: 'Hahnemühle Photo Rag',
     description:
-      '100% cotton, archival museum cotton rag. Smooth matte surface with deep blacks and accurate colour — the everyday gallery-grade choice.',
+      '100% cotton, archival museum cotton rag. Smooth matte surface with deep blacks and accurate color — the everyday gallery-grade choice.',
     printType: 'giclee',
     paperRoughness: 0.85,
   },
@@ -115,7 +115,7 @@ export const TPS_PAPERS: TpsPaper[] = [
     id: 'epson-semi-gloss',
     label: 'Epson Semi-Gloss',
     description:
-      'Resin-coated semi-gloss with a wide colour gamut. Less expensive than fine-art papers; durable and well-suited to vibrant photographic work.',
+      'Resin-coated semi-gloss with a wide color gamut. Less expensive than fine-art papers; durable and well-suited to vibrant photographic work.',
     printType: 'giclee',
     paperRoughness: 0.45,
   },
@@ -133,7 +133,7 @@ export const TPS_PAPERS: TpsPaper[] = [
     id: 'fuji-gloss',
     label: 'Fuji Gloss',
     description:
-      'Chromogenic gloss photographic paper. Saturated, punchy colour with a reflective surface — best behind glazing or in controlled lighting.',
+      'Chromogenic gloss photographic paper. Saturated, punchy color with a reflective surface — best behind glazing or in controlled lighting.',
     printType: 'ctype',
     paperRoughness: 0.2,
   },
@@ -144,7 +144,7 @@ export const TPS_PAPERS: TpsPaper[] = [
 // TPS calls this "Mounting / Framing" but we deliberately do NOT
 // offer the Mounting variant — only Print Only and Framing. When
 // Framing is picked, downstream dimensions (Frame Type and its
-// dependent material/colour options) become visible via
+// dependent material/color options) become visible via
 // `visibleWhen`.
 export type TpsFormatId = 'print-only' | 'framing'
 
@@ -192,7 +192,7 @@ export const TPS_FRAME_TYPES: TpsFrameType[] = [
   {
     id: 'standard',
     label: 'Standard Frame',
-    description: 'Classic moulding-and-glazing frame. Pick a colour and profile in the next step.',
+    description: 'Classic moulding-and-glazing frame. Pick a color and profile in the next step.',
     helperImageUrl: '/assets/helpers/classic.jpg',
   },
   {
@@ -220,7 +220,7 @@ export const TPS_FRAME_TYPES: TpsFrameType[] = [
 
 // ── Moulding (depends on Frame Type) ─────────────────────────
 //
-// Standard Frame has 9 mouldings = 3 colours × 3 profiles each, with
+// Standard Frame has 9 mouldings = 3 colors × 3 profiles each, with
 // minor variations (Oak swaps "Square" for "Thin Rounded"). Other
 // frame types' mouldings get added when supplied.
 export type TpsMouldingId =
@@ -261,7 +261,7 @@ export type TpsMouldingId =
   | 'flt-black-square'
   | 'flt-oak-thin'
   | 'flt-oak-thin-rounded'
-  // Tray Frame — 4 options (TPS only sells one profile, varying colour)
+  // Tray Frame — 4 options (TPS only sells one profile, varying color)
   | 'tray-beech'
   | 'tray-white'
   | 'tray-black'
@@ -524,7 +524,7 @@ export const TPS_MOULDINGS: TpsMoulding[] = [
     roughness: 0.7,
   },
 
-  // Tray Frame mouldings (4 — TPS only sells the one profile per colour)
+  // Tray Frame mouldings (4 — TPS only sells the one profile per color)
   {
     id: 'tray-beech',
     label: 'Beech',
@@ -609,11 +609,11 @@ export const TPS_MOUNT_BOARD_BOUNDS = {
 //
 // TPS calls the passepartout "Window Mount". Seven options including
 // 'none' (which means no mat between the print and the frame).
-// `hex` feeds the mat colour in the 3D preview; `roughness` keeps it
+// `hex` feeds the mat color in the 3D preview; `roughness` keeps it
 // matte-board-like. When buyer picks anything other than 'none', a
 // follow-up "Mount Board Size" input controls the mat width — this
-// is a TODO follow-up; for now the dimension is colour-only and the
-// preview will use a small default width when a colour is chosen.
+// is a TODO follow-up; for now the dimension is color-only and the
+// preview will use a small default width when a color is chosen.
 export type TpsWindowMountId =
   | 'none'
   | 'off-white'
@@ -639,7 +639,7 @@ export const TPS_WINDOW_MOUNTS: TpsWindowMount[] = [
   { id: 'ivory', label: 'Ivory', hex: '#f6f3ec', roughness: 0.95 },
   { id: 'cream', label: 'Cream', hex: '#f3ead2', roughness: 0.95 },
   { id: 'black', label: 'Black', hex: '#1a1a1a', roughness: 0.9 },
-  { id: 'grey', label: 'Grey', hex: '#9a9a9a', roughness: 0.9 },
+  { id: 'grey', label: 'Gray', hex: '#9a9a9a', roughness: 0.9 }, // id stays 'grey' — stored in printConfig
 ]
 
 // ── Hanging Option (only when Format = Framing) ──────────────

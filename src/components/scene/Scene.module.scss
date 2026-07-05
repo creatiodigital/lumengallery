@@ -32,7 +32,7 @@
   z-index: 1000;
   transition: background-color 0.15s ease;
 
-  @media (min-width: 1024px) {
+  @include media-up(lg) {
     display: flex;
   }
 

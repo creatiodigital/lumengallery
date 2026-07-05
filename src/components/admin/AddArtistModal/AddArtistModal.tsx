@@ -154,7 +154,7 @@ export const AddArtistModal = ({
             <Text
               font="dashboard"
               as="p"
-              style={{ fontSize: '13px', color: '#666', marginTop: '12px' }}
+              style={{ fontSize: '13px', color: 'var(--color-text-secondary)', marginTop: '12px' }}
             >
               The artist will be asked to set a new password on their first login.
             </Text>
@@ -237,7 +237,13 @@ export const AddArtistModal = ({
 
               <label className={styles.label} htmlFor="password">
                 Password{' '}
-                <span style={{ fontWeight: 'normal', fontSize: '12px', color: '#888' }}>
+                <span
+                  style={{
+                    fontWeight: 'normal',
+                    fontSize: '12px',
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
                   (optional — auto-generated if empty)
                 </span>
               </label>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button'
 import { InquireSidebar } from '@/components/ui/InquireSidebar'
 import { Share } from '@/components/ui/Share'
 import { setPrintReturnUrl } from '@/components/checkout/printReturnUrl'
+import { getPublicPurchasesPaused } from '@/app/prints/actions'
 import { isRichTextEmpty } from '@/lib/textUtils'
 import { reportImageError } from '@/lib/observability/reportImageError'
 
@@ -42,6 +43,14 @@ export type Artwork = {
 const FALLBACK_WIDTH = 800
 const FALLBACK_HEIGHT = 800
 
+// Module-level cache for the purchases kill switch so bouncing between
+// artwork pages (or opening several works in the exhibition modal) doesn't
+// POST the server action on every mount. Short TTL keeps a flip visible
+// within a minute; the wizard route and payment actions enforce the pause
+// authoritatively regardless.
+const PAUSED_CACHE_TTL_MS = 60 * 1000
+let pausedCache: { value: boolean; at: number } | null = null
+
 interface ArtworkDetailBodyProps {
   artwork: Artwork
   artist: Artist
@@ -55,6 +64,27 @@ interface ArtworkDetailBodyProps {
 export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) => {
   const router = useRouter()
   const [isInquireOpen, setIsInquireOpen] = useState(false)
+
+  // Purchases kill switch (admin dashboard). Read client-side because this
+  // body is shared by the artwork page and the in-exhibition modal — one
+  // check covers both. Defaults to "not paused" so normal operation never
+  // waits on the read; when paused, the wizard route and the payment actions
+  // still enforce the block server-side.
+  const [purchasesPaused, setPurchasesPaused] = useState(() => pausedCache?.value ?? false)
+  useEffect(() => {
+    if (pausedCache && Date.now() - pausedCache.at < PAUSED_CACHE_TTL_MS) {
+      setPurchasesPaused(pausedCache.value)
+      return
+    }
+    getPublicPurchasesPaused()
+      .then((paused) => {
+        pausedCache = { value: paused, at: Date.now() }
+        setPurchasesPaused(paused)
+      })
+      .catch(() => {
+        // Transport failure — keep the fail-open default (CTA visible).
+      })
+  }, [])
 
   const displayTitle = artwork.title || artwork.name || ''
   const displayAuthor = artwork.author || `${artist.name} ${artist.lastName}`.trim()
@@ -109,7 +139,7 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
           onClick={() => setIsInquireOpen(true)}
           className={styles.inquireButton}
         />
-        {artwork.printEnabled && artwork.printPriceCents ? (
+        {!purchasesPaused && artwork.printEnabled && artwork.printPriceCents ? (
           <>
             <Button
               variant="primary"
@@ -124,8 +154,8 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
               }}
               className={styles.inquireButton}
             />
-            <div className={styles.catalogueNote}>
-              <Link href="/prints" className={styles.catalogueLink}>
+            <div className={styles.catalogNote}>
+              <Link href="/prints" className={styles.catalogLink}>
                 See all available prints →
               </Link>
             </div>

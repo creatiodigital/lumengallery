@@ -1,9 +1,19 @@
+@use '@/styles/mixins' as *;
+
+// Two columns on desktop — a single full-width row per artist reads empty on
+// big screens. One column below lg, the same breakpoint where the header
+// switches to the hamburger menu.
 .list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-16);
   list-style: none;
   margin: 0;
   padding: 0;
+
+  @include media-down(lg) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .artistRow {
@@ -38,7 +48,7 @@
   font-weight: var(--font-regular);
   color: var(--color-text-primary);
 
-  @media (max-width: 768px) {
+  @include media-down(md) {
     font-size: var(--text-xl);
   }
 }
@@ -55,7 +65,7 @@
   height: 100%;
   object-fit: cover;
 
-  @media (max-width: 768px) {
+  @include media-down(md) {
     width: 100%;
     height: 100%;
   }

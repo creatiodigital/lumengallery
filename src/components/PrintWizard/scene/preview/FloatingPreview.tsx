@@ -20,14 +20,14 @@ interface FloatingPreviewProps {
   paperRoughness: number
 }
 
-// Visible coloured backboard border around the paper sheet, in metres.
+// Visible colored backboard border around the paper sheet, in metres.
 // TPS exposes this as a per-side configurable "Mount Board Size" for
 // Floating frames; for now we use a sane default so the preview reads
 // correctly. Wire it up to a wizard dimension when we add that input.
 const DEFAULT_BACKBOARD_BORDER_M = 0.02
 // Always white. TPS's schematic documents that foamex comes in
 // white or black, but their actual order flow only exposes white,
-// so we don't surface a colour choice either.
+// so we don't surface a color choice either.
 const DEFAULT_BACKBOARD_HEX = '#f6f3ec'
 // Plinth depth — the Dibond panel sits this far forward of the
 // backboard. Small enough to hide behind the print head-on, large
@@ -43,7 +43,7 @@ const BACKBOARD_Z = -0.003
 
 /**
  * Floating frame: print bonded to Dibond, suspended in front of a
- * visible coloured backboard with a uniform border on all four sides.
+ * visible colored backboard with a uniform border on all four sides.
  * No passepartout, no paper border — the visible "border" around the
  * print is the backboard itself, not a window-cut mat.
  */

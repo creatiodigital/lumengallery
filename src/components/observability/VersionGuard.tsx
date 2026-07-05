@@ -7,7 +7,7 @@ import * as Sentry from '@sentry/nextjs'
  * Detects when a tab is running a stale/cached build (old JS/HTML) after a newer
  * deploy, and reports it to Sentry so we can SEE how many users are on outdated
  * versions — a failure mode that's otherwise completely invisible (it doesn't
- * throw; it just causes weird "works on refresh" behaviour). Launch hardening,
+ * throw; it just causes weird "works on refresh" behavior). Launch hardening,
  * see project_observability_instrumentation_map.
  *
  * It compares the build the tab booted (`NEXT_PUBLIC_BUILD_ID`, inlined at build

@@ -3,6 +3,14 @@ import { withSentryConfig } from '@sentry/nextjs'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   serverExternalPackages: ['@prisma/client', '@prisma/client-runtime-utils'],
+  // Invoice PDFs render server-side with brand fonts + the wordmark read from
+  // public/ via process.cwd() (see src/lib/invoices/InvoiceDocument.tsx) —
+  // dynamic paths Vercel's file tracing cannot follow. Without this include,
+  // the prod lambda lacks the files and every render throws ENOENT after the
+  // invoice number is already committed.
+  outputFileTracingIncludes: {
+    '/*': ['public/fonts/**/*', 'public/email/**/*'],
+  },
   // Stamp the deployed commit SHA into the client bundle so a running tab knows
   // which build it booted. Compared against the server's live SHA (/api/version)
   // to detect users stuck on a stale/cached version. Vercel sets

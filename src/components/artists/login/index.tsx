@@ -93,7 +93,7 @@ export const LoginPage = () => {
         return
       }
 
-      // Local-dev escape hatch: server signalled OTP is bypassed
+      // Local-dev escape hatch: server signaled OTP is bypassed
       // (SKIP_LOGIN_OTP=true), so we sign in straight from the
       // password step without showing the 6-digit prompt.
       if (data.skipOtp) {
