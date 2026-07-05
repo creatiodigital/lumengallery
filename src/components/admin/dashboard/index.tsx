@@ -15,6 +15,8 @@ import { clearAllTestData, getTestDataCounts } from '@/app/admin/dev-cleanup/act
 import { getPurchasesPausedState, togglePurchasesPaused } from '@/app/admin/settings/actions'
 import { type AttentionMetric, countAttentionMetrics } from '@/lib/orders/orderBuckets'
 
+import { AnalyticsSection } from './AnalyticsSection'
+
 // Dev/staging-only cleanup controls. NEXT_PUBLIC_APP_ENV is inlined at build
 // time, so on production this is a compile-time false and the whole section
 // (plus its imports' code paths) never renders. The server actions carry the
@@ -250,6 +252,8 @@ export const DashboardAdmin = () => {
           ))}
         </div>
       </section>
+
+      <AnalyticsSection />
 
       {/* Dev cleanup — localhost + staging ONLY (compile-time gated above;
           the server actions enforce it authoritatively). One button to clear
