@@ -2,7 +2,7 @@
 
 // Item card: details (image + artist/title/specs) on the left, and a vertical
 // price · quantity · subtotal · remove panel on the right, split by a divider.
-// Below 1024px (lg) the panel drops beneath the details — see the note on the
+// Below 1280px (xl) the panel drops beneath the details — see the note on the
 // media query below for why the cart stacks earlier than most components.
 .line {
   display: flex;
@@ -13,11 +13,12 @@
   // White gap between item cards — the page background shows through.
   margin-bottom: var(--space-6);
 
-  // Stack below 1024px (lg). The side-by-side layout reserves a fixed 220px
-  // panel + 140px thumb + a 23ch spec-label column; in the tablet band that
-  // squeezed the spec VALUE column to ~1ch, breaking long values one letter
-  // per line. The cart therefore stacks earlier (lg) than lighter components.
-  @include media-down(lg) {
+  // Stack below 1280px (xl). The side-by-side layout reserves a fixed 220px
+  // panel next to the details while the page also reserves a fixed 340px
+  // order-summary column — in the laptop band (~1024–1246px) the details
+  // area got too narrow for the spec list's value column. The cart therefore
+  // stacks earlier (xl) than lighter components.
+  @include media-down(xl) {
     flex-direction: column;
   }
 }
@@ -53,7 +54,7 @@
     background: var(--color-border-light);
   }
 
-  @include media-down(lg) {
+  @include media-down(xl) {
     width: auto;
     border-top: 1px solid var(--color-border-light);
 

@@ -57,12 +57,21 @@
 
 // Prints commerce toolbar — sits between two double borders (the gallery
 // motif), holding the artist filter (left) and the cart (right).
+// Single row — filters left, cart right. The cart dropping to its own line
+// reads broken, so wrapping is off at normal widths. Below sm it comes back
+// as an escape hatch: the select labels can't shrink or truncate (by
+// design), so a long selected artist name on a narrow phone must wrap
+// rather than push the cart off-screen.
 .printsToolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
+  // Guaranteed air between the filter group and the cart when space is tight.
+  gap: var(--space-6);
+
+  @include media-down(sm) {
+    flex-wrap: wrap;
+  }
   border-top: 3px double var(--color-border-default);
   border-bottom: 3px double var(--color-border-default);
   padding: var(--space-4) 0;
@@ -73,18 +82,15 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  flex-wrap: wrap;
+  min-width: 0;
 }
 
+// Both triggers hug their content (label + chevron, nothing more) so the two
+// filters cluster tightly on the left and all the free space sits between
+// them and the cart — never inside the filter group.
 .artistSelect,
 .editionSelect {
   max-width: 100%;
-}
-
-// Give the artist trigger a touch more room (grows for longer names; the
-// chevron still hugs the label — extra width is trailing space).
-.artistSelect {
-  min-width: 10rem;
 }
 
 .toolbarActions {
@@ -100,6 +106,8 @@
 // grid while a page/filter fetch is in flight.
 .results {
   position: relative;
+  // Breathing room between the last card row and the footer's double rule.
+  margin-bottom: var(--space-16);
 }
 
 // Dim + lock the current grid during a fetch; the fresh page swaps in when the

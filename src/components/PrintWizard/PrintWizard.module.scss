@@ -101,19 +101,58 @@
 }
 
 // Persistent edition marker — spans the full body width as the first row,
-// above the left panel's "Choose your edition" / steps.
+// above the left panel's "Choose your edition" / steps. A quiet stack:
+// bordered badge with a soft "Learn more" text link centered beneath it.
 .editionBadge {
   grid-column: 1 / -1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
   padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid var(--color-border-default);
 }
 
+// Typographic mark, not a control: serif small-caps-style heading flanked by
+// tapered filigree rules — "— Open Edition —". No border/background so it
+// can't be mistaken for something clickable.
 .editionBadgeLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 100%;
+}
+
+.editionBadgeText {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
   color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+// Tapered spindle rule (SVG) — swells in the middle, vanishes at the tips.
+.editionBadgeOrnament {
+  width: 24px;
+  height: 2px;
+  color: var(--color-text-secondary);
+}
+
+// Soft, non-navigational trigger: quiet serif text with a hairline underline
+// (no arrow — it opens a modal, it doesn't take the buyer anywhere).
+.editionBadgeCta {
+  padding: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--color-border-default);
+
+  &:hover {
+    color: var(--color-text-primary);
+    text-decoration-color: currentcolor;
+  }
 }
 
 // ── Left steps panel ─────────────────────────────────────────
@@ -774,10 +813,10 @@
   min-height: 0;
 
   @include media-down(tablet) {
-    order: 1;
-    // On mobile the grid cell has no intrinsic height, so keep a
-    // usable preview size instead of collapsing to zero.
-    aspect-ratio: 4 / 3;
+    // The 3D preview is desktop-only. The wizards never mount <Scene> below
+    // the tablet breakpoint (useIsMobile, post-hydration) — this CSS guard
+    // is belt-and-braces so a regression can't show a phone the canvas.
+    display: none;
   }
 }
 

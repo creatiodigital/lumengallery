@@ -117,7 +117,8 @@
 
 .email {
   font-family: var(--font-serif);
-  font-size: var(--text-lg-mobile);
+  // Same scale as .value so the email doesn't read smaller than its siblings.
+  font-size: var(--text-xl-mobile);
   color: var(--color-text-primary);
   text-decoration: none;
 

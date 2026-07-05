@@ -6,6 +6,7 @@ import { Prisma } from '@/generated/prisma'
 import type { PendingCartItem } from '@/lib/cart/pendingCartItem'
 import type { CartLikeItem, CartTotals } from '@/lib/cart/validateCart'
 import { validateCart } from '@/lib/cart/validateCart'
+import { getPurchasesPaused } from '@/lib/settings'
 import {
   attachPaymentIntentToReservation,
   reserveNextEditionNumber,
@@ -51,6 +52,14 @@ export async function createCartPaymentIntent(
   input: CreateCartPaymentIntentInput,
 ): Promise<CreateCartPaymentIntentResult> {
   const { items, address } = input
+
+  // ── 0. Purchases kill switch ──────────────────────────────────────
+  // The UI hides all purchase surfaces while paused, but a buyer with the
+  // payment step already open can still submit — this is the authoritative
+  // refusal. New intents only; anything already authorized is untouched.
+  if (await getPurchasesPaused()) {
+    return { ok: false, error: 'Purchases are temporarily paused — please check back soon.' }
+  }
 
   // ── 1. Server-authoritative re-validation + pricing ──────────────
   // The cart lives in localStorage; we re-price every line against the

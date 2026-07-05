@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal/ConfirmModal'
 import { LoadingBar } from '@/components/ui/LoadingBar'
 import { listOrders } from '@/app/admin/orders/actions'
-import {
-  clearAllTestData,
-  getTestDataCounts,
-} from '@/app/admin/dev-cleanup/actions'
+import { clearAllTestData, getTestDataCounts } from '@/app/admin/dev-cleanup/actions'
+import { getPurchasesPausedState, togglePurchasesPaused } from '@/app/admin/settings/actions'
 import { type AttentionMetric, countAttentionMetrics } from '@/lib/orders/orderBuckets'
+
+import { AnalyticsSection } from './AnalyticsSection'
 
 // Dev/staging-only cleanup controls. NEXT_PUBLIC_APP_ENV is inlined at build
 // time, so on production this is a compile-time false and the whole section
@@ -107,6 +107,12 @@ export const DashboardAdmin = () => {
 
   const [metrics, setMetrics] = useState<Record<AttentionMetric, number> | null>(null)
 
+  // Purchases kill switch — null until the current state loads.
+  const [purchasesPaused, setPurchasesPaused] = useState<boolean | null>(null)
+  const [pauseConfirmOpen, setPauseConfirmOpen] = useState(false)
+  const [pauseToggling, setPauseToggling] = useState(false)
+  const [pauseError, setPauseError] = useState<string | null>(null)
+
   // Dev-cleanup state (section only renders outside production).
   const [cleanupConfirmOpen, setCleanupConfirmOpen] = useState(false)
   const [cleanupCounts, setCleanupCounts] = useState<string | null>(null)
@@ -134,6 +140,31 @@ export const DashboardAdmin = () => {
   useEffect(() => {
     if (sessionStatus === 'authenticated') loadCounts()
   }, [sessionStatus, loadCounts])
+
+  // Extracted so the error state can offer a retry — during an incident the
+  // kill switch must not dead-end on one failed read.
+  const loadPausedState = useCallback(async () => {
+    setPauseError(null)
+    const res = await getPurchasesPausedState()
+    if (res.ok) setPurchasesPaused(res.paused)
+    else setPauseError(res.error)
+  }, [])
+
+  useEffect(() => {
+    if (sessionStatus !== 'authenticated') return
+    void loadPausedState()
+  }, [sessionStatus, loadPausedState])
+
+  const handleTogglePurchases = useCallback(async () => {
+    if (purchasesPaused === null) return
+    setPauseToggling(true)
+    setPauseError(null)
+    const res = await togglePurchasesPaused(!purchasesPaused)
+    setPauseToggling(false)
+    setPauseConfirmOpen(false)
+    if (res.ok) setPurchasesPaused(res.paused)
+    else setPauseError(res.error)
+  }, [purchasesPaused])
 
   const openCleanupConfirm = useCallback(async () => {
     setCleanupResult(null)
@@ -211,23 +242,6 @@ export const DashboardAdmin = () => {
         </div>
       </section>
 
-      {/* Action queue — items that should be triaged this week. Empty
-          state for now; will populate with stuck orders, artists
-          missing Stripe onboarding, recent webhook/cert failures
-          from the event log. */}
-      <section className={dashboardStyles.section}>
-        <div className={dashboardStyles.sectionHeader}>
-          <h2 className={dashboardStyles.sectionTitle}>Action queue</h2>
-        </div>
-        <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
-          Recent issues and items aging in their current state — coming soon.
-        </p>
-        <div className={styles.placeholderBlock}>
-          Stuck orders, onboarding-incomplete artists, and recent webhook failures will surface
-          here. Wired in a follow-up pass.
-        </div>
-      </section>
-
       {/* Navigation hubs — entry points to the workspaces. Replaces
           the old inline tables on the dashboard so this page stays a
           signal page, not a workspace. */}
@@ -245,19 +259,7 @@ export const DashboardAdmin = () => {
         </div>
       </section>
 
-      {/* Analytics — empty space reserved for revenue, top artworks,
-          buyer geography, and the funnel. Keeping the layout slot
-          here so we know where it lives once we have data sources. */}
-      <section className={dashboardStyles.section}>
-        <div className={dashboardStyles.sectionHeader}>
-          <h2 className={dashboardStyles.sectionTitle}>Analytics</h2>
-        </div>
-        <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
-          Last-30-days revenue, top-selling artworks, buyer geography, and the artwork → wizard →
-          checkout → payment funnel — coming soon.
-        </p>
-        <div className={styles.placeholderBlock}>Reserved space for charts and tables.</div>
-      </section>
+      <AnalyticsSection />
 
       {/* Dev cleanup — localhost + staging ONLY (compile-time gated above;
           the server actions enforce it authoritatively). One button to clear
@@ -285,6 +287,65 @@ export const DashboardAdmin = () => {
             </p>
           )}
         </section>
+      )}
+
+      {/* Emergency kill switch — one click makes the public site read-only:
+          every purchase surface hides and new payments are refused. Rarely
+          used, so it lives at the very bottom; the red PAUSED state still
+          makes an ongoing pause impossible to miss. */}
+      <section className={dashboardStyles.section}>
+        <div className={dashboardStyles.sectionHeader}>
+          <h2 className={dashboardStyles.sectionTitle}>
+            {purchasesPaused ? 'Purchases — PAUSED' : 'Purchases'}
+          </h2>
+        </div>
+        <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
+          {purchasesPaused
+            ? 'The public site is read-only — prints catalog, Order Print buttons, cart and checkout are hidden (deep links included) and new payments are refused. Per-artwork print settings are untouched.'
+            : 'Emergency switch: instantly hides every purchase surface on the public site — catalog, Order Print buttons, cart, checkout, bookmarked links — without touching any per-artwork setting.'}
+        </p>
+        <Button
+          font="dashboard"
+          variant={purchasesPaused ? 'primary' : 'danger'}
+          label={
+            purchasesPaused === null
+              ? 'Loading…'
+              : purchasesPaused
+                ? 'Resume purchases'
+                : 'Pause all purchases'
+          }
+          disabled={purchasesPaused === null || pauseToggling}
+          onClick={() => setPauseConfirmOpen(true)}
+        />
+        {pauseError && (
+          <p className={dashboardStyles.sectionDescription} style={{ margin: '12px 0 0 0' }}>
+            {pauseError}{' '}
+            {purchasesPaused === null && (
+              <Button
+                font="dashboard"
+                variant="ghost"
+                label="Retry"
+                onClick={() => void loadPausedState()}
+              />
+            )}
+          </p>
+        )}
+      </section>
+
+      {pauseConfirmOpen && (
+        <ConfirmModal
+          title={purchasesPaused ? 'Resume purchases?' : 'Pause ALL purchases?'}
+          message={
+            purchasesPaused
+              ? 'The prints catalog, Order Print buttons, cart and checkout become available to the public again immediately.'
+              : 'The public site becomes read-only immediately: prints catalog, every Order Print button, cart and checkout disappear (bookmarked links included) and new payments are refused. Orders already placed are not affected. You can resume at any time.'
+          }
+          confirmLabel={purchasesPaused ? 'Resume purchases' : 'Pause all purchases'}
+          destructive={!purchasesPaused}
+          busy={pauseToggling}
+          onConfirm={() => void handleTogglePurchases()}
+          onCancel={() => setPauseConfirmOpen(false)}
+        />
       )}
 
       {cleanupConfirmOpen && (

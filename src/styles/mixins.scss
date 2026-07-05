@@ -79,10 +79,11 @@
 //   @include media-down(lg) { … }  // max-width: 1024px  (desktop-first)
 //   @include breakpoint(lg) { … }  // alias of media-up (back-compat)
 //
-// sm/md/lg/xl/xxl are the standard scale. `tablet` (900) and `wide` (1100) are
-// real, in-use breakpoints kept as named tokens so existing layouts that switch
-// at those widths don't shift.
+// xs/sm/md/lg/xl/xxl are the standard scale. `tablet` (900) and `wide` (1100)
+// are real, in-use breakpoints kept as named tokens so existing layouts that
+// switch at those widths don't shift.
 $breakpoints: (
+  xs: 400px,
   sm: 640px,
   md: 768px,
   tablet: 900px,
