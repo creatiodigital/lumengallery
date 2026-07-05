@@ -19,7 +19,7 @@ import { useCart } from '@/lib/cart/useCart'
 import { type Catalog, type Quote, summarizeConfig } from '@/lib/print-providers'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { TABLET_BREAKPOINT_PX, useIsMobile } from '@/hooks/useIsMobile'
 
 import { CartAddedModal } from './CartAddedModal'
 import { EditionBadge } from './EditionBadge'
@@ -59,9 +59,13 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
   const router = useRouter()
   const searchParams = useSearchParams()
   // Desktop-only 3D preview — same rationale and breakpoint as the open
-  // wizard: never mount the WebGL canvas on mobile. 901 = media-down(tablet)'s
-  // max-width: 900px, inclusive.
-  const isMobile = useIsMobile(901)
+  // wizard: never mount the WebGL canvas on mobile, and only mount it after
+  // hydration so SSR and the first client render agree.
+  const isMobile = useIsMobile(TABLET_BREAKPOINT_PX + 1)
+  const [sceneReady, setSceneReady] = useState(false)
+  useEffect(() => {
+    setSceneReady(true)
+  }, [])
   // Set when the buyer came from the cart's "Edit item" link — re-adding
   // replaces this line (removed just before the add) instead of duplicating it.
   const editLineId = searchParams.get('editLineId')
@@ -230,7 +234,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
               selectedVariantId={selected.id}
               onSelect={setSelectedVariantId}
             />
-            {!isMobile && (
+            {sceneReady && !isMobile && (
               <Scene
                 imageUrl={artwork.imageUrl}
                 catalog={catalog}

@@ -20,33 +20,11 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 const Prints = async () => {
-  // Kill switch (admin dashboard): render the same "coming soon" state the
-  // page shows when zero artworks are print-enabled — catalog, filters and
-  // cart all disappear without touching any per-artwork flag.
-  const paused = await getPurchasesPaused()
-  if (paused) {
-    const pausedPageRaw = await prisma.pageContent.findUnique({ where: { slug: 'prints' } })
-    return (
-      <PrintsPage
-        initialItems={[]}
-        initialTotal={0}
-        artistOptions={[]}
-        pageContent={
-          pausedPageRaw
-            ? {
-                title: pausedPageRaw.title,
-                content: pausedPageRaw.content ?? '',
-                bannerImageUrl: pausedPageRaw.bannerImageUrl ?? null,
-              }
-            : null
-        }
-      />
-    )
-  }
-
-  // SSR the first, unfiltered page + the artist options + the CMS copy in one
-  // round-trip group. The browser then drives pages/filters via the same action.
-  const [{ items, totalCount }, artistOptions, pageRaw] = await Promise.all([
+  // SSR the first, unfiltered page + the artist options + the CMS copy + the
+  // kill switch in one round-trip group. The browser then drives pages and
+  // filters via the same action.
+  const [paused, { items, totalCount }, artistOptions, pageRaw] = await Promise.all([
+    getPurchasesPaused(),
     getPrintsCatalogPage({ page: 1 }),
     getPrintArtistOptions(),
     prisma.pageContent.findUnique({ where: { slug: 'prints' } }),
@@ -60,11 +38,14 @@ const Prints = async () => {
       }
     : null
 
+  // Kill switch (admin dashboard): zero items renders the same "coming soon"
+  // state the page shows when no artwork is print-enabled — catalog, filters
+  // and cart all disappear without touching any per-artwork flag.
   return (
     <PrintsPage
-      initialItems={items}
-      initialTotal={totalCount}
-      artistOptions={artistOptions}
+      initialItems={paused ? [] : items}
+      initialTotal={paused ? 0 : totalCount}
+      artistOptions={paused ? [] : artistOptions}
       pageContent={pageContent}
     />
   )

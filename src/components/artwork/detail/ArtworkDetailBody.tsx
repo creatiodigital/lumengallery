@@ -43,6 +43,14 @@ export type Artwork = {
 const FALLBACK_WIDTH = 800
 const FALLBACK_HEIGHT = 800
 
+// Module-level cache for the purchases kill switch so bouncing between
+// artwork pages (or opening several works in the exhibition modal) doesn't
+// POST the server action on every mount. Short TTL keeps a flip visible
+// within a minute; the wizard route and payment actions enforce the pause
+// authoritatively regardless.
+const PAUSED_CACHE_TTL_MS = 60 * 1000
+let pausedCache: { value: boolean; at: number } | null = null
+
 interface ArtworkDetailBodyProps {
   artwork: Artwork
   artist: Artist
@@ -62,9 +70,20 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
   // check covers both. Defaults to "not paused" so normal operation never
   // waits on the read; when paused, the wizard route and the payment actions
   // still enforce the block server-side.
-  const [purchasesPaused, setPurchasesPaused] = useState(false)
+  const [purchasesPaused, setPurchasesPaused] = useState(() => pausedCache?.value ?? false)
   useEffect(() => {
-    getPublicPurchasesPaused().then(setPurchasesPaused)
+    if (pausedCache && Date.now() - pausedCache.at < PAUSED_CACHE_TTL_MS) {
+      setPurchasesPaused(pausedCache.value)
+      return
+    }
+    getPublicPurchasesPaused()
+      .then((paused) => {
+        pausedCache = { value: paused, at: Date.now() }
+        setPurchasesPaused(paused)
+      })
+      .catch(() => {
+        // Transport failure — keep the fail-open default (CTA visible).
+      })
   }, [])
 
   const displayTitle = artwork.title || artwork.name || ''

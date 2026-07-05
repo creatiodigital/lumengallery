@@ -22,10 +22,14 @@ const Checkout = async ({ searchParams }: CheckoutPageProps) => {
   const sp = await searchParams
 
   // Purchases kill switch — but let a 3DS return through: Stripe sends the
-  // buyer back here with ?payment_intent=… AFTER authorizing, and that
+  // buyer back here with ?payment_intent=pi_… AFTER authorizing, and that
   // payment is one of the "ongoing ones" that should complete its
-  // confirmation screen even while new purchases are paused.
-  const isPaymentReturn = typeof sp.payment_intent === 'string'
+  // confirmation screen even while new purchases are paused. Require the
+  // pi_ prefix so an arbitrary ?payment_intent=x can't re-open the full
+  // checkout UI during a pause (harmless — payment is refused server-side —
+  // but a confusing dead-end).
+  const isPaymentReturn =
+    typeof sp.payment_intent === 'string' && sp.payment_intent.startsWith('pi_')
   if (!isPaymentReturn && (await getPurchasesPaused())) {
     return <PurchasesPausedNotice title="Checkout" />
   }

@@ -141,13 +141,19 @@ export const DashboardAdmin = () => {
     if (sessionStatus === 'authenticated') loadCounts()
   }, [sessionStatus, loadCounts])
 
+  // Extracted so the error state can offer a retry — during an incident the
+  // kill switch must not dead-end on one failed read.
+  const loadPausedState = useCallback(async () => {
+    setPauseError(null)
+    const res = await getPurchasesPausedState()
+    if (res.ok) setPurchasesPaused(res.paused)
+    else setPauseError(res.error)
+  }, [])
+
   useEffect(() => {
     if (sessionStatus !== 'authenticated') return
-    getPurchasesPausedState().then((res) => {
-      if (res.ok) setPurchasesPaused(res.paused)
-      else setPauseError(res.error)
-    })
-  }, [sessionStatus])
+    void loadPausedState()
+  }, [sessionStatus, loadPausedState])
 
   const handleTogglePurchases = useCallback(async () => {
     if (purchasesPaused === null) return
@@ -313,7 +319,15 @@ export const DashboardAdmin = () => {
         />
         {pauseError && (
           <p className={dashboardStyles.sectionDescription} style={{ margin: '12px 0 0 0' }}>
-            {pauseError}
+            {pauseError}{' '}
+            {purchasesPaused === null && (
+              <Button
+                font="dashboard"
+                variant="ghost"
+                label="Retry"
+                onClick={() => void loadPausedState()}
+              />
+            )}
           </p>
         )}
       </section>

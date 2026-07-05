@@ -25,19 +25,23 @@ const PaymentPage = async ({ params, searchParams }: PaymentPageProps) => {
   const { slug } = await params
   const sp = await searchParams
 
-  // Purchases kill switch — deep links straight to the payment step. The
-  // 3DS return lands on /print/confirmation (left open), so an in-flight
-  // authorization still completes its confirmation screen.
-  if (await getPurchasesPaused()) {
+  // Kill-switch read runs alongside the artwork query (independent) —
+  // covers deep links straight to the payment step. The 3DS return lands on
+  // /print/confirmation (left open), so an in-flight authorization still
+  // completes its confirmation screen.
+  const [paused, artwork] = await Promise.all([
+    getPurchasesPaused(),
+    prisma.artwork.findUnique({
+      where: { slug },
+      include: {
+        user: { select: { name: true, lastName: true } },
+      },
+    }),
+  ])
+
+  if (paused) {
     return <PurchasesPausedNotice title="Payment" />
   }
-
-  const artwork = await prisma.artwork.findUnique({
-    where: { slug },
-    include: {
-      user: { select: { name: true, lastName: true } },
-    },
-  })
 
   if (!artwork || !artwork.imageUrl) notFound()
   if (!artwork.printEnabled || !artwork.printPriceCents) notFound()

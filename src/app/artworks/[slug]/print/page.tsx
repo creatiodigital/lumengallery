@@ -32,21 +32,25 @@ export async function generateMetadata({ params }: PrintWizardPageProps): Promis
 const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
   const { slug } = await params
 
-  // Purchases kill switch — covers deep links / bookmarks straight into the
-  // wizard while the CTAs that normally lead here are hidden.
-  if (await getPurchasesPaused()) {
+  // The kill-switch read runs alongside the artwork query (independent) —
+  // it covers deep links / bookmarks straight into the wizard while the
+  // CTAs that normally lead here are hidden.
+  const [paused, artwork] = await Promise.all([
+    getPurchasesPaused(),
+    prisma.artwork.findUnique({
+      where: { slug },
+      include: {
+        user: { select: { name: true, lastName: true } },
+        // Buyers only see published variants that are currently blocked (on
+        // sale). An admin-unblocked variant is mid-edit and paused from sale.
+        limitedVariants: { where: { published: true, blocked: true }, orderBy: { order: 'asc' } },
+      },
+    }),
+  ])
+
+  if (paused) {
     return <PurchasesPausedNotice title="Order a print" />
   }
-
-  const artwork = await prisma.artwork.findUnique({
-    where: { slug },
-    include: {
-      user: { select: { name: true, lastName: true } },
-      // Buyers only see published variants that are currently blocked (on
-      // sale). An admin-unblocked variant is mid-edit and paused from sale.
-      limitedVariants: { where: { published: true, blocked: true }, orderBy: { order: 'asc' } },
-    },
-  })
 
   if (!artwork || !artwork.imageUrl) {
     notFound()

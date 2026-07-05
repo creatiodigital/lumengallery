@@ -7,6 +7,36 @@ import { type AnalyticsResult, getDashboardAnalytics } from '@/app/admin/analyti
 
 import styles from './AdminDashboard.module.scss'
 
+// Module-level reuse: the data is by design up to 1h stale, so an admin
+// bouncing between dashboard and order pages shouldn't re-POST the action
+// on every mount. Successful results only — errors always retry.
+let lastGoodResult: AnalyticsResult | null = null
+
+type Row = { key: string; label: React.ReactNode; value: number }
+
+const AnalyticsCard = ({
+  title,
+  emptyMessage,
+  rows,
+}: {
+  title: string
+  emptyMessage: string
+  rows: Row[]
+}) => (
+  <div className={styles.analyticsCard}>
+    <h3 className={styles.analyticsCardTitle}>{title}</h3>
+    {rows.length === 0 && <p className={styles.analyticsHint}>{emptyMessage}</p>}
+    <ol className={styles.analyticsList}>
+      {rows.map((row) => (
+        <li key={row.key} className={styles.analyticsRow}>
+          <span className={styles.analyticsLabel}>{row.label}</span>
+          <span className={styles.analyticsValue}>{row.value}</span>
+        </li>
+      ))}
+    </ol>
+  </div>
+)
+
 /**
  * GA4 traffic cards — production data regardless of environment (the GA tag
  * only runs on prod). Self-contained: fetches on mount, renders a muted hint
@@ -14,10 +44,20 @@ import styles from './AdminDashboard.module.scss'
  * Revenue/order truth intentionally stays out — that belongs to our own DB.
  */
 export const AnalyticsSection = () => {
-  const [result, setResult] = useState<AnalyticsResult | null>(null)
+  const [result, setResult] = useState<AnalyticsResult | null>(lastGoodResult)
 
   useEffect(() => {
-    getDashboardAnalytics().then(setResult)
+    if (lastGoodResult?.ok) return
+    getDashboardAnalytics()
+      .then((res) => {
+        if (res.ok) lastGoodResult = res
+        setResult(res)
+      })
+      .catch(() => {
+        // Transport-level failure (offline, rolling deploy) — the action's
+        // own try/catch never saw it, so surface the same soft error here.
+        setResult({ ok: false, error: 'Could not load analytics. Reload to retry.' })
+      })
   }, [])
 
   return (
@@ -28,6 +68,12 @@ export const AnalyticsSection = () => {
       <p className={dashboardStyles.sectionDescription} style={{ margin: '0 0 16px 0' }}>
         Production traffic, last 30 days, via Google Analytics. Consenting visitors plus
         Google&rsquo;s modeling — read as trends, not a census.
+        {result?.ok && (
+          <>
+            {' '}
+            Updated {new Date(result.data.fetchedAt).toLocaleString('en-GB', { hour12: false })}.
+          </>
+        )}
       </p>
 
       {result === null && <p className={styles.analyticsHint}>Loading analytics…</p>}
@@ -42,56 +88,41 @@ export const AnalyticsSection = () => {
 
       {result?.ok && (
         <div className={styles.analyticsGrid}>
-          <div className={styles.analyticsCard}>
-            <h3 className={styles.analyticsCardTitle}>Most viewed artworks</h3>
-            {result.data.topArtworks.length === 0 && (
-              <p className={styles.analyticsHint}>No artwork views recorded yet.</p>
-            )}
-            <ol className={styles.analyticsList}>
-              {result.data.topArtworks.map((a) => (
-                <li key={a.slug} className={styles.analyticsRow}>
-                  <span className={styles.analyticsLabel}>
-                    {a.title}
-                    <span className={styles.analyticsMeta}>
-                      {a.artistName}
-                      {!a.sellsPrints && <span className={styles.analyticsFlag}> · no prints</span>}
-                    </span>
+          <AnalyticsCard
+            title="Most viewed artworks"
+            emptyMessage="No artwork views recorded yet."
+            rows={result.data.topArtworks.map((a) => ({
+              key: a.slug,
+              value: a.views,
+              label: (
+                <>
+                  {a.title}
+                  <span className={styles.analyticsMeta}>
+                    {a.artistName}
+                    {!a.sellsPrints && <span className={styles.analyticsFlag}> · no prints</span>}
                   </span>
-                  <span className={styles.analyticsValue}>{a.views}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <div className={styles.analyticsCard}>
-            <h3 className={styles.analyticsCardTitle}>Visitors by country</h3>
-            {result.data.countries.length === 0 && (
-              <p className={styles.analyticsHint}>No sessions recorded yet.</p>
-            )}
-            <ol className={styles.analyticsList}>
-              {result.data.countries.map((c) => (
-                <li key={c.country} className={styles.analyticsRow}>
-                  <span className={styles.analyticsLabel}>{c.country}</span>
-                  <span className={styles.analyticsValue}>{c.sessions}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <div className={styles.analyticsCard}>
-            <h3 className={styles.analyticsCardTitle}>Traffic channels</h3>
-            {result.data.channels.length === 0 && (
-              <p className={styles.analyticsHint}>No sessions recorded yet.</p>
-            )}
-            <ol className={styles.analyticsList}>
-              {result.data.channels.map((c) => (
-                <li key={c.channel} className={styles.analyticsRow}>
-                  <span className={styles.analyticsLabel}>{c.channel}</span>
-                  <span className={styles.analyticsValue}>{c.sessions}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
+                </>
+              ),
+            }))}
+          />
+          <AnalyticsCard
+            title="Visitors by country"
+            emptyMessage="No sessions recorded yet."
+            rows={result.data.countries.map((c) => ({
+              key: c.country,
+              label: c.country,
+              value: c.sessions,
+            }))}
+          />
+          <AnalyticsCard
+            title="Traffic channels"
+            emptyMessage="No sessions recorded yet."
+            rows={result.data.channels.map((c) => ({
+              key: c.channel,
+              label: c.channel,
+              value: c.sessions,
+            }))}
+          />
         </div>
       )}
     </section>

@@ -12,11 +12,11 @@ import styles from './CartItemDetails.module.scss'
 type Props = {
   item: CartItem
   /**
-   * Desktop thumbnail box size in px. The frame is a SQUARE of this size and
-   * the art is contained inside it (never cropped) — so portrait and landscape
-   * prints take the same footprint and every row's columns line up. On mobile
-   * (≤ tablet) the photo instead spans the full card width at its natural
-   * aspect ratio.
+   * Thumbnail box size in px. The frame is a SQUARE of this size and the art
+   * is contained inside it (never cropped) — so portrait and landscape prints
+   * take the same footprint and every row's columns line up. Only on narrow
+   * phones (≤ 400px, the xs breakpoint) does the photo instead span the full
+   * card width at its natural aspect ratio.
    */
   thumbHeight?: number
   /** How many spec rows to show before the "show all" toggle. */

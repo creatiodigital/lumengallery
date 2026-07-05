@@ -134,8 +134,6 @@
 .editionBadgeOrnament {
   width: 24px;
   height: 2px;
-  flex-shrink: 1;
-  min-width: 24px;
   color: var(--color-text-secondary);
 }
 
@@ -815,9 +813,9 @@
   min-height: 0;
 
   @include media-down(tablet) {
-    // The 3D preview is desktop-only. The wizards don't mount <Scene>
-    // below the tablet breakpoint (useIsMobile) — this only hides the
-    // SSR-rendered frame during the instant before hydration.
+    // The 3D preview is desktop-only. The wizards never mount <Scene> below
+    // the tablet breakpoint (useIsMobile, post-hydration) — this CSS guard
+    // is belt-and-braces so a regression can't show a phone the canvas.
     display: none;
   }
 }

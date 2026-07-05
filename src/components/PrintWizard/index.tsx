@@ -29,7 +29,7 @@ import {
 } from '@/lib/print-providers'
 import { getPrintLongEdgeBounds } from '@/lib/print-providers/printspace'
 import { getProviderQuote } from '@/lib/print-providers/quote'
-import { useIsMobile } from '@/hooks/useIsMobile'
+import { TABLET_BREAKPOINT_PX, useIsMobile } from '@/hooks/useIsMobile'
 
 import type { LimitedVariantView } from '@/lib/editions/types'
 
@@ -93,9 +93,16 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
   // The 3D room preview is desktop-only: on phones it eats most of the
   // viewport without aiding the size decision, and the WebGL canvas is
   // heavy on mobile GPUs/battery — so we skip mounting it entirely
-  // rather than hiding it with CSS. 901 = media-down(tablet)'s
-  // max-width: 900px, inclusive.
-  const isMobile = useIsMobile(901)
+  // rather than hiding it with CSS.
+  const isMobile = useIsMobile(TABLET_BREAKPOINT_PX + 1)
+  // The Scene renders only after mount: SSR and the first client render must
+  // agree (hydration), and the server can't know the viewport — so neither
+  // renders it, and the WebGL canvas never mounts at all on phones. Desktop
+  // gets it one tick later, which is invisible (the canvas paints async).
+  const [sceneReady, setSceneReady] = useState(false)
+  useEffect(() => {
+    setSceneReady(true)
+  }, [])
 
   // Synchronous availability check, rebuilt only when the catalog
   // identity changes (i.e. essentially never within one wizard session).
@@ -341,7 +348,7 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
           restrictions={restrictions}
           recommendations={recommendations}
         />
-        {!isMobile && (
+        {sceneReady && !isMobile && (
           <Scene imageUrl={artwork.imageUrl} catalog={catalog} config={config} configReady />
         )}
         <SummaryPanel
