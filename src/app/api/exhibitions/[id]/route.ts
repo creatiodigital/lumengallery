@@ -4,7 +4,8 @@ import { revalidateTag, revalidatePath } from 'next/cache'
 import { deleteFromR2 } from '@/lib/r2'
 
 import { Prisma } from '@/generated/prisma'
-import { requireOwnership } from '@/lib/authUtils'
+import { auth } from '@/auth'
+import { requireOwnership, isAdminOrAbove } from '@/lib/authUtils'
 import prisma from '@/lib/prisma'
 import { buildExhibitionSnapshot } from '@/lib/exhibitionSnapshot'
 
@@ -96,6 +97,24 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
 
     if (!exhibition) {
       return NextResponse.json({ error: 'Exhibition not found' }, { status: 404 })
+    }
+
+    // Draft (unpublished) exhibitions are visible only to their owner or an
+    // admin. And the secret `previewToken` (which unlocks the preview page)
+    // must never be returned to anyone else — the public visit path is
+    // /api/exhibitions/by-url, which applies the same gate.
+    const session = await auth()
+    const viewerId = session?.impersonating?.id || session?.user?.id
+    const isOwnerOrAdmin =
+      isAdminOrAbove(session?.user?.userType) || (!!viewerId && viewerId === exhibition.userId)
+
+    if (!exhibition.published && !isOwnerOrAdmin) {
+      return NextResponse.json({ error: 'Exhibition not found' }, { status: 404 })
+    }
+
+    if (!isOwnerOrAdmin) {
+      const { previewToken: _previewToken, ...safe } = exhibition
+      return NextResponse.json(safe)
     }
 
     return NextResponse.json(exhibition)

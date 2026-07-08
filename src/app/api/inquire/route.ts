@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { sanitizeLine, sanitizeMultiline } from '@/utils/sanitizeLine'
 import { isEmail } from '@/lib/validation'
+import { getClientIp } from '@/lib/getClientIp'
 import { sendInquiryAdminNotificationEmail } from '@/lib/emails/inquiryAdminNotification'
 import { sendInquiryUserConfirmationEmail } from '@/lib/emails/inquiryUserConfirmation'
 
@@ -29,11 +30,9 @@ function isRateLimited(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0] ||
-      request.headers.get('x-real-ip') ||
-      'unknown'
+    // Get client IP for rate limiting (trusted x-real-ip, not the spoofable
+    // first x-forwarded-for hop).
+    const ip = getClientIp(request)
 
     // Check rate limit
     if (isRateLimited(ip)) {

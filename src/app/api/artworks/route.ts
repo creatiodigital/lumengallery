@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 
 import { auth } from '@/auth'
 import { getEffectiveUserId } from '@/lib/authUtils'
+import { PUBLIC_ARTWORK_OMIT } from '@/lib/artworkFields'
 import prisma from '@/lib/prisma'
 import { generateUniqueSlug } from '@/lib/slugify'
 import { sanitizeLine } from '@/utils/sanitizeLine'
@@ -79,6 +80,8 @@ export async function GET(request: NextRequest) {
         ...(featured === 'true' && { featured: true }),
       },
       orderBy: { order: 'asc' },
+      // Never expose the full-res master URL/metadata on a public read.
+      omit: PUBLIC_ARTWORK_OMIT,
       include: {
         exhibitionArtworks: {
           include: {

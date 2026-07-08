@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
 import prisma from '@/lib/prisma'
+import { getClientIp } from '@/lib/getClientIp'
 import { sendLoginCodeEmail } from '@/lib/emails/loginCode'
 
 // Rate limiting - simple in-memory store (resets on redeploy)
@@ -39,11 +40,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = body
 
-    // Rate limiting
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0] ||
-      request.headers.get('x-real-ip') ||
-      'unknown'
+    // Rate limiting (trusted x-real-ip, not the spoofable first XFF hop).
+    const ip = getClientIp(request)
     if (isRateLimited(ip)) {
       return NextResponse.json(
         { error: 'Too many attempts. Please try again later.' },

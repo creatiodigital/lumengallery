@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-import { requireOwnership } from '@/lib/authUtils'
+import { requireOwnership, isSuperAdmin } from '@/lib/authUtils'
+import { PUBLIC_ARTWORK_OMIT } from '@/lib/artworkFields'
 import prisma from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -85,11 +86,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Editor or no snapshot → return live data
+    // Editor or no snapshot → return live data. Strip the full-res master
+    // URL / metadata from the joined artwork — this endpoint is
+    // unauthenticated and would otherwise leak every placed artwork's
+    // 60MB+ print original (see /api/artworks GET).
     const exhibitionArtworks = await prisma.exhibitionArtwork.findMany({
       where: { exhibitionId },
       include: {
-        artwork: true,
+        artwork: {
+          omit: PUBLIC_ARTWORK_OMIT,
+        },
       },
     })
 
@@ -203,8 +209,30 @@ export async function POST(request: NextRequest) {
       select: { userId: true },
     })
     if (!exhibition) return NextResponse.json({ error: 'Exhibition not found' }, { status: 404 })
-    const { error: authError } = await requireOwnership(exhibition.userId)
+    const { session, error: authError } = await requireOwnership(exhibition.userId)
     if (authError) return authError
+
+    // Ownership of the EXHIBITION is not enough — every incoming artwork must
+    // also belong to the exhibition's owner. Without this an artist could
+    // embed (and thereby surface/misattribute) another artist's work in their
+    // own show by passing a foreign artworkId. superAdmin may place anything,
+    // mirroring requireOwnership's bypass.
+    const incomingArtworkIds = [...new Set(positions.map((p) => p.artworkId).filter(Boolean))]
+    if (incomingArtworkIds.length > 0 && !isSuperAdmin(session?.user?.userType)) {
+      const owned = await prisma.artwork.findMany({
+        where: { id: { in: incomingArtworkIds } },
+        select: { id: true, userId: true },
+      })
+      const allBelongToOwner =
+        owned.length === incomingArtworkIds.length &&
+        owned.every((a) => a.userId === exhibition.userId)
+      if (!allBelongToOwner) {
+        return NextResponse.json(
+          { error: 'One or more artworks do not belong to this exhibition.' },
+          { status: 403 },
+        )
+      }
+    }
 
     // Get current artwork IDs in this exhibition
     const existingPositions = await prisma.exhibitionArtwork.findMany({

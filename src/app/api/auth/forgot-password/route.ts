@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import crypto from 'crypto'
 
 import prisma from '@/lib/prisma'
 import { isEmail } from '@/lib/validation'
+import { getClientIp } from '@/lib/getClientIp'
 import { sendForgotPasswordEmail } from '@/lib/emails/forgotPassword'
 
 // Rate limiting
@@ -29,11 +30,9 @@ function isRateLimited(ip: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0] ||
-      request.headers.get('x-real-ip') ||
-      'unknown'
+    // Get client IP for rate limiting (trusted x-real-ip, not the spoofable
+    // first x-forwarded-for hop).
+    const ip = getClientIp(request)
 
     // Check rate limit
     if (isRateLimited(ip)) {
@@ -83,8 +82,20 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXTAUTH_URL || 'https://theartroom.gallery'
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`
 
-    // Send reset email
-    await sendForgotPasswordEmail({ to: email, name: user.name, resetUrl })
+    // Send the reset email AFTER the response. Awaiting the provider
+    // round-trip only for existing accounts makes the response measurably
+    // slower for real users than for unknown emails — a timing oracle for
+    // account existence. `after()` defers the send past the response (so the
+    // client-observed latency matches the unknown-email branch) while the
+    // platform keeps the function alive to actually deliver it — unlike a bare
+    // fire-and-forget, which a serverless runtime may freeze before it sends.
+    after(async () => {
+      try {
+        await sendForgotPasswordEmail({ to: email, name: user.name, resetUrl })
+      } catch (err) {
+        console.error('Error sending forgot-password email:', err)
+      }
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
