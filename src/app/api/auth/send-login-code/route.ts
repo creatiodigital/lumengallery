@@ -5,29 +5,8 @@ import bcrypt from 'bcryptjs'
 
 import prisma from '@/lib/prisma'
 import { getClientIp } from '@/lib/getClientIp'
+import { rateLimit } from '@/lib/rateLimit'
 import { sendLoginCodeEmail } from '@/lib/emails/loginCode'
-
-// Rate limiting - simple in-memory store (resets on redeploy)
-const rateLimitStore = new Map<string, { count: number; timestamp: number }>()
-const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
-const RATE_LIMIT_MAX = 5 // Max 5 login attempts per minute per IP
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const record = rateLimitStore.get(ip)
-
-  if (!record || now - record.timestamp > RATE_LIMIT_WINDOW) {
-    rateLimitStore.set(ip, { count: 1, timestamp: now })
-    return false
-  }
-
-  if (record.count >= RATE_LIMIT_MAX) {
-    return true
-  }
-
-  record.count++
-  return false
-}
 
 // Generate a random 6-digit code. CSPRNG, not Math.random(): this code is a
 // second factor, so its entropy must not be predictable from engine state.
@@ -40,9 +19,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = body
 
-    // Rate limiting (trusted x-real-ip, not the spoofable first XFF hop).
+    // Rate limiting (durable, trusted x-real-ip not the spoofable first hop).
     const ip = getClientIp(request)
-    if (isRateLimited(ip)) {
+    const { success } = await rateLimit({
+      name: 'send-login-code',
+      key: ip,
+      limit: 5,
+      windowSeconds: 60,
+    })
+    if (!success) {
       return NextResponse.json(
         { error: 'Too many attempts. Please try again later.' },
         { status: 429 },

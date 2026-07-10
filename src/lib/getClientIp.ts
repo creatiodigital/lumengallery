@@ -1,7 +1,5 @@
-import type { NextRequest } from 'next/server'
-
 /**
- * Derive the client IP for rate limiting.
+ * Derive the client IP for rate limiting from a Headers object.
  *
  * On Vercel the platform sets `x-real-ip` to the true client IP and appends
  * the real client IP to the END of `x-forwarded-for`. The LEFTMOST
@@ -11,11 +9,11 @@ import type { NextRequest } from 'next/server'
  * must NOT trust the first hop. Prefer `x-real-ip`; fall back to the LAST
  * `x-forwarded-for` hop (the one the trusted proxy appended); then 'unknown'.
  */
-export function getClientIp(request: NextRequest): string {
-  const realIp = request.headers.get('x-real-ip')?.trim()
+export function getClientIpFromHeaders(headers: Headers): string {
+  const realIp = headers.get('x-real-ip')?.trim()
   if (realIp) return realIp
 
-  const xff = request.headers.get('x-forwarded-for')
+  const xff = headers.get('x-forwarded-for')
   if (xff) {
     const hops = xff
       .split(',')
@@ -25,4 +23,9 @@ export function getClientIp(request: NextRequest): string {
   }
 
   return 'unknown'
+}
+
+/** Convenience wrapper for anything holding a Request/NextRequest. */
+export function getClientIp(request: { headers: Headers }): string {
+  return getClientIpFromHeaders(request.headers)
 }
