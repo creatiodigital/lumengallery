@@ -9,6 +9,7 @@ import { EditView } from '@/components/editview'
 import { LoadingBar } from '@/components/ui/LoadingBar'
 import { useGLTF } from '@react-three/drei'
 import { spaceConfigs } from '@/components/scene/constants'
+import { preloadAllFloorMaterials } from '@/components/scene/spaces/objects/Floor/ReflectiveFloor'
 import { useLoadExhibitionArtworks } from '@/hooks/useLoadExhibitionArtworks'
 import { resetArtworks } from '@/redux/slices/artworkSlice'
 import { useGetExhibitionByUrlQuery } from '@/redux/slices/exhibitionApi'
@@ -42,6 +43,13 @@ export const ExhibitionEditPage = ({
   const { data: session, status: sessionStatus } = useSession()
   const hasResetRef = useRef<string | null>(null)
   const hasRestoredStateRef = useRef<string | null>(null)
+
+  // Edit view warms EVERY floor-material set so the artist gets instant
+  // previews when switching floors. The visit page deliberately does not —
+  // it preloads only the exhibition's own material (see view/index.tsx).
+  useEffect(() => {
+    preloadAllFloorMaterials()
+  }, [])
 
   // Reset all exhibition-related state when page loads or exhibition changes
   // This ensures complete isolation between exhibitions

@@ -11,6 +11,9 @@ export const editionNumberFont = Caveat({
   weight: ['400', '700'],
   variable: '--font-caveat',
   display: 'swap',
+  // Print-preview only — never used on public pages. Don't preload it on
+  // every route; it loads on demand when the print wizard renders. (AR-132 perf)
+  preload: false,
 })
 
 // =============================================================================
@@ -60,10 +63,16 @@ export const dashboardFont = Geist({
   weight: ['300', '400', '600', '700'],
   variable: '--font-dashboard',
   display: 'swap',
+  // Used across dashboard/admin (and Button/Typography). Keep it available
+  // sitewide via the CSS var, but don't eagerly preload it on public routes —
+  // it loads on demand. (AR-132 perf)
+  preload: false,
 })
 
 // =============================================================================
 // 2D WALL VIEW FONTS - Used only in the exhibition editor 2D preview
+// preload: false — these load only when the editor renders, never on public
+// pages, so they must not preload on every route. (AR-132 perf)
 // =============================================================================
 
 export const wallFont1 = Roboto({
@@ -72,6 +81,7 @@ export const wallFont1 = Roboto({
   style: ['normal', 'italic'],
   variable: '--font-wall-roboto',
   display: 'swap',
+  preload: false,
 })
 
 export const wallFont2 = Lora({
@@ -80,6 +90,7 @@ export const wallFont2 = Lora({
   style: ['normal', 'italic'],
   variable: '--font-wall-lora',
   display: 'swap',
+  preload: false,
 })
 
 export const wallFont3 = Alegreya({
@@ -88,6 +99,7 @@ export const wallFont3 = Alegreya({
   style: ['normal', 'italic'],
   variable: '--font-wall-alegreya',
   display: 'swap',
+  preload: false,
 })
 
 export const wallFont4 = Manrope({
@@ -95,12 +107,14 @@ export const wallFont4 = Manrope({
   weight: ['400', '700'],
   variable: '--font-wall-manrope',
   display: 'swap',
+  preload: false,
 })
 
 export const wallFont5 = localFont({
   src: '../../public/fonts/garamont-glc.ttf',
   variable: '--font-wall-garamond-glc',
   display: 'swap',
+  preload: false,
 })
 
 export const wallFont6 = localFont({
@@ -112,4 +126,5 @@ export const wallFont6 = localFont({
   ],
   variable: '--font-wall-crimson',
   display: 'swap',
+  preload: false,
 })

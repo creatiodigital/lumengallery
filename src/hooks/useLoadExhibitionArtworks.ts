@@ -28,6 +28,11 @@ const preloadImages = (
 
     imageUrls.forEach((url) => {
       const img = new Image()
+      // crossOrigin matches THREE's texture request (TextureLoader defaults to
+      // "anonymous") so both share one browser-cache entry. Without it the
+      // no-cors preload and the CORS texture fetch are keyed separately and
+      // every artwork downloads twice at full size.
+      img.crossOrigin = 'anonymous'
       img.onload = img.onerror = () => {
         loaded++
         onProgress(loaded, total)
@@ -40,7 +45,15 @@ const preloadImages = (
   })
 }
 
-export const useLoadExhibitionArtworks = (exhibitionId: string | undefined, mode?: 'edit') => {
+export const useLoadExhibitionArtworks = (
+  exhibitionId: string | undefined,
+  mode?: 'edit',
+  /** Exhibition artworks already delivered by /api/exhibitions/by-url. When
+   *  provided (visit page), they're dispatched directly instead of re-fetching
+   *  the same data from /api/exhibition-artworks — one round trip per visit.
+   *  Edit mode omits this: it needs live positions, not the snapshot. */
+  preloaded?: ExhibitionArtworkResponse[],
+) => {
   const dispatch = useDispatch()
   const [loading, setLoading] = useState(false)
   const [imagesLoading, setImagesLoading] = useState(false)
@@ -72,16 +85,20 @@ export const useLoadExhibitionArtworks = (exhibitionId: string | undefined, mode
       // only fires on a genuine exhibition switch.
       dispatch(resetArtworks())
       try {
-        const modeParam = mode ? `&mode=${mode}` : ''
-        const response = await fetch(
-          `/api/exhibition-artworks?exhibitionId=${exhibitionId}${modeParam}`,
-        )
-        if (!response.ok) {
-          console.error('Failed to load exhibition artworks')
-          return
+        let exhibitionArtworks: ExhibitionArtworkResponse[]
+        if (preloaded) {
+          exhibitionArtworks = preloaded
+        } else {
+          const modeParam = mode ? `&mode=${mode}` : ''
+          const response = await fetch(
+            `/api/exhibition-artworks?exhibitionId=${exhibitionId}${modeParam}`,
+          )
+          if (!response.ok) {
+            console.error('Failed to load exhibition artworks')
+            return
+          }
+          exhibitionArtworks = await response.json()
         }
-
-        const exhibitionArtworks: ExhibitionArtworkResponse[] = await response.json()
 
         // Collect image URLs for preloading
         const imageUrls: string[] = []
@@ -124,7 +141,7 @@ export const useLoadExhibitionArtworks = (exhibitionId: string | undefined, mode
     }
 
     loadArtworks()
-  }, [exhibitionId, dispatch, mode, loadedExhibitionId])
+  }, [exhibitionId, dispatch, mode, loadedExhibitionId, preloaded])
 
   return {
     loading,

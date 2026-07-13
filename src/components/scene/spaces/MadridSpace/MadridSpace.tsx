@@ -27,8 +27,8 @@ import { assetUrl } from '@/lib/assetUrl'
 import { Lights } from './lights'
 
 // Preload baked textures at module scope to avoid Loader setState-during-render warnings
-useTexture.preload(assetUrl('/assets/spaces/madrid/textures/mwall2.jpg'))
-useTexture.preload(assetUrl('/assets/spaces/madrid/textures/mceiling2.jpg'))
+useTexture.preload(assetUrl('/assets/spaces/madrid/textures/mwall2.jpg?v=2'))
+useTexture.preload(assetUrl('/assets/spaces/madrid/textures/mceiling2.jpg?v=2'))
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -61,8 +61,8 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
   const ceilingColor = useSelector((state: RootState) => state.exhibition.ceilingColor ?? '#ffffff')
 
   // Load external baked textures
-  const wallTexture = useTexture(assetUrl('/assets/spaces/madrid/textures/mwall2.jpg'))
-  const ceilingTexture = useTexture(assetUrl('/assets/spaces/madrid/textures/mceiling2.jpg'))
+  const wallTexture = useTexture(assetUrl('/assets/spaces/madrid/textures/mwall2.jpg?v=2'))
+  const ceilingTexture = useTexture(assetUrl('/assets/spaces/madrid/textures/mceiling2.jpg?v=2'))
 
   // Configure textures
   useMemo(() => {

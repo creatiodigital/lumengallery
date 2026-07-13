@@ -20,6 +20,7 @@ import {
 
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 import Monogram from '@/icons/monogram.svg'
+import { preloadFloorMaterial } from '@/components/scene/spaces/objects/Floor/ReflectiveFloor'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
 import { ArtworkModal } from '@/components/exhibitions/view/ArtworkModal/ArtworkModal'
 import { Scene } from '@/components/scene'
@@ -506,6 +507,12 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
 
   useEffect(() => {
     if (exhibition) {
+      // Warm the texture cache for this exhibition's floor only — from an
+      // effect (not render) so the loading manager's onStart doesn't fire
+      // mid-render. Runs before the Scene mounts (it's gated on Redux
+      // spaceId, set by the dispatch below), so ReflectiveFloor suspends on
+      // this cached promise instead of starting its own load.
+      preloadFloorMaterial(exhibition.floorMaterial)
       const exhibitionData: TExhibition = {
         id: exhibition.id,
         userId: exhibition.userId,
@@ -569,7 +576,13 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
     }
   }, [exhibition, dispatch])
 
-  const { loadedExhibitionId } = useLoadExhibitionArtworks(exhibition?.id)
+  // by-url already delivers the (snapshot + live-enriched) exhibition
+  // artworks — pass them through so the hook skips its own fetch.
+  const { loadedExhibitionId } = useLoadExhibitionArtworks(
+    exhibition?.id,
+    undefined,
+    exhibition?.exhibitionArtworks,
+  )
   // Artworks are "ready" for the modal only when Redux holds the
   // current exhibition's data. Avoids the A→B navigation race where the
   // media warning would fire based on the previous exhibition's

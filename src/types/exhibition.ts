@@ -1,5 +1,6 @@
 import type { TArtworkPosition } from '@/types/artwork'
 import type { AutofocusGroup } from '@/types/autofocusGroup'
+import type { ExhibitionArtworkResponse } from '@/lib/exhibitionArtworkMapper'
 
 export type TExhibition = {
   id: string
@@ -14,6 +15,11 @@ export type TExhibition = {
   endDate: string
   exhibitionArtworksById: Record<string, TArtworkPosition>
   allExhibitionArtworkIds: string[]
+  /** Present on /api/exhibitions/by-url responses: positions + artwork
+   *  metadata (snapshot enriched with live fields on the public path). The
+   *  visit page feeds these straight into useLoadExhibitionArtworks so it
+   *  doesn't need a second /api/exhibition-artworks request. */
+  exhibitionArtworks?: ExhibitionArtworkResponse[]
   status: string
   published: boolean
   hasPendingChanges: boolean

@@ -68,6 +68,7 @@ const ArtworkPanel = () => {
               src={thumbnailUrl}
               alt={artworkTitle || name || 'Artwork'}
               className={styles.preview}
+              crossOrigin="anonymous"
             />
           </div>
         )}

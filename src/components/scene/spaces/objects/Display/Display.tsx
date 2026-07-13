@@ -489,9 +489,10 @@ const Display = ({ artwork }: DisplayProps) => {
 
   useEffect(() => {
     const loader = new TextureLoader()
-    const diffuse = loader.load(assetUrl('/assets/materials/plastic-frame/diffuse.jpg'))
-    const normal = loader.load(assetUrl('/assets/materials/plastic-frame/normal.jpg'))
-    const roughnessMap = loader.load(assetUrl('/assets/materials/plastic-frame/roughness.jpg'))
+    // ?v=2: 2026-07-12 recompression (visually lossless; originals in R2)
+    const diffuse = loader.load(assetUrl('/assets/materials/plastic-frame/diffuse.jpg?v=2'))
+    const normal = loader.load(assetUrl('/assets/materials/plastic-frame/normal.jpg?v=2'))
+    const roughnessMap = loader.load(assetUrl('/assets/materials/plastic-frame/roughness.jpg?v=2'))
 
     ;[diffuse, normal, roughnessMap].forEach((tex) => {
       tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
@@ -520,9 +521,10 @@ const Display = ({ artwork }: DisplayProps) => {
     const woodFolder = frameMaterial?.startsWith('wood') ? frameMaterial : 'wood-dark'
     const woodBase = assetUrl(`/assets/materials/wooden-frame-${woodFolder.replace('wood-', '')}`)
     const loader = new TextureLoader()
-    const diffuse = loader.load(`${woodBase}/diffuse.jpg?v=2`)
-    const normal = loader.load(`${woodBase}/normal.jpg?v=2`)
-    const roughnessMap = loader.load(`${woodBase}/roughness.jpg?v=2`)
+    // v3: 2026-07-12 recompression (visually lossless; originals in R2)
+    const diffuse = loader.load(`${woodBase}/diffuse.jpg?v=3`)
+    const normal = loader.load(`${woodBase}/normal.jpg?v=3`)
+    const roughnessMap = loader.load(`${woodBase}/roughness.jpg?v=3`)
 
     ;[diffuse, normal, roughnessMap].forEach((tex) => {
       tex.wrapS = tex.wrapT = 1000 // RepeatWrapping
