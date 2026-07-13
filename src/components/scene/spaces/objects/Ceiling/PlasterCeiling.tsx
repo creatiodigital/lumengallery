@@ -20,12 +20,16 @@ const PlasterCeiling: React.FC<PlasterCeilingProps> = ({
   color = '#ffffff',
 }) => {
   // Load PBR textures
+  // ?v=2: 2026-07-12 recompression (visually lossless; originals in R2 under
+  // app/assets/_originals-20260712/). normal.png is deliberately untouched:
+  // it has always 404'd (only normal.jpg exists in the bucket) so the ceiling
+  // never had a normal map — wiring it now would change the look.
   const textures = useTexture({
-    map: `${texturePath}/diffuse.jpg`,
+    map: `${texturePath}/diffuse.jpg?v=2`,
     normalMap: `${texturePath}/normal.png`,
-    roughnessMap: `${texturePath}/roughness.jpg`,
-    metalnessMap: `${texturePath}/metallic.jpg`,
-    aoMap: `${texturePath}/ao.jpg`,
+    roughnessMap: `${texturePath}/roughness.jpg?v=2`,
+    metalnessMap: `${texturePath}/metallic.jpg?v=2`,
+    aoMap: `${texturePath}/ao.jpg?v=2`,
   })
 
   // Configure texture tiling

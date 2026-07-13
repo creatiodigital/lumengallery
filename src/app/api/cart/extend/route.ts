@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { extendCartHold } from '@/lib/editions/reserveForCart'
+import { getCartSessionId } from '@/lib/cart/cartSession'
 import { captureError } from '@/lib/observability/captureError'
 
 export const dynamic = 'force-dynamic'
@@ -25,7 +26,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
     }
 
-    const expiresAt = await extendCartHold(numberIds)
+    // Scope to the caller's cart session so one browser can't refresh another's
+    // holds. A missing cookie (null) owns nothing → no-op.
+    const cartSessionId = await getCartSessionId()
+    const expiresAt = await extendCartHold(numberIds, cartSessionId)
 
     return NextResponse.json({ ok: true, expiresAt })
   } catch (error) {

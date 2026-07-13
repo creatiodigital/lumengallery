@@ -7,6 +7,7 @@ import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEdit
 import { ensureOrderForPaymentIntent } from '@/lib/orders/ensureOrderForPaymentIntent'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { captureError } from '@/lib/observability/captureError'
+import { cleanupExpiredRateLimits } from '@/lib/rateLimit'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
 
@@ -59,6 +60,10 @@ export async function GET(req: NextRequest) {
   if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
+
+  // Housekeeping: prune lapsed rate-limit counter rows so the table stays small.
+  // Best-effort (never throws) and independent of the order-reconciliation work.
+  await cleanupExpiredRateLimits()
 
   // 24h lookback. Stripe retries failed webhooks for up to 3 days; a 24h window
   // catches any orphan within a cron tick of it stabilising.

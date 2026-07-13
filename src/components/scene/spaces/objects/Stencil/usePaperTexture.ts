@@ -55,10 +55,10 @@ function lightenTexture(texture: Texture, opacity = 0.35): Texture {
  */
 export function usePaperTexture(textureRepeat = 2) {
   const textures = useTexture({
-    map: `${PAPER_TEXTURE_BASE}/diffuse.jpg`,
-    normalMap: `${PAPER_TEXTURE_BASE}/normal.jpg`,
-    roughnessMap: `${PAPER_TEXTURE_BASE}/roughness.jpg`,
-    aoMap: `${PAPER_TEXTURE_BASE}/ao.jpg`,
+    map: `${PAPER_TEXTURE_BASE}/diffuse.jpg?v=2`,
+    normalMap: `${PAPER_TEXTURE_BASE}/normal.jpg?v=2`,
+    roughnessMap: `${PAPER_TEXTURE_BASE}/roughness.jpg?v=2`,
+    aoMap: `${PAPER_TEXTURE_BASE}/ao.jpg?v=2`,
   })
 
   // Configure tiling and lighten diffuse — memo to avoid re-applying every render
@@ -79,8 +79,8 @@ export function usePaperTexture(textureRepeat = 2) {
 
 // Preload paper textures at module scope to avoid Suspense flicker
 useTexture.preload([
-  `${PAPER_TEXTURE_BASE}/diffuse.jpg`,
-  `${PAPER_TEXTURE_BASE}/normal.jpg`,
-  `${PAPER_TEXTURE_BASE}/roughness.jpg`,
-  `${PAPER_TEXTURE_BASE}/ao.jpg`,
+  `${PAPER_TEXTURE_BASE}/diffuse.jpg?v=2`,
+  `${PAPER_TEXTURE_BASE}/normal.jpg?v=2`,
+  `${PAPER_TEXTURE_BASE}/roughness.jpg?v=2`,
+  `${PAPER_TEXTURE_BASE}/ao.jpg?v=2`,
 ])

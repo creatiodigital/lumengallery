@@ -81,9 +81,16 @@ export async function POST(req: NextRequest) {
         // completed, so the row is leftover — clean it up. No-op for
         // single-print PIs (no row) or if it was already consumed.
         await prisma.pendingCart.delete({ where: { paymentIntentId: pi.id } }).catch(() => {})
+        // Never overwrite a terminal/captured state. Stripe does not
+        // guarantee event ordering and can redeliver: a stale `canceled`
+        // arriving after a successful capture must not flip a paid order
+        // back to canceled. Mirrors the succeeded handler's guard.
         await prisma.printOrder
           .updateMany({
-            where: { paymentIntentId: pi.id },
+            where: {
+              paymentIntentId: pi.id,
+              paymentStatus: { notIn: ['succeeded', 'refunded'] },
+            },
             data: { paymentStatus: 'canceled' },
           })
           .catch((err) => console.warn('[stripe-webhook] update paymentStatus failed:', err))
@@ -117,9 +124,16 @@ export async function POST(req: NextRequest) {
           // no-op for single-print PIs or an already-consumed row.
           await prisma.pendingCart.delete({ where: { paymentIntentId: pi.id } }).catch(() => {})
         }
+        // Never overwrite a terminal/captured state — a stale or out-of-order
+        // `payment_failed`/`processing` event must not clobber an order that
+        // has already advanced (buyer retried on a second card, admin
+        // captured). Mirrors the succeeded handler's terminal-state guard.
         await prisma.printOrder
           .updateMany({
-            where: { paymentIntentId: pi.id },
+            where: {
+              paymentIntentId: pi.id,
+              paymentStatus: { notIn: ['succeeded', 'refunded', 'canceled'] },
+            },
             data: { paymentStatus: failed ? 'failed' : 'processing' },
           })
           .catch((err) => console.warn('[stripe-webhook] update paymentStatus failed:', err))

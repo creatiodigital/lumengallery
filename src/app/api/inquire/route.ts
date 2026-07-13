@@ -2,41 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { sanitizeLine, sanitizeMultiline } from '@/utils/sanitizeLine'
 import { isEmail } from '@/lib/validation'
+import { getClientIp } from '@/lib/getClientIp'
+import { rateLimit } from '@/lib/rateLimit'
 import { sendInquiryAdminNotificationEmail } from '@/lib/emails/inquiryAdminNotification'
 import { sendInquiryUserConfirmationEmail } from '@/lib/emails/inquiryUserConfirmation'
 
-// Rate limiting - simple in-memory store (resets on redeploy)
-const rateLimitStore = new Map<string, { count: number; timestamp: number }>()
-const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
-const RATE_LIMIT_MAX = 3 // Max 3 requests per minute per IP
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const record = rateLimitStore.get(ip)
-
-  if (!record || now - record.timestamp > RATE_LIMIT_WINDOW) {
-    rateLimitStore.set(ip, { count: 1, timestamp: now })
-    return false
-  }
-
-  if (record.count >= RATE_LIMIT_MAX) {
-    return true
-  }
-
-  record.count++
-  return false
-}
-
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0] ||
-      request.headers.get('x-real-ip') ||
-      'unknown'
-
-    // Check rate limit
-    if (isRateLimited(ip)) {
+    // Rate limiting (durable, trusted x-real-ip not the spoofable first hop).
+    const ip = getClientIp(request)
+    const { success } = await rateLimit({
+      name: 'inquire',
+      key: ip,
+      limit: 3,
+      windowSeconds: 60,
+    })
+    if (!success) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 },

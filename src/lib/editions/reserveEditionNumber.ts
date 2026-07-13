@@ -33,8 +33,12 @@ export type ReserveResult =
 export async function reserveNextEditionNumber(args: {
   variantId: string
   buyerEmail: string
+  // Cart-hold session binding (AR-132). Set for anonymous cart holds so only
+  // the owning session can extend/release. NULL for server-side reservations
+  // (single-print / cart checkout) that attach a PI immediately.
+  cartSessionId?: string | null
 }): Promise<ReserveResult> {
-  const { variantId, buyerEmail } = args
+  const { variantId, buyerEmail, cartSessionId = null } = args
 
   const variant = await prisma.limitedVariant.findUnique({
     where: { id: variantId },
@@ -51,9 +55,11 @@ export async function reserveNextEditionNumber(args: {
   // Ownership columns are reset on claim so an `available` row that ever
   // carried a stale PI/order link (however it got there) starts clean —
   // otherwise the previous buyer's PI would corrupt bind/mark-sold matching.
+  // holdStartedAt stamps the absolute-lifetime anchor for cart holds.
   const claimed = await prisma.$queryRaw<{ id: string; number: number }[]>(Prisma.sql`
     UPDATE "EditionNumber"
     SET "state" = 'reserved', "reservedAt" = now(), "buyerEmail" = ${buyerEmail},
+        "cartSessionId" = ${cartSessionId}, "holdStartedAt" = now(),
         "paymentIntentId" = NULL, "orderItemId" = NULL, "orderId" = NULL, "updatedAt" = now()
     WHERE "id" = (
       SELECT "id" FROM "EditionNumber"

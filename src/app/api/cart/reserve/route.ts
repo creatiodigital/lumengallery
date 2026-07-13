@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 
 import { reserveForCart } from '@/lib/editions/reserveForCart'
+import { getOrCreateCartSessionId } from '@/lib/cart/cartSession'
+import { getClientIp } from '@/lib/getClientIp'
+import { rateLimit } from '@/lib/rateLimit'
 import { captureError } from '@/lib/observability/captureError'
 
 export const dynamic = 'force-dynamic'
@@ -40,7 +43,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
     }
 
-    const result = await reserveForCart({ variantId, quantity })
+    // Bind this hold to a per-browser cart session (httpOnly cookie) and rate
+    // limit reservations per IP and per session — an unauthenticated attacker
+    // must not be able to sweep a whole edition into indefinite holds.
+    const cartSessionId = await getOrCreateCartSessionId()
+    const ip = getClientIp(request)
+    const [ipGate, sessionGate] = await Promise.all([
+      rateLimit({ name: 'cart-reserve-ip', key: ip, limit: 60, windowSeconds: 60 }),
+      rateLimit({ name: 'cart-reserve-session', key: cartSessionId, limit: 30, windowSeconds: 60 }),
+    ])
+    if (!ipGate.success || !sessionGate.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again in a moment.' },
+        { status: 429 },
+      )
+    }
+
+    const result = await reserveForCart({ variantId, quantity, cartSessionId })
 
     if (result.ok) {
       return NextResponse.json({

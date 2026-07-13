@@ -8,12 +8,16 @@ import { assetUrl } from '@/lib/assetUrl'
 
 const BASE = assetUrl('/assets/materials/parquet')
 
+// ?v=4 matches the exhibition floor's TEXTURE_VERSION so wizard and 3D scene
+// share one browser-cache entry per file (2026-07-12 recompression).
+const V = '?v=4'
+
 // Preload so the texture is ready when the wizard first mounts.
 useTexture.preload([
-  `${BASE}/diffuse.jpg`,
-  `${BASE}/normal.jpg`,
-  `${BASE}/roughness.jpg`,
-  `${BASE}/ao.jpg`,
+  `${BASE}/diffuse.jpg${V}`,
+  `${BASE}/normal.jpg${V}`,
+  `${BASE}/roughness.jpg${V}`,
+  `${BASE}/ao.jpg${V}`,
 ])
 
 interface FloorProps {
@@ -29,10 +33,10 @@ interface FloorProps {
 
 export const Floor = ({ y = -1.5, width = 16, depth = 6, tilesX = 10, tilesY = 4 }: FloorProps) => {
   const textures = useTexture({
-    map: `${BASE}/diffuse.jpg`,
-    normalMap: `${BASE}/normal.jpg`,
-    roughnessMap: `${BASE}/roughness.jpg`,
-    aoMap: `${BASE}/ao.jpg`,
+    map: `${BASE}/diffuse.jpg${V}`,
+    normalMap: `${BASE}/normal.jpg${V}`,
+    roughnessMap: `${BASE}/roughness.jpg${V}`,
+    aoMap: `${BASE}/ao.jpg${V}`,
   })
 
   useMemo(() => {
