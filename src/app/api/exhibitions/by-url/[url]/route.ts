@@ -23,6 +23,10 @@ const getExhibition = (url: string) =>
       exhibitionArtworks: {
         include: {
           artwork: {
+            // Full public artwork shape (see ExhibitionArtworkResponse): on the
+            // legacy no-snapshot path these rows feed the 3D scene directly, so
+            // media/text fields must be present. Never add originalImageUrl —
+            // this endpoint is public (60MB+ print master, see PUBLIC_ARTWORK_OMIT).
             select: {
               id: true,
               slug: true,
@@ -32,8 +36,15 @@ const getExhibition = (url: string) =>
               year: true,
               technique: true,
               dimensions: true,
+              description: true,
               imageUrl: true,
               artworkType: true,
+              textContent: true,
+              soundUrl: true,
+              videoUrl: true,
+              originalWidth: true,
+              originalHeight: true,
+              featured: true,
               hiddenFromExhibition: true,
             },
           },
@@ -101,14 +112,25 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ url: s
         .map((ea) => ea.artwork as Record<string, unknown>)
         .filter((artwork) => !artwork.hiddenFromExhibition && artwork.artworkType === 'image')
 
-      const artworkIds = snapshotArtworkObjects.map((a) => a.id as string).filter(Boolean)
+      // Fetch live rows for EVERY snapshot entry (all artwork types), not just
+      // the image subset above: the enriched `exhibitionArtworks` below feeds
+      // the 3D scene directly (the visit page no longer makes a second
+      // /api/exhibition-artworks request), so sound/video/text artworks need
+      // their live metadata here too.
+      const allSnapshotArtworkIds = (snapshotArtworks || [])
+        .map((ea) => {
+          const art = ea.artwork as Record<string, unknown> | undefined
+          return (art?.id as string) ?? (ea.artworkId as string)
+        })
+        .filter(Boolean)
 
       const liveArtworks = await prisma.artwork.findMany({
-        where: { id: { in: artworkIds } },
+        where: { id: { in: allSnapshotArtworkIds } },
         select: {
           id: true,
           slug: true,
           name: true,
+          artworkType: true,
           title: true,
           author: true,
           year: true,
@@ -116,10 +138,49 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ url: s
           dimensions: true,
           description: true,
           imageUrl: true,
+          textContent: true,
+          soundUrl: true,
+          videoUrl: true,
+          originalWidth: true,
+          originalHeight: true,
+          featured: true,
           hiddenFromExhibition: true,
         },
       })
       const liveById = Object.fromEntries(liveArtworks.map((a) => [a.id, a]))
+
+      // Snapshot layout + live artwork metadata — the exact merge
+      // /api/exhibition-artworks performs, relocated here so a public visit
+      // is a single round trip. Positions/display props stay frozen in the
+      // snapshot; only artwork metadata (title, image, media URLs…) is live.
+      const enrichedExhibitionArtworks = (snapshotArtworks || []).map((ea) => {
+        const art = ea.artwork as Record<string, unknown> | undefined
+        const artworkId = (art?.id as string) ?? (ea.artworkId as string)
+        const live = liveById[artworkId]
+        if (!live) return ea
+        return {
+          ...ea,
+          artwork: {
+            ...art,
+            slug: live.slug,
+            name: live.name,
+            artworkType: live.artworkType,
+            title: live.title,
+            author: live.author,
+            year: live.year,
+            technique: live.technique,
+            dimensions: live.dimensions,
+            description: live.description,
+            imageUrl: live.imageUrl,
+            textContent: live.textContent,
+            soundUrl: live.soundUrl,
+            videoUrl: live.videoUrl,
+            originalWidth: live.originalWidth,
+            originalHeight: live.originalHeight,
+            featured: live.featured,
+          },
+        }
+      })
 
       const artworks = snapshotArtworkObjects
         .map((artwork) => {
@@ -189,8 +250,9 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ url: s
         wallBrightness: snapshotExhibition.wallBrightness,
         // Autofocus groups
         autofocusGroups: snapshotExhibition.autofocusGroups,
-        // Artworks from snapshot
-        exhibitionArtworks: snapshotArtworks,
+        // Snapshot positions enriched with live artwork metadata — consumed
+        // directly by the 3D scene (no second request).
+        exhibitionArtworks: enrichedExhibitionArtworks,
         artworks,
       })
     }

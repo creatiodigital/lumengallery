@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { newPassword } = body
+    const { newPassword, currentPassword } = body
 
     if (!newPassword) {
       return NextResponse.json({ error: 'New password is required' }, { status: 400 })
@@ -27,6 +27,31 @@ export async function POST(request: NextRequest) {
         { error: `Password must have ${validation.errors.join(', ')}` },
         { status: 400 },
       )
+    }
+
+    // Load the account to decide whether re-auth is required. The
+    // `mustChangePassword` provisional first-login flow is the ONLY path
+    // allowed to set a password without proving the current one — and it's
+    // read from the DB, never trusted from the session claim.
+    const account = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { password: true, mustChangePassword: true },
+    })
+    if (!account) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Re-authentication: a normal password change must prove knowledge of the
+    // current password. Without this, any live session (unlocked device,
+    // stolen/replayed cookie) could silently seize the account permanently.
+    if (!account.mustChangePassword) {
+      if (!currentPassword || !account.password) {
+        return NextResponse.json({ error: 'Current password is required' }, { status: 400 })
+      }
+      const currentMatches = await bcrypt.compare(currentPassword, account.password)
+      if (!currentMatches) {
+        return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 })
+      }
     }
 
     // Hash new password

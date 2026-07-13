@@ -311,6 +311,17 @@ model EditionNumber {
   reservedAt DateTime?
   soldAt     DateTime?
 
+  // Cart-hold session binding (AR-132). `cartSessionId` is the httpOnly
+  // `cart_session` cookie value that placed this hold: only the owning session
+  // may extend/release it, and it caps how much stock one anonymous session can
+  // freeze at once. `holdStartedAt` is the absolute-lifetime anchor — stamped
+  // once when the hold is first placed and NOT refreshed by extend, so a hold
+  // is reclaimed after a hard cap no matter how often it is extended. Both are
+  // NULL for server-side reservations (single-print / cart checkout, which
+  // attach a PI immediately) and are cleared on release.
+  cartSessionId String?
+  holdStartedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -319,6 +330,22 @@ model EditionNumber {
   // "Next available number" query + reservation lookups.
   @@index([variantId, state])
   @@index([paymentIntentId])
+  // Per-session aggregate-hold count + ownership-scoped extend/release.
+  @@index([cartSessionId])
+}
+
+// Fixed-window rate-limit counters (AR-132). One row per "<name>:<key>"
+// (e.g. login-email:foo@bar.com, cart-reserve-ip:1.2.3.4). Shared across all
+// serverless instances so limits actually hold in production. Rows self-reset
+// when their window lapses and are pruned by the reconcile cron.
+model RateLimit {
+  key       String   @id
+  count     Int      @default(0)
+  windowEnd DateTime
+  updatedAt DateTime @updatedAt
+
+  // Cron prune of lapsed windows.
+  @@index([windowEnd])
 }
 
 model PrintOrder {

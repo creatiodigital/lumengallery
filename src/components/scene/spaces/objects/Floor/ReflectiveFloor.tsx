@@ -11,7 +11,9 @@ import { assetUrl } from '@/lib/assetUrl'
 const ENABLE_REFLECTIONS = false
 
 // Bump this version when replacing floor texture files to bust Three.js cache
-const TEXTURE_VERSION = 3
+// v4: 2026-07-12 recompression (visually lossless; originals in R2 under
+// app/assets/_originals-20260712/)
+const TEXTURE_VERSION = 4
 
 interface ReflectiveFloorProps {
   position?: Vector3Tuple
@@ -144,9 +146,20 @@ const MATERIAL_CONFIG: Record<
   },
 }
 
-// Preload all floor textures at module scope so useTexture doesn't trigger
-// loading manager state updates during render (fixes Loader setState warning)
-Object.entries(MATERIAL_CONFIG).forEach(([material, config]) => {
+// Resolve legacy/deleted material names to valid ones
+const MATERIAL_ALIASES: Record<string, string> = {
+  chevron: 'parquet',
+}
+
+const resolveFloorMaterial = (material?: string | null): string => {
+  const resolved = MATERIAL_ALIASES[material ?? ''] || material || 'concrete'
+  return MATERIAL_CONFIG[resolved] ? resolved : 'concrete'
+}
+
+// Build the exact URL set the component loads for a material. Shared between
+// render and preload so the preloaded cache entries always match (?v= included).
+const buildFloorTexturePaths = (material: string): Record<string, string> => {
+  const config = MATERIAL_CONFIG[material]
   const basePath = assetUrl(`/assets/materials/${material}`)
   const v = `?v=${TEXTURE_VERSION}`
   const paths: Record<string, string> = {
@@ -157,8 +170,27 @@ Object.entries(MATERIAL_CONFIG).forEach(([material, config]) => {
   if (config.bump) paths.bumpMap = `${basePath}/${config.bump}${v}`
   if (config.metallic) paths.metalnessMap = `${basePath}/${config.metallic}${v}`
   if (config.ao) paths.aoMap = `${basePath}/${config.ao}${v}`
-  useResilientTexture.preload(Object.values(paths))
-})
+  return paths
+}
+
+// Preloading must happen OUTSIDE the render phase: if useLoader creates the
+// texture promise while a component renders, the loading manager's onStart
+// updates drei's useProgress store mid-render (Loader setState warning).
+// Callers therefore warm the cache from effects/handlers before the floor
+// mounts; the component's useLoader then suspends on the cached promise.
+
+/** Warm the texture cache for ONE material — the visit page calls this with
+ *  the exhibition's floorMaterial as soon as its data arrives, so visitors
+ *  only download the set the room actually shows (each full set is 2–10 MB). */
+export const preloadFloorMaterial = (material?: string | null) => {
+  useResilientTexture.preload(Object.values(buildFloorTexturePaths(resolveFloorMaterial(material))))
+}
+
+/** Warm every material set — edit view only, where the artist can switch
+ *  floors live and instant previews matter more than transfer size. */
+export const preloadAllFloorMaterials = () => {
+  Object.keys(MATERIAL_CONFIG).forEach((material) => preloadFloorMaterial(material))
+}
 
 /**
  * Polished floor with mirror reflections and PBR textures.
@@ -206,41 +238,11 @@ const ReflectiveFloor: React.FC<ReflectiveFloorProps> = ({
   // Clamp scale for safety (0.5 = largest tiles, 5.0 = smallest)
   const clampedScale = Math.max(0.5, Math.min(8.0, floorTextureScale))
 
-  // Resolve legacy/deleted material names to valid ones
-  const MATERIAL_ALIASES: Record<string, string> = {
-    chevron: 'parquet',
-  }
-  const resolvedMaterial = MATERIAL_ALIASES[floorMaterial] || floorMaterial
-  const validMaterial = MATERIAL_CONFIG[resolvedMaterial] ? resolvedMaterial : 'concrete'
-
-  // Get material config for dynamic texture paths
-  const materialConfig = MATERIAL_CONFIG[validMaterial]
-  const texturePath = assetUrl(`/assets/materials/${validMaterial}`)
+  const validMaterial = resolveFloorMaterial(floorMaterial)
 
   // Build texture paths (metallic, normal, and ao are optional) — memoized to avoid
   // unstable references that cause useTexture to re-trigger loading on every render
-  const texturePaths = useMemo(() => {
-    const v = `?v=${TEXTURE_VERSION}`
-    const paths: Record<string, string> = {
-      map: `${texturePath}/${materialConfig.diffuse}${v}`,
-    }
-    if (materialConfig.roughness) {
-      paths.roughnessMap = `${texturePath}/${materialConfig.roughness}${v}`
-    }
-    if (materialConfig.normal) {
-      paths.normalMap = `${texturePath}/${materialConfig.normal}${v}`
-    }
-    if (materialConfig.bump) {
-      paths.bumpMap = `${texturePath}/${materialConfig.bump}${v}`
-    }
-    if (materialConfig.metallic) {
-      paths.metalnessMap = `${texturePath}/${materialConfig.metallic}${v}`
-    }
-    if (materialConfig.ao) {
-      paths.aoMap = `${texturePath}/${materialConfig.ao}${v}`
-    }
-    return paths
-  }, [texturePath, materialConfig])
+  const texturePaths = useMemo(() => buildFloorTexturePaths(validMaterial), [validMaterial])
 
   // Load PBR textures with correct extensions per material. Uses the
   // resilient loader so a transient/aborted request retries and degrades

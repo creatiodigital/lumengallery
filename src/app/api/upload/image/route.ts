@@ -11,6 +11,7 @@ import {
   uploadToR2,
   deleteFromR2,
   getPresignedUploadUrl,
+  getR2ObjectSize,
   buildArtworkImageKey,
   buildOriginalImageKey,
 } from '@/lib/r2'
@@ -153,6 +154,20 @@ export async function POST(request: NextRequest) {
       }
       const originalUrl = `${r2PublicUrl}/${originalKey}`
 
+      // The presigned PUT imposes no size ceiling and the declared fileSize is
+      // client-supplied (and optional), so verify the REAL object size via
+      // HeadObject BEFORE downloading — otherwise a multi-GB body would be
+      // pulled fully into memory before we could reject it. Over-limit →
+      // delete the object and reject.
+      const uploadedSize = await getR2ObjectSize(originalKey)
+      if (uploadedSize !== null && uploadedSize > MAX_ARTWORK_UPLOAD_SIZE) {
+        await deleteFromR2(originalUrl).catch(() => {})
+        return NextResponse.json(
+          { error: `File too large. Maximum is ${MAX_ARTWORK_UPLOAD_SIZE / (1024 * 1024)}MB.` },
+          { status: 400 },
+        )
+      }
+
       // Download the original from R2 to process it
       const originalResponse = await fetch(originalUrl)
       if (!originalResponse.ok) {
@@ -160,6 +175,16 @@ export async function POST(request: NextRequest) {
       }
 
       const originalBuffer = Buffer.from(await originalResponse.arrayBuffer())
+
+      // Fallback for the rare case HeadObject returned null (size unknown):
+      // the body is in memory now, so reject before handing it to sharp.
+      if (originalBuffer.length > MAX_ARTWORK_UPLOAD_SIZE) {
+        await deleteFromR2(originalUrl).catch(() => {})
+        return NextResponse.json(
+          { error: `File too large. Maximum is ${MAX_ARTWORK_UPLOAD_SIZE / (1024 * 1024)}MB.` },
+          { status: 400 },
+        )
+      }
 
       if (!isValidImageType(originalBuffer)) {
         return NextResponse.json(

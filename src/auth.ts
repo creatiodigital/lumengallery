@@ -3,6 +3,8 @@ import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 
 import prisma from '@/lib/prisma'
+import { rateLimit } from '@/lib/rateLimit'
+import { getClientIpFromHeaders } from '@/lib/getClientIp'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -13,7 +15,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: 'Password', type: 'password' },
         loginCode: { label: 'Login Code', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
@@ -21,6 +23,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = credentials.email as string
         const password = credentials.password as string
         const loginCode = credentials.loginCode as string | undefined
+
+        // Brute-force protection on the credentials callback — otherwise
+        // unthrottled, so an attacker could hammer this endpoint to guess a
+        // password OR sweep the 6-digit login code (a wrong code neither locks
+        // the account nor rotates the code within its TTL). Cap attempts per
+        // account, and per source IP when available (credential stuffing).
+        // Fails open if the limiter store is unreachable.
+        const ip = request?.headers ? getClientIpFromHeaders(request.headers) : null
+        const [emailGate, ipGate] = await Promise.all([
+          rateLimit({
+            name: 'login-email',
+            key: email.toLowerCase(),
+            limit: 8,
+            windowSeconds: 900,
+          }),
+          ip
+            ? rateLimit({ name: 'login-ip', key: ip, limit: 40, windowSeconds: 900 })
+            : Promise.resolve({ success: true, remaining: 1 }),
+        ])
+        if (!emailGate.success || !ipGate.success) {
+          return null
+        }
 
         const user = await prisma.user.findUnique({
           where: { email },

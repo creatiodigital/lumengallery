@@ -32,7 +32,8 @@ const ArtisticImage = ({ artwork }: ArtisticImageProps) => {
   const frameFolder = (
     frameMaterial === 'wood' ? 'wood-dark' : (frameMaterial ?? 'wood-dark')
   ).replace('wood-', '')
-  const frameTextureUrl = assetUrl(`/assets/materials/wooden-frame-${frameFolder}/diffuse.jpg`)
+  // ?v=3 matches the 3D scene's wood-frame version → shared cache entry.
+  const frameTextureUrl = assetUrl(`/assets/materials/wooden-frame-${frameFolder}/diffuse.jpg?v=3`)
 
   return (
     <div

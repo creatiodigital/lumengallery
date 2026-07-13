@@ -530,7 +530,7 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
           throw new Error(data.error || 'Failed to get upload URL')
         }
 
-        const { presignedUrl, publicUrl } = await response.json()
+        const { presignedUrl, publicUrl, key } = await response.json()
 
         // Step 2: Upload file directly to R2
         const uploadResponse = await fetch(presignedUrl, {
@@ -543,14 +543,15 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
           throw new Error('Failed to upload video to storage')
         }
 
-        // Step 3: Finalize — update artwork record with the new URL
+        // Step 3: Finalize — send the server-minted key (not a URL); the
+        // server validates it and rebuilds the public URL itself.
         const finalizeResponse = await fetch('/api/upload/video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'complete',
             artworkId,
-            url: publicUrl,
+            key,
           }),
         })
 

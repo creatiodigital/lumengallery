@@ -25,8 +25,8 @@ export default auth((request) => {
   }
 
   // Protect exhibition edit routes - require authentication
-  // Pattern: /:handler/exhibition/:slug/edit
-  const editRouteMatch = nextUrl.pathname.match(/^\/[^/]+\/exhibition\/[^/]+\/edit$/)
+  // Real route: /exhibitions/:artistSlug/:exhibitionSlug/edit
+  const editRouteMatch = nextUrl.pathname.match(/^\/exhibitions\/[^/]+\/[^/]+\/edit$/)
   if (editRouteMatch) {
     if (!session?.user) {
       return NextResponse.redirect(new URL('/', nextUrl.origin))
@@ -37,5 +37,5 @@ export default auth((request) => {
 })
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*', '/:handler/exhibition/:slug/edit'],
+  matcher: ['/admin/:path*', '/dashboard/:path*', '/exhibitions/:artistSlug/:exhibitionSlug/edit'],
 }

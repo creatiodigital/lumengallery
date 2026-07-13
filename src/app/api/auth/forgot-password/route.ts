@@ -1,42 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import crypto from 'crypto'
 
 import prisma from '@/lib/prisma'
 import { isEmail } from '@/lib/validation'
+import { getClientIp } from '@/lib/getClientIp'
+import { rateLimit } from '@/lib/rateLimit'
 import { sendForgotPasswordEmail } from '@/lib/emails/forgotPassword'
-
-// Rate limiting
-const rateLimitStore = new Map<string, { count: number; timestamp: number }>()
-const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
-const RATE_LIMIT_MAX = 3 // Max 3 requests per minute per IP
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const record = rateLimitStore.get(ip)
-
-  if (!record || now - record.timestamp > RATE_LIMIT_WINDOW) {
-    rateLimitStore.set(ip, { count: 1, timestamp: now })
-    return false
-  }
-
-  if (record.count >= RATE_LIMIT_MAX) {
-    return true
-  }
-
-  record.count++
-  return false
-}
 
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0] ||
-      request.headers.get('x-real-ip') ||
-      'unknown'
-
-    // Check rate limit
-    if (isRateLimited(ip)) {
+    // Rate limiting (durable, trusted x-real-ip not the spoofable first hop).
+    const ip = getClientIp(request)
+    const { success } = await rateLimit({
+      name: 'forgot-password',
+      key: ip,
+      limit: 3,
+      windowSeconds: 60,
+    })
+    if (!success) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
         { status: 429 },
@@ -83,8 +64,20 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXTAUTH_URL || 'https://theartroom.gallery'
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`
 
-    // Send reset email
-    await sendForgotPasswordEmail({ to: email, name: user.name, resetUrl })
+    // Send the reset email AFTER the response. Awaiting the provider
+    // round-trip only for existing accounts makes the response measurably
+    // slower for real users than for unknown emails — a timing oracle for
+    // account existence. `after()` defers the send past the response (so the
+    // client-observed latency matches the unknown-email branch) while the
+    // platform keeps the function alive to actually deliver it — unlike a bare
+    // fire-and-forget, which a serverless runtime may freeze before it sends.
+    after(async () => {
+      try {
+        await sendForgotPasswordEmail({ to: email, name: user.name, resetUrl })
+      } catch (err) {
+        console.error('Error sending forgot-password email:', err)
+      }
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

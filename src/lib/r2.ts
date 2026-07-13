@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto'
+import { randomUUID, randomBytes } from 'crypto'
 
 import {
   S3Client,
@@ -41,7 +41,10 @@ function getEnvPrefix(): string {
 // ── Random suffix ────────────────────────────────────────────────────────────
 
 function randomSuffix(): string {
-  return Math.random().toString(36).substring(2, 10)
+  // CSPRNG, not Math.random(): on the main (public) bucket the object key IS
+  // the only access control, so the unguessable suffix must not be derivable
+  // from engine state. 12 hex chars ≈ 48 bits.
+  return randomBytes(6).toString('hex')
 }
 
 // ── Resolve artist handler from userId ───────────────────────────────────────
@@ -177,6 +180,21 @@ export async function deleteFromR2(url: string): Promise<void> {
       Key: key,
     }),
   )
+}
+
+/**
+ * Return the byte size of a main-bucket object by key, or null if it can't be
+ * read. Used to verify a client-uploaded object's real size after a presigned
+ * PUT (the presigned URL itself imposes no size limit, and the declared
+ * fileSize is client-supplied and optional).
+ */
+export async function getR2ObjectSize(key: string): Promise<number | null> {
+  try {
+    const res = await r2.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }))
+    return typeof res.ContentLength === 'number' ? res.ContentLength : null
+  } catch {
+    return null
+  }
 }
 
 /**

@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server'
 import { deleteFromR2 } from '@/lib/r2'
 
 import { isAdminOrAbove, requireOwnership } from '@/lib/authUtils'
+import { PUBLIC_ARTWORK_OMIT } from '@/lib/artworkFields'
 import { saveLimitedVariants, type IncomingVariant } from '@/lib/editions/saveLimitedVariants'
 import { TPS_FRAME_TYPES, TPS_PAPERS, TPS_WINDOW_MOUNTS } from '@/lib/print-providers/printspace'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
@@ -120,6 +121,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 
     const artwork = await prisma.artwork.findUnique({
       where: { id },
+      // Never expose the full-res master URL / metadata on this public read.
+      omit: PUBLIC_ARTWORK_OMIT,
       include: {
         limitedVariants: {
           orderBy: { order: 'asc' },

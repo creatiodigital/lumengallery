@@ -24,9 +24,11 @@ const PlasterWall: React.FC<PlasterWallProps> = ({
   textureRepeat = 2,
 }) => {
   // Load textures (diffuse + AO for visual depth)
+  // ?v=2: 2026-07-12 recompression (visually lossless; originals in R2 under
+  // app/assets/_originals-20260712/)
   const textures = useTexture({
-    map: `${texturePath}/diffuse.jpg`,
-    aoMap: `${texturePath}/ao.jpg`,
+    map: `${texturePath}/diffuse.jpg?v=2`,
+    aoMap: `${texturePath}/ao.jpg?v=2`,
   })
 
   // Configure texture tiling

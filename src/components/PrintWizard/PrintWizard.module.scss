@@ -31,6 +31,15 @@
   @include media-up(md) {
     padding: var(--space-5) var(--space-8);
   }
+
+  // Stacked layout (mobile/tablet): the panels below inset content by
+  // space-5, and the ghost CLOSE button carries space-4 of its own side
+  // padding. Trim the header's right padding so the button's visible edge
+  // lands on the panels' right content edge (keeps the tap area intact).
+  // Declared after media-up(md) so it wins in the 768–900px overlap.
+  @include media-down(tablet) {
+    padding-right: calc(var(--space-5) - var(--space-4));
+  }
 }
 
 .headerActions {
