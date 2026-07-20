@@ -15,7 +15,12 @@
  * format = "print only").
  */
 import type { Catalog, Dimension, WizardConfig } from './types'
-import { getEffectiveBorderCm, getEffectiveSizeCm, isDimensionVisible } from './configHelpers'
+import {
+  getEffectiveBorderCm,
+  getEffectiveMatCm,
+  getEffectiveSizeCm,
+  isDimensionVisible,
+} from './configHelpers'
 
 export type SpecRow = {
   /** Stable key for React + persistence — the catalog dimension id. */
@@ -60,7 +65,15 @@ function renderDimensionValue(
   if (dim.kind === 'enum') {
     const value = config.values[dim.id]
     if (!value) return null
-    return dim.options.find((o) => o.id === value)?.label ?? null
+    const label = dim.options.find((o) => o.id === value)?.label ?? null
+    // Mount size presets (Small/Large) scale with the print size —
+    // append the resolved width so the buyer sees the actual cut,
+    // not just the preset name.
+    if (label && dim.id === 'windowMountSize') {
+      const matCm = getEffectiveMatCm(catalog, config)
+      if (matCm > 0) return `${label} (≈ ${roundCm(matCm)} cm)`
+    }
+    return label
   }
   if (dim.kind === 'size') {
     const sizeCm = getEffectiveSizeCm(catalog, config)

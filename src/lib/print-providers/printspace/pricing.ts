@@ -1,10 +1,15 @@
 /**
- * The Print Space pricing tables. Shipping is exact (transcribed from
- * TPS's published rate card). Print + frame + glass + hanging values
- * are deliberately approximate placeholders — TPS's API doesn't
- * expose live prices, so the gallery rounds slightly upward to absorb
- * any per-job variance ("if there's a difference, it leans to the
- * gallery, never the buyer").
+ * The Print Space pricing tables.
+ *
+ * Shipping: transcribed from TPS's "Delivery Price list Feb 2023 EUR
+ * (external use)" per-country portal rate card, COURIER service (we
+ * place orders manually on the TPS portal, so the portal card — not
+ * the ASF/dropship card — is what TPS charges the gallery).
+ *
+ * Print base: area formula fitted to TPS's published price list.
+ * Frame + glass + hanging values remain approximate cart-calibrated
+ * placeholders. Wherever the model approximates, it rounds upward so
+ * any per-job variance leans to the gallery, never the buyer.
  *
  * All amounts in EUR cents to match the rest of the app's money type.
  */
@@ -30,26 +35,39 @@ function pickTier<T>(tiers: readonly SizeTier<T>[], widthCm: number, heightCm: n
   return tiers[tiers.length - 1].value
 }
 
-// ── Print base (per size tier, approximate) ─────────────────────
+// ── Print base (measured curve) ──────────────────────────────────
 //
-// Single number per tier, no per-paper or per-print-type variation
-// for now. The model rounds slightly upward — any per-job variance
-// (e.g. paper choice within Giclée) leans to the gallery's favour,
-// never the buyer's.
+// Anchored to REAL creativehub cart prices (German Etching, ex-VAT,
+// captured 2026-07-14/15 — see project memory "TPS Pricing
+// Calibration"). Verified same-price across Giclée papers (Photo Rag
+// = German Etching to the cent); C-Type (Fuji Matt/Gloss) runs ~44%
+// cheaper, so the Giclée curve is the cost ceiling for every paper.
 //
-// Calibration anchors (carts, 2026-04-26):
-//   30×40 Giclée German Etching → print line €19.34
-//   40×57 Giclée Bamboo         → print line €25.49
-//   60×86 Giclée Photo Rag      → print line €54.08
-// Tier ≤84 still without a direct anchor; estimated between ≤60 and
-// ≤119 anchors.
-const PRINT_BASE_CENTS: readonly SizeTier<number>[] = [
-  { upToLongEdgeCm: 35, value: 1700 }, // ~€17, area-scaled, unconfirmed
-  { upToLongEdgeCm: 42, value: 2100 }, // €21 — anchor €19.34 + ~9% bias
-  { upToLongEdgeCm: 60, value: 2800 }, // €28 — anchor €25.49 + ~10% bias
-  { upToLongEdgeCm: 84, value: 4500 }, // ~€45 — interpolated, unconfirmed
-  { upToLongEdgeCm: 119, value: 6000 }, // €60 — anchor €54.08 + ~11% bias
+// The curve is NOT linear in area: there's a small-print floor
+// (~€15 at 30×20) and the slope steepens past ~120 cm — a straight
+// line under-priced both ends. Charge = piecewise-linear through the
+// measured anchors + ~8%, so variance leans to the gallery, never
+// the buyer.
+//
+// Measured cost anchors (area cm² → EUR):
+//   603→15.26 · 1072→18.32 · 1675→23.44 · 2416→25.49 ·
+//   5160→54.08 (2026-04 cart) · 6690→69.39 · 9636→105.13 ·
+//   11310→134.75
+const PRINT_BASE_CURVE: ReadonlyArray<{ areaCm2: number; cents: number }> = [
+  { areaCm2: 603, cents: 1650 },
+  { areaCm2: 1072, cents: 1980 },
+  { areaCm2: 1675, cents: 2530 },
+  { areaCm2: 2416, cents: 2760 },
+  { areaCm2: 3269, cents: 3860 }, // 70×46.7 → €35.68 (prediction-game cart, 2026-07-16)
+  { areaCm2: 5160, cents: 5840 },
+  { areaCm2: 6690, cents: 7500 },
+  { areaCm2: 7350, cents: 7830 }, // 105×70 → €72.45 (prediction-game cart, 2026-07-16)
+  { areaCm2: 9636, cents: 11350 },
+  { areaCm2: 11310, cents: 14550 },
 ]
+// Beyond the last anchor (bigger than 130×87) extend at the top
+// segment's slope + margin. Catalog caps at 150 cm long edge.
+const PRINT_BASE_TOP_SLOPE_CENTS_PER_CM2 = 1.9
 
 // ── Frame supplement (per tier × frame type, approximate) ───────
 //
@@ -81,12 +99,19 @@ const PRINT_BASE_CENTS: readonly SizeTier<number>[] = [
 import type { TpsFrameTypeId } from './data'
 
 const FRAME_SUPPLEMENT_CENTS: Record<TpsFrameTypeId, readonly SizeTier<number>[]> = {
+  // Re-anchored 2026-07-15 (creativehub): 80×53.5 Standard Wide-Black
+  // frame-only ≈ €284 — Wide runs ~€28 over Thin, and the old values
+  // were anchored mid-tier on Thin mouldings, so tier-top + Wide
+  // combos sat at break-even or below. One price covers every
+  // moulding within the type, so each tier must clear its WORST case
+  // (top long edge, widest moulding), per the pricing principle.
   standard: [
-    { upToLongEdgeCm: 35, value: 11500 }, // ~€115, no real anchor
-    { upToLongEdgeCm: 42, value: 12000 }, // €120 ← real €112 + ~7% bias
-    { upToLongEdgeCm: 60, value: 15000 }, // €150 ← real €138 (30×43 cart) + ~9% bias
-    { upToLongEdgeCm: 84, value: 28500 }, // €285 — interpolated above ≤60 jump
-    { upToLongEdgeCm: 119, value: 30000 }, // €300 ← real €273 + ~10% bias
+    { upToLongEdgeCm: 35, value: 12500 }, // €125 — no real anchor; covers Wide
+    { upToLongEdgeCm: 42, value: 14500 }, // €145 ← 30×43 Thin was €128; + Wide headroom
+    { upToLongEdgeCm: 60, value: 19000 }, // €190 ← ~€155 Thin at 60 (interp 43→72 anchors) + Wide + bias
+    { upToLongEdgeCm: 84, value: 31500 }, // €315 ← real €284 Wide @80 + ~11% bias
+    { upToLongEdgeCm: 119, value: 40000 }, // €400 — NO anchor above 86 cm; extrapolated by
+    // long edge from €284@80. TODO: pending ~100cm framed capture.
   ],
   box: [
     { upToLongEdgeCm: 35, value: 19000 }, // €190 (~1.66× Standard ≤35)
@@ -129,7 +154,19 @@ const FRAME_SUPPLEMENT_CENTS: Record<TpsFrameTypeId, readonly SizeTier<number>[]
 }
 
 export function getPrintBaseCents(widthCm: number, heightCm: number): number {
-  return pickTier(PRINT_BASE_CENTS, widthCm, heightCm)
+  const area = widthCm * heightCm
+  const first = PRINT_BASE_CURVE[0]
+  if (area <= first.areaCm2) return first.cents
+  for (let i = 1; i < PRINT_BASE_CURVE.length; i++) {
+    const a = PRINT_BASE_CURVE[i - 1]
+    const b = PRINT_BASE_CURVE[i]
+    if (area <= b.areaCm2) {
+      const t = (area - a.areaCm2) / (b.areaCm2 - a.areaCm2)
+      return Math.round(a.cents + t * (b.cents - a.cents))
+    }
+  }
+  const last = PRINT_BASE_CURVE[PRINT_BASE_CURVE.length - 1]
+  return Math.round(last.cents + (area - last.areaCm2) * PRINT_BASE_TOP_SLOPE_CENTS_PER_CM2)
 }
 
 export function getFrameSupplementCents(
@@ -152,12 +189,16 @@ export function getFrameSupplementCents(
 // Roughly doubles from small to large; tier values bias upward.
 import type { TpsGlassId } from './data'
 
+// Re-anchored 2026-07-15 (creativehub cart): AR delta at 80 cm long
+// edge = €138.65 — much steeper at size than the 2026-04 anchors
+// implied (old ≤84 tier charged €95: underwater). Small-size anchor
+// (€50 at 42) still consistent with April data.
 const ANTI_REFLECTIVE_SUPPLEMENT_CENTS: readonly SizeTier<number>[] = [
-  { upToLongEdgeCm: 35, value: 5000 }, // €50
-  { upToLongEdgeCm: 42, value: 5500 }, // €55 ← real €50 + bias (anchor)
-  { upToLongEdgeCm: 60, value: 6500 }, // €65 — interpolated
-  { upToLongEdgeCm: 84, value: 9500 }, // €95 — interpolated
-  { upToLongEdgeCm: 119, value: 12000 }, // €120 ← real €110.60 + bias (anchor)
+  { upToLongEdgeCm: 35, value: 5500 }, // €55
+  { upToLongEdgeCm: 42, value: 6000 }, // €60 ← real ~€50-55 + bias
+  { upToLongEdgeCm: 60, value: 10500 }, // €105 — interpolated 42→80 anchors
+  { upToLongEdgeCm: 84, value: 15500 }, // €155 ← real €138.65 @80 + bias
+  { upToLongEdgeCm: 119, value: 21000 }, // €210 — extrapolated by long edge; no anchor yet
 ]
 
 export function getGlassSupplementCents(
@@ -174,29 +215,26 @@ export function getGlassSupplementCents(
 
 // ── Mount Board (passepartout) supplement ───────────────────────
 //
-// Mount cost on TPS is stepped, NOT linear per cm. Three tiers
-// observed at 30×43 (cart probe, 2026-04-26):
-//   0 mm           → no supplement
-//   3–39 mm        → +€19 (any mount under 4 cm)
-//   42–60 mm       → +€24
-//   63–72 mm       → +€53 (max width = 72 mm)
+// Re-anchored 2026-07-16 (prediction-game carts): a Small (30 mm)
+// mount on a 60×40 frame cost €41.45 — TRIPLE the April 2026 probe
+// (€19 at 30×43), and clearly scaled with FRAME SIZE, not just mount
+// width. The old flat-by-width tiers under-charged badly (€22).
 //
-// Real cart values + ~15-20% upward bias. Currently treated as
-// flat across frame sizes; may scale at larger frames but no
-// confirming anchor yet.
-const MOUNT_BOARD_TIERS: ReadonlyArray<{ upToCm: number; cents: number }> = [
-  { upToCm: 3.9, cents: 2200 }, // €22 ← real €19 + ~15% bias
-  { upToCm: 6.0, cents: 2800 }, // €28 ← real €24 + ~15% bias
-  { upToCm: 7.2, cents: 6000 }, // €60 ← real €53 + ~13% bias
-]
+// Model: charge grows with the print's long edge; the Large preset
+// (wider cut) carries a higher rate. Single real anchor so far
+// (Small @60 → €41.45; charge €45 = +8.6%) — the Large rate is a
+// conservative +33% on top. TODO: capture a Large-mount cart.
+const MOUNT_SMALL_CENTS_PER_LONG_EDGE_CM = 75
+const MOUNT_LARGE_CENTS_PER_LONG_EDGE_CM = 100
+const MOUNT_MIN_CENTS = 2800
 
-export function getMountBoardSupplementCents(mountCm: number): number {
+export function getMountBoardSupplementCents(mountCm: number, longEdgeCm: number): number {
   if (!mountCm || mountCm <= 0) return 0
-  for (const tier of MOUNT_BOARD_TIERS) {
-    if (mountCm <= tier.upToCm) return tier.cents
-  }
-  // Anything beyond max gets the largest tier (slider is capped at 7.2 cm).
-  return MOUNT_BOARD_TIERS[MOUNT_BOARD_TIERS.length - 1].cents
+  // ≥4 cm widths only occur via the Large preset (or legacy slider
+  // configs, which pay the higher rate too — safe direction).
+  const rate =
+    mountCm >= 4 ? MOUNT_LARGE_CENTS_PER_LONG_EDGE_CM : MOUNT_SMALL_CENTS_PER_LONG_EDGE_CM
+  return Math.max(MOUNT_MIN_CENTS, Math.round(longEdgeCm * rate))
 }
 
 // ── Hanging supplement (flat per hanging type) ──────────────────
@@ -267,105 +305,198 @@ export function resolveTpsRegion(countryCode: string): TpsRegion {
   return COUNTRY_REGION[countryCode] ?? 'ROW'
 }
 
-// ── Shipping costs (verbatim from the rate card) ────────────────
+// ── Shipping costs (live-verified creativehub checkout prices) ──
 //
-// Per-order shipping for prints (any size, single line item).
-export const TPS_SHIPPING_PRINTS_CENTS: Record<TpsRegion, number> = {
-  UK: 695,
-  DE: 695,
-  EU: 1463,
-  NORDIC: 1960,
-  US: 2867,
-  CA: 4095,
-  AU_NZ: 7697,
-  ROW: 7697,
+// Source: TPS "Delivery Price list Feb 2023 EUR" rate card, verified
+// against LIVE creativehub carts 2026-07-14..16 — every checked cell
+// matched to the cent except the US (new service, cheaper). We fulfil
+// by placing orders manually on creativehub, so these are the prices
+// TPS actually charges the gallery.
+//
+// TPS routes production to the nearest lab: London (UK + framed
+// orders), Düsseldorf (EU + exports), US lab (US orders).
+//
+// Service basis (gallery decision 2026-07-16): STANDARD POST always
+// — the gallery never books a paid courier tier. Concretely:
+//  - UK prints: Royal Mail Recorded (tracked, €6.55).
+//  - US prints: "Tracked Ground Delivery" (sole US service, ~€8).
+//  - EU / Nordics / Canada prints: Standard Post International.
+//  - AU / NZ / JP / KR prints: International Courier — the ONLY
+//    service creativehub offers there (verified live).
+//  - Large parcels (bands 5-6): the rate card lists no post price;
+//    priced at the courier value, which caps whatever TPS charges
+//    (in practice most such prints clear the free-post threshold).
+//  - Framed orders: courier only (no post service exists).
+// Each region takes its worst-case supported country; true outliers
+// (Cyprus, Malta) get per-country overrides instead of dragging
+// their whole region up.
+//
+// VAT/customs facts (from the live carts):
+//  - EU prints ship DE→EU: no customs; destination VAT charged until
+//    the gallery's ES VAT number is on the creativehub account (then
+//    reverse charge — TODO: add it).
+//  - US orders carry destination-state sales tax (~0-10%) on
+//    production+delivery — an unrecoverable cost we absorb in margin.
+//  - Framed orders ship UK→world as zero-rated exports; whether the
+//    courier bills EU recipients import VAT is being tested with a
+//    real order (2026-07-15).
+
+// Parcel size bands from the rate card — BOTH dims must fit, else
+// the parcel escalates to the next band. `oversize` covers anything
+// beyond the last band (rate card "Above" column).
+type ShippingBands = {
+  bands: readonly number[] // cents, aligned with PRINT_SHIPPING_BANDS_CM
+  oversize: number
 }
 
-// Per-frame shipping (a framed order ships at this rate per frame
-// instead of the flat print rate above). Tiered by long-edge cm —
-// thresholds match TPS's published rate card bands but stripped of
-// the A4/A3/A2/A1/A0 labels (gallery's pricing model uses long-edge
-// cm directly so labels don't leak anywhere internally).
-const SHIPPING_FRAMES_CENTS: Record<TpsRegion, readonly SizeTier<number>[]> = {
-  UK: [
-    { upToLongEdgeCm: 35, value: 1463 },
-    { upToLongEdgeCm: 42, value: 1463 },
-    { upToLongEdgeCm: 60, value: 1697 },
-    { upToLongEdgeCm: 84, value: 2399 },
-    { upToLongEdgeCm: 119, value: 3510 },
-  ],
-  DE: [
-    { upToLongEdgeCm: 35, value: 802 },
-    { upToLongEdgeCm: 42, value: 1463 },
-    { upToLongEdgeCm: 60, value: 1697 },
-    { upToLongEdgeCm: 84, value: 2399 },
-    { upToLongEdgeCm: 119, value: 3510 },
-  ],
-  EU: [
-    { upToLongEdgeCm: 35, value: 2633 },
-    { upToLongEdgeCm: 42, value: 2867 },
-    { upToLongEdgeCm: 60, value: 3218 },
-    { upToLongEdgeCm: 84, value: 3452 },
-    { upToLongEdgeCm: 119, value: 7605 },
-  ],
-  NORDIC: [
-    { upToLongEdgeCm: 35, value: 2062 },
-    { upToLongEdgeCm: 42, value: 3452 },
-    { upToLongEdgeCm: 60, value: 3803 },
-    { upToLongEdgeCm: 84, value: 4083 },
-    { upToLongEdgeCm: 119, value: 8775 },
-  ],
-  US: [
-    { upToLongEdgeCm: 35, value: 2282 },
-    { upToLongEdgeCm: 42, value: 2545 },
-    { upToLongEdgeCm: 60, value: 3089 },
-    { upToLongEdgeCm: 84, value: 3715 },
-    { upToLongEdgeCm: 119, value: 4417 },
-  ],
-  CA: [
-    { upToLongEdgeCm: 35, value: 4095 },
-    { upToLongEdgeCm: 42, value: 4212 },
-    { upToLongEdgeCm: 60, value: 5499 },
-    { upToLongEdgeCm: 84, value: 7488 },
-    { upToLongEdgeCm: 119, value: 7956 },
-  ],
-  AU_NZ: [
-    { upToLongEdgeCm: 35, value: 5154 },
-    { upToLongEdgeCm: 42, value: 8687 },
-    { upToLongEdgeCm: 60, value: 11209 },
-    { upToLongEdgeCm: 84, value: 17768 },
-    { upToLongEdgeCm: 119, value: 21060 },
-  ],
-  ROW: [
-    { upToLongEdgeCm: 35, value: 7694 },
-    { upToLongEdgeCm: 42, value: 8687 },
-    { upToLongEdgeCm: 60, value: 11209 },
-    { upToLongEdgeCm: 84, value: 17768 },
-    { upToLongEdgeCm: 119, value: 21060 },
-  ],
-}
+const PRINT_SHIPPING_BANDS_CM: ReadonlyArray<{ long: number; short: number }> = [
+  { long: 30, short: 24 },
+  { long: 40, short: 30 },
+  { long: 70, short: 50 },
+  { long: 100, short: 70 },
+  { long: 120, short: 100 },
+  { long: 150, short: 100 },
+]
 
-export function getFrameShippingCents(
-  region: TpsRegion,
+function pickShippingBand(
+  bandLimitsCm: ReadonlyArray<{ long: number; short: number }>,
+  pricing: ShippingBands,
   widthCm: number,
   heightCm: number,
 ): number {
-  return pickTier(SHIPPING_FRAMES_CENTS[region], widthCm, heightCm)
+  const long = Math.max(widthCm, heightCm)
+  const short = Math.min(widthCm, heightCm)
+  for (let i = 0; i < bandLimitsCm.length; i++) {
+    if (long <= bandLimitsCm[i].long && short <= bandLimitsCm[i].short) {
+      return pricing.bands[i]
+    }
+  }
+  return pricing.oversize
+}
+
+// Per-order shipping for prints (tube/flat parcel). One fee per
+// order, set by the LARGEST parcel band in it (verified live with a
+// 2-print cart, 2026-07-16 — not per item).
+const SHIPPING_PRINTS_CENTS: Record<TpsRegion, ShippingBands> = {
+  // Royal Mail Recorded (tracked), verified €6.55 live at 60×40.
+  // No post price above 1000×700 on the rate card → courier values
+  // for the two largest bands.
+  UK: { bands: [655, 655, 655, 655, 2848, 2848], oversize: 9848 },
+  // Deutsche Post, €5.95 verified live at 30×20.
+  DE: { bands: [595, 595, 595, 756, 1485, 1485], oversize: 5440 },
+  // Standard Post Intl, worst-case EU country per band (Bulgaria/
+  // Baltics €10.88 small; Greece etc. €17.61 at band 4). Live-
+  // verified: ES €8.78/€16.63/€16.77, IT €8.78.
+  EU: { bands: [1088, 1693, 1709, 1761, 3357, 5038], oversize: 13038 },
+  // Worst of NO/CH/IS/LI post per band (IS €18.45 … €33.57);
+  // NO €17.43 verified live.
+  NORDIC: { bands: [1845, 2517, 2676, 3357, 5038, 7000], oversize: 13038 },
+  // "Tracked Ground Delivery" from the US lab — sole option. Live-
+  // verified: €8.37 at 30×20 (band 1), €26.97 at 120×80 (band 5).
+  // Bands 2-4 assumed flat like band 1 (matches UK/US small-parcel
+  // pattern); band 6 + oversize still conservative estimates.
+  // Note: US lab production runs ~10% below the EU curve we charge
+  // from — that headroom absorbs the ~9% US state sales tax.
+  US: { bands: [837, 837, 837, 837, 2697, 2848], oversize: 9848 },
+  CA: { bands: [2015, 2052, 2280, 3046, 3679, 5038], oversize: 13038 },
+  // International Courier is the ONLY service offered (verified live
+  // for AU + JP: €45 small print, no post option).
+  AU_NZ: { bands: [4500, 5000, 6000, 7500, 8500, 11000], oversize: 15559 },
+  ROW: { bands: [4500, 5000, 6000, 7500, 8500, 11000], oversize: 15559 },
+}
+
+// creativehub waives Standard Post delivery on high-value print
+// orders: PAID at €69.39 production, FREE at €72.45 (prediction-game
+// bisect, 2026-07-16) → threshold ≈ €70. Unpublished, so the trigger
+// compares our CHARGE (≈ cost + 8%) against the proven-free point
+// ×1.08 — free shipping is only shown when TPS's own fee is provably
+// zero. Prints only — a €324 framed order still paid €55. Couriers
+// stay paid above the threshold; we pass the free post tier through.
+export const TPS_FREE_PRINT_DELIVERY_FROM_CENTS = 7830
+
+// Countries whose post prices sit well above their region. Cyprus
+// verified live 2026-07-16 (€10.88 band 1, matching the card).
+const SHIPPING_PRINTS_COUNTRY_OVERRIDE: Record<string, ShippingBands> = {
+  CY: { bands: [1088, 2515, 2548, 2548, 3924, 5038], oversize: 13038 },
+  MT: { bands: [1845, 2200, 2517, 3357, 3357, 5038], oversize: 13038 },
+}
+
+export function getPrintShippingCents(
+  countryCode: string,
+  widthCm: number,
+  heightCm: number,
+): number {
+  const pricing =
+    SHIPPING_PRINTS_COUNTRY_OVERRIDE[countryCode.toUpperCase()] ??
+    SHIPPING_PRINTS_CENTS[resolveTpsRegion(countryCode)]
+  return pickShippingBand(PRINT_SHIPPING_BANDS_CM, pricing, widthCm, heightCm)
+}
+
+// Per-frame express-courier shipping ("€ MOUNTING/FRAMING" tab).
+// Bands are FRAME OUTER dims: 16×12″ / 30×20″ / 40×30″ (cm, rounded
+// down to stay conservative). Above 40×30″ the card says "call us" —
+// priced here at 1.5× the largest published band as a safe estimate.
+const FRAME_SHIPPING_BANDS_CM: ReadonlyArray<{ long: number; short: number }> = [
+  { long: 40, short: 30 },
+  { long: 76, short: 50 },
+  { long: 101, short: 76 },
+]
+
+// The card splits the world in two: UK + EU + Nordics + US at
+// €25/€40/€55, and Canada / AU / NZ / Japan / Korea at
+// €41.97/€83.99/€147.02.
+const FRAME_SHIPPING_NEAR: ShippingBands = { bands: [2500, 4000, 5500], oversize: 8250 }
+const FRAME_SHIPPING_FAR: ShippingBands = { bands: [4197, 8399, 14702], oversize: 22050 }
+
+const SHIPPING_FRAMES_CENTS: Record<TpsRegion, ShippingBands> = {
+  UK: FRAME_SHIPPING_NEAR,
+  DE: FRAME_SHIPPING_NEAR,
+  EU: FRAME_SHIPPING_NEAR,
+  NORDIC: FRAME_SHIPPING_NEAR,
+  US: FRAME_SHIPPING_NEAR,
+  CA: FRAME_SHIPPING_FAR,
+  AU_NZ: FRAME_SHIPPING_FAR,
+  ROW: FRAME_SHIPPING_FAR,
+}
+
+// EU/Nordic members the card prices at the FAR framed rate.
+const SHIPPING_FRAMES_FAR_EXCEPTIONS = new Set(['IS', 'MT', 'RO', 'BG'])
+
+// Moulding + wrap allowance per side when estimating frame outer
+// dims from the print size (mount width is passed in separately).
+const FRAME_OUTER_ALLOWANCE_CM = 4
+
+export function getFrameShippingCents(
+  countryCode: string,
+  widthCm: number,
+  heightCm: number,
+  mountWidthCm = 0,
+): number {
+  const iso = countryCode.toUpperCase()
+  const pricing = SHIPPING_FRAMES_FAR_EXCEPTIONS.has(iso)
+    ? FRAME_SHIPPING_FAR
+    : SHIPPING_FRAMES_CENTS[resolveTpsRegion(iso)]
+  const growCm = 2 * (FRAME_OUTER_ALLOWANCE_CM + mountWidthCm)
+  return pickShippingBand(FRAME_SHIPPING_BANDS_CM, pricing, widthCm + growCm, heightCm + growCm)
 }
 
 // ── Delivery time (working days, per region) ────────────────────
 //
-// Verbatim from TPS rate card. Working days; convert to calendar
-// days by ×1.4 at the consumer surface.
+// Transit times for the service each region is priced on — Standard
+// Post everywhere it exists (see shipping table), courier for
+// AU/NZ/JP/KR. Post transit from the rate card, worst supported
+// country per region (EU worst = Greece 6-8; ES 4-5 matched the
+// live estimate). US Tracked Ground spanned ~5-11 transit days
+// live. Working days; ×1.4 to calendar days at the consumer surface.
 export const TPS_SHIPPING_DAYS: Record<TpsRegion, { min: number; max: number }> = {
-  UK: { min: 3, max: 7 },
-  DE: { min: 3, max: 7 },
-  EU: { min: 4, max: 10 },
-  NORDIC: { min: 4, max: 10 },
-  US: { min: 6, max: 10 },
-  CA: { min: 6, max: 10 },
-  AU_NZ: { min: 5, max: 15 },
-  ROW: { min: 5, max: 15 },
+  UK: { min: 1, max: 2 },
+  DE: { min: 1, max: 2 },
+  EU: { min: 3, max: 8 },
+  NORDIC: { min: 4, max: 6 },
+  US: { min: 5, max: 11 },
+  CA: { min: 5, max: 7 },
+  AU_NZ: { min: 3, max: 4 },
+  ROW: { min: 2, max: 3 },
 }
 
 // Production turnaround (working days) per format. From TPS help

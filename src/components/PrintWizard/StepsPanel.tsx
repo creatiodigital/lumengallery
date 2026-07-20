@@ -25,6 +25,7 @@ import {
   type WizardConfig,
   clampCm,
   formatDualDimensions,
+  getEffectiveMatCm,
   isDimensionVisible,
   isOptionPickable,
 } from '@/lib/print-providers'
@@ -137,7 +138,7 @@ export const StepsPanel = ({
           if (glass?.kind === 'enum') groupLeader.set('glass', 'frame')
           if (hanging?.kind === 'enum') groupLeader.set('hanging', 'frame')
           if (windowMount?.kind === 'enum') groupLeader.set('windowMount', 'frame')
-          if (windowMountSize?.kind === 'border') groupLeader.set('windowMountSize', 'frame')
+          if (windowMountSize?.kind === 'enum') groupLeader.set('windowMountSize', 'frame')
         }
 
         return (
@@ -193,7 +194,7 @@ export const StepsPanel = ({
                     hanging={hanging?.kind === 'enum' ? hanging : undefined}
                     windowMount={windowMount?.kind === 'enum' ? windowMount : undefined}
                     windowMountSize={
-                      windowMountSize?.kind === 'border' ? windowMountSize : undefined
+                      windowMountSize?.kind === 'enum' ? windowMountSize : undefined
                     }
                     catalog={catalog}
                     config={config}
@@ -407,7 +408,7 @@ interface FrameSectionProps {
   glass?: EnumDimension
   hanging?: EnumDimension
   windowMount?: EnumDimension
-  windowMountSize?: BorderDimension
+  windowMountSize?: EnumDimension
   catalog: Catalog
   config: WizardConfig
   countryCode: string
@@ -495,12 +496,18 @@ const FrameSection = ({
             />
           )}
           {windowMountSize && isDimensionVisible(windowMountSize, config, catalog) && (
-            <BorderSlider
-              dim={windowMountSize}
-              config={config}
-              optionsLocked={optionsLocked}
-              onBorderChange={onBorderChange}
-            />
+            <>
+              <EnumDropdown
+                dim={windowMountSize}
+                config={config}
+                countryCode={countryCode}
+                availability={availability}
+                restrictions={restrictions}
+                optionsLocked={optionsLocked}
+                onChange={onChange}
+              />
+              <MountWidthCaption catalog={catalog} config={config} />
+            </>
           )}
           {hanging && (
             <EnumDropdown
@@ -612,6 +619,19 @@ const BorderSlider = ({
       />
       {dim.helpText && <p className={styles.destinationHelp}>{dim.helpText}</p>}
     </div>
+  )
+}
+
+// Computed mount width readout — the Small/Large presets scale with
+// the print size (TPS cuts the mat proportionally), so we surface
+// the resolved width the buyer will actually get.
+const MountWidthCaption = ({ catalog, config }: { catalog: Catalog; config: WizardConfig }) => {
+  const matCm = getEffectiveMatCm(catalog, config)
+  if (matCm <= 0) return null
+  return (
+    <p className={styles.destinationHelp}>
+      ≈ {parseFloat(matCm.toFixed(1))} cm on each side, scaled to your print size.
+    </p>
   )
 }
 
