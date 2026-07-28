@@ -20,6 +20,9 @@ type ConfirmModalProps = {
   destructive?: boolean
   /** Hide the confirm button while the action is running so it can't fire twice. */
   busy?: boolean
+  /** 'wide' fits form-sized content: broader panel, message area scrolls
+   *  internally (title + actions stay pinned). Default fits short confirms. */
+  size?: 'regular' | 'wide'
   onConfirm: () => void
   onCancel: () => void
 }
@@ -32,18 +35,26 @@ export const ConfirmModal = ({
   cancelLabel = 'Cancel',
   destructive = false,
   busy = false,
+  size = 'regular',
   onConfirm,
   onCancel,
 }: ConfirmModalProps) => {
   const titleId = useId()
+  const wide = size === 'wide'
 
   return (
-    <Modal onClose={busy ? () => {} : onCancel} titleId={titleId}>
-      <div className={styles.body}>
+    <Modal
+      onClose={busy ? () => {} : onCancel}
+      titleId={titleId}
+      maxWidth={wide ? 'min(760px, 90vw)' : undefined}
+    >
+      <div className={wide ? styles.bodyWide : styles.body}>
         <h2 id={titleId} className={styles.title}>
           {title}
         </h2>
-        <div className={styles.message}>{message}</div>
+        <div className={wide ? `${styles.message} ${styles.messageScroll}` : styles.message}>
+          {message}
+        </div>
         {warning && <div className={styles.warning}>{warning}</div>}
         <div className={styles.actions}>
           <Button

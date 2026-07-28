@@ -69,6 +69,15 @@ const PRINT_BASE_CURVE: ReadonlyArray<{ areaCm2: number; cents: number }> = [
 // segment's slope + margin. Catalog caps at 150 cm long edge.
 const PRINT_BASE_TOP_SLOPE_CENTS_PER_CM2 = 1.9
 
+// ── Collector pack: Certificate of Authenticity + personal letter ──
+//
+// Every print ships with a premium COA design and the gallery letter
+// insert (decided 2026-07-24). creativehub charges €2.44 + VAT for
+// each, per print → €4.88 ex-VAT. Priced at cost + ~8% like the
+// print-base anchors (reverse charge applies once the ES VAT number
+// is on the account).
+export const TPS_COA_LETTER_SUPPLEMENT_CENTS = 530
+
 // ── Frame supplement (per tier × frame type, approximate) ───────
 //
 // Frame + free D-rings hanging only. Glass priced separately (None

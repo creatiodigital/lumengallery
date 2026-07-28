@@ -2,6 +2,7 @@ import type { GetQuoteInput, Quote, QuoteLine } from '../types'
 import { getMountPresetWidthCm } from './data'
 import type { TpsFrameTypeId, TpsGlassId, TpsHangingId } from './data'
 import {
+  TPS_COA_LETTER_SUPPLEMENT_CENTS,
   TPS_FREE_PRINT_DELIVERY_FROM_CENTS,
   TPS_GALLERY_MARKUP_RATE,
   TPS_HANGING_SUPPLEMENT_CENTS,
@@ -86,6 +87,8 @@ export function getPrintspaceQuote(input: GetQuoteInput): Quote {
     artistPriceCents +
     galleryCents +
     printBaseCents +
+    // Every print ships with the COA + gallery letter (2026-07-24).
+    TPS_COA_LETTER_SUPPLEMENT_CENTS +
     frameSupplementCents +
     glassCents +
     hangingCents +

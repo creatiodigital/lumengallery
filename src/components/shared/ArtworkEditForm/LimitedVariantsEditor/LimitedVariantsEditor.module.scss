@@ -110,3 +110,14 @@
   color: var(--color-text-secondary);
   font-weight: var(--font-medium);
 }
+
+.addRow {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.templatePicker {
+  margin-top: var(--space-2);
+  max-width: 520px;
+}

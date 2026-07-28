@@ -185,6 +185,9 @@ export const populateFormData = (data: Artwork): ArtworkFormData => ({
 
 type ArtworkEditFormProps = {
   formData: ArtworkFormData
+  /** Saved artwork id — enables variant templates ("Apply saved variant");
+   *  absent on the create-new form. */
+  artworkId?: string | null
   imageUrl: string | null
   imageDpi?: number | null
   originalWidth?: number | null
@@ -393,6 +396,7 @@ const PaperRecommendationGroup = ({
 
 export const ArtworkEditForm = ({
   formData,
+  artworkId = null,
   imageUrl,
   imageDpi,
   originalWidth,
@@ -765,6 +769,7 @@ export const ArtworkEditForm = ({
                     aspectRatio={editionAspectRatio}
                     longEdgeBounds={editionLongEdgeBounds}
                     onChange={(next) => onVariantsChange?.(next)}
+                    artworkId={artworkId}
                     isAdmin={isAdmin}
                     onUnblockVariant={onUnblockVariant}
                     onReadyToSellVariant={onReadyToSellVariant}

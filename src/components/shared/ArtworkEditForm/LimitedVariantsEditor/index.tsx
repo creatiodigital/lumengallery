@@ -29,11 +29,27 @@ const SIZE_CUSTOM = {
   aspectLocked: true as const,
 }
 
+/** A reusable variant spec from the artist's other artworks (see the
+ *  /variant-templates API route) — applied as a prefilled draft. */
+type VariantTemplate = {
+  name: string
+  paperId: string
+  widthCm: number
+  heightCm: number
+  borderCm: number
+  editionSize: number
+  priceEuros: string
+  sourceArtworkTitle: string
+}
+
 type Props = {
   variants: LimitedVariantDraft[]
   aspectRatio: number
   longEdgeBounds: PrintLongEdgeBounds | null
   onChange: (next: LimitedVariantDraft[]) => void
+  /** Saved artwork id — enables "Apply saved variant" (templates come from
+   *  the artist's other artworks; unsaved new artworks have none). */
+  artworkId?: string | null
   /** Admin / superAdmin — only they can take a live variant off sale (Unblock). */
   isAdmin?: boolean
   /** Admin-only: take a live variant off sale to edit it (`blocked: false`). */
@@ -55,6 +71,7 @@ export const LimitedVariantsEditor = ({
   aspectRatio,
   longEdgeBounds,
   onChange,
+  artworkId = null,
   isAdmin = false,
   onUnblockVariant,
   onReadyToSellVariant,
@@ -102,6 +119,54 @@ export const LimitedVariantsEditor = ({
 
   const remove = (index: number) => {
     onChange(variants.filter((_, i) => i !== index))
+  }
+
+  // "Apply saved variant" — reuse a spec from the artist's other artworks
+  // (ratio-matched by the API) instead of retyping it per photo. Loaded
+  // lazily on first click; applying appends a prefilled, still-editable
+  // draft with the height re-derived from THIS artwork's exact ratio.
+  const [templates, setTemplates] = useState<VariantTemplate[] | null>(null)
+  const [templatesLoading, setTemplatesLoading] = useState(false)
+  const [templatesError, setTemplatesError] = useState<string | null>(null)
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
+
+  const openTemplatePicker = async () => {
+    setTemplatePickerOpen(true)
+    if (templates !== null || templatesLoading || !artworkId) return
+    setTemplatesLoading(true)
+    setTemplatesError(null)
+    try {
+      const res = await fetch(`/api/artworks/${artworkId}/variant-templates`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to load saved variants.')
+      setTemplates(data.templates ?? [])
+    } catch (err) {
+      setTemplatesError(err instanceof Error ? err.message : 'Failed to load saved variants.')
+      setTemplates(null)
+    } finally {
+      setTemplatesLoading(false)
+    }
+  }
+
+  const applyTemplate = (t: VariantTemplate) => {
+    if (variants.length >= MAX_LIMITED_VARIANTS) return
+    // Templates are offered only for EXACT aspect-ratio matches, so the spec
+    // applies verbatim — identical print size, border and margins across the
+    // whole series. No adaptation, ever.
+    setExpanded((e) => ({ ...e, [`new-${variants.length}`]: true }))
+    setTemplatePickerOpen(false)
+    onChange([
+      ...variants,
+      {
+        name: t.name,
+        paperId: t.paperId,
+        widthCm: t.widthCm,
+        heightCm: t.heightCm,
+        borderCm: t.borderCm,
+        editionSize: t.editionSize,
+        priceEuros: t.priceEuros,
+      },
+    ])
   }
 
   // Duplicate-size detection (TPS keys edition identity on print size).
@@ -310,6 +375,20 @@ export const LimitedVariantsEditor = ({
 
                 {(showUnblock || showReadyToSell || showDelete) && (
                   <div className={styles.variantFooter}>
+                    {/* Admin shortcut: consume a number of this live variant
+                        off-platform (gift / artist copy / test) — jumps to the
+                        Edition Sales modal preselected on this variant. */}
+                    {isAdmin && isLive && variant.id && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          window.location.href = `/admin/edition-sales?gift=${variant.id}`
+                        }}
+                      >
+                        Create gift order
+                      </Button>
+                    )}
                     {/* Off-sale variant (draft or admin-unblocked): put it on sale. */}
                     {showReadyToSell && (
                       <Button type="button" variant="primary" onClick={handleReadyToSell}>
@@ -341,11 +420,51 @@ export const LimitedVariantsEditor = ({
 
       {/* Adding is bounded only by the max — with per-variant publishing the
           artist can keep adding (and going live with) new variants even after
-          earlier ones are on sale. */}
+          earlier ones are on sale. "Apply saved variant" reuses a spec from
+          the artist's other artworks instead of retyping it. */}
       {variants.length < MAX_LIMITED_VARIANTS && (
-        <Button type="button" variant="secondary" onClick={add}>
-          + Add variant
-        </Button>
+        <div className={styles.addRow}>
+          <Button type="button" variant="secondary" onClick={add}>
+            + Add variant
+          </Button>
+          {artworkId && (
+            <Button type="button" variant="secondary" onClick={openTemplatePicker}>
+              ↻ Apply saved variant
+            </Button>
+          )}
+        </div>
+      )}
+
+      {templatePickerOpen && (
+        <div className={styles.templatePicker}>
+          {templatesLoading ? (
+            <span className={styles.hint}>Loading saved variants…</span>
+          ) : templatesError ? (
+            <ErrorText>{templatesError}</ErrorText>
+          ) : templates && templates.length === 0 ? (
+            <span className={styles.hint}>
+              No saved variants match this artwork&apos;s exact proportions. Only variants from
+              artworks with the SAME aspect ratio appear here, so the print size and margins
+              apply identically across the series. Differently-proportioned images need their own
+              variant.
+            </span>
+          ) : templates ? (
+            <SelectDropdown<string>
+              options={templates.map((t, i) => ({
+                value: String(i),
+                label: `${t.name} — ${t.widthCm}×${t.heightCm} cm · ${
+                  TPS_PAPERS.find((p) => p.id === t.paperId)?.label ?? t.paperId
+                } · /${t.editionSize} (from “${t.sourceArtworkTitle}”)`,
+              }))}
+              value={''}
+              placeholder="Pick a saved variant to apply…"
+              onChange={(v) => {
+                const t = templates[Number(v)]
+                if (t) applyTemplate(t)
+              }}
+            />
+          ) : null}
+        </div>
       )}
     </div>
   )
