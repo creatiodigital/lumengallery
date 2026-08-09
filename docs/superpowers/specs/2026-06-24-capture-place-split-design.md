@@ -13,7 +13,7 @@ TPS. Today the dashboard does the opposite.
 `markPlaced` ([actions.ts:1513]) does **capture + mark-placed in one click**
 (`stripe.paymentIntents.capture` → `fulfillmentStatus='Placed'`,
 `paymentStatus='succeeded'`, edition→sold), and the New-tab instruction reads
-*"Place the order on theprintspace, then click Capture & mark placed."* That nudges
+_"Place the order on theprintspace, then click Capture & mark placed."_ That nudges
 the **dangerous order**: pay TPS first, then capture — if the capture then fails
 (dead/expired card), the gallery is out the TPS print cost (e.g. €2k) with no buyer
 money. We need **capture-first** to be the only path, and the dashboard to show one
@@ -29,6 +29,7 @@ difference.
 ### Two server actions (replacing `markPlaced`)
 
 **`capturePayment(orderId)`**
+
 - Guards: `paymentStatus === 'authorized'` AND `fulfillmentStatus === null` (PENDING)
   AND payment not refunded/canceled.
 - Captures the PI. On Stripe failure → `captureError` + clear message; **order stays
@@ -39,6 +40,7 @@ difference.
   `admin_action` ("Payment captured").
 
 **`markPlacedAtTps(orderId)`**
+
 - Guards: `paymentStatus === 'succeeded'` AND `fulfillmentStatus === null` AND not
   refunded/canceled. (So it is impossible to place before capturing.)
 - Sets `fulfillmentStatus='Placed'`. No capture, no edition-sold (already done at
@@ -48,12 +50,12 @@ difference.
 
 The "captured but not yet placed" state is **derived**, not a new enum value:
 
-| paymentStatus | fulfillmentStatus | Meaning | Tab | Next action |
-|---|---|---|---|---|
-| `authorized` | `null` | bought, card on hold, not captured | **New** | **Capture payment** |
-| `succeeded` | `null` | captured, not yet placed at TPS | **To place at TPS** | **Mark placed at TPS** |
-| `succeeded` | `Placed` | placed at TPS | **At TPS** | Mark in production |
-| `succeeded` | `Started`/… | unchanged | In production / … | … |
+| paymentStatus | fulfillmentStatus | Meaning                            | Tab                 | Next action            |
+| ------------- | ----------------- | ---------------------------------- | ------------------- | ---------------------- |
+| `authorized`  | `null`            | bought, card on hold, not captured | **New**             | **Capture payment**    |
+| `succeeded`   | `null`            | captured, not yet placed at TPS    | **To place at TPS** | **Mark placed at TPS** |
+| `succeeded`   | `Placed`          | placed at TPS                      | **At TPS**          | Mark in production     |
+| `succeeded`   | `Started`/…       | unchanged                          | In production / …   | …                      |
 
 No `schema.prisma` change, nothing to db-push, zero risk on the shared DB. Cost: the
 intermediate state is implicit in `(paymentStatus, fulfillmentStatus)` — documented
@@ -64,14 +66,14 @@ way.
 
 - **Orders list ([components/admin/orders/index.tsx]):** add a **"To place at TPS"**
   tab between **New** and **At TPS**, filtering `paymentStatus='succeeded' &&
-  fulfillmentStatus=null`. The **New** tab now filters `paymentStatus='authorized' &&
-  fulfillmentStatus=null` (captured orders leave New for the new tab). Per-row CTA: New
+fulfillmentStatus=null`. The **New** tab now filters `paymentStatus='authorized' &&
+fulfillmentStatus=null` (captured orders leave New for the new tab). Per-row CTA: New
   → "Capture payment"; To place at TPS → "Mark placed at TPS".
 - **Order detail ([components/admin/orders/OrderDetail.tsx]):** replace the single
   "Capture & place" button with **① Capture payment** (shown when authorized+pending)
   then **② Mark placed at TPS** (shown when succeeded+pending). Reword the helper text
-  to the safe order: *"Capture the payment first; once it succeeds, place + pay the
-  order at theprintspace, then mark it placed."*
+  to the safe order: _"Capture the payment first; once it succeeds, place + pay the
+  order at theprintspace, then mark it placed."_
 - Refunded/canceled orders stay terminal & read-only — both new actions refuse on
   those payment statuses, same as the existing `advanceStage`/`cancelOrder` guards.
 
@@ -87,6 +89,7 @@ way.
 
 New/updated specs (email-bypassed, self-cleaning per
 `memory/feedback_e2e_no_dashboard_noise.md`):
+
 1. **Capture path:** authorized order → `capturePayment` → assert PI captured
    (`succeeded`), edition `sold`, fulfillment still `null`, order now in "To place at
    TPS" set.
@@ -107,4 +110,4 @@ New/updated specs (email-bypassed, self-cleaning per
 - **Online Terms of Sale** edits (§5 capture wording etc.) — content change, separate.
 - Renaming the existing "At TPS" tab (kept as-is to avoid churn; "To place at TPS" vs
   "At TPS" are distinct enough with their row CTAs).
-</content>
+  </content>

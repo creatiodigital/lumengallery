@@ -13,6 +13,7 @@ import { sendOrderInProductionEmail } from '@/lib/emails/orderInProduction'
 import { sendOrderShippedEmail } from '@/lib/emails/orderShipped'
 import { sendRefundIssuedEmail } from '@/lib/emails/refundIssued'
 import { markEditionNumberSold } from '@/lib/editions/reserveEditionNumber'
+import { OFF_PLATFORM_KINDS, type OffPlatformKind } from '@/lib/orders/offPlatformKinds'
 import { REORDER_REASONS, type ReorderReason } from '@/lib/orders/reorderReasons'
 import { computeOrderPayout } from '@/lib/orders/orderPayout'
 import { devCleanupAllowed } from '@/lib/admin/resetTestData'
@@ -374,6 +375,10 @@ export type EditionSaleRow = {
   orderId: string | null
   date: string | null
   mirroredInTps: boolean
+  /** Set on order-less copies consumed by hand from the ledger
+   *  ('gift' | 'artist_copy' | 'test'), with the admin's note. */
+  offPlatformKind: string | null
+  offPlatformNote: string | null
 }
 
 /**
@@ -450,10 +455,420 @@ export async function listEditionSales(): Promise<
       orderId: order?.id ?? null,
       date: (r.soldAt ?? r.reservedAt)?.toISOString() ?? null,
       mirroredInTps: Boolean(order?.tpsEditionMirroredAt),
+      offPlatformKind: r.offPlatformKind,
+      offPlatformNote: r.offPlatformNote,
     }
   })
 
   return { ok: true, sales }
+}
+
+export type GiftableVariantRow = {
+  variantId: string
+  artworkTitle: string
+  artistName: string
+  variantName: string
+  editionSize: number
+  /** The artist's current price for this variant (cents) — becomes the
+   *  artist fee owed when the copy is a gallery GIFT. */
+  artistPriceCents: number
+  /** Ascending list of numbers still free to consume. */
+  availableNumbers: number[]
+}
+
+/**
+ * Published limited variants with at least one available number — the
+ * targets an off-platform copy (gift / artist copy / test print) can be
+ * issued against from the admin ledger.
+ */
+export async function listGiftableVariants(): Promise<
+  { ok: true; variants: GiftableVariantRow[] } | { ok: false; error: string }
+> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  // Published variants have materialised 1..N numbers; unpublished ones have
+  // no slots to consume. Deliberately NOT filtered on `blocked`: a paused
+  // variant can still gift a copy (the pause only hides it from buyers).
+  const variants = await prisma.limitedVariant.findMany({
+    where: { published: true, editionNumbers: { some: { state: 'available' } } },
+    include: {
+      artwork: {
+        select: { title: true, author: true, user: { select: { name: true, lastName: true } } },
+      },
+      editionNumbers: {
+        where: { state: 'available' },
+        select: { number: true },
+        orderBy: { number: 'asc' },
+      },
+    },
+    orderBy: { artwork: { title: 'asc' } },
+  })
+
+  return {
+    ok: true,
+    variants: variants.map((v) => ({
+      variantId: v.id,
+      artworkTitle: v.artwork.title ?? '(untitled)',
+      artistName:
+        v.artwork.author?.trim() ||
+        [v.artwork.user.name, v.artwork.user.lastName].filter(Boolean).join(' ').trim(),
+      variantName: v.name,
+      editionSize: v.editionSize,
+      artistPriceCents: v.priceCents ?? 0,
+      availableNumbers: v.editionNumbers.map((n) => n.number),
+    })),
+  }
+}
+
+/**
+ * Create an OFF-PLATFORM order — a gallery gift, artist-retained copy, or
+ * test print. No Stripe, no PrintOrder, no invoice/payout/emails: the record
+ * is an OffPlatformOrder carrying the recipient + the manual TPS fulfillment
+ * stages, and the consumed edition number flips straight to `sold` (linked
+ * via offPlatformOrderId) so it can never be sold to a buyer and the public
+ * "n of N" counter stays truthful. Reversed via `cancelOffPlatformOrder`.
+ */
+export type OffPlatformRecipientAddress = {
+  line1: string
+  line2?: string
+  city: string
+  state?: string
+  postalCode: string
+  country: string
+  phone?: string
+}
+
+export async function createOffPlatformOrder(input: {
+  variantId: string
+  number: number
+  kind: string
+  recipientName: string
+  address: OffPlatformRecipientAddress
+  note?: string
+}): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const kind = (input.kind ?? '').trim()
+  if (!OFF_PLATFORM_KINDS.includes(kind as OffPlatformKind)) {
+    return { ok: false, error: 'A valid copy kind is required.' }
+  }
+  const recipientName = (input.recipientName ?? '').trim().slice(0, 200)
+  if (!recipientName) return { ok: false, error: 'A recipient name is required.' }
+
+  // Full shipping address — the admin copies it into the TPS portal, so the
+  // shippable minimum is required here (line1, city, postal code, country).
+  const clean = (s: string | undefined, max: number) => (s ?? '').trim().slice(0, max)
+  const address: OffPlatformRecipientAddress = {
+    line1: clean(input.address?.line1, 200),
+    line2: clean(input.address?.line2, 200) || undefined,
+    city: clean(input.address?.city, 100),
+    state: clean(input.address?.state, 100) || undefined,
+    postalCode: clean(input.address?.postalCode, 20),
+    country: clean(input.address?.country, 100),
+    phone: clean(input.address?.phone, 40) || undefined,
+  }
+  if (!address.line1 || !address.city || !address.postalCode || !address.country) {
+    return {
+      ok: false,
+      error: 'Street, city, postal code and country are required (they go to TPS).',
+    }
+  }
+  const recipientCountry = address.country
+  const note = (input.note ?? '').trim().slice(0, 500) || null
+
+  const variant = await prisma.limitedVariant.findUnique({
+    where: { id: input.variantId },
+    select: { id: true, published: true, priceCents: true },
+  })
+  if (!variant) return { ok: false, error: 'Variant not found.' }
+  if (!variant.published) {
+    return { ok: false, error: 'This variant has no materialised edition numbers yet.' }
+  }
+
+  // Kind decides the artist fee: a gallery GIFT owes the artist their cut
+  // (price snapshot at creation — immune to later escalation); artist
+  // copies and test prints owe nothing. Never a gallery cut.
+  const artistCents = kind === 'gift' ? (variant.priceCents ?? 0) : 0
+
+  try {
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.offPlatformOrder.create({
+        data: {
+          kind,
+          recipientName,
+          recipientCountry,
+          recipientAddress: address,
+          note,
+          artistCents,
+        },
+        select: { id: true },
+      })
+      // Atomic take: only flips if the slot is still available, so a
+      // concurrent buyer reservation can never be overwritten.
+      const taken = await tx.editionNumber.updateMany({
+        where: { variantId: input.variantId, number: input.number, state: 'available' },
+        data: {
+          state: 'sold',
+          soldAt: new Date(),
+          offPlatformKind: kind,
+          offPlatformNote: note,
+          offPlatformOrderId: created.id,
+        },
+      })
+      if (taken.count === 0) {
+        throw new Error(
+          `Number ${input.number} is not available (already reserved, sold, or nonexistent).`,
+        )
+      }
+      return created
+    })
+    return { ok: true, id: order.id }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+export type OffPlatformOrderRow = {
+  id: string
+  kind: string
+  recipientName: string
+  recipientCountry: string | null
+  recipientAddress: OffPlatformRecipientAddress | null
+  note: string | null
+  fulfillmentStatus: string | null
+  trackingUrl: string | null
+  createdAt: string
+  /** Artist cut owed for this copy (kind 'gift' only; 0 for artist copies
+   *  and test prints). Snapshot at creation. */
+  artistCents: number
+  artistPaidAt: string | null
+  copies: {
+    artworkTitle: string
+    artistName: string
+    variantName: string
+    number: number
+    editionSize: number
+  }[]
+}
+
+/** All off-platform orders (gifts / artist copies / test prints), newest first. */
+export async function listOffPlatformOrders(): Promise<
+  { ok: true; orders: OffPlatformOrderRow[] } | { ok: false; error: string }
+> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const rows = await prisma.offPlatformOrder.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 500,
+    include: {
+      editionNumbers: {
+        select: {
+          number: true,
+          variant: {
+            select: {
+              name: true,
+              editionSize: true,
+              artwork: {
+                select: {
+                  title: true,
+                  author: true,
+                  user: { select: { name: true, lastName: true } },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { number: 'asc' },
+      },
+    },
+  })
+
+  return {
+    ok: true,
+    orders: rows.map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      recipientName: r.recipientName,
+      recipientCountry: r.recipientCountry,
+      recipientAddress: (r.recipientAddress as OffPlatformRecipientAddress | null) ?? null,
+      note: r.note,
+      fulfillmentStatus: r.fulfillmentStatus,
+      trackingUrl: r.trackingUrl,
+      createdAt: r.createdAt.toISOString(),
+      artistCents: r.artistCents,
+      artistPaidAt: r.artistPaidAt?.toISOString() ?? null,
+      copies: r.editionNumbers.map((n) => ({
+        artworkTitle: n.variant.artwork.title ?? '(untitled)',
+        artistName:
+          n.variant.artwork.author?.trim() ||
+          [n.variant.artwork.user.name, n.variant.artwork.user.lastName]
+            .filter(Boolean)
+            .join(' ')
+            .trim(),
+        variantName: n.variant.name,
+        number: n.number,
+        editionSize: n.variant.editionSize,
+      })),
+    })),
+  }
+}
+
+/**
+ * Tick the artist fee of a gift order as paid (manual bank transfer, same
+ * discipline as regular payouts). Only meaningful when the order carries a
+ * fee (kind 'gift') and isn't cancelled.
+ */
+export async function markOffPlatformArtistPaid(
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const order = await prisma.offPlatformOrder.findUnique({
+    where: { id },
+    select: { id: true, artistCents: true, artistPaidAt: true, fulfillmentStatus: true },
+  })
+  if (!order) return { ok: false, error: 'Off-platform order not found.' }
+  if (order.artistCents <= 0) return { ok: false, error: 'This order carries no artist fee.' }
+  if (order.artistPaidAt) return { ok: false, error: 'Already marked paid.' }
+  if (order.fulfillmentStatus === STAGE_CANCELLED) {
+    return { ok: false, error: 'This order is cancelled — nothing to pay.' }
+  }
+
+  await prisma.offPlatformOrder.update({ where: { id }, data: { artistPaidAt: new Date() } })
+  return { ok: true }
+}
+
+/**
+ * Hard-delete a CANCELLED gift order so failed experiments don't clutter the
+ * list. Only cancelled rows qualify (their numbers were already released on
+ * cancel, and no money ever touched an off-platform order).
+ */
+export async function deleteCancelledOffPlatformOrder(
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const order = await prisma.offPlatformOrder.findUnique({
+    where: { id },
+    select: { id: true, fulfillmentStatus: true },
+  })
+  if (!order) return { ok: false, error: 'Off-platform order not found.' }
+  if (order.fulfillmentStatus !== STAGE_CANCELLED) {
+    return { ok: false, error: 'Only cancelled gift orders can be deleted — cancel it first.' }
+  }
+
+  await prisma.offPlatformOrder.delete({ where: { id } })
+  return { ok: true }
+}
+
+/**
+ * Advance an off-platform order along the SAME manual TPS stages as a
+ * regular order (pending → Placed → Started → Shipped → Complete), with the
+ * tracking URL captured at Shipped. Backward moves are allowed (fix a
+ * misclick) — there's no money/email machinery attached to the stages here.
+ */
+export async function advanceOffPlatformOrder(
+  id: string,
+  newStage: string | null,
+  opts: { trackingUrl?: string } = {},
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const validStages = [STAGE_PENDING, STAGE_PLACED, STAGE_STARTED, STAGE_SHIPPED, STAGE_COMPLETE]
+  if (!validStages.includes(newStage)) {
+    return { ok: false, error: 'Invalid stage.' }
+  }
+
+  const order = await prisma.offPlatformOrder.findUnique({
+    where: { id },
+    select: { id: true, fulfillmentStatus: true },
+  })
+  if (!order) return { ok: false, error: 'Off-platform order not found.' }
+  if (order.fulfillmentStatus === STAGE_CANCELLED) {
+    return { ok: false, error: 'This order is cancelled — no further actions.' }
+  }
+
+  const trackingUrl = (opts.trackingUrl ?? '').trim() || null
+  await prisma.offPlatformOrder.update({
+    where: { id },
+    data: {
+      fulfillmentStatus: newStage,
+      ...(trackingUrl !== null ? { trackingUrl } : {}),
+      ...(newStage === STAGE_SHIPPED ? { shippedAt: new Date() } : {}),
+    },
+  })
+  return { ok: true }
+}
+
+/**
+ * Cancel an off-platform order and RELEASE its edition number(s) back to
+ * available — mirror of the refund-releases-number rule on paid orders. Only
+ * sensible before the print physically exists; the confirm UI carries that
+ * warning, the server allows any non-cancelled stage (admin's judgement).
+ */
+export async function cancelOffPlatformOrder(
+  id: string,
+): Promise<{ ok: true; numberReleased: boolean } | { ok: false; error: string }> {
+  const guard = await requireAdminSession()
+  if (!guard.ok) return guard
+
+  const order = await prisma.offPlatformOrder.findUnique({
+    where: { id },
+    select: { id: true, fulfillmentStatus: true },
+  })
+  if (!order) return { ok: false, error: 'Off-platform order not found.' }
+  if (order.fulfillmentStatus === STAGE_CANCELLED) {
+    return { ok: false, error: 'Already cancelled.' }
+  }
+
+  // Cancelling is always allowed — the row must be able to record that the gift
+  // was called off. Returning the NUMBER to the pool is not: from production
+  // start onward a physical print carrying that number exists, so releasing it
+  // would let the same copy be sold to a buyer as well, two prints numbered
+  // e.g. 29/50. Same cutoff buyer orders use (`stageAllowsEditionRelease`).
+  const releaseNumber = stageAllowsEditionRelease(order.fulfillmentStatus)
+
+  try {
+    await prisma.$transaction([
+      ...(releaseNumber
+        ? [
+            prisma.editionNumber.updateMany({
+              where: { offPlatformOrderId: id },
+              data: {
+                state: 'available',
+                soldAt: null,
+                offPlatformKind: null,
+                offPlatformNote: null,
+                offPlatformOrderId: null,
+              },
+            }),
+          ]
+        : []),
+      prisma.offPlatformOrder.update({
+        where: { id },
+        data: { fulfillmentStatus: STAGE_CANCELLED },
+      }),
+    ])
+  } catch (err) {
+    captureError(err, {
+      flow: 'admin',
+      stage: 'cancel-off-platform-order',
+      extra: { id },
+      level: 'error',
+      fingerprint: ['admin:cancel-off-platform-order-failed'],
+    })
+    return {
+      ok: false,
+      error: `Cancel failed: ${err instanceof Error ? err.message : String(err)}`,
+    }
+  }
+  return { ok: true, numberReleased: releaseNumber }
 }
 
 /**
@@ -495,6 +910,13 @@ export async function releaseOrphanedEditionNumber(
       error: `This copy is attached to order #${boundOrderId.slice(0, 8)}. Cancel or refund that order instead.`,
     }
   }
+  if (row.offPlatformOrderId) {
+    return {
+      ok: false,
+      error:
+        'This copy belongs to a gift / artist-copy order. Cancel it from the Gift orders page instead — that releases the number.',
+    }
+  }
 
   try {
     // Reserved OR sold orphan → back to available, all bindings cleared. The
@@ -509,6 +931,9 @@ export async function releaseOrphanedEditionNumber(
         buyerEmail: null,
         reservedAt: null,
         soldAt: null,
+        offPlatformKind: null,
+        offPlatformNote: null,
+        offPlatformOrderId: null,
       },
     })
   } catch (err) {
@@ -1438,8 +1863,7 @@ export async function refundOrder(
         orderId: order.id,
         kind: 'admin_action',
         actor: `admin:${adminId}`,
-        message:
-          'Edition number retained (print already produced — not returned to the pool)',
+        message: 'Edition number retained (print already produced — not returned to the pool)',
         payload: { fulfillmentStatus: order.fulfillmentStatus },
       })
     }

@@ -122,7 +122,18 @@ const MainCamera = () => {
 
   const dampingFactor = 0.6
   const collisionDistance = 0.7
-  const moveSpeed = 0.03
+  // Distance per frame AT 60fps — so 0.04 is ~2.4 units/second. Scaled by delta
+  // below so walking speed is the same on every machine; it used to be applied
+  // raw per frame, which made a 30fps client walk at literally half speed.
+  // Kept unhurried on purpose (a gallery is not a game), but nudged up from
+  // 0.03 because crossing a room at the old pace read as laborious.
+  const moveSpeed = 0.04
+  // Ceiling on the delta multiplier. A hitch or a backgrounded tab can hand
+  // useFrame a huge delta; unclamped, that becomes a single giant step that
+  // tunnels straight through `detectCollisions` (which raycasts a fixed 3
+  // units) and puts the camera inside a wall. 1/30s caps one frame's travel at
+  // double the 60fps step.
+  const MAX_FRAME_DELTA = 1 / 30
 
   // Get camera settings from Redux
   const cameraFOV = useSelector((state: RootState) => state.exhibition.cameraFOV ?? 50)
@@ -132,6 +143,7 @@ const MainCamera = () => {
   const wallNormal = useSelector((state: RootState) => state.wallView.currentWallNormal)
   const returnFromWallView = useSelector((state: RootState) => state.wallView.returnFromWallView)
   const focusTarget = useSelector((state: RootState) => state.scene.focusTarget)
+  const isExitPromptOpen = useSelector((state: RootState) => state.scene.isExitPromptOpen)
   const spaceId = useSelector((state: RootState) => state.exhibition.spaceId) || 'paris'
   const spaceConfig = getSpaceConfig(spaceId)
 
@@ -322,6 +334,22 @@ const MainCamera = () => {
     cam.fov = cameraFOV
     cam.updateProjectionMatrix()
 
+    // Freeze the visitor while the "Leave the exhibition?" dialog is up.
+    // Window-level key and mouse listeners keep firing behind a modal, so
+    // without this the scene drifts under the dialog while they read it.
+    // Keys held when it opened are cleared too: their keyup may land on the
+    // dialog and never reach us, which would leave the visitor walking the
+    // moment it closes.
+    if (isExitPromptOpen) {
+      keysPressed.current = {}
+      rotationVelocity.current = 0
+      if (mouseState.current) {
+        mouseState.current.deltaX = 0
+        mouseState.current.wheelZ = 0
+      }
+      return
+    }
+
     // Returning from wall view — position camera to face the edited wall
     if (returnFromWallView) {
       dispatch(clearReturnFromWallView())
@@ -452,7 +480,11 @@ const MainCamera = () => {
     const rotationDelta = -rotationVelocity.current
     cam.rotateY(rotationDelta)
 
-    const moveVector = calculateMovementVector(keysPressed, moveSpeed, cam)
+    // Frame-rate independent: `moveSpeed` is the per-frame distance at 60fps,
+    // so scale it by how long this frame actually took. Clamped, or a hitch
+    // becomes one huge step that tunnels through collision.
+    const frameSpeed = moveSpeed * Math.min(delta, MAX_FRAME_DELTA) * 60
+    const moveVector = calculateMovementVector(keysPressed, frameSpeed, cam)
 
     // Add wheel-based forward/backward movement (clamped to prevent wall pass-through)
     if (mouseState.current?.wheelZ) {

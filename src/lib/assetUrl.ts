@@ -19,4 +19,36 @@ const DEFAULT_ASSETS_URL = 'https://assets.theartroom.gallery/app'
 const override = process.env.NEXT_PUBLIC_ASSETS_URL
 const BASE = override && override.trim() !== '' ? override : DEFAULT_ASSETS_URL
 
-export const assetUrl = (path: string): string => `${BASE}${path}`
+/**
+ * LOCAL DEV ONLY — per-file override, for iterating on an asset before it is
+ * uploaded to R2 (e.g. testing a re-exported space GLB).
+ *
+ * `NEXT_PUBLIC_LOCAL_ASSETS` is a comma-separated list of EXACT asset paths to
+ * serve from the app's own origin (i.e. `public/<path>`) instead of R2.
+ * Everything not listed still comes from R2, so there is no need to mirror the
+ * whole asset tree — list only the file you are changing:
+ *
+ *   NEXT_PUBLIC_LOCAL_ASSETS=/assets/spaces/madrid/madrid10.glb,/assets/spaces/paris/paris19.glb
+ *
+ * Guards, deliberately belt-and-braces because a bad value here took every 3D
+ * scene down once already (AR-127, 2026-06-14):
+ *  - Honoured ONLY when NODE_ENV === 'development'. A stray value in a prod or
+ *    staging build is inert, so this can never 404 a deployed scene.
+ *  - Matching ignores any `?v=` cache-buster on the request.
+ *
+ * NEXT_PUBLIC_* is inlined at build time — restart the dev server after editing.
+ */
+const LOCAL_PATHS: ReadonlySet<string> =
+  process.env.NODE_ENV === 'development'
+    ? new Set(
+        (process.env.NEXT_PUBLIC_LOCAL_ASSETS ?? '')
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      )
+    : new Set()
+
+export const assetUrl = (path: string): string => {
+  if (LOCAL_PATHS.size > 0 && LOCAL_PATHS.has(path.split('?')[0])) return path
+  return `${BASE}${path}`
+}

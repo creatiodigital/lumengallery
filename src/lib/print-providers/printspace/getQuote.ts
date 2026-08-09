@@ -1,16 +1,18 @@
 import type { GetQuoteInput, Quote, QuoteLine } from '../types'
+import { getMountPresetWidthCm } from './data'
 import type { TpsFrameTypeId, TpsGlassId, TpsHangingId } from './data'
 import {
+  TPS_COA_LETTER_SUPPLEMENT_CENTS,
+  TPS_FREE_PRINT_DELIVERY_FROM_CENTS,
   TPS_GALLERY_MARKUP_RATE,
   TPS_HANGING_SUPPLEMENT_CENTS,
-  TPS_SHIPPING_PRINTS_CENTS,
   getFrameShippingCents,
   getFrameSupplementCents,
   getGlassSupplementCents,
   getMountBoardSupplementCents,
   getPrintBaseCents,
+  getPrintShippingCents,
   getVatRate,
-  resolveTpsRegion,
 } from './pricing'
 
 /**
@@ -59,12 +61,22 @@ export function getPrintspaceQuote(input: GetQuoteInput): Quote {
   const glassCents = isFramed ? getGlassSupplementCents(glassId, widthCm, heightCm) : 0
   // Hanging — flat per option, all currently €0.
   const hangingCents = isFramed ? (TPS_HANGING_SUPPLEMENT_CENTS[hangingId] ?? 0) : 0
-  // Window mount (passepartout) — proportional to mount width when
-  // a non-'none' color is picked AND the buyer has set a width.
+  // Window mount (passepartout) — active when a non-'none' color is
+  // picked. Width comes from the Small/Large preset scaled to the
+  // print size; legacy configs (pre-2026-07) may still carry an
+  // explicit slider width in `borders`, honored as stored.
   const mountId = config.values.windowMount as string | undefined
-  const mountWidthCm = config.borders?.['windowMountSize']?.allCm ?? 0
-  const mountCents =
-    isFramed && mountId && mountId !== 'none' ? getMountBoardSupplementCents(mountWidthCm) : 0
+  const hasMount = isFramed && !!mountId && mountId !== 'none'
+  const mountPreset = config.values.windowMountSize as string | undefined
+  const legacyMountCm = config.borders?.['windowMountSize']?.allCm
+  const mountWidthCm = hasMount
+    ? mountPreset || legacyMountCm === undefined
+      ? getMountPresetWidthCm(mountPreset, widthCm, heightCm)
+      : legacyMountCm
+    : 0
+  const mountCents = hasMount
+    ? getMountBoardSupplementCents(mountWidthCm, Math.max(widthCm, heightCm))
+    : 0
 
   // Gallery markup on the artist's price.
   const galleryCents = Math.round(artistPriceCents * TPS_GALLERY_MARKUP_RATE)
@@ -75,6 +87,8 @@ export function getPrintspaceQuote(input: GetQuoteInput): Quote {
     artistPriceCents +
     galleryCents +
     printBaseCents +
+    // Every print ships with the COA + gallery letter (2026-07-24).
+    TPS_COA_LETTER_SUPPLEMENT_CENTS +
     frameSupplementCents +
     glassCents +
     hangingCents +
@@ -92,12 +106,15 @@ export function getPrintspaceQuote(input: GetQuoteInput): Quote {
     }
   }
 
-  // Shipping — flat per-print rate when not framed; tiered per-frame
-  // rate when framed (long-edge cm).
-  const region = resolveTpsRegion(country)
-  const shippingCents = isFramed
-    ? getFrameShippingCents(region, widthCm, heightCm)
-    : TPS_SHIPPING_PRINTS_CENTS[region]
+  // Shipping — banded by parcel size (per-frame when framed; the
+  // frame picker estimates outer dims from print size + mount).
+  // High-value print-only orders ship free from TPS — passed on.
+  const freeDelivery = !isFramed && printBaseCents >= TPS_FREE_PRINT_DELIVERY_FROM_CENTS
+  const shippingCents = freeDelivery
+    ? 0
+    : isFramed
+      ? getFrameShippingCents(country, widthCm, heightCm, mountWidthCm)
+      : getPrintShippingCents(country, widthCm, heightCm)
   lines.push({ id: 'shipping', label: 'Shipping', amountCents: shippingCents, muted: true })
 
   const subtotalCents = artworkLineCents + shippingCents

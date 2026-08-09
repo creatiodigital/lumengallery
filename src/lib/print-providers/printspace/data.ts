@@ -588,21 +588,79 @@ export const TPS_GLASS_OPTIONS: TpsGlass[] = [
   },
 ]
 
-// ── Mount Board Size bounds ─────────────────────────────────
+// ── Mount Board Size presets ─────────────────────────────────
 //
-// Width of the passepartout (mat) on every side, uniform on all
-// four sides. TPS's slider is discrete: increments of 3 mm from
-// 0 mm up to 72 mm (= 7.2 cm). Step values: 0, 3, 6, 9, …, 72 mm.
-// We model in cm internally for consistency with the rest of the
-// catalog; 0.3 cm step + 7.2 cm max matches TPS's allowed values.
-export const TPS_MOUNT_BOARD_BOUNDS = {
-  minCm: 0,
-  /** Real TPS cap: 72 mm. */
-  maxCm: 7.2,
-  /** Discrete 3 mm steps, expressed as cm. */
-  stepCm: 0.3,
-  /** Default: 0 (no mat), matching TPS's default 0-0 state. */
-  defaultCm: 0,
+// TPS/creativehub replaced the free-mm mount slider with preset cuts
+// (observed 2026-07-15): Small / Large / Bottom weighted, cut at a
+// minimum of 10 mm per side, with the actual width scaled to the
+// print size. The gallery offers Small and Large only (both uniform
+// on all four sides — Bottom weighted is asymmetric and deliberately
+// not offered).
+//
+// Width chart, from live configurator readings (long edge → mm):
+//   Small:  40 cm → 20 mm ·  60 cm → 30 mm · 100 cm → 30 mm
+//   Large:  40 cm → 28 mm ·  80 cm → 40 mm · 100 cm → 50 mm
+// Between anchors we interpolate linearly; outside we clamp to the
+// end values. Approximate by design — TPS rounds to "nice" numbers —
+// so the previews show ≈ the produced cut, and pricing (stepped,
+// coarse) is unaffected by a few mm either way.
+export type TpsMountSizeId = 'small' | 'large'
+
+export const TPS_MOUNT_SIZES: { id: TpsMountSizeId; label: string; description: string }[] = [
+  {
+    id: 'small',
+    label: 'Small',
+    description: 'Narrow surround, scaled to the print — roughly 2–3 cm on each side.',
+  },
+  {
+    id: 'large',
+    label: 'Large',
+    description: 'Wide surround, scaled to the print — roughly 3–5 cm on each side.',
+  },
+]
+
+const MOUNT_PRESET_ANCHORS: Record<
+  TpsMountSizeId,
+  ReadonlyArray<{ longEdgeCm: number; widthCm: number }>
+> = {
+  small: [
+    { longEdgeCm: 40, widthCm: 2.0 },
+    { longEdgeCm: 60, widthCm: 3.0 },
+    { longEdgeCm: 100, widthCm: 3.0 },
+  ],
+  large: [
+    { longEdgeCm: 40, widthCm: 2.8 },
+    { longEdgeCm: 80, widthCm: 4.0 },
+    { longEdgeCm: 100, widthCm: 5.0 },
+  ],
+}
+
+/**
+ * Mount (passepartout) width in cm for a preset at a given print
+ * size. Unknown/missing preset ids resolve as 'small' (the wizard's
+ * default). Never below TPS's 10 mm minimum cut.
+ */
+export function getMountPresetWidthCm(
+  presetId: string | undefined,
+  widthCm: number,
+  heightCm: number,
+): number {
+  const anchors = MOUNT_PRESET_ANCHORS[presetId === 'large' ? 'large' : 'small']
+  const longEdge = Math.max(widthCm, heightCm)
+  const first = anchors[0]
+  const last = anchors[anchors.length - 1]
+  if (longEdge <= first.longEdgeCm) return first.widthCm
+  if (longEdge >= last.longEdgeCm) return last.widthCm
+  for (let i = 1; i < anchors.length; i++) {
+    const a = anchors[i - 1]
+    const b = anchors[i]
+    if (longEdge <= b.longEdgeCm) {
+      const t = (longEdge - a.longEdgeCm) / (b.longEdgeCm - a.longEdgeCm)
+      const cm = a.widthCm + t * (b.widthCm - a.widthCm)
+      return Math.max(1, Math.round(cm * 10) / 10)
+    }
+  }
+  return last.widthCm
 }
 
 // ── Window Mount / Passepartout (only when Format = Framing) ─
@@ -611,9 +669,8 @@ export const TPS_MOUNT_BOARD_BOUNDS = {
 // 'none' (which means no mat between the print and the frame).
 // `hex` feeds the mat color in the 3D preview; `roughness` keeps it
 // matte-board-like. When buyer picks anything other than 'none', a
-// follow-up "Mount Board Size" input controls the mat width — this
-// is a TODO follow-up; for now the dimension is color-only and the
-// preview will use a small default width when a color is chosen.
+// follow-up "Mount Board Size" preset (Small / Large, see
+// TPS_MOUNT_SIZES above) controls the mat width.
 export type TpsWindowMountId =
   | 'none'
   | 'off-white'

@@ -311,6 +311,16 @@ model EditionNumber {
   reservedAt DateTime?
   soldAt     DateTime?
 
+  // Off-platform copy (no Stripe, no PrintOrder): a number consumed by hand
+  // from the admin ledger — gallery gift, artist-retained copy, or test
+  // print. Kind/note denormalised here for the ledger view; the fulfillment
+  // lifecycle lives on the linked OffPlatformOrder.
+  // 'gift' | 'artist_copy' | 'test'; note = recipient / TPS order ref.
+  offPlatformKind    String?
+  offPlatformNote    String?
+  offPlatformOrderId String?
+  offPlatformOrder   OffPlatformOrder? @relation(fields: [offPlatformOrderId], references: [id], onDelete: SetNull)
+
   // Cart-hold session binding (AR-132). `cartSessionId` is the httpOnly
   // `cart_session` cookie value that placed this hold: only the owning session
   // may extend/release it, and it caps how much stock one anonymous session can
@@ -332,6 +342,49 @@ model EditionNumber {
   @@index([paymentIntentId])
   // Per-session aggregate-hold count + ownership-scoped extend/release.
   @@index([cartSessionId])
+}
+
+// A print produced and shipped OUTSIDE the paid pipeline — gallery gift,
+// artist-retained copy, or test print. Deliberately NOT a PrintOrder: no
+// Stripe PaymentIntent, no invoice, no payout, no buyer emails, and none of
+// the reconcile crons ever see it. What it shares with a regular order is
+// the manual TPS fulfillment lifecycle, so the admin keeps control of the
+// physical parcel; the consumed edition number(s) link back via
+// EditionNumber.offPlatformOrderId. Cancelling releases the number(s).
+model OffPlatformOrder {
+  id String @id @default(uuid())
+
+  // 'gift' | 'artist_copy' | 'test' (see lib/orders/offPlatformKinds.ts)
+  kind String
+
+  recipientName    String
+  recipientCountry String? // denormalised from the address for list views
+  // Full shipping address snapshot ({line1, line2?, city, state?,
+  // postalCode, country, phone?}) — same Json-snapshot pattern as
+  // PrintOrder.shippingAddress. The admin copies it into the TPS portal
+  // when placing the physical order.
+  recipientAddress Json?
+  note             String? // reason / TPS order ref / anything useful
+
+  // Same manual TPS stages as PrintOrder.fulfillmentStatus:
+  // null (pending placement) | 'Placed' | 'Started' | 'Shipped'
+  // | 'Complete' | 'Cancelled'.
+  fulfillmentStatus String?
+  trackingUrl       String?
+  shippedAt         DateTime?
+
+  // Artist fee — kind decides (2026-07-25): a gallery GIFT still owes the
+  // artist their cut (snapshot of the variant's price at creation, immune to
+  // later price escalation); artist copies and test prints owe nothing.
+  // There is never a gallery cut. `artistPaidAt` = manual payout tick, feeds
+  // the monthly artist-invoice batch.
+  artistCents  Int       @default(0)
+  artistPaidAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  editionNumbers EditionNumber[]
 }
 
 // Fixed-window rate-limit counters (AR-132). One row per "<name>:<key>"

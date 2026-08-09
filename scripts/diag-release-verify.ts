@@ -6,7 +6,10 @@
 // Then asserts the number is back to `available` with all bindings cleared,
 // and deletes the test order. Net DB change: none.
 import prisma from '@/lib/prisma'
-import { bindEditionNumbersToOrderItem, markEditionNumberSold } from '@/lib/editions/reserveEditionNumber'
+import {
+  bindEditionNumbersToOrderItem,
+  markEditionNumberSold,
+} from '@/lib/editions/reserveEditionNumber'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 
 const TEST_PI = 'pi_tps_test_release_verify'
@@ -19,7 +22,9 @@ async function main() {
     select: {
       id: true,
       number: true,
-      variant: { select: { name: true, artwork: { select: { id: true, userId: true, title: true } } } },
+      variant: {
+        select: { name: true, artwork: { select: { id: true, userId: true, title: true } } },
+      },
     },
   })
   if (!avail) {
@@ -40,7 +45,12 @@ async function main() {
     // 1. Reserve + attach PI (mimic reserveNextEditionNumber + attach).
     await prisma.editionNumber.update({
       where: { id: numberId },
-      data: { state: 'reserved', paymentIntentId: TEST_PI, buyerEmail: 'verify@test.local', reservedAt: new Date() },
+      data: {
+        state: 'reserved',
+        paymentIntentId: TEST_PI,
+        buyerEmail: 'verify@test.local',
+        reservedAt: new Date(),
+      },
     })
 
     // 2. Real order + line item (the cart shape).
@@ -95,7 +105,14 @@ async function main() {
 
     const after = await prisma.editionNumber.findUnique({
       where: { id: numberId },
-      select: { state: true, orderId: true, orderItemId: true, paymentIntentId: true, buyerEmail: true, soldAt: true },
+      select: {
+        state: true,
+        orderId: true,
+        orderItemId: true,
+        paymentIntentId: true,
+        buyerEmail: true,
+        soldAt: true,
+      },
     })
     console.log('AFTER release :', after)
 
@@ -106,7 +123,11 @@ async function main() {
       after.paymentIntentId === null &&
       after.buyerEmail === null &&
       after.soldAt === null
-    console.log(pass ? '\n✅ PASS — bound + SOLD number freed by the deleteOrder release path.' : '\n❌ FAIL — number not fully freed.')
+    console.log(
+      pass
+        ? '\n✅ PASS — bound + SOLD number freed by the deleteOrder release path.'
+        : '\n❌ FAIL — number not fully freed.',
+    )
   } finally {
     // 5. Remove the test order (cascades the item). Number already freed above.
     await prisma.printOrder.deleteMany({ where: { paymentIntentId: TEST_PI } })

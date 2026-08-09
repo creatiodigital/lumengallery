@@ -54,10 +54,7 @@ async function main() {
     )
   }
 
-  const [orders, carts] = await Promise.all([
-    prisma.printOrder.count(),
-    prisma.pendingCart.count(),
-  ])
+  const [orders, carts] = await Promise.all([prisma.printOrder.count(), prisma.pendingCart.count()])
   console.log(`=== totals: printOrders=${orders}, pendingCarts=${carts} ===`)
 }
 

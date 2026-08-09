@@ -189,7 +189,13 @@ test.describe('Concurrent limited-edition checkouts (full money path)', () => {
 
       // Exactly one order exists across both attempts.
       const orders = await prisma.printOrder.count({
-        where: { paymentIntentId: { in: results.filter((r) => r.ok).map((r) => (r as Extract<TryBuyResult, { ok: true }>).paymentIntentId) } },
+        where: {
+          paymentIntentId: {
+            in: results
+              .filter((r) => r.ok)
+              .map((r) => (r as Extract<TryBuyResult, { ok: true }>).paymentIntentId),
+          },
+        },
       })
       expect(orders, 'one order total — the loser created nothing').toBe(1)
     } finally {

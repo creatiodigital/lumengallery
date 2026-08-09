@@ -40,7 +40,9 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
-  test('cart-order-placed email lists each line, its options and the breakdown', async ({ page }) => {
+  test('cart-order-placed email lists each line, its options and the breakdown', async ({
+    page,
+  }) => {
     await page.goto('/dev/emails/cart-order-placed')
     await expect(page.getByText('Puerta Verde')).toBeVisible()
     await expect(page.getByText('Landscape and River')).toBeVisible()
@@ -65,7 +67,9 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
-  test('order-shipped email shows shipped headline, tracking link, and order ref', async ({ page }) => {
+  test('order-shipped email shows shipped headline, tracking link, and order ref', async ({
+    page,
+  }) => {
     await page.goto('/dev/emails/order-shipped')
     await expect(page.getByText(/on its way, jane/i)).toBeVisible()
     await expect(page.getByText(/your print has shipped/i)).toBeVisible()
@@ -94,7 +98,9 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
-  test('order-cancelled email shows cancellation headline, order ref, and refund notice', async ({ page }) => {
+  test('order-cancelled email shows cancellation headline, order ref, and refund notice', async ({
+    page,
+  }) => {
     await page.goto('/dev/emails/order-cancelled')
     // Headline uses a typographic apostrophe — match without it.
     await expect(page.getByRole('heading', { name: /sorry, jane/i })).toBeVisible()
@@ -117,7 +123,9 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
-  test('inquiry-user email shows thank-you copy and echoes the inquirer message', async ({ page }) => {
+  test('inquiry-user email shows thank-you copy and echoes the inquirer message', async ({
+    page,
+  }) => {
     await page.goto('/dev/emails/inquiry-user')
     await expect(page.getByText(/thank you for your inquiry/i)).toBeVisible()
     // Personalized greeting + artwork reference
@@ -149,7 +157,9 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/\bTPS\b/)
   })
 
-  test('admin-order-cancelled email shows cancellation heading and REFUND NEEDED', async ({ page }) => {
+  test('admin-order-cancelled email shows cancellation heading and REFUND NEEDED', async ({
+    page,
+  }) => {
     await page.goto('/dev/emails/admin-order-cancelled')
     await expect(page.getByText(/order canceled/i)).toBeVisible()
     await expect(page.getByText(/refund needed/i)).toBeVisible()
@@ -158,11 +168,15 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/\bTPS\b/)
   })
 
-  test('admin-critical-alert email shows urgent heading, emoji, and what-to-do step', async ({ page }) => {
+  test('admin-critical-alert email shows urgent heading, emoji, and what-to-do step', async ({
+    page,
+  }) => {
     await page.goto('/dev/emails/admin-critical-alert')
     // Heading includes the emoji and sample title (also in the hidden
     // preheader — target the heading element specifically).
-    await expect(page.getByRole('heading', { name: /order row missing after charge/i })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: /order row missing after charge/i }),
+    ).toBeVisible()
     // At least one of the "What to do" steps is rendered
     await expect(page.getByText(/check stripe for the captured paymentintent/i)).toBeVisible()
     // Brand chrome
@@ -207,7 +221,9 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
-  test('artist-invite email shows temp password, login button, and important notice', async ({ page }) => {
+  test('artist-invite email shows temp password, login button, and important notice', async ({
+    page,
+  }) => {
     await page.goto('/dev/emails/artist-invite')
     // Temp password is visible in the code block
     await expect(page.getByText('Temp-7Q2K9')).toBeVisible()
