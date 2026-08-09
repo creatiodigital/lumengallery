@@ -11,7 +11,14 @@ import { Mesh, BufferGeometry, SRGBColorSpace } from 'three'
  * only the material is applied here, matching how walls, floors and ceilings
  * are handled — the GLB is exported with materials off.
  */
-const EXIT_SIGN_TEXTURE = '/assets/signs/exit-green-left.png'
+/**
+ * ⚠️ BUMP `?v=` WHENEVER THE ARTWORK CHANGES — even if the filename doesn't.
+ * next.config.mjs serves `/assets/:path*` as `max-age=31536000, immutable`, so
+ * without a new URL a returning visitor keeps the old sign for up to a year
+ * (and locally the file appears not to update at all). Same convention the
+ * space textures use: `bw2.jpg?v=2`.
+ */
+const EXIT_SIGN_TEXTURE = '/assets/signs/exit-green-left.png?v=1'
 
 useTexture.preload(EXIT_SIGN_TEXTURE)
 
