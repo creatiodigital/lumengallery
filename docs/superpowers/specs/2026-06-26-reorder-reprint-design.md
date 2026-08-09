@@ -13,8 +13,10 @@ for the same order, plus a permanent visible flag. Rides on the capture/place sp
 ## Design
 
 ### The action — `reorderForReprint(orderId, { reason, note })`
+
 Resets the order to **step ② "To place at TPS"** so the replacement walks the normal
 pipeline again, WITHOUT re-charging:
+
 - **Guards:** `paymentStatus === 'succeeded'` (already captured), NOT refunded/canceled,
   and `fulfillmentStatus ∈ { 'Started', 'Shipped', 'Complete' }` (a print actually
   exists to be a replacement of). `reason` required.
@@ -32,38 +34,46 @@ No buyer email is added here; the existing forward-stage emails (in production /
 delivered) re-fire as the replacement advances. (Replacement-aware copy = future polish.)
 
 ### Soft cap (Eduardo's call)
+
 **No server block.** The first two reprints are frictionless; from the **3rd** on
-(`reorderCount >= 2`) the UI confirm-modal shows a warning — *"This order has already been
-reprinted twice — a refund may serve the buyer better."* — and still lets the admin
+(`reorderCount >= 2`) the UI confirm-modal shows a warning — _"This order has already been
+reprinted twice — a refund may serve the buyer better."_ — and still lets the admin
 proceed. **Refund** is always available as the alternative.
 
 ### Always-visible flag
+
 A permanent badge wherever the order appears (survives re-delivery):
+
 - **Orders list row:** `⟳ Replacement` chip when `reorderCount > 0`.
 - **Order detail header:** `⟳ Reset — <reason> · "<note>" · <date> (×N)`.
 - **Timeline:** one `reorder` event per reset → full reason history.
 
 ### Schema (PrintOrder) — additive, Eduardo pushes the migration
+
 ```
 reorderReason String?    // 'damaged' | 'wrong_size' | 'print_quality' | 'other'
 reorderNote   String?
 reorderedAt   DateTime?
 reorderCount  Int        @default(0)
 ```
+
 `@default(0)` + nullable = safe additive change against prod. Per house rules Claude edits
 `schema.prisma`; Eduardo runs the DB push + `pnpm db:generate`.
 
 ### UI
+
 - **OrderDetail:** a **"Re-order (reprint)"** action — deliberately set apart from the
-  forward CTA (it's a sanctioned *backward* move), opening a modal: reason dropdown
+  forward CTA (it's a sanctioned _backward_ move), opening a modal: reason dropdown
   (damaged / wrong size / print quality / other) + optional note + (when `reorderCount >= 2`)
   the soft-cap warning. On confirm → `reorderForReprint`. Plus the `⟳ Reset — …` badge in
   the header.
 - **Orders list:** the `⟳ Replacement` chip on rows with `reorderCount > 0`; `listOrders`
-  + `AdminOrderRow` gain `reorderCount` + `reorderReason`.
+  - `AdminOrderRow` gain `reorderCount` + `reorderReason`.
 
 ## Testing (TDD, UI-driven, email-bypassed, self-cleaning)
+
 New `e2e/order-reorder.spec.ts`:
+
 1. **Reset:** buy → capture → place → mark through to Complete → Re-order (reason
    'damaged') → assert `fulfillmentStatus === null`, `paymentStatus === 'succeeded'`,
    `reorderCount === 1`, `reorderReason === 'damaged'`, `trackingUrl`/`shippedAt` cleared,
@@ -76,9 +86,10 @@ New `e2e/order-reorder.spec.ts`:
    order.
 
 ## Out of scope (future)
+
 - Replacement-aware buyer email copy ("your replacement is on its way").
 - Linked child-order accounting (we deliberately reset the same order — simpler for a
   solo operator; the event log preserves the story).
 - A reprint-cost split if TPS ever bills the gallery for a reprint (today TPS covers
   their-fault reprints).
-</content>
+  </content>

@@ -7,11 +7,7 @@ import { issueInvoiceRecord } from '@/lib/invoices/issueInvoiceRecord'
 import { buildInvoiceLines } from '@/lib/invoices/buildInvoiceLines'
 import { buildInvoiceKey } from '@/lib/r2'
 
-import {
-  buyOneLimited,
-  teardownBoughtOrder,
-  type BoughtLimitedOrder,
-} from './order-helpers'
+import { buyOneLimited, teardownBoughtOrder, type BoughtLimitedOrder } from './order-helpers'
 import { seedCookieConsent } from './consent-helpers'
 
 /**

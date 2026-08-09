@@ -185,6 +185,9 @@ export const populateFormData = (data: Artwork): ArtworkFormData => ({
 
 type ArtworkEditFormProps = {
   formData: ArtworkFormData
+  /** Saved artwork id — enables variant templates ("Apply saved variant");
+   *  absent on the create-new form. */
+  artworkId?: string | null
   imageUrl: string | null
   imageDpi?: number | null
   originalWidth?: number | null
@@ -393,6 +396,7 @@ const PaperRecommendationGroup = ({
 
 export const ArtworkEditForm = ({
   formData,
+  artworkId = null,
   imageUrl,
   imageDpi,
   originalWidth,
@@ -678,18 +682,22 @@ export const ArtworkEditForm = ({
 
           {formData.printEnabled && (
             <>
-              {/* Locked banner — LIMITED editions only. It explains that live
-                  variants are frozen and admins unblock them per-variant in the
-                  editor below. Open editions don't lock their config (only the
-                  series-type radio), so they show no banner. */}
-              {seriesTypeLocked && formData.editionType === 'limited' && (
+              {/* Artwork-level banner — reports ONLY the series-type lock,
+                  which is the one thing that really is artwork-wide (the
+                  open/limited radio below is disabled by it). Variant freezing
+                  is per-variant and each live variant says so on its own card;
+                  stating it here made fully-editable sibling variants look
+                  frozen. The reason differs by type: an open edition locks when
+                  the artwork itself is marked ready to sell, a limited one as
+                  soon as ANY variant goes on sale. */}
+              {seriesTypeLocked && (
                 <div className={styles.editionLockedBanner} style={{ marginTop: 'var(--space-4)' }}>
                   <span className={styles.editionLockedBadge}>Locked</span>
                   <div>
-                    <strong>This artwork is on sale and its series type is locked.</strong>{' '}
-                    {isAdmin
-                      ? 'Live variants are frozen — unblock an individual variant below to edit it.'
-                      : 'Variants on sale are frozen — ask an admin to unblock a variant to change it.'}
+                    <strong>The series type is locked.</strong>{' '}
+                    {formData.editionType === 'limited'
+                      ? 'At least one variant is ready to sell, so this artwork can no longer be switched to an open edition.'
+                      : 'This artwork is marked ready to sell, so it can no longer be switched to a limited edition.'}
                   </div>
                 </div>
               )}
@@ -765,6 +773,7 @@ export const ArtworkEditForm = ({
                     aspectRatio={editionAspectRatio}
                     longEdgeBounds={editionLongEdgeBounds}
                     onChange={(next) => onVariantsChange?.(next)}
+                    artworkId={artworkId}
                     isAdmin={isAdmin}
                     onUnblockVariant={onUnblockVariant}
                     onReadyToSellVariant={onReadyToSellVariant}
@@ -1140,9 +1149,10 @@ export const ArtworkEditForm = ({
               </>
             ) : (
               <>
+                {/* The series-type lock itself is stated once, in the banner
+                    above. This section keeps only what is still actionable. */}
                 <p className={styles.printDisabledHint} style={{ margin: 0 }}>
-                  This open edition is on sale — its series type is locked. Price and printing
-                  options remain editable.
+                  This open edition is on sale. Price and printing options remain editable.
                 </p>
                 {isSuperAdmin && onUnblock && (
                   <div style={{ marginTop: 'var(--space-2)' }}>

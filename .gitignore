@@ -61,6 +61,18 @@ package-lock.json
 
 
 
+# Local-only 3D space GLBs, served via NEXT_PUBLIC_LOCAL_ASSETS while testing a
+# re-export before it goes to R2. Cloudflare R2 is the canonical copy for every
+# environment (AR-127) — a GLB committed here would bloat the repo and ship to
+# Vercel, shadowing the real one. Scoped to *.glb ONLY: other files under
+# public/assets (e.g. signage PNGs served from the app origin) must stay tracked.
+/public/assets/**/*.glb
+
+# theprintspace branding pulled down for portal/packaging setup — reference
+# material for configuring the print provider's account, not app assets.
+/tps-logo-wordmark.png
+/tps-monogram.png
+
 # Brainstorming visual-companion artifacts
 .superpowers/
 

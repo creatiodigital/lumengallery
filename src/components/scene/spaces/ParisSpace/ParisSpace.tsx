@@ -19,6 +19,7 @@ import { Switch } from '@/components/scene/spaces/objects/Switch'
 import { TrackLamp } from '@/components/scene/spaces/objects/TrackLamp'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { Effects } from '@/components/scene/spaces/objects/Effects'
+import { ExitTrigger } from '@/components/scene/spaces/objects/ExitTrigger'
 
 import { useAmbientLight } from '@/hooks/useAmbientLight'
 import { addWall, setInitialCameraFromNode } from '@/redux/slices/sceneSlice'
@@ -50,7 +51,7 @@ type ParisSpaceProps = React.ComponentProps<'group'> & {
 }
 
 const ParisSpace: React.FC<ParisSpaceProps> = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
-  const { nodes } = useGLTF(assetUrl('/assets/spaces/paris/paris18.glb')) as unknown as GLTFResult
+  const { nodes } = useGLTF(assetUrl('/assets/spaces/paris/paris19.glb')) as unknown as GLTFResult
 
   const dispatch = useDispatch()
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
@@ -244,18 +245,37 @@ const ParisSpace: React.FC<ParisSpaceProps> = ({ wallRefs, windowRefs, glassRefs
         placeholdersArray.map((_, i) => <Placeholder key={i} i={i} nodes={nodes} />)}
 
       {/* Artworks */}
-      {/* Invisible Door (collision barrier — camera cannot pass through) */}
-      {nodes.invisibleDoor0 && (
+
+      {/* Exit sign — HIDDEN for now. Every treatment tried (regulation green,
+          typographic, panelled) read as cheap against the white cube, and it
+          solves a problem nobody reported: the corner ✕ already offers the way
+          out, and the exit prompt makes leaving by accident impossible.
+          To bring it back: re-add `<ExitSign nodes={nodes} />` here plus its
+          import. The `leftExit0` node and the component both still exist —
+          nothing was deleted from the GLBs. */}
+
+      {/* Invisible wall across the exit corridor: stops the camera before the
+          L-turn exposes the dead end. Registered as a wallRef so the existing
+          collision raycast treats it like any other wall, and hidden rather
+          than transparent — `visible={false}` still raycasts, so it blocks
+          without being drawn.
+          It doubles as the exit trigger: `ExitTrigger` measures the distance to
+          this same mesh, so one object placed by eye in Blender both blocks and
+          asks. */}
+      {nodes.invisibleWall0 && (
         <mesh
           ref={wallRefs[2]}
-          name="invisibleDoor0"
-          geometry={nodes.invisibleDoor0.geometry}
-          position={nodes.invisibleDoor0.position}
-          rotation={nodes.invisibleDoor0.rotation}
-          scale={nodes.invisibleDoor0.scale}
+          name="invisibleWall0"
+          geometry={nodes.invisibleWall0.geometry}
+          position={nodes.invisibleWall0.position}
+          rotation={nodes.invisibleWall0.rotation}
+          scale={nodes.invisibleWall0.scale}
           visible={false}
         />
       )}
+
+      {/* Exit prompt — raised on nearing the wall above. */}
+      <ExitTrigger nodes={nodes} />
 
       {/* Initial Point (reference position) */}
       {nodes.initialPoint0 && <primitive object={nodes.initialPoint0} visible={false} />}

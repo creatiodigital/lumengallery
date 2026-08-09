@@ -8,20 +8,21 @@
 
 ## Legend
 
-| Icon | Meaning |
-|---|---|
-| 👤 | Buyer action |
-| 🛠 | Admin action (you, in /admin/orders) |
-| 🖨 | The Print Space (TPS) |
-| 💳 | Money event |
-| 📧 | Buyer email sent |
-| 📦 | Delivery |
-| ⟳ | Reprint / replacement |
+| Icon | Meaning                              |
+| ---- | ------------------------------------ |
+| 👤   | Buyer action                         |
+| 🛠   | Admin action (you, in /admin/orders) |
+| 🖨   | The Print Space (TPS)                |
+| 💳   | Money event                          |
+| 📧   | Buyer email sent                     |
+| 📦   | Delivery                             |
+| ⟳    | Reprint / replacement                |
 
 **Money rules (the spine of everything):**
-- **Authorize** (at checkout) = a *hold*, no money taken yet.
-- **Capture** (admin, step ①) = card actually *charged*; the limited edition number flips to **SOLD**.
-- **Cancel before capture** = hold released, buyer *never charged*, **no fee**, edition number freed.
+
+- **Authorize** (at checkout) = a _hold_, no money taken yet.
+- **Capture** (admin, step ①) = card actually _charged_; the limited edition number flips to **SOLD**.
+- **Cancel before capture** = hold released, buyer _never charged_, **no fee**, edition number freed.
 - **Refund after capture** = money returned, edition number freed — but **Stripe keeps its fee**.
 - **Re-order (reprint)** = **no new charge**, edition number **kept** (same numbered copy remade).
 - **Pay TPS only AFTER a successful capture** (TPS charges immediately; capture-first protects your cash).
@@ -91,7 +92,7 @@ flowchart TD
 ## Case 3 — Cancel before production
 
 The outcome depends entirely on **whether you've captured yet** — the argument for
-capturing *late* (only when about to place at TPS).
+capturing _late_ (only when about to place at TPS).
 
 ```mermaid
 flowchart TD
@@ -140,10 +141,11 @@ flowchart TD
 
 ## Quick reference — what each off-ramp does to money + edition
 
-| Action | When | Buyer money | Edition number | Stripe fee |
-|---|---|---|---|---|
-| **Cancel** | before capture | never charged (hold released) | freed | none |
-| **Refund** | after capture | returned in full | freed | **kept by Stripe** |
-| **Re-order (reprint)** | after delivery (faulty) | unchanged (no charge) | **kept** (same copy) | none |
-| **Pay artist** | after delivery (+14d gate) | — | — | — |
+| Action                 | When                       | Buyer money                   | Edition number       | Stripe fee         |
+| ---------------------- | -------------------------- | ----------------------------- | -------------------- | ------------------ |
+| **Cancel**             | before capture             | never charged (hold released) | freed                | none               |
+| **Refund**             | after capture              | returned in full              | freed                | **kept by Stripe** |
+| **Re-order (reprint)** | after delivery (faulty)    | unchanged (no charge)         | **kept** (same copy) | none               |
+| **Pay artist**         | after delivery (+14d gate) | —                             | —                    | —                  |
+
 </content>

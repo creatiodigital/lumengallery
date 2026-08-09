@@ -130,7 +130,12 @@ test.describe('Re-order / reprint (real admin UI)', () => {
       // A re-ordered order awaiting re-placement (succeeded + pending) with the marker.
       await prisma.printOrder.update({
         where: { id: bought.orderId },
-        data: { paymentStatus: 'succeeded', fulfillmentStatus: null, reorderCount: 1, reorderReason: 'damaged' },
+        data: {
+          paymentStatus: 'succeeded',
+          fulfillmentStatus: null,
+          reorderCount: 1,
+          reorderReason: 'damaged',
+        },
       })
 
       await seedCookieConsent(page)

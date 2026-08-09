@@ -74,6 +74,11 @@ const NAV_HUBS: Hub[] = [
     href: '/admin/edition-sales',
   },
   {
+    label: 'Gift Orders',
+    description: 'Gifts, artist copies, test prints — off-platform parcels and their stages.',
+    href: '/admin/gift-orders',
+  },
+  {
     label: 'Users',
     description: 'Artists, admins, curators — invite, publish, impersonate.',
     href: '/admin/users',

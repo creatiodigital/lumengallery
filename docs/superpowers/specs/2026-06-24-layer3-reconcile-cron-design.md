@@ -15,8 +15,8 @@ recent Stripe PaymentIntents that should have a `PrintOrder` but don't, and emai
 the admin to recover them by hand. Two gaps remain:
 
 1. **No auto-recovery.** Layer 1 made `ensureOrderForPaymentIntent` idempotent and
-   reusable, but the cron still only alerts. It should *create the missing order
-   itself*.
+   reusable, but the cron still only alerts. It should _create the missing order
+   itself_.
 2. **Orphaned-reservation leak.** A limited edition number is reserved at PI
    creation (`state='reserved'`, `paymentIntentId` set, no `orderId`/`orderItemId`).
    If the webhook never fires (and the buyer never reaches the confirmation page that
@@ -26,8 +26,8 @@ the admin to recover them by hand. Two gaps remain:
    - The normal release path (`releaseEditionNumberForPaymentIntent`) only runs from
      the Stripe `payment_intent.canceled`/`payment_failed` webhook — which is exactly
      what's down.
-   → The number is stuck `reserved` forever with no buyer/order. Observed 2026-06-24:
-   5 stuck Landscape&River reservations from failed morning buys.
+     → The number is stuck `reserved` forever with no buyer/order. Observed 2026-06-24:
+     5 stuck Landscape&River reservations from failed morning buys.
 
 ## Design
 
@@ -70,7 +70,7 @@ so the alert doesn't cry wolf on a PI that's a few minutes from authorizing.
 ### Phase B — release orphan reservations (dead PI, stuck `reserved`)
 
 Phase A binds authorized PIs' numbers, so by the time Phase B runs only genuinely
-dead reservations remain. Query the DB directly (these PIs are *canceled* and so are
+dead reservations remain. Query the DB directly (these PIs are _canceled_ and so are
 filtered out of Phase A's authorized-only list):
 
 ```sql
@@ -84,12 +84,12 @@ WHERE state = 'reserved'
 For each **distinct** `paymentIntentId`, retrieve the PI from Stripe and branch on
 status:
 
-| PI status | Action | Why |
-|---|---|---|
-| `requires_capture`, `succeeded` | **leave** | Phase A created+bound its order this run |
-| `canceled`, `requires_payment_method`, `requires_confirmation` | **release** via `releaseEditionNumberForPaymentIntent(piId)` | abandoned/dead — number returns to pool |
-| `processing`, `requires_action` | **leave** | genuinely in-flight |
-| **PI not retrievable** (deleted / unknown id / Stripe error) | **leave + alert** | never auto-release on incomplete info (Eduardo, 2026-06-24) |
+| PI status                                                      | Action                                                       | Why                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------- |
+| `requires_capture`, `succeeded`                                | **leave**                                                    | Phase A created+bound its order this run                    |
+| `canceled`, `requires_payment_method`, `requires_confirmation` | **release** via `releaseEditionNumberForPaymentIntent(piId)` | abandoned/dead — number returns to pool                     |
+| `processing`, `requires_action`                                | **leave**                                                    | genuinely in-flight                                         |
+| **PI not retrievable** (deleted / unknown id / Stripe error)   | **leave + alert**                                            | never auto-release on incomplete info (Eduardo, 2026-06-24) |
 
 Tally `reservationsReleased` and `reservationsUnresolvedPI` (the not-retrievable set).
 
@@ -160,5 +160,5 @@ No test asserts email content (bypassed); assert the JSON response counts instea
 - Per-env Stripe Dashboard webhook endpoint/secret config (separate launch to-do).
 - Single-print `createPaymentIntent.ts` Stripe-summary (Layer 4 single-print remainder
   tracked in `project_guaranteed_order_capture.md`).
-</content>
-</invoke>
+  </content>
+  </invoke>

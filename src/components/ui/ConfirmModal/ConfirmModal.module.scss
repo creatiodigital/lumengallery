@@ -1,5 +1,5 @@
 .body {
-  min-width: 360px;
+  min-width: min(360px, 82vw);
   max-width: 480px;
 }
 
@@ -32,4 +32,23 @@
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+}
+
+.bodyWide {
+  // Never let the panel kiss the viewport edges — cap well inside 90vw
+  // (the Modal panel itself is capped at min(760px, 90vw), and its padding
+  // eats into that, so the body just fills whatever the panel allows).
+  min-width: 0;
+  width: 100%;
+  max-width: 760px;
+
+  @media (min-width: 760px) {
+    min-width: 640px;
+  }
+}
+
+.messageScroll {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 6px;
 }

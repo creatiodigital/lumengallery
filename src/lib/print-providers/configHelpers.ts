@@ -19,6 +19,9 @@ import type {
   SizeOption,
   WizardConfig,
 } from './types'
+// windowMount/windowMountSize are TPS-specific dimension ids that this
+// helper already special-cases; the preset→cm chart lives with them.
+import { getMountPresetWidthCm } from './printspace/data'
 
 // ── Visibility ───────────────────────────────────────────────────
 
@@ -157,14 +160,33 @@ export function getEffectiveBorderCm(config: WizardConfig, dimensionId = 'border
 }
 
 /**
- * Effective passepartout (mat) width in cm. Reads from the
- * `windowMountSize` border dim when present (TPS), else falls back
- * to the visual hint `matBorderCm` from the currently-selected
- * options (catalog visual hints).
+ * Effective passepartout (mat) width in cm.
+ *
+ * Resolution order:
+ * 1. 'none' mount color (or no color picked on a catalog that has
+ *    the windowMount dim) → 0.
+ * 2. `windowMountSize` preset in values ('small' | 'large') → width
+ *    computed from the print size (TPS cuts mounts proportionally).
+ * 3. Legacy configs that stored a slider width in
+ *    `borders.windowMountSize.allCm` (pre-2026-07 carts) → as stored.
+ * 4. Color picked but no preset stored → 'small' (the default).
+ * 5. Visual hint `matBorderCm` from selected options, else 0.
  */
 export function getEffectiveMatCm(catalog: Catalog, config: WizardConfig): number {
-  const explicit = config.borders?.['windowMountSize']?.allCm
-  if (explicit !== undefined) return explicit
+  const mountColor = config.values['windowMount']
+  const hasMountDim = !!findEnumDimension(catalog, 'windowMount')
+  if (hasMountDim && (!mountColor || mountColor === 'none')) return 0
+
+  const preset = config.values['windowMountSize']
+  const size = getEffectiveSizeCm(catalog, config)
+  if ((preset === 'small' || preset === 'large') && size) {
+    return getMountPresetWidthCm(preset, size.widthCm, size.heightCm)
+  }
+  const legacy = config.borders?.['windowMountSize']?.allCm
+  if (legacy !== undefined) return legacy
+  if (mountColor && mountColor !== 'none' && size) {
+    return getMountPresetWidthCm('small', size.widthCm, size.heightCm)
+  }
   const visuals = collectVisualHints(catalog, config)
   return visuals.matBorderCm ?? 0
 }

@@ -22,7 +22,7 @@ import {
   TPS_GLASS_OPTIONS,
   TPS_HANGING_OPTIONS,
   TPS_MOULDINGS,
-  TPS_MOUNT_BOARD_BOUNDS,
+  TPS_MOUNT_SIZES,
   TPS_PAPERS,
   TPS_PRINT_TYPES,
   TPS_SIZE_BOUNDS,
@@ -131,6 +131,15 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
   // mount-board-size input so it only appears when a color is picked.
   const windowMountColorIds = TPS_WINDOW_MOUNTS.filter((w) => w.id !== 'none').map((w) => w.id)
 
+  // ── Window Mount size presets (Small / Large; width scales with
+  // print size — the wizard shows the computed cm next to the field).
+  const mountSizeOptions: Option[] = TPS_MOUNT_SIZES.map((s) => ({
+    id: s.id,
+    label: s.label,
+    description: s.description,
+    isDefault: s.id === 'small',
+  }))
+
   // Dimension order mirrors TPS's "Order Prints" flow: paper-type
   // first, then print size + paper border, then mounting/framing
   // and all its sub-options.
@@ -219,18 +228,16 @@ export function buildPrintspaceCatalog(_input: BuildInput): Catalog {
       options: windowMountOptions,
       visibleWhen: { dimensionId: 'frameType', valueIn: ['standard', 'box'] },
     } satisfies EnumDimension,
-    // Mount board size — uniform width of the passepartout in cm.
+    // Mount board size — Small/Large preset; TPS cuts the actual
+    // width proportionally to the print size (see TPS_MOUNT_SIZES).
     // Visible only when a window-mount color is chosen (not 'none').
     {
-      kind: 'border',
+      kind: 'enum',
       id: 'windowMountSize',
       label: 'Mount (Passepartout) Size',
-      minCm: TPS_MOUNT_BOARD_BOUNDS.minCm,
-      maxCm: TPS_MOUNT_BOARD_BOUNDS.maxCm,
-      stepCm: TPS_MOUNT_BOARD_BOUNDS.stepCm,
-      defaultCm: TPS_MOUNT_BOARD_BOUNDS.defaultCm,
+      options: mountSizeOptions,
       visibleWhen: { dimensionId: 'windowMount', valueIn: windowMountColorIds },
-    } satisfies BorderDimension,
+    } satisfies EnumDimension,
     // Hanging — visible when framing. Last so it sits after all
     // visual choices (frame / glass / mount).
     {

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** The gallery issues its own branded *factura* (PDF) manually from the admin once TPS is in production, stored immutably in R2 + Postgres, viewable per-order and from a dedicated `/admin/invoices` register, and batch-exportable monthly for the accountant.
+**Goal:** The gallery issues its own branded _factura_ (PDF) manually from the admin once TPS is in production, stored immutably in R2 + Postgres, viewable per-order and from a dedicated `/admin/invoices` register, and batch-exportable monthly for the accountant.
 
 **Architecture:** New `Invoice` + `InvoiceCounter` Prisma models (append-only). A pure numbering helper produces gap-free, monthly-reset, per-month-series numbers inside one `$transaction`. `@react-pdf/renderer` (already installed) renders an `<InvoiceDocument>` to a Buffer; the buffer is uploaded to a **private** R2 key and emailed to the buyer as an **attachment**. Two admin server actions (`sendInvoice`, `issueCreditNote`) are idempotent and gated on `fulfillmentStatus >= 'Started'`. A new `/admin/invoices` page lists/filters/exports. Everything is behind an off-in-prod feature flag until the gestor signs off.
 
@@ -27,6 +27,7 @@
 ## File structure
 
 **New files**
+
 - `src/lib/invoices/sellerIdentity.ts` — frozen seller legal identity from env, with hardcoded fallbacks.
 - `src/lib/invoices/invoiceNumber.ts` — pure `formatInvoiceNumber()` + series helpers.
 - `src/lib/invoices/issueInvoiceRecord.ts` — atomic counter bump + `Invoice` insert (transaction-safe core).
@@ -43,6 +44,7 @@
 - `e2e/invoice.spec.ts` — issue → see → export (+ credit note).
 
 **Modified files**
+
 - `prisma/schema.prisma` — `Invoice`, `InvoiceCounter` models; `PrintOrder` += `invoices Invoice[]`, nullable `buyerCompany`, `buyerTaxId` (no UI in v1).
 - `src/lib/print-providers/printspace/pricing.ts` — rewrite `getVatRate` to EU-set / 21% / 0%.
 - `src/lib/orders/logOrderEvent.ts` — add `'invoice_issued'`, `'credit_note_issued'` kinds.
@@ -52,17 +54,19 @@
 
 ---
 
-## Phase 1 — Correct VAT source *(requirement #2)*
+## Phase 1 — Correct VAT source _(requirement #2)_
 
 Fix the VAT engine once so both the wizard and the invoice inherit the correct rate. Small but load-bearing; do it first so every downstream total is right.
 
 ### Task 1: Rewrite `getVatRate` to the decided B2C model
 
 **Files:**
+
 - Modify: `src/lib/print-providers/printspace/pricing.ts:462-498`
 - Test: `e2e/vat-rate.spec.ts` (Playwright-as-runner, imports the pure fn)
 
 **Interfaces:**
+
 - Produces: `getVatRate(countryCode: string): number` — `0.21` for EU-27, `0` otherwise. Unchanged signature (callers in `getQuote.ts`, `validateCart.ts`, `createPaymentIntent.ts` keep working).
 - Produces: `EU_VAT_COUNTRIES: ReadonlySet<string>`, `HOME_VAT_RATE = 0.21`.
 
@@ -104,8 +108,33 @@ export const HOME_VAT_RATE = 0.21 // Spain; gallery is a Spanish seller (B2C, pr
 
 // EU-27 (VAT territory). UK excluded (post-Brexit → export).
 export const EU_VAT_COUNTRIES: ReadonlySet<string> = new Set([
-  'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE',
-  'IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE',
+  'AT',
+  'BE',
+  'BG',
+  'HR',
+  'CY',
+  'CZ',
+  'DK',
+  'EE',
+  'FI',
+  'FR',
+  'DE',
+  'GR',
+  'HU',
+  'IE',
+  'IT',
+  'LV',
+  'LT',
+  'LU',
+  'MT',
+  'NL',
+  'PL',
+  'PT',
+  'RO',
+  'SK',
+  'SI',
+  'ES',
+  'SE',
 ])
 
 /**
@@ -151,9 +180,11 @@ git commit -m "fix(AR-131): VAT is 21% Spanish for EU B2C, 0% export (incl UK); 
 ### Task 2: Prisma models + PrintOrder additions
 
 **Files:**
+
 - Modify: `prisma/schema.prisma` (PrintOrder model ~324-406; add two new models)
 
 **Interfaces:**
+
 - Produces: `Invoice`, `InvoiceCounter` models; `PrintOrder.invoices`, `PrintOrder.buyerCompany?`, `PrintOrder.buyerTaxId?`.
 
 - [ ] **Step 1: Add the models**
@@ -197,6 +228,7 @@ model InvoiceCounter {
 - [ ] **Step 2: Extend PrintOrder**
 
 Add inside the `PrintOrder` model:
+
 ```prisma
   buyerCompany String?
   buyerTaxId   String?
@@ -217,9 +249,11 @@ git commit -m "feat(AR-131): Invoice + InvoiceCounter models; PrintOrder buyer t
 ### Task 3: Seller identity config
 
 **Files:**
+
 - Create: `src/lib/invoices/sellerIdentity.ts`
 
 **Interfaces:**
+
 - Produces: `SELLER_IDENTITY: { legalName; nif; addressLines: string[]; email; phone; website }`.
 
 - [ ] **Step 1: Write it (env with the real legal identity as fallback)**
@@ -229,8 +263,9 @@ git commit -m "feat(AR-131): Invoice + InvoiceCounter models; PrintOrder buyer t
 export const SELLER_IDENTITY = {
   legalName: process.env.SELLER_LEGAL_NAME || 'The Art Room Gallery, SL',
   nif: process.env.SELLER_NIF || 'ESB88838172',
-  addressLines: (process.env.SELLER_ADDRESS ||
-    'Avenida Guadarrama 4, Bajo B|28220 Majadahonda|Spain').split('|'),
+  addressLines: (
+    process.env.SELLER_ADDRESS || 'Avenida Guadarrama 4, Bajo B|28220 Majadahonda|Spain'
+  ).split('|'),
   email: process.env.SELLER_EMAIL || 'contact@theartroom.gallery',
   phone: process.env.SELLER_PHONE || '+34 665 05 99 41',
   website: process.env.SELLER_WEBSITE || 'theartroom.gallery',
@@ -247,10 +282,12 @@ git commit -m "feat(AR-131): seller legal identity config"
 ### Task 4: Pure numbering helper
 
 **Files:**
+
 - Create: `src/lib/invoices/invoiceNumber.ts`
 - Test: `e2e/invoice-number.spec.ts`
 
 **Interfaces:**
+
 - Produces: `seriesFor(type: 'invoice'|'credit_note'): 'AR'|'AR-R'`; `formatInvoiceNumber(series, year, month, seq): string`.
 
 - [ ] **Step 1: Write the failing test**
@@ -283,7 +320,10 @@ export function seriesFor(type: 'invoice' | 'credit_note'): 'AR' | 'AR-R' {
 }
 
 export function formatInvoiceNumber(
-  series: string, year: number, month: number, seq: number,
+  series: string,
+  year: number,
+  month: number,
+  seq: number,
 ): string {
   const mm = String(month).padStart(2, '0')
   const nnn = String(seq).padStart(3, '0')
@@ -303,10 +343,12 @@ git commit -m "feat(AR-131): pure invoice-number formatter (AR-MM-YYYY-NNN)"
 ### Task 5: Atomic issue-record core (gap-free numbering)
 
 **Files:**
+
 - Create: `src/lib/invoices/issueInvoiceRecord.ts`
 - Test: `e2e/invoice-numbering-atomic.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `formatInvoiceNumber`, `seriesFor` (Task 4).
 - Produces: `issueInvoiceRecord(input): Promise<Invoice>` where
   `input = { type: 'invoice'|'credit_note'; order: PrintOrder; r2Key: string; snapshots: { sellerSnapshot; buyerSnapshot; totalsSnapshot }; correctsInvoiceId?: string; now?: Date }`.
@@ -349,7 +391,11 @@ export async function issueInvoiceRecord(input: IssueInput) {
       data: {
         orderId: input.orderId,
         type: input.type,
-        series, year, month, seq, number,
+        series,
+        year,
+        month,
+        seq,
+        number,
         correctsInvoiceId: input.correctsInvoiceId ?? null,
         issuedAt: now,
         currency: input.currency,
@@ -375,10 +421,18 @@ test('concurrent issues are gap-free and unique', async () => {
   const order = await makeThrowawayOrder()
   const now = new Date(Date.UTC(2099, 0, 15)) // isolated period, no collision
   const results = await Promise.all(
-    Array.from({ length: 5 }, () => issueInvoiceRecord({
-      type: 'invoice', orderId: order.id, currency: 'eur', r2Key: 'test',
-      sellerSnapshot: {}, buyerSnapshot: {}, totalsSnapshot: {}, now,
-    })),
+    Array.from({ length: 5 }, () =>
+      issueInvoiceRecord({
+        type: 'invoice',
+        orderId: order.id,
+        currency: 'eur',
+        r2Key: 'test',
+        sellerSnapshot: {},
+        buyerSnapshot: {},
+        totalsSnapshot: {},
+        now,
+      }),
+    ),
   )
   const seqs = results.map((r) => r.seq).sort((a, b) => a - b)
   expect(seqs).toEqual([1, 2, 3, 4, 5]) // no gaps, no dupes
@@ -400,11 +454,13 @@ git commit -m "feat(AR-131): atomic gap-free invoice numbering in a transaction"
 ### Task 5b: Dev-only numbering reset (for local testing)
 
 **Files:**
+
 - Create: `scripts/reset-invoicing.ts`
 
 **Why:** local manual testing needs to restart numbering at `001` and clear test facturas without touching prod.
 
 **Interfaces:**
+
 - Produces: a runnable script `pnpm tsx scripts/reset-invoicing.ts [--month MM-YYYY | --all]`.
 
 - [ ] **Step 1: Implement with a hard prod guard**
@@ -415,8 +471,7 @@ import { prisma } from '@/lib/prisma'
 import { getR2ObjectBuffer } from '@/lib/r2' // + a delete helper
 
 async function main() {
-  if (process.env.NODE_ENV === 'production' ||
-      process.env.NEXT_PUBLIC_APP_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_APP_ENV === 'production') {
     throw new Error('reset-invoicing is blocked in production')
   }
   // Optional scope: --month 07-2026 resets one period; --all wipes every test invoice.
@@ -436,15 +491,17 @@ Deleting the `InvoiceCounter` row(s) makes the next issue start at `001` again.
 
 ---
 
-## Phase 3 — The PDF template *(requirement #1)*
+## Phase 3 — The PDF template _(requirement #1)_
 
 ### Task 6: Snapshot builder + mandatory-field guard
 
 **Files:**
+
 - Create: `src/lib/invoices/buildInvoiceSnapshots.ts`, `src/lib/invoices/assertMandatoryFields.ts`
 - Test: `e2e/invoice-snapshots.spec.ts`
 
 **Interfaces:**
+
 - Produces: `buildInvoiceSnapshots(order, { negate?: boolean }): { sellerSnapshot; buyerSnapshot; totalsSnapshot }`.
 - Produces: `assertMandatoryFields(snapshots): void` (throws `Error` with the missing field).
 
@@ -465,8 +522,13 @@ export function buildInvoiceSnapshots(order: any, opts: { negate?: boolean } = {
       email: order.buyerEmail,
       company: order.buyerCompany ?? null,
       taxId: order.buyerTaxId ?? null,
-      addressLines: [addr.address1, addr.address2, `${addr.postalCode} ${addr.city}`, addr.stateOrRegion, addr.countryCode]
-        .filter(Boolean),
+      addressLines: [
+        addr.address1,
+        addr.address2,
+        `${addr.postalCode} ${addr.city}`,
+        addr.stateOrRegion,
+        addr.countryCode,
+      ].filter(Boolean),
       countryCode: order.country,
     },
     totalsSnapshot: {
@@ -485,7 +547,9 @@ export function buildInvoiceSnapshots(order: any, opts: { negate?: boolean } = {
 ```ts
 // src/lib/invoices/assertMandatoryFields.ts
 export function assertMandatoryFields(s: {
-  sellerSnapshot: any; buyerSnapshot: any; totalsSnapshot: any
+  sellerSnapshot: any
+  buyerSnapshot: any
+  totalsSnapshot: any
 }): void {
   const req = (cond: boolean, field: string) => {
     if (!cond) throw new Error(`Invoice missing mandatory field: ${field}`)
@@ -513,9 +577,11 @@ git commit -m "feat(AR-131): invoice snapshots + mandatory-field guard"
 ### Task 7: `<InvoiceDocument>` + `renderInvoicePdf`
 
 **Files:**
+
 - Create: `src/lib/invoices/InvoiceDocument.tsx`, `src/lib/invoices/renderInvoicePdf.ts`
 
 **Interfaces:**
+
 - Consumes: the snapshot shape from Task 6, `number`, `issuedAt`, optional `correctsNumber`.
 - Produces: `renderInvoicePdf(input): Promise<Buffer>`.
 
@@ -526,12 +592,13 @@ git commit -m "feat(AR-131): invoice snapshots + mandatory-field guard"
 ```ts
 import { Font } from '@react-pdf/renderer'
 Font.register({ family: 'BrandSerif', src: `${SITE_URL}/fonts/<brand-serif>.ttf` })
-Font.register({ family: 'BrandSans',  src: `${SITE_URL}/fonts/<brand-sans>.ttf` })
+Font.register({ family: 'BrandSans', src: `${SITE_URL}/fonts/<brand-sans>.ttf` })
 ```
 
 - [ ] **Step 2: Build the document (branded layout, all mandatory fields)**
 
 Use `@react-pdf/renderer` primitives (`Document, Page, View, Text, Image, StyleSheet`). Pull brand colours/asset URLs from `src/lib/emails/brand.ts` (`EMAIL_BRAND` → `wordmarkUrl`, `monogramUrl`). **Layout per user spec:**
+
 - **Top:** the **main logo (wordmark)** — `EMAIL_BRAND.wordmarkUrl` — as the header, with `SELLER_IDENTITY` (legal name, NIF, address) beneath or beside it.
 - **Body:** invoice number + issue date (+ "Rectifies AR-…" line when `correctsNumber` present); buyer block; per-line items (from `order.items` or the legacy single line via `printConfig`); then **base / VAT (rate% + amount) / total**. Amounts via a cents→currency formatter. Typography uses the registered brand fonts (serif for headings, sans for figures/labels).
 - **Very bottom, centered:** the **monogram** — `EMAIL_BRAND.monogramUrl` — as a small centered footer mark (use a fixed-position footer `View` so it sits at the page bottom on every page).
@@ -566,14 +633,16 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 
 ---
 
-## Phase 4 — Issue + send + per-order button *(requirement #3)*
+## Phase 4 — Issue + send + per-order button _(requirement #3)_
 
 ### Task 8: Private R2 helpers
 
 **Files:**
+
 - Modify: `src/lib/r2.ts` (add two functions near `uploadToR2`)
 
 **Interfaces:**
+
 - Produces: `uploadPrivateToR2(key, body, contentType): Promise<void>` (no public URL returned); `getR2ObjectBuffer(key): Promise<Buffer>`.
 
 - [ ] **Step 1: Implement** using the existing S3 client in `r2.ts` (`PutObjectCommand` without public-cache headers; `GetObjectCommand` streamed to a Buffer). Key pattern: `${env}/invoices/${orderId}/${number}.pdf`.
@@ -585,9 +654,11 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 ### Task 9: `sendInvoiceEmail` (attachment)
 
 **Files:**
+
 - Create: `src/lib/emails/invoice.ts` (mirror `src/lib/emails/orderPlaced.ts`)
 
 **Interfaces:**
+
 - Produces: `sendInvoiceEmail(args: { to; buyerName; number; pdf: Buffer; isCreditNote?: boolean }): Promise<{ ok: true; id: string } | { ok: false; error: string }>`.
 
 - [ ] **Step 1: Implement** — reuse `renderEmailLayout`/`emailHeader`/`emailFooter`/`emailParagraph`. Body: "Please find attached your invoice `AR-…`." Send via Resend with `attachments: [{ filename: '${number}.pdf', content: pdf, contentType: 'application/pdf' }]`. Respect `SKIP_EMAILS` exactly like the other senders (return `{ ok: true, id: 'skipped' }`).
@@ -597,9 +668,11 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 ### Task 10: `sendInvoice` server action (idempotent, gated)
 
 **Files:**
+
 - Modify: `src/app/admin/orders/actions.ts`, `src/lib/orders/logOrderEvent.ts`
 
 **Interfaces:**
+
 - Consumes: `issueInvoiceRecord`, `buildInvoiceSnapshots`, `assertMandatoryFields`, `renderInvoicePdf`, `uploadPrivateToR2`, `sendInvoiceEmail`.
 - Produces: `sendInvoice(orderId: string): Promise<{ ok: true; number: string } | { ok: false; error: string }>`.
 
@@ -620,13 +693,14 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 ### Task 11: Per-order button on `OrderDetail`
 
 **Files:**
+
 - Modify: `src/components/admin/orders/OrderDetail.tsx`
 
 - [ ] **Step 1: Add the button block** near the existing fulfillment actions:
   - If no invoice yet AND `fulfillmentStatus >= 'Started'` → `<Button variant="primary" label="Send invoice">` → opens `ConfirmModal` ("Issue and email the factura to the buyer?") → calls `sendInvoice`.
   - If an invoice exists → show its number + `<Button variant="secondary" label="See invoice">` linking to `/admin/invoices/<id>/download`.
   - Before `Started` → hint text: "Invoice unlocks when TPS starts production."
-  Follow the existing `busy`/`showConfirm` pattern documented in the codebase.
+    Follow the existing `busy`/`showConfirm` pattern documented in the codebase.
 
 - [ ] **Step 2: Manual verify** in `pnpm dev`: an order in `Started` shows Send invoice; after sending, it flips to "See invoice" + number; clicking downloads the PDF.
 
@@ -634,11 +708,12 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 
 ---
 
-## Phase 5 — Invoices register page *(requirement #4)*
+## Phase 5 — Invoices register page _(requirement #4)_
 
 ### Task 12: Admin-guarded PDF download route
 
 **Files:**
+
 - Create: `src/app/admin/invoices/[id]/download/route.ts`
 
 - [ ] **Step 1: Implement** a `GET` handler: admin session guard → load `Invoice` by id → `getR2ObjectBuffer(invoice.r2Key)` → return with `Content-Type: application/pdf` and `Content-Disposition: inline; filename="<number>.pdf"`. 401 for non-admins.
@@ -650,9 +725,11 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 ### Task 13: `listInvoices` + register page
 
 **Files:**
+
 - Create: `src/app/admin/invoices/page.tsx`, `src/components/admin/invoices/index.tsx`, `src/app/admin/invoices/actions.ts`
 
 **Interfaces:**
+
 - Produces: `listInvoices({ year?, month? }): Promise<InvoiceRow[]>` where `InvoiceRow = { id; number; type; issuedAt; buyerName; baseCents; vatCents; totalCents; currency; orderId }`.
 
 - [ ] **Step 1: Implement `listInvoices`** — query `Invoice` filtered by optional `year`/`month`, ordered by `series, year, month, seq` (correlative). Map snapshots → row fields.
@@ -666,9 +743,11 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 ### Task 14: CSV export (v1, no new dep)
 
 **Files:**
+
 - Create: `src/lib/invoices/invoiceCsv.ts`; add `exportInvoiceRegisterCsv` to `src/app/admin/invoices/actions.ts`
 
 **Interfaces:**
+
 - Produces: `invoiceRegisterToCsv(rows: InvoiceRow[]): string` (gestor columns: Number, Type, Issue date, Buyer, Tax ID, Base (€), VAT % , VAT (€), Total (€), Currency, Order).
 
 - [ ] **Step 1: Implement** the CSV serializer (escape quotes/commas; cents→decimal euros). `exportInvoiceRegisterCsv({year, month})` returns `{ filename: 'AR-register-2026-06.csv', csv }`.
@@ -681,14 +760,16 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 
 ---
 
-## Phase 6 — Credit notes *(refunds → factura rectificativa; self-contained, skippable)*
+## Phase 6 — Credit notes _(refunds → factura rectificativa; self-contained, skippable)_
 
 ### Task 15: `issueCreditNote` action + button
 
 **Files:**
+
 - Modify: `src/app/admin/orders/actions.ts`, `src/components/admin/orders/OrderDetail.tsx`
 
 **Interfaces:**
+
 - Produces: `issueCreditNote(orderId): Promise<{ ok:true; number:string } | { ok:false; error:string }>`.
 
 - [ ] **Step 1: Implement** — guard requires an existing `type:'invoice'` invoice **and** `paymentStatus === 'refunded'`. Idempotent (re-send existing credit note). Else: `buildInvoiceSnapshots(order, { negate:true })` → `assertMandatoryFields` → `issueInvoiceRecord({ type:'credit_note', correctsInvoiceId: originalId })` (series `AR-R`) → render (with `correctsNumber` = original number + reason) → private R2 → email attachment → `logOrderEvent('credit_note_issued')`.
@@ -706,6 +787,7 @@ git commit -m "feat(AR-131): branded InvoiceDocument + renderInvoicePdf"
 ### Task 16: Feature flag (off in prod until gestor sign-off)
 
 **Files:**
+
 - Modify: `src/app/admin/orders/actions.ts`, `src/app/admin/invoices/actions.ts`, `OrderDetail.tsx`, `src/components/admin/invoices/index.tsx`
 
 - [ ] **Step 1:** Guard every issue/send path and the `/admin/invoices` UI behind `process.env.INVOICING_ENABLED === 'true'`. When off: `sendInvoice`/`issueCreditNote` return `{ ok:false, error:'Invoicing is not enabled yet.' }` and the buttons/page are hidden. Leave it **unset in prod** until the gestor signs off on a sample factura + rectificativa + CSV.

@@ -1,0 +1,47 @@
+// The shared `Modal` primitive owns the backdrop and panel chrome; this is only
+// the content laid out inside it — monogram, title, message, actions.
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.monogram {
+  width: 2.25rem;
+  height: auto;
+  margin-bottom: var(--space-2);
+  color: var(--color-brand-red);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-xl);
+  color: var(--color-text-primary);
+}
+
+.message {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-4);
+
+  // Equal-width actions: neither choice is visually weighted, since arriving at
+  // the exit by accident should not nudge anyone out of the exhibition.
+  > * {
+    flex: 1;
+  }
+}
+
+@media (max-width: 30rem) {
+  .actions {
+    flex-direction: column-reverse;
+  }
+}

@@ -608,6 +608,7 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
     <DashboardLayout backLink={backLink} backLabel="← Back to Library">
       <ArtworkEditForm
         formData={formData}
+        artworkId={artworkId}
         imageUrl={displayImageUrl}
         imageDpi={imageDpi}
         originalWidth={originalInfo.width}

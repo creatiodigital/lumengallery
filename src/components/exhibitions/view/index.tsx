@@ -23,13 +23,19 @@ import Monogram from '@/icons/monogram.svg'
 import { preloadFloorMaterial } from '@/components/scene/spaces/objects/Floor/ReflectiveFloor'
 import { ArtworkPanel } from '@/components/editview/ArtworkPanel'
 import { ArtworkModal } from '@/components/exhibitions/view/ArtworkModal/ArtworkModal'
+import { ExitPrompt } from '@/components/exhibitions/ExitPrompt'
 import { Scene } from '@/components/scene'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useLoadExhibitionArtworks } from '@/hooks/useLoadExhibitionArtworks'
 import { useGetExhibitionByUrlQuery } from '@/redux/slices/exhibitionApi'
 import { setExhibition } from '@/redux/slices/exhibitionSlice'
 import { closeArtworkModal } from '@/redux/slices/dashboardSlice'
-import { hidePlaceholders, resetScene } from '@/redux/slices/sceneSlice'
+import {
+  declineExit,
+  hidePlaceholders,
+  openExitPrompt,
+  resetScene,
+} from '@/redux/slices/sceneSlice'
 import { resetWallView } from '@/redux/slices/wallViewSlice'
 import type { AppDispatch, RootState } from '@/redux/store'
 import type { TExhibition } from '@/types/exhibition'
@@ -45,8 +51,12 @@ interface NavigationButtonProps {
 
 const NavigationButton = ({ artistSlug, exhibitionSlug }: NavigationButtonProps) => {
   const router = useRouter()
+  const dispatch = useDispatch()
+  // Shared with the in-scene exit threshold: walking out of the corridor and
+  // clicking this button raise the same single dialog.
+  const promptOpen = useSelector((state: RootState) => state.scene.isExitPromptOpen)
 
-  const handleClick = () => {
+  const leave = () => {
     try {
       const nav = sessionStorage.getItem('the-art-room:internal-nav')
       if (nav) {
@@ -62,18 +72,22 @@ const NavigationButton = ({ artistSlug, exhibitionSlug }: NavigationButtonProps)
   }
 
   return (
-    <div className={styles.navigationButtonWrapper}>
-      <Tooltip label="Leave Exhibition" placement="left">
-        <Button
-          variant="ghost"
-          onClick={handleClick}
-          className={styles.navigationButton}
-          aria-label="Leave Exhibition"
-        >
-          <X size={20} strokeWidth={ICON_STROKE_WIDTH} />
-        </Button>
-      </Tooltip>
-    </div>
+    <>
+      <div className={styles.navigationButtonWrapper}>
+        <Tooltip label="Leave Exhibition" placement="left">
+          <Button
+            variant="ghost"
+            onClick={() => dispatch(openExitPrompt())}
+            className={styles.navigationButton}
+            aria-label="Leave Exhibition"
+          >
+            <X size={20} strokeWidth={ICON_STROKE_WIDTH} />
+          </Button>
+        </Tooltip>
+      </div>
+
+      <ExitPrompt open={promptOpen} onLeave={leave} onCancel={() => dispatch(declineExit())} />
+    </>
   )
 }
 
