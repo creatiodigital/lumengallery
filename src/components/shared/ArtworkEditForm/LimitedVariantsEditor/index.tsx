@@ -261,6 +261,20 @@ export const LimitedVariantsEditor = ({
 
             {isOpen && (
               <div className={styles.variantBody}>
+                {/* The lock is per-variant, so it is reported per-variant. A
+                    sibling variant that is still a draft stays fully editable
+                    and shows nothing. */}
+                {isLive && (
+                  <div className={styles.variantLockedBanner}>
+                    <span className={styles.variantLockedBadge}>Locked</span>
+                    <div>
+                      <strong>This variant is on sale and frozen.</strong>{' '}
+                      {isAdmin
+                        ? 'Only its price can change — raise it as copies sell. Unblock it below to edit anything else.'
+                        : 'Only its price can change — raise it as copies sell. Ask an admin to unblock it to edit anything else.'}
+                    </div>
+                  </div>
+                )}
                 <div className={dashboardStyles.field}>
                   <label>Name</label>
                   <Input
@@ -375,10 +389,16 @@ export const LimitedVariantsEditor = ({
 
                 {(showUnblock || showReadyToSell || showDelete) && (
                   <div className={styles.variantFooter}>
-                    {/* Admin shortcut: consume a number of this live variant
+                    {/* Admin shortcut: consume a number of this variant
                         off-platform (gift / artist copy / test) — jumps to the
-                        Edition Sales modal preselected on this variant. */}
-                    {isAdmin && isLive && variant.id && (
+                        Edition Sales modal preselected on this variant.
+                        Gated on `published` (numbers exist), NOT on `isLive`:
+                        a published-but-unblocked variant is paused from sale
+                        yet can still gift a copy, which is how a gift goes out
+                        before the edition is offered to buyers. Matches
+                        listGiftableVariants + createOffPlatformOrder, which
+                        both check `published` only. */}
+                    {isAdmin && variant.published === true && variant.id && (
                       <Button
                         type="button"
                         variant="secondary"
@@ -444,9 +464,8 @@ export const LimitedVariantsEditor = ({
           ) : templates && templates.length === 0 ? (
             <span className={styles.hint}>
               No saved variants match this artwork&apos;s exact proportions. Only variants from
-              artworks with the SAME aspect ratio appear here, so the print size and margins
-              apply identically across the series. Differently-proportioned images need their own
-              variant.
+              artworks with the SAME aspect ratio appear here, so the print size and margins apply
+              identically across the series. Differently-proportioned images need their own variant.
             </span>
           ) : templates ? (
             <SelectDropdown<string>

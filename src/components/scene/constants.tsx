@@ -22,9 +22,12 @@ export type SpaceKey = 'paris' | 'madrid'
 export const spaceConfigs: Record<SpaceKey, SpaceConfig> = {
   paris: {
     displayName: 'Paris',
-    gltfPath: assetUrl('/assets/spaces/paris/paris18.glb'),
+    gltfPath: assetUrl('/assets/spaces/paris/paris19.glb'),
     refs: {
-      walls: 3, // wall0 + radiator0 + invisibleDoor0
+      // wall0 + radiator0 + invisibleDoor0. The door no longer seals the
+      // corridor entrance — it sits at the far end, stopping the camera before
+      // the dead end is visible, and doubles as the exit trigger.
+      walls: 3,
       windows: 2,
       glass: 1,
     },
@@ -32,9 +35,9 @@ export const spaceConfigs: Record<SpaceKey, SpaceConfig> = {
   },
   madrid: {
     displayName: 'Madrid',
-    gltfPath: assetUrl('/assets/spaces/madrid/madrid9.glb'),
+    gltfPath: assetUrl('/assets/spaces/madrid/madrid10.glb'),
     refs: {
-      walls: 2, // wall0 + invisibleDoor0
+      walls: 2, // wall0 + invisibleWall0
       windows: 2,
       glass: 2,
     },

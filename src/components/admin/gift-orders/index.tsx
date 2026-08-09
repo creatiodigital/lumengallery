@@ -20,10 +20,7 @@ import {
   markOffPlatformArtistPaid,
   type OffPlatformOrderRow,
 } from '@/app/admin/orders/actions'
-import {
-  OFF_PLATFORM_KIND_LABELS,
-  type OffPlatformKind,
-} from '@/lib/orders/offPlatformKinds'
+import { OFF_PLATFORM_KIND_LABELS, type OffPlatformKind } from '@/lib/orders/offPlatformKinds'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
 
@@ -56,6 +53,15 @@ const STAGES: { value: string | null; label: string; nextLabel: string }[] = [
 ]
 
 const stageIndex = (status: string | null) => STAGES.findIndex((s) => s.value === status)
+
+/**
+ * Whether cancelling still returns the edition number to the pool. From
+ * 'Started' onward a physical print carrying that number exists, so the number
+ * stays consumed — otherwise the same copy could be sold to a buyer too, and
+ * two prints would bear e.g. 29/50. Mirrors `stageAllowsEditionRelease` on the
+ * server, which is the actual guard; this only keeps the wording honest.
+ */
+const cancelReleasesNumber = (status: string | null) => stageIndex(status) < 2
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
@@ -167,9 +173,9 @@ export const AdminGiftOrders = () => {
     <DashboardLayout backLink="/admin/dashboard" backLabel="← Back to Admin Dashboard">
       <h1 className={dashboardStyles.pageTitle}>Gift orders</h1>
       <p className={dashboardStyles.sectionDescription}>
-        Gifts, artist copies and test prints — parcels produced at The Print Space outside the
-        paid pipeline. No payment, invoice or buyer emails; the edition number is consumed in the
-        ledger and the physical parcel walks the same stages as a regular order. Create one with{' '}
+        Gifts, artist copies and test prints — parcels produced at The Print Space outside the paid
+        pipeline. No payment, invoice or buyer emails; the edition number is consumed in the ledger
+        and the physical parcel walks the same stages as a regular order. Create one with{' '}
         <strong>Create gift order</strong> on any on-sale variant of an artwork.
       </p>
 
@@ -202,7 +208,8 @@ export const AdminGiftOrders = () => {
               {orders.map((o) => {
                 const idx = stageIndex(o.fulfillmentStatus)
                 const cancelled = o.fulfillmentStatus === 'Cancelled'
-                const next = !cancelled && idx >= 0 && idx < STAGES.length - 1 ? STAGES[idx + 1] : null
+                const next =
+                  !cancelled && idx >= 0 && idx < STAGES.length - 1 ? STAGES[idx + 1] : null
                 return (
                   <tr key={o.id} style={cancelled ? { opacity: 0.55 } : undefined}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(o.createdAt)}</td>
@@ -468,13 +475,28 @@ export const AdminGiftOrders = () => {
           message={
             <>
               Cancels <strong>{cancelTarget.recipientName}</strong>&apos;s{' '}
-              {OFF_PLATFORM_KIND_LABELS[cancelTarget.kind as OffPlatformKind] ?? cancelTarget.kind}{' '}
-              and <strong>releases the edition number(s)</strong> back to available.
+              {OFF_PLATFORM_KIND_LABELS[cancelTarget.kind as OffPlatformKind] ?? cancelTarget.kind}
+              {cancelReleasesNumber(cancelTarget.fulfillmentStatus) ? (
+                <>
+                  {' '}
+                  and <strong>releases the edition number(s)</strong> back to available.
+                </>
+              ) : (
+                <>
+                  . The edition number <strong>stays consumed</strong>.
+                </>
+              )}
             </>
           }
           warning={
             modalError ? (
               <>⚠️ {modalError}</>
+            ) : !cancelReleasesNumber(cancelTarget.fulfillmentStatus) ? (
+              <>
+                Production has already started, so a physical print carrying this number exists. The
+                number is <strong>not</strong> returned to the pool — releasing it would let the
+                same copy be sold again and two prints would share a number.
+              </>
             ) : stageIndex(cancelTarget.fulfillmentStatus) >= 1 ? (
               <>
                 This parcel is already <strong>at or past placement</strong> — only cancel if the

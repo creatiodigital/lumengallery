@@ -193,9 +193,7 @@ export const StepsPanel = ({
                     glass={glass?.kind === 'enum' ? glass : undefined}
                     hanging={hanging?.kind === 'enum' ? hanging : undefined}
                     windowMount={windowMount?.kind === 'enum' ? windowMount : undefined}
-                    windowMountSize={
-                      windowMountSize?.kind === 'enum' ? windowMountSize : undefined
-                    }
+                    windowMountSize={windowMountSize?.kind === 'enum' ? windowMountSize : undefined}
                     catalog={catalog}
                     config={config}
                     countryCode={countryCode}

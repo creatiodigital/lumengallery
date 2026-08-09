@@ -29,10 +29,7 @@ const CONFIRM = process.argv.includes('--confirm')
 
 async function main() {
   // Hard production guard — never run destructive ops on prod data.
-  if (
-    process.env.NODE_ENV === 'production' ||
-    process.env.NEXT_PUBLIC_APP_ENV === 'production'
-  ) {
+  if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_APP_ENV === 'production') {
     console.error(
       '[reset-invoicing] REFUSED: NODE_ENV or NEXT_PUBLIC_APP_ENV is "production". ' +
         'This script is for development and staging only.',

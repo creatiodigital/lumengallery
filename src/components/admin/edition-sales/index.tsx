@@ -70,7 +70,6 @@ const fieldStyle = {
   marginBottom: 12,
 } as const
 
-
 /**
  * Admin ledger of every numbered limited-edition copy that's been
  * reserved or sold — which number, to whom, for which artwork + variant,
@@ -105,7 +104,15 @@ export const AdminEditionSales = () => {
   const [giftRecipient, setGiftRecipient] = useState('')
   // Full shipping address — copied by the admin into the TPS portal when
   // placing the physical order (so it must be complete enough to ship).
-  const emptyAddress = { line1: '', line2: '', city: '', state: '', postalCode: '', country: '', phone: '' }
+  const emptyAddress = {
+    line1: '',
+    line2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+    phone: '',
+  }
   const [giftAddress, setGiftAddress] = useState(emptyAddress)
   const setAddr = (field: keyof typeof emptyAddress, value: string) =>
     setGiftAddress((a) => ({ ...a, [field]: value }))
@@ -388,8 +395,8 @@ export const AdminEditionSales = () => {
             <>
               <p style={{ margin: '0 0 12px 0', fontSize: 14 }}>
                 Consume a numbered copy <strong>without a sale</strong> — a gallery gift, an
-                artist-retained copy, or a test print. The number is marked sold in the ledger so
-                it can never be sold to a buyer, and the parcel gets its own entry on{' '}
+                artist-retained copy, or a test print. The number is marked sold in the ledger so it
+                can never be sold to a buyer, and the parcel gets its own entry on{' '}
                 <strong>Gift orders</strong> with the usual fulfillment stages. Remember to also
                 tick the number in The Print Space&apos;s editions panel.
               </p>

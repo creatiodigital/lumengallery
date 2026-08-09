@@ -1,9 +1,5 @@
 import { test, expect } from '@playwright/test'
-import {
-  uploadPrivateToR2,
-  getR2ObjectBuffer,
-  deleteR2KeyDirect,
-} from '../src/lib/r2'
+import { uploadPrivateToR2, getR2ObjectBuffer, deleteR2KeyDirect } from '../src/lib/r2'
 
 // Integration: private invoice PDFs must round-trip through R2 (upload →
 // fetch bytes) so the admin-guarded download route can serve them. Self-cleaning.

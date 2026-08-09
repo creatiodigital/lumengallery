@@ -54,6 +54,22 @@ const sceneSlice = createSlice({
       state.initialCameraPosition = action.payload.position
       state.initialCameraDirection = action.payload.direction
     },
+
+    openExitPrompt: (state: TScene) => {
+      state.isExitPromptOpen = true
+    },
+
+    /**
+     * Declined to leave. Every way of saying no lands here — the Stay button,
+     * Escape and a backdrop click — so they all behave identically, and the
+     * visit always restarts from the entrance regardless of where the prompt
+     * was raised. One rule, stated plainly in the dialog, instead of a
+     * behaviour that changes depending on how you got there.
+     */
+    declineExit: (state: TScene) => {
+      state.isExitPromptOpen = false
+      state.exitRespawnNonce += 1
+    },
   },
 })
 
@@ -67,6 +83,8 @@ export const {
   clearFocusTarget,
   resetScene,
   setInitialCameraFromNode,
+  openExitPrompt,
+  declineExit,
 } = sceneSlice.actions
 
 export default sceneSlice.reducer

@@ -137,8 +137,17 @@ export async function buyExistingLimited(
 ): Promise<BoughtCopy> {
   const tag = opts.tag ?? 'buy-existing-limited'
   const address = fixtureAddress(tag, opts.email ? { email: opts.email } : {})
-  const { paymentIntentId, orderId, totalCents } = await placeCartOrder([limitedLine(fixture)], address)
-  return { paymentIntentId, orderId, number: await assignedNumber(paymentIntentId), totalCents, address }
+  const { paymentIntentId, orderId, totalCents } = await placeCartOrder(
+    [limitedLine(fixture)],
+    address,
+  )
+  return {
+    paymentIntentId,
+    orderId,
+    number: await assignedNumber(paymentIntentId),
+    totalCents,
+    address,
+  }
 }
 
 /**
@@ -297,10 +306,7 @@ export async function hitReconcileCron(
  * Phase B (orphan-reservation release) considers it. Mirrors the real-world case
  * where a reservation has been stuck for longer than the grace window.
  */
-export async function backdateReservation(
-  paymentIntentId: string,
-  minutesAgo = 45,
-): Promise<void> {
+export async function backdateReservation(paymentIntentId: string, minutesAgo = 45): Promise<void> {
   await prisma.editionNumber.updateMany({
     where: { paymentIntentId },
     data: { reservedAt: new Date(Date.now() - minutesAgo * 60 * 1000) },

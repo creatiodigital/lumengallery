@@ -81,6 +81,35 @@
   padding: 0 var(--space-4) var(--space-4);
 }
 
+// Per-variant lock notice, shown on a LIVE (published + blocked) variant.
+// Freezing is per-variant: the artwork-level banner only reports the
+// series-type lock, so each live variant has to state its own status here —
+// otherwise a card that is fully editable sits under a page-wide "locked"
+// warning and reads as frozen.
+.variantLockedBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-badge-warning-text);
+  border-radius: var(--radius-sm);
+  background: var(--color-badge-warning-bg);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.variantLockedBadge {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--color-badge-warning-text);
+  background: var(--color-white);
+  border: 1px solid var(--color-badge-warning-text);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  line-height: 1.6;
+}
+
 // Two equal-width fields side by side (border + number of copies).
 .twoCol {
   display: flex;

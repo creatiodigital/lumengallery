@@ -814,7 +814,7 @@ export async function advanceOffPlatformOrder(
  */
 export async function cancelOffPlatformOrder(
   id: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true; numberReleased: boolean } | { ok: false; error: string }> {
   const guard = await requireAdminSession()
   if (!guard.ok) return guard
 
@@ -827,18 +827,29 @@ export async function cancelOffPlatformOrder(
     return { ok: false, error: 'Already cancelled.' }
   }
 
+  // Cancelling is always allowed — the row must be able to record that the gift
+  // was called off. Returning the NUMBER to the pool is not: from production
+  // start onward a physical print carrying that number exists, so releasing it
+  // would let the same copy be sold to a buyer as well, two prints numbered
+  // e.g. 29/50. Same cutoff buyer orders use (`stageAllowsEditionRelease`).
+  const releaseNumber = stageAllowsEditionRelease(order.fulfillmentStatus)
+
   try {
     await prisma.$transaction([
-      prisma.editionNumber.updateMany({
-        where: { offPlatformOrderId: id },
-        data: {
-          state: 'available',
-          soldAt: null,
-          offPlatformKind: null,
-          offPlatformNote: null,
-          offPlatformOrderId: null,
-        },
-      }),
+      ...(releaseNumber
+        ? [
+            prisma.editionNumber.updateMany({
+              where: { offPlatformOrderId: id },
+              data: {
+                state: 'available',
+                soldAt: null,
+                offPlatformKind: null,
+                offPlatformNote: null,
+                offPlatformOrderId: null,
+              },
+            }),
+          ]
+        : []),
       prisma.offPlatformOrder.update({
         where: { id },
         data: { fulfillmentStatus: STAGE_CANCELLED },
@@ -857,7 +868,7 @@ export async function cancelOffPlatformOrder(
       error: `Cancel failed: ${err instanceof Error ? err.message : String(err)}`,
     }
   }
-  return { ok: true }
+  return { ok: true, numberReleased: releaseNumber }
 }
 
 /**
@@ -1852,8 +1863,7 @@ export async function refundOrder(
         orderId: order.id,
         kind: 'admin_action',
         actor: `admin:${adminId}`,
-        message:
-          'Edition number retained (print already produced — not returned to the pool)',
+        message: 'Edition number retained (print already produced — not returned to the pool)',
         payload: { fulfillmentStatus: order.fulfillmentStatus },
       })
     }

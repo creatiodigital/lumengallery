@@ -15,10 +15,7 @@ import prisma from '@/lib/prisma'
  * (within a small tolerance, same orientation) are offered. Identical
  * specs appearing on several artworks are deduped to one template.
  */
-export async function GET(
-  _request: NextRequest,
-  context: { params: Promise<{ id: string }> },
-) {
+export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
 

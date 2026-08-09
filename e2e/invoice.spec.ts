@@ -5,11 +5,7 @@ import { prepareInvoiceIssue } from '@/lib/invoices/prepareInvoiceIssue'
 import { getOrIssueInvoice } from '@/lib/invoices/getOrIssueInvoice'
 import { buildInvoiceKey } from '@/lib/r2'
 
-import {
-  buyOneLimited,
-  teardownBoughtOrder,
-  type BoughtLimitedOrder,
-} from './order-helpers'
+import { buyOneLimited, teardownBoughtOrder, type BoughtLimitedOrder } from './order-helpers'
 import { seedCookieConsent } from './consent-helpers'
 
 /**
@@ -238,9 +234,10 @@ test.describe('Invoice — server layer', () => {
         where: { id: invoice.id },
         select: { linesSnapshot: true },
       })
-      expect(Array.isArray(storedRow?.linesSnapshot), 'linesSnapshot must be frozen on the row').toBe(
-        true,
-      )
+      expect(
+        Array.isArray(storedRow?.linesSnapshot),
+        'linesSnapshot must be frozen on the row',
+      ).toBe(true)
     } finally {
       if (bought) {
         // TEARDOWN ORDER: invoices → counters → order (FK Restrict requires this sequence).

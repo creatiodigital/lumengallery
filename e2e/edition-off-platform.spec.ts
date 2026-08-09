@@ -3,11 +3,8 @@ import { expect, test } from '@playwright/test'
 import prisma from '@/lib/prisma'
 
 import { deletePrintOrderById } from './cleanup-helpers'
-import {
-  editionNumberStates,
-  setupLimitedFixture,
-  teardownLimitedFixture,
-} from './edition-helpers'
+import { seedCookieConsent } from './consent-helpers'
+import { editionNumberStates, setupLimitedFixture, teardownLimitedFixture } from './edition-helpers'
 import { buyExistingLimited, type BoughtCopy } from './order-helpers'
 import { cancelPaymentIntent } from './stripe-helpers'
 
@@ -27,7 +24,7 @@ test.use({ storageState: 'e2e/.auth/admin.json' })
 const NOTE = `e2e off-platform copy ${Date.now().toString(36)}`
 const RECIPIENT = `E2E Recipient ${Date.now().toString(36)}`
 
-test('gift order: create, buyers skip its number, stages advance, cancel releases', async ({
+test('gift order: create, buyers skip its number, stages advance, shipped cancel keeps it', async ({
   page,
 }) => {
   const fixture = await setupLimitedFixture(3)
@@ -37,10 +34,15 @@ test('gift order: create, buyers skip its number, stages advance, cancel release
     // ── Create an artist-copy gift order via the variant deep link ───
     // (The artwork panel's "Create gift order" button navigates here —
     // the modal opens preselected on the variant.)
+    // Seed consent BEFORE navigating, else the cookie banner overlays the
+    // confirm buttons in the dialogs below.
+    await seedCookieConsent(page)
     await page.goto(`/admin/edition-sales?gift=${fixture.variantId}`)
-    await expect(page.getByText('Add an off-platform copy')).toBeVisible()
-    // Variant preselected by the deep link; number defaults to lowest (1).
-    await expect(page.getByRole('button', { name: /E2E Limited Edition/ })).toBeVisible()
+    const dialog = page.getByRole('dialog', { name: 'Add an off-platform copy' })
+    await expect(dialog).toBeVisible()
+    // Variant preselected by the deep link — rendered as fixed text, not a
+    // picker, because the caller already chose it. Number defaults to lowest (1).
+    await expect(dialog.getByText(/E2E Limited Edition/)).toBeVisible()
     // Kind: custom dropdown — open it, pick Artist copy.
     await page.getByRole('button', { name: /Gallery gift/ }).click()
     await page.getByRole('option', { name: /Artist copy/ }).click()
@@ -93,17 +95,23 @@ test('gift order: create, buyers skip its number, stages advance, cancel release
     await expect(giftRow.getByText('Shipped')).toBeVisible()
     await expect(giftRow.getByRole('link', { name: /tracking/ })).toBeVisible()
 
-    // ── Cancel releases the number back to available ─────────────────
+    // ── Cancelling AFTER production keeps the number consumed ────────
+    // The parcel reached 'Shipped', so a physical print numbered 1/N exists.
+    // Cancelling must still record the cancellation, but must NOT return the
+    // number to the pool — releasing it would let a buyer purchase the same
+    // copy and put two prints into the world bearing the same number.
     await giftRow.getByRole('button', { name: 'Cancel' }).click()
+    await expect(page.getByText(/stays consumed/i)).toBeVisible()
     await page.getByRole('button', { name: 'Yes, cancel it' }).click()
     await expect(giftRow.getByText('Cancelled')).toBeVisible()
 
+    // Give the action time to land, then assert the number did NOT come back.
     await expect
       .poll(async () => {
         const states = await editionNumberStates(fixture.variantId)
         return states.find((n) => n.number === 1)?.state
       })
-      .toBe('available')
+      .toBe('sold')
   } finally {
     if (bought) {
       await cancelPaymentIntent(bought.paymentIntentId).catch(() => {})

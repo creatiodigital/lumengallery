@@ -17,6 +17,8 @@ import { SingleSocket } from '@/components/scene/spaces/objects/SingleSocket'
 import { Switch } from '@/components/scene/spaces/objects/Switch'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { Effects } from '@/components/scene/spaces/objects/Effects'
+import { ExitSign } from '@/components/scene/spaces/objects/ExitSign'
+import { ExitTrigger } from '@/components/scene/spaces/objects/ExitTrigger'
 
 import { useAmbientLight } from '@/hooks/useAmbientLight'
 import { addWall, setInitialCameraFromNode } from '@/redux/slices/sceneSlice'
@@ -48,7 +50,7 @@ type MadridSpaceProps = React.ComponentProps<'group'> & {
 }
 
 const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
-  const { nodes } = useGLTF(assetUrl('/assets/spaces/madrid/madrid9.glb')) as unknown as GLTFResult
+  const { nodes } = useGLTF(assetUrl('/assets/spaces/madrid/madrid10.glb')) as unknown as GLTFResult
 
   const dispatch = useDispatch()
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
@@ -231,18 +233,31 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
       {isPlaceholdersShown &&
         placeholdersArray.map((_, i) => <Placeholder key={i} i={i} nodes={nodes} />)}
 
-      {/* Invisible Door (collision barrier — camera cannot pass through) */}
-      {nodes.invisibleDoor0 && (
+      {/* Exit sign, read from the gallery so a visitor can find the way out. */}
+      <ExitSign nodes={nodes} />
+
+      {/* Invisible wall across the exit corridor: stops the camera before the
+          dead end comes into view. Registered as a wallRef so the existing
+          collision raycast treats it like any other wall, and hidden rather
+          than transparent — `visible={false}` still raycasts, so it blocks
+          without being drawn.
+          It doubles as the exit trigger: `ExitTrigger` measures the distance to
+          this same mesh, so one object placed by eye in Blender both blocks and
+          asks. */}
+      {nodes.invisibleWall0 && (
         <mesh
           ref={wallRefs[1]}
-          name="invisibleDoor0"
-          geometry={nodes.invisibleDoor0.geometry}
-          position={nodes.invisibleDoor0.position}
-          rotation={nodes.invisibleDoor0.rotation}
-          scale={nodes.invisibleDoor0.scale}
+          name="invisibleWall0"
+          geometry={nodes.invisibleWall0.geometry}
+          position={nodes.invisibleWall0.position}
+          rotation={nodes.invisibleWall0.rotation}
+          scale={nodes.invisibleWall0.scale}
           visible={false}
         />
       )}
+
+      {/* Exit prompt — raised on nearing the wall above. */}
+      <ExitTrigger nodes={nodes} />
 
       {/* Initial Point (reference position) */}
       {nodes.initialPoint0 && <primitive object={nodes.initialPoint0} visible={false} />}

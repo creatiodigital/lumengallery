@@ -53,9 +53,12 @@ export async function POST(request: NextRequest) {
       ? ['artist', 'curator', 'admin']
       : ['artist', 'curator']
     if (userType && !allowedTypes.includes(userType)) {
-      return NextResponse.json({ error: `userType must be one of: ${allowedTypes.join(', ')}` }, {
-        status: 403,
-      })
+      return NextResponse.json(
+        { error: `userType must be one of: ${allowedTypes.join(', ')}` },
+        {
+          status: 403,
+        },
+      )
     }
 
     // Determine password: use provided or auto-generate provisional
