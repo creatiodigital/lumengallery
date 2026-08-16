@@ -17,6 +17,7 @@ import { SingleSocket } from '@/components/scene/spaces/objects/SingleSocket'
 import { Switch } from '@/components/scene/spaces/objects/Switch'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { Effects } from '@/components/scene/spaces/objects/Effects'
+import { ExitSign } from '@/components/scene/spaces/objects/ExitSign'
 import { ExitTrigger } from '@/components/scene/spaces/objects/ExitTrigger'
 
 import { useAmbientLight } from '@/hooks/useAmbientLight'
@@ -49,7 +50,7 @@ type MadridSpaceProps = React.ComponentProps<'group'> & {
 }
 
 const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
-  const { nodes } = useGLTF(assetUrl('/assets/spaces/madrid/madrid10.glb')) as unknown as GLTFResult
+  const { nodes } = useGLTF(assetUrl('/assets/spaces/madrid/madrid12.glb')) as unknown as GLTFResult
 
   const dispatch = useDispatch()
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
@@ -232,8 +233,8 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
       {isPlaceholdersShown &&
         placeholdersArray.map((_, i) => <Placeholder key={i} i={i} nodes={nodes} />)}
 
-      {/* Exit sign — HIDDEN for now, see the note in ParisSpace. To bring it
-          back: re-add `<ExitSign nodes={nodes} />` here plus its import. */}
+      {/* Exit sign, read from the gallery so a visitor can find the way out. */}
+      <ExitSign nodes={nodes} />
 
       {/* Invisible wall across the exit corridor: stops the camera before the
           dead end comes into view. Registered as a wallRef so the existing

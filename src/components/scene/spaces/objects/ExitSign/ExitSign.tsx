@@ -10,6 +10,11 @@ import { Mesh, BufferGeometry, SRGBColorSpace } from 'three'
  * Geometry and placement come from the space's GLB (`leftExit0` by convention);
  * only the material is applied here, matching how walls, floors and ceilings
  * are handled — the GLB is exported with materials off.
+ *
+ * Size lives in the GLB by design, which means the `leftExit0` quad and the
+ * artwork must share an aspect ratio — the texture is stretched to fill the
+ * quad, so a mismatch shows up as a squashed sign. Author the quad to match
+ * whatever the PNG is exported at, in each space's GLB.
  */
 /**
  * ⚠️ BUMP `?v=` WHENEVER THE ARTWORK CHANGES — even if the filename doesn't.
@@ -18,7 +23,7 @@ import { Mesh, BufferGeometry, SRGBColorSpace } from 'three'
  * (and locally the file appears not to update at all). Same convention the
  * space textures use: `bw2.jpg?v=2`.
  */
-const EXIT_SIGN_TEXTURE = '/assets/signs/exit-green-left.png?v=1'
+const EXIT_SIGN_TEXTURE = '/assets/signs/exit-black-left.png?v=1'
 
 useTexture.preload(EXIT_SIGN_TEXTURE)
 

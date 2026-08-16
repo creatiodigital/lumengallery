@@ -4,6 +4,7 @@ import { reserveForCart } from '@/lib/editions/reserveForCart'
 import { getOrCreateCartSessionId } from '@/lib/cart/cartSession'
 import { getClientIp } from '@/lib/getClientIp'
 import { rateLimit } from '@/lib/rateLimit'
+import { MAX_LENGTHS, tooLong } from '@/lib/validation'
 import { captureError } from '@/lib/observability/captureError'
 
 export const dynamic = 'force-dynamic'
@@ -30,7 +31,11 @@ export async function POST(request: Request) {
     const variantId = body.variantId
     const quantity = body.quantity
 
-    if (typeof variantId !== 'string' || variantId.length === 0) {
+    if (
+      typeof variantId !== 'string' ||
+      variantId.length === 0 ||
+      tooLong(variantId, MAX_LENGTHS.id)
+    ) {
       return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })
     }
 

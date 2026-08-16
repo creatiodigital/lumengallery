@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
 import { getClientIp } from '@/lib/getClientIp'
 import { rateLimit } from '@/lib/rateLimit'
+import { MAX_LENGTHS, tooLong } from '@/lib/validation'
 import { sendLoginCodeEmail } from '@/lib/emails/loginCode'
 
 // Generate a random 6-digit code. CSPRNG, not Math.random(): this code is a
@@ -36,6 +37,12 @@ export async function POST(request: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+    }
+
+    // Reject oversized input before the Prisma lookup and bcrypt.compare, so an
+    // anonymous caller cannot make us hold or process an arbitrarily long string.
+    if (tooLong(email, MAX_LENGTHS.email) || tooLong(password, MAX_LENGTHS.password)) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
     // Find user by email
