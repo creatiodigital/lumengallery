@@ -21,6 +21,27 @@ const r2 = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
   },
+  // Bound the wait when the endpoint stops answering. The SDK's default is to
+  // wait indefinitely for a socket, so packets that are dropped rather than
+  // refused (a Spanish ISP blackholing Cloudflare ranges during a LaLiga
+  // window is the case we actually hit) leave every caller hanging for
+  // minutes instead of raising. Callers already treat an R2 failure as a
+  // handled error — the invoice send path logs the upload failure and carries
+  // on, since the row is committed and the email attaches the buffer directly
+  // — but that recovery only runs if the SDK ever gives up.
+  //
+  // Deliberately NOT requestTimeout: that one caps total wall-clock per
+  // request, which scales with payload, and would break the 60 MB+ original
+  // masters on a slow uplink. Both settings below are size-independent:
+  //   connectionTimeout — socket never established (blackhole, DNS black hole)
+  //   socketTimeout     — socket idle this long; resets on every byte, so a
+  //                       slow-but-progressing upload is never cut off
+  // With the default 3 attempts, an unreachable endpoint now surfaces in
+  // ~15s rather than ~225s.
+  requestHandler: {
+    connectionTimeout: 5_000,
+    socketTimeout: 20_000,
+  },
 })
 
 const BUCKET = process.env.R2_BUCKET_NAME!
