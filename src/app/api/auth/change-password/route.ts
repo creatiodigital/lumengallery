@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { MAX_LENGTHS, tooLong } from '@/lib/validation'
 import { validatePassword } from '@/utils/password'
 
 export async function POST(request: NextRequest) {
@@ -18,6 +19,15 @@ export async function POST(request: NextRequest) {
 
     if (!newPassword) {
       return NextResponse.json({ error: 'New password is required' }, { status: 400 })
+    }
+
+    // Cap both before validation and bcrypt. `validatePassword` enforces the
+    // same ceiling, but currentPassword never reaches it and is hashed too.
+    if (
+      tooLong(newPassword, MAX_LENGTHS.password) ||
+      tooLong(currentPassword, MAX_LENGTHS.password)
+    ) {
+      return NextResponse.json({ error: 'Password is too long' }, { status: 400 })
     }
 
     // Validate password requirements

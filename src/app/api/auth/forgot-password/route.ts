@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import crypto from 'crypto'
 
 import prisma from '@/lib/prisma'
-import { isEmail } from '@/lib/validation'
+import { isEmail, MAX_LENGTHS, tooLong } from '@/lib/validation'
 import { getClientIp } from '@/lib/getClientIp'
 import { rateLimit } from '@/lib/rateLimit'
 import { sendForgotPasswordEmail } from '@/lib/emails/forgotPassword'
@@ -27,8 +27,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email } = body
 
-    if (!email) {
+    if (!email || typeof email !== 'string') {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    }
+
+    // Bound the input before anything downstream reads it. The email regex
+    // itself is linear and cheap; what this protects is everything after —
+    // the Prisma lookup and the string being held in memory at all.
+    if (tooLong(email, MAX_LENGTHS.email)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 
     // Email format validation
