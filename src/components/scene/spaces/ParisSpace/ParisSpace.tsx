@@ -19,6 +19,7 @@ import { Switch } from '@/components/scene/spaces/objects/Switch'
 import { TrackLamp } from '@/components/scene/spaces/objects/TrackLamp'
 import { Wall } from '@/components/scene/spaces/objects/Wall'
 import { Effects } from '@/components/scene/spaces/objects/Effects'
+import { ExitSign } from '@/components/scene/spaces/objects/ExitSign'
 import { ExitTrigger } from '@/components/scene/spaces/objects/ExitTrigger'
 
 import { useAmbientLight } from '@/hooks/useAmbientLight'
@@ -51,7 +52,7 @@ type ParisSpaceProps = React.ComponentProps<'group'> & {
 }
 
 const ParisSpace: React.FC<ParisSpaceProps> = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
-  const { nodes } = useGLTF(assetUrl('/assets/spaces/paris/paris19.glb')) as unknown as GLTFResult
+  const { nodes } = useGLTF(assetUrl('/assets/spaces/paris/paris21.glb')) as unknown as GLTFResult
 
   const dispatch = useDispatch()
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
@@ -246,13 +247,8 @@ const ParisSpace: React.FC<ParisSpaceProps> = ({ wallRefs, windowRefs, glassRefs
 
       {/* Artworks */}
 
-      {/* Exit sign — HIDDEN for now. Every treatment tried (regulation green,
-          typographic, panelled) read as cheap against the white cube, and it
-          solves a problem nobody reported: the corner ✕ already offers the way
-          out, and the exit prompt makes leaving by accident impossible.
-          To bring it back: re-add `<ExitSign nodes={nodes} />` here plus its
-          import. The `leftExit0` node and the component both still exist —
-          nothing was deleted from the GLBs. */}
+      {/* Exit sign, read from the gallery so a visitor can find the way out. */}
+      <ExitSign nodes={nodes} />
 
       {/* Invisible wall across the exit corridor: stops the camera before the
           L-turn exposes the dead end. Registered as a wallRef so the existing

@@ -4,6 +4,10 @@
 
 // Password requirements: 8+ chars, at least 1 uppercase, 1 lowercase, 1 number
 const PASSWORD_MIN_LENGTH = 8
+// Not a policy limit — bcrypt only reads the first 72 bytes anyway. This exists
+// so an unbounded string can never reach hashing or a database write. Kept in
+// step with MAX_LENGTHS.password in src/lib/validation.
+const PASSWORD_MAX_LENGTH = 200
 const PASSWORD_RULES = [
   { regex: /[A-Z]/, message: 'at least one uppercase letter' },
   { regex: /[a-z]/, message: 'at least one lowercase letter' },
@@ -24,6 +28,12 @@ export function validatePassword(password: string): PasswordValidationResult {
 
   if (password.length < PASSWORD_MIN_LENGTH) {
     errors.push(`at least ${PASSWORD_MIN_LENGTH} characters`)
+  }
+
+  // Returns early: the rules below run regexes over the whole string, and there
+  // is no reason to spend that on input already being rejected.
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return { valid: false, errors: [`at most ${PASSWORD_MAX_LENGTH} characters`] }
   }
 
   for (const rule of PASSWORD_RULES) {
