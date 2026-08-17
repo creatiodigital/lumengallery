@@ -12,7 +12,10 @@ import { CustomSizeInputs } from '@/components/PrintWizard/CustomSizeInputs'
 
 import { LIMITED_BORDER_MIN_CM, MAX_LIMITED_VARIANTS } from '@/lib/editions/validateVariant'
 import type { LimitedVariantDraft } from '@/lib/editions/types'
+import { computeSheetLayout, isFixedSheet } from '@/lib/editions/sheetLayout'
+import { buildTpsRecipe, formatTpsRecipe } from '@/lib/editions/tpsRecipe'
 import { TPS_PAPERS, TPS_SIZE_BOUNDS } from '@/lib/print-providers/printspace'
+import { TPS_PAPERS as PAPERS_FOR_LABEL } from '@/lib/print-providers/printspace'
 import type { PrintLongEdgeBounds } from '@/lib/print-providers/printspace'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
@@ -195,9 +198,56 @@ export const LimitedVariantsEditor = ({
       !v.priceEuros || !(Number(v.priceEuros) > 0)
         ? 'Price is required and must be greater than 0.'
         : null,
+    sheet: isFixedSheet(v)
+      ? !((v.sheetWidthCm ?? 0) >= 40)
+        ? 'The sheet must be at least 40 cm wide.'
+        : !(
+              v.borderCm <=
+              Math.min(v.sheetWidthCm as number, v.sheetHeightCm as number) * 0.25 + 0.001
+            )
+          ? 'The border is too large for this sheet — use at most a quarter of its shortest side.'
+          : !(v.widthCm > 0 && v.heightCm > 0)
+            ? 'That sheet and border leave no printable area.'
+            : null
+      : null,
   })
   const variantHasErrors = (v: LimitedVariantDraft) =>
     isDuplicate(v) || Object.values(fieldErrorsOf(v)).some((e) => e !== null)
+
+  // In fixed-sheet mode the image size is DERIVED, never typed. Recompute
+  // it whenever the sheet or the minimum border changes so widthCm /
+  // heightCm — which the server, pricing and the uniqueness key all read —
+  // stay in lockstep with what will actually print.
+  const withDerivedImage = (v: LimitedVariantDraft): Partial<LimitedVariantDraft> => {
+    if (!isFixedSheet(v)) return {}
+    const layout = computeSheetLayout({
+      sheetWidthCm: v.sheetWidthCm as number,
+      sheetHeightCm: v.sheetHeightCm as number,
+      minBorderCm: v.borderCm,
+      aspectRatio,
+    })
+    if (!layout) return {}
+    return { widthCm: layout.imageWidthCm, heightCm: layout.imageHeightCm }
+  }
+
+  const setSheetMode = (index: number, fixed: boolean) => {
+    const v = variants[index]
+    if (!fixed) {
+      update(index, { sheetWidthCm: null, sheetHeightCm: null })
+      return
+    }
+    // Seed the sheet from the current image + border so the toggle never
+    // lands the artist on an invalid card.
+    const seedW = v.widthCm > 0 ? v.widthCm + v.borderCm * 2 : 0
+    const seedH = v.heightCm > 0 ? v.heightCm + v.borderCm * 2 : 0
+    const next = { ...v, sheetWidthCm: seedW, sheetHeightCm: seedH }
+    update(index, { sheetWidthCm: seedW, sheetHeightCm: seedH, ...withDerivedImage(next) })
+  }
+
+  const updateSheet = (index: number, patch: { sheetWidthCm?: number; sheetHeightCm?: number }) => {
+    const next = { ...variants[index], ...patch }
+    update(index, { ...patch, ...withDerivedImage(next) })
+  }
 
   return (
     <div className={styles.editor}>
@@ -300,25 +350,90 @@ export const LimitedVariantsEditor = ({
                 </div>
 
                 <div className={dashboardStyles.field}>
-                  <label>Print size (cm)</label>
-                  <CustomSizeInputs
-                    custom={SIZE_CUSTOM}
-                    aspectRatio={aspectRatio}
-                    longEdgeBounds={longEdgeBounds}
-                    customSize={{ widthCm: variant.widthCm, heightCm: variant.heightCm }}
-                    disabled={variantLocked}
-                    showSlider={false}
-                    onChange={(size) =>
-                      update(index, { widthCm: size.widthCm, heightCm: size.heightCm })
-                    }
-                  />
-                  <ErrorText>{errFor('size')}</ErrorText>
-                  {duplicateSize && (
-                    <ErrorText>
-                      Each variant must have a distinct print size — this one clashes with another.
-                    </ErrorText>
-                  )}
+                  <label>Sheet size</label>
+                  <div className={styles.modeToggle} role="group" aria-label="Sheet size mode">
+                    <Button
+                      type="button"
+                      variant={isFixedSheet(variant) ? 'secondary' : 'primary'}
+                      disabled={variantLocked}
+                      onClick={() => setSheetMode(index, false)}
+                    >
+                      Grows with the print
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={isFixedSheet(variant) ? 'primary' : 'secondary'}
+                      disabled={variantLocked}
+                      onClick={() => setSheetMode(index, true)}
+                    >
+                      Fixed sheet
+                    </Button>
+                  </div>
+                  <span className={styles.hint}>
+                    {isFixedSheet(variant)
+                      ? 'You set the paper size; the print is sized to fit inside it and the borders are worked out for you.'
+                      : 'The paper grows around the print — print size plus the border on every side.'}
+                  </span>
                 </div>
+
+                {isFixedSheet(variant) ? (
+                  <div className={styles.twoCol}>
+                    <div className={dashboardStyles.field}>
+                      <label>Sheet height (cm)</label>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        size="medium"
+                        value={variant.sheetHeightCm ? String(variant.sheetHeightCm) : ''}
+                        disabled={variantLocked}
+                        invalid={!!errFor('sheet')}
+                        onChange={(e) =>
+                          updateSheet(index, {
+                            sheetHeightCm: Number(e.target.value.replace(/[^0-9.]/g, '')) || 0,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className={dashboardStyles.field}>
+                      <label>Sheet width (cm)</label>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        size="medium"
+                        value={variant.sheetWidthCm ? String(variant.sheetWidthCm) : ''}
+                        disabled={variantLocked}
+                        invalid={!!errFor('sheet')}
+                        onChange={(e) =>
+                          updateSheet(index, {
+                            sheetWidthCm: Number(e.target.value.replace(/[^0-9.]/g, '')) || 0,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className={dashboardStyles.field}>
+                    <label>Print size (cm)</label>
+                    <CustomSizeInputs
+                      custom={SIZE_CUSTOM}
+                      aspectRatio={aspectRatio}
+                      longEdgeBounds={longEdgeBounds}
+                      customSize={{ widthCm: variant.widthCm, heightCm: variant.heightCm }}
+                      disabled={variantLocked}
+                      showSlider={false}
+                      onChange={(size) =>
+                        update(index, { widthCm: size.widthCm, heightCm: size.heightCm })
+                      }
+                    />
+                  </div>
+                )}
+                <ErrorText>{errFor('size')}</ErrorText>
+                <ErrorText>{errFor('sheet')}</ErrorText>
+                {duplicateSize && (
+                  <ErrorText>
+                    Each variant must have a distinct print size — this one clashes with another.
+                  </ErrorText>
+                )}
 
                 {/* Border + number of copies — one row, 50% each. */}
                 <div className={styles.twoCol}>
@@ -331,11 +446,11 @@ export const LimitedVariantsEditor = ({
                       value={variant.borderCm ? String(variant.borderCm) : ''}
                       disabled={variantLocked}
                       invalid={!!errFor('border')}
-                      onChange={(e) =>
-                        update(index, {
-                          borderCm: Number(e.target.value.replace(/[^0-9]/g, '')) || 0,
-                        })
-                      }
+                      onChange={(e) => {
+                        const borderCm = Number(e.target.value.replace(/[^0-9]/g, '')) || 0
+                        const next = { ...variant, borderCm }
+                        update(index, { borderCm, ...withDerivedImage(next) })
+                      }}
                     />
                     <span className={styles.hint}>min {LIMITED_BORDER_MIN_CM} cm, whole cm</span>
                     <ErrorText>{errFor('border')}</ErrorText>
@@ -359,6 +474,47 @@ export const LimitedVariantsEditor = ({
                     <ErrorText>{errFor('editionSize')}</ErrorText>
                   </div>
                 </div>
+
+                {(() => {
+                  const paperLabel =
+                    PAPERS_FOR_LABEL.find((p) => p.id === variant.paperId)?.label ?? variant.paperId
+                  const recipe = buildTpsRecipe({
+                    widthCm: variant.widthCm,
+                    heightCm: variant.heightCm,
+                    borderCm: variant.borderCm,
+                    sheetWidthCm: variant.sheetWidthCm,
+                    sheetHeightCm: variant.sheetHeightCm,
+                    paperLabel,
+                  })
+                  if (!recipe) return null
+                  const text = formatTpsRecipe(recipe, {
+                    title: variant.name || `Variant ${index + 1}`,
+                  })
+                  return (
+                    <div className={styles.layoutSummary}>
+                      {/* Our own convention: height x width. */}
+                      <p className={styles.layoutLine}>
+                        <strong>Sheet</strong> {recipe.sheetHeightCm.toFixed(1)} ×{' '}
+                        {recipe.sheetWidthCm.toFixed(1)} cm · <strong>Print</strong>{' '}
+                        {recipe.expectedImageHeightCm.toFixed(1)} ×{' '}
+                        {recipe.expectedImageWidthCm.toFixed(1)} cm · <strong>Borders</strong>{' '}
+                        {recipe.expectedBorderYCm.toFixed(1)} top/bottom,{' '}
+                        {recipe.expectedBorderXCm.toFixed(1)} left/right cm
+                      </p>
+                      <details className={styles.recipeDetails}>
+                        <summary>Print lab setup</summary>
+                        <pre className={styles.recipe}>{text}</pre>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => navigator.clipboard?.writeText(text)}
+                        >
+                          Copy setup
+                        </Button>
+                      </details>
+                    </div>
+                  )
+                })()}
 
                 <div className={dashboardStyles.field} style={{ maxWidth: 240 }}>
                   <label>Your price for this variant (&euro;)</label>
