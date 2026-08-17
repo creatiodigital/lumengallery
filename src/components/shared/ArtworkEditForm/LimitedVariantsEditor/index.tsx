@@ -567,14 +567,14 @@ export const LimitedVariantsEditor = ({
                         const euros = (c: number) => (c / 100).toFixed(2)
                         return margin.marginCents <= 0 ? (
                           <ErrorText>
-                            The wider sheet costs €{euros(margin.absorbedCents)} more to produce than
-                            a print of the image alone, which is more than this variant earns. Raise
-                            the price or reduce the sheet.
+                            The paper around the print costs €{euros(margin.absorbedCents)} more to
+                            produce than the print alone, which is more than this variant earns. Raise
+                            the price or reduce the border.
                           </ErrorText>
                         ) : (
                           <p className={styles.layoutLine}>
                             Gallery keeps €{euros(margin.marginCents)} per print (€
-                            {euros(margin.absorbedCents)} of the wider sheet absorbed).
+                            {euros(margin.absorbedCents)} of the surrounding paper absorbed).
                           </p>
                         )
                       })()}
