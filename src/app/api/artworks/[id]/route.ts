@@ -5,7 +5,8 @@ import { deleteFromR2 } from '@/lib/r2'
 
 import { isAdminOrAbove, requireOwnership } from '@/lib/authUtils'
 import { PUBLIC_ARTWORK_OMIT } from '@/lib/artworkFields'
-import { saveLimitedVariants, type IncomingVariant } from '@/lib/editions/saveLimitedVariants'
+import { saveLimitedVariants } from '@/lib/editions/saveLimitedVariants'
+import { parseIncomingVariants } from '@/lib/editions/parseIncomingVariants'
 import { TPS_FRAME_TYPES, TPS_PAPERS, TPS_WINDOW_MOUNTS } from '@/lib/print-providers/printspace'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 import { Prisma } from '@/generated/prisma'
@@ -77,26 +78,6 @@ function sanitizePrintRecommendations(
     out.push(item)
   }
   return out.length === 0 ? null : { paper: out }
-}
-
-// Coerce raw JSON variant rows from the dashboard into the typed shape
-// `saveLimitedVariants` validates. Numbers come over the wire as strings
-// from the form inputs; everything is re-validated server-side.
-function parseIncomingVariants(raw: unknown[]): IncomingVariant[] {
-  return raw.map((item) => {
-    const v = (item ?? {}) as Record<string, unknown>
-    return {
-      id: typeof v.id === 'string' && v.id.length > 0 ? v.id : undefined,
-      name: typeof v.name === 'string' ? v.name : '',
-      paperId: typeof v.paperId === 'string' ? v.paperId : '',
-      widthCm: Number(v.widthCm),
-      heightCm: Number(v.heightCm),
-      borderCm: Number(v.borderCm),
-      editionSize: Number(v.editionSize),
-      // Artist types price in euros; persist cents. Round to avoid FP drift.
-      priceCents: Math.round(Number(v.priceEuros) * 100) || 0,
-    }
-  })
 }
 
 // The exhibition profile API (/api/exhibitions/by-url/[url]) caches its
