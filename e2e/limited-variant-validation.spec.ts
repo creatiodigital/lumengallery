@@ -90,7 +90,15 @@ test('adaptive variants are unaffected', () => {
   expect(res.ok).toBe(true)
 })
 
-test('changing the sheet changes the derived image', () => {
+// This proves an INVARIANT that makes the lock robust, not the lock itself:
+// because the image size is derived from the sheet, a sheet swap always
+// changes widthCm/heightCm too, so it can never slip past the size check
+// in saveLimitedVariants unnoticed.
+//
+// NOT COVERED: the `sheetChanged` branch itself. Exercising it needs
+// saveLimitedVariants run against a blocked+published row, which needs the
+// dev DB to have the sheet columns. Tracked as a follow-up.
+test('a sheet change always changes the derived image size', () => {
   const a = computeSheetLayout({
     sheetWidthCm: 50,
     sheetHeightCm: 40,
