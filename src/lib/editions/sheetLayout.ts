@@ -106,3 +106,34 @@ export function isFixedSheet(v: {
     v.sheetHeightCm > 0
   )
 }
+
+export type SeedSheetArgs = {
+  /** Current print size in cm, or 0/0 when nothing has been set yet. */
+  widthCm: number
+  heightCm: number
+  borderCm: number
+  /** Artwork aspect ratio, WIDTH / HEIGHT. */
+  aspectRatio: number
+}
+
+/**
+ * Choose a starting sheet for the "Fixed sheet" toggle so it never lands
+ * the artist on an invalid, unrecognisable card (see isFixedSheet — a 0x0
+ * seed would read as adaptive and the toggle would appear to do nothing).
+ *
+ * When a print size already exists, the sheet is exactly print + border on
+ * every side (the same geometry adaptive mode implies) so nothing visibly
+ * changes at the moment of switching. Otherwise falls back to the
+ * commonest standard paper, oriented to the artwork: 50x40 for
+ * landscape/square, 40x50 for portrait. The result always satisfies
+ * isFixedSheet.
+ */
+export function seedSheetForVariant(
+  args: SeedSheetArgs,
+): { sheetWidthCm: number; sheetHeightCm: number } {
+  const { widthCm, heightCm, borderCm, aspectRatio } = args
+  const hasPrint = widthCm > 0 && heightCm > 0
+  const sheetWidthCm = hasPrint ? widthCm + borderCm * 2 : aspectRatio >= 1 ? 50 : 40
+  const sheetHeightCm = hasPrint ? heightCm + borderCm * 2 : aspectRatio >= 1 ? 40 : 50
+  return { sheetWidthCm, sheetHeightCm }
+}
