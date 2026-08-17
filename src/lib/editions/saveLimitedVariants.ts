@@ -30,6 +30,9 @@ export type IncomingVariant = {
   widthCm: number
   heightCm: number
   borderCm: number
+  /** Fixed-sheet mode: total sheet in cm. Both null/absent = adaptive. */
+  sheetWidthCm?: number | null
+  sheetHeightCm?: number | null
   editionSize: number
   priceCents: number
 }
@@ -64,6 +67,8 @@ export async function saveLimitedVariants(args: {
       widthCm: true,
       heightCm: true,
       borderCm: true,
+      sheetWidthCm: true,
+      sheetHeightCm: true,
       editionSize: true,
       priceCents: true,
     },
@@ -111,8 +116,14 @@ export async function saveLimitedVariants(args: {
           const sizeChanged =
             Math.abs(prev.widthCm - v.widthCm) >= 0.05 ||
             Math.abs(prev.heightCm - v.heightCm) >= 0.05
+          // The sheet is part of the variant's physical identity — a live
+          // edition's paper size can never change under a buyer.
+          const sheetChanged =
+            Math.abs((prev.sheetWidthCm ?? 0) - (v.sheetWidthCm ?? 0)) >= 0.005 ||
+            Math.abs((prev.sheetHeightCm ?? 0) - (v.sheetHeightCm ?? 0)) >= 0.005
           const nonPriceChanged =
             sizeChanged ||
+            sheetChanged ||
             prev.editionSize !== v.editionSize ||
             prev.name !== v.name.trim() ||
             prev.paperId !== v.paperId ||
@@ -186,6 +197,8 @@ export async function saveLimitedVariants(args: {
         widthCm: input.widthCm,
         heightCm: input.heightCm,
         borderCm: input.borderCm,
+        sheetWidthCm: input.sheetWidthCm ?? null,
+        sheetHeightCm: input.sheetHeightCm ?? null,
         editionSize: input.editionSize,
         priceCents: input.priceCents,
         order: i,

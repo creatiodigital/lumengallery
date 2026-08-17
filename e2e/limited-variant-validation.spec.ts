@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { validateVariantInput } from '../src/lib/editions/validateVariant'
+import { computeSheetLayout } from '../src/lib/editions/sheetLayout'
 
 // A 3:2 landscape file, large enough to print at these sizes at 300 DPI.
 const ARTWORK_3_2 = { widthPx: 7200, heightPx: 4800 }
@@ -87,4 +88,20 @@ test('adaptive variants are unaffected', () => {
     siblingSizes: [],
   })
   expect(res.ok).toBe(true)
+})
+
+test('changing the sheet changes the derived image', () => {
+  const a = computeSheetLayout({
+    sheetWidthCm: 50,
+    sheetHeightCm: 40,
+    minBorderCm: 7,
+    aspectRatio: 1.5,
+  })!
+  const b = computeSheetLayout({
+    sheetWidthCm: 60,
+    sheetHeightCm: 40,
+    minBorderCm: 7,
+    aspectRatio: 1.5,
+  })!
+  expect(a.imageWidthCm).not.toBeCloseTo(b.imageWidthCm, 2)
 })
