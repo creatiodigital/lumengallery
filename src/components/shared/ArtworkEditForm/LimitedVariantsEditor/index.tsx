@@ -236,10 +236,14 @@ export const LimitedVariantsEditor = ({
       update(index, { sheetWidthCm: null, sheetHeightCm: null })
       return
     }
-    // Seed the sheet from the current image + border so the toggle never
-    // lands the artist on an invalid card.
-    const seedW = v.widthCm > 0 ? v.widthCm + v.borderCm * 2 : 0
-    const seedH = v.heightCm > 0 ? v.heightCm + v.borderCm * 2 : 0
+    // Seed the sheet so the toggle always lands on a usable card. When the
+    // artist already set a print size, preserve it exactly (sheet = print +
+    // border on each side). Otherwise fall back to the commonest standard
+    // paper, oriented to the artwork — a zero seed would leave isFixedSheet
+    // false and the button would appear dead.
+    const hasPrint = v.widthCm > 0 && v.heightCm > 0
+    const seedW = hasPrint ? v.widthCm + v.borderCm * 2 : aspectRatio >= 1 ? 50 : 40
+    const seedH = hasPrint ? v.heightCm + v.borderCm * 2 : aspectRatio >= 1 ? 40 : 50
     const next = { ...v, sheetWidthCm: seedW, sheetHeightCm: seedH }
     update(index, { sheetWidthCm: seedW, sheetHeightCm: seedH, ...withDerivedImage(next) })
   }
