@@ -18,6 +18,7 @@ import {
   TPS_BORDER_REFERENCE_WIDTH_CM,
   TPS_BORDER_CAP_FRACTION,
 } from '@/lib/editions/sheetLayout'
+import { estimateVariantMarginCents } from '@/lib/editions/variantMargin'
 import {
   TPS_PAPERS,
   TPS_SIZE_BOUNDS,
@@ -200,6 +201,26 @@ export function validateVariantInput(args: ValidateVariantArgs): ValidateVariant
         ok: false,
         error: `The derived print would be ${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm — its shortest side must be at least ${MIN_SHORT_EDGE_CM} cm. Use a bigger sheet or a smaller border.`,
       }
+    }
+  }
+
+  // Guardrail: the gallery absorbs the sheet-vs-image cost, so an oversized
+  // sheet can silently make every sale lose money. Fixed-sheet mode only —
+  // the sheet is free-entry there, so the gap is unbounded.
+  const margin = isFixedSheet(variant)
+    ? estimateVariantMarginCents({
+        widthCm: variant.widthCm,
+        heightCm: variant.heightCm,
+        borderCm: variant.borderCm,
+        sheetWidthCm: variant.sheetWidthCm,
+        sheetHeightCm: variant.sheetHeightCm,
+        artistPriceCents: variant.priceCents,
+      })
+    : null
+  if (margin && margin.marginCents <= 0) {
+    return {
+      ok: false,
+      error: `This sheet costs more to produce than the variant earns. Raise the price, shrink the sheet, or reduce the border.`,
     }
   }
 

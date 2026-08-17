@@ -20,6 +20,7 @@ import {
   TPS_BORDER_CAP_FRACTION,
 } from '@/lib/editions/sheetLayout'
 import { buildTpsRecipe, formatTpsRecipe } from '@/lib/editions/tpsRecipe'
+import { estimateVariantMarginCents } from '@/lib/editions/variantMargin'
 import { TPS_PAPERS, TPS_SIZE_BOUNDS, MIN_SHORT_EDGE_CM } from '@/lib/print-providers/printspace'
 import type { PrintLongEdgeBounds } from '@/lib/print-providers/printspace'
 import { remapIndexKeys } from './remapIndexKeys'
@@ -553,6 +554,30 @@ export const LimitedVariantsEditor = ({
                         {recipe.expectedBorderYCm.toFixed(1)} top/bottom,{' '}
                         {recipe.expectedBorderXCm.toFixed(1)} left/right cm
                       </p>
+                      {(() => {
+                        const margin = estimateVariantMarginCents({
+                          widthCm: variant.widthCm,
+                          heightCm: variant.heightCm,
+                          borderCm: variant.borderCm,
+                          sheetWidthCm: variant.sheetWidthCm,
+                          sheetHeightCm: variant.sheetHeightCm,
+                          artistPriceCents: Math.round(Number(variant.priceEuros ?? 0) * 100),
+                        })
+                        if (!margin) return null
+                        const euros = (c: number) => (c / 100).toFixed(2)
+                        return margin.marginCents <= 0 ? (
+                          <ErrorText>
+                            The wider sheet costs €{euros(margin.absorbedCents)} more to produce than
+                            a print of the image alone, which is more than this variant earns. Raise
+                            the price or reduce the sheet.
+                          </ErrorText>
+                        ) : (
+                          <p className={styles.layoutLine}>
+                            Gallery keeps €{euros(margin.marginCents)} per print (€
+                            {euros(margin.absorbedCents)} of the wider sheet absorbed).
+                          </p>
+                        )
+                      })()}
                       <details className={styles.recipeDetails}>
                         <summary>Print lab setup</summary>
                         <pre className={styles.recipe}>{text}</pre>
