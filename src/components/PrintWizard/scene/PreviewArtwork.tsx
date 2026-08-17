@@ -125,8 +125,13 @@ export const PreviewArtwork = ({
   // paper sheet sits behind the print, extending outward by the
   // border on every side — same convention as the framed previews.
   if (!framed) {
+    // Vertical (top/bottom) paper border, metres. Defaults to the
+    // horizontal value; Task 9 wires a fixed-sheet-aware value through
+    // here. Differs only when the paper sheet is a different shape from
+    // the image, so the two axes diverge.
+    const paperBorderYM = paperBorderM
     const paperWidthM = widthM + paperBorderM * 2
-    const paperHeightM = heightM + paperBorderM * 2
+    const paperHeightM = heightM + paperBorderYM * 2
     return (
       <group position={[0, 0, ARTWORK_Z]}>
         {paperBorderM > 0 && (
