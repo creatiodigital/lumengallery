@@ -43,10 +43,22 @@ const EDITION_FONT_URL = '/fonts/caveat-regular.ttf'
 // of the print size). Kept in sync with EDITION_NUMBER_HEIGHT_CM (SizeSchema).
 const EDITION_NUMBER_HEIGHT_M = 0.022
 
-// Fixed gap from the bottom edge of the image to the number's baseline so the
-// spacing stays constant across prints — it does NOT scale with the print or
-// the border. Capped only so the number can't fall outside a thin border.
-const EDITION_NUMBER_GAP_M = 0.014
+// troika renders glyphs at roughly this fraction of the font's em size —
+// used below to turn the actual (possibly border-capped) font size into a
+// real visual half-height, so the gap is derived from true glyph geometry
+// rather than a second, independently-tuned constant that could drift out
+// of sync with EDITION_NUMBER_HEIGHT_M.
+const EDITION_GLYPH_HEIGHT_RATIO = 0.7
+
+// Tiny fixed clearance between the image's bottom edge and the top of the
+// glyphs — just enough that the number reads as sitting right under the
+// print without touching it. This is the ONLY absolute-metre term in the
+// vertical offset; the rest scales with the rendered font size, which is
+// itself capped to a fraction of the border (see below). That keeps the
+// number close to the image and safely inside the border at every print
+// size, instead of a fixed gap that reads as too generous on a thin border
+// or arbitrarily far from the image on a thick one.
+const EDITION_NUMBER_TOUCH_CLEARANCE_M = 0.003
 
 const ARTWORK_Z = 0.012
 
@@ -150,23 +162,31 @@ export const PreviewArtwork = ({
         {/* Limited-edition number — bottom-left, in the paper margin just
             below the image, in the Caveat hand it ships with. The number
             sits in the BOTTOM margin, so it's bounded by the vertical
-            border, not the horizontal one. */}
-        {editionLabel && paperBorderYM > 0 && (
-          <Text
-            font={EDITION_FONT_URL}
-            color="#111111"
-            anchorX="left"
-            anchorY="middle"
-            fontSize={Math.min(EDITION_NUMBER_HEIGHT_M, paperBorderYM * 0.7)}
-            position={[
-              -widthM / 2,
-              -(heightM / 2 + Math.min(EDITION_NUMBER_GAP_M, paperBorderYM * 0.6)),
-              0.002,
-            ]}
-          >
-            {editionLabel}
-          </Text>
-        )}
+            border, not the horizontal one. Left edge lines up with the
+            image's own left edge (anchorX="left" + x = -widthM / 2, the
+            image's left edge in this plane's local coordinates), and the
+            vertical gap is derived from the actual rendered glyph height
+            (see EDITION_GLYPH_HEIGHT_RATIO) so it sits as close to the
+            image as it can without touching it, at every print size. */}
+        {editionLabel &&
+          paperBorderYM > 0 &&
+          (() => {
+            const editionFontSizeM = Math.min(EDITION_NUMBER_HEIGHT_M, paperBorderYM * 0.7)
+            const editionGapToCenterM =
+              (editionFontSizeM * EDITION_GLYPH_HEIGHT_RATIO) / 2 + EDITION_NUMBER_TOUCH_CLEARANCE_M
+            return (
+              <Text
+                font={EDITION_FONT_URL}
+                color="#111111"
+                anchorX="left"
+                anchorY="middle"
+                fontSize={editionFontSizeM}
+                position={[-widthM / 2, -(heightM / 2 + editionGapToCenterM), 0.002]}
+              >
+                {editionLabel}
+              </Text>
+            )
+          })()}
       </group>
     )
   }
