@@ -107,10 +107,16 @@ export const PreviewArtwork = ({
   if (!effectiveSize) return null
 
   const borderCm = getEffectiveBorderCm(config, 'border')
+  // Vertical (top/bottom) border — only diverges from the horizontal
+  // value for fixed-sheet limited editions, where the sheet's shape
+  // differs from the artwork's (see variantToWizardConfig.ts). Falls
+  // back to the horizontal value everywhere else so nothing diverges.
+  const borderYCm = config.borders?.['border']?.verticalCm ?? borderCm
   const matCm = getEffectiveMatCm(catalog, config)
 
   const framed = visuals.framed === true
   const paperBorderM = borderCm / 100
+  const paperBorderYM = borderYCm / 100
   const mouldingWidthM = (visuals.mouldingWidthCm ?? DEFAULT_MOULDING_WIDTH_CM) / 100
   const mouldingDepthM = (visuals.mouldingDepthCm ?? DEFAULT_MOULDING_DEPTH_CM) / 100
   const paperRoughness = visuals.paperRoughness ?? DEFAULT_PAPER_ROUGHNESS
@@ -125,11 +131,9 @@ export const PreviewArtwork = ({
   // paper sheet sits behind the print, extending outward by the
   // border on every side — same convention as the framed previews.
   if (!framed) {
-    // Vertical (top/bottom) paper border, metres. Defaults to the
-    // horizontal value; Task 9 wires a fixed-sheet-aware value through
-    // here. Differs only when the paper sheet is a different shape from
-    // the image, so the two axes diverge.
-    const paperBorderYM = paperBorderM
+    // Paper sheet, metres — horizontal and vertical borders each apply
+    // to their own axis so a fixed-sheet edition draws the real sheet
+    // shape instead of a uniform-border approximation.
     const paperWidthM = widthM + paperBorderM * 2
     const paperHeightM = heightM + paperBorderYM * 2
     return (
@@ -144,17 +148,19 @@ export const PreviewArtwork = ({
           roughness={paperRoughness}
         />
         {/* Limited-edition number — bottom-left, in the paper margin just
-            below the image, in the Caveat hand it ships with. */}
-        {editionLabel && paperBorderM > 0 && (
+            below the image, in the Caveat hand it ships with. The number
+            sits in the BOTTOM margin, so it's bounded by the vertical
+            border, not the horizontal one. */}
+        {editionLabel && paperBorderYM > 0 && (
           <Text
             font={EDITION_FONT_URL}
             color="#111111"
             anchorX="left"
             anchorY="middle"
-            fontSize={Math.min(EDITION_NUMBER_HEIGHT_M, paperBorderM * 0.7)}
+            fontSize={Math.min(EDITION_NUMBER_HEIGHT_M, paperBorderYM * 0.7)}
             position={[
               -widthM / 2,
-              -(heightM / 2 + Math.min(EDITION_NUMBER_GAP_M, paperBorderM * 0.6)),
+              -(heightM / 2 + Math.min(EDITION_NUMBER_GAP_M, paperBorderYM * 0.6)),
               0.002,
             ]}
           >
@@ -179,6 +185,7 @@ export const PreviewArtwork = ({
           printWidthM={widthM}
           printHeightM={heightM}
           paperBorderM={paperBorderM}
+          paperBorderYM={paperBorderYM}
           mouldingWidthM={mouldingWidthM}
           mouldingDepthM={mouldingDepthM}
           frameMaterial={frameMaterial}
@@ -190,6 +197,7 @@ export const PreviewArtwork = ({
           printWidthM={widthM}
           printHeightM={heightM}
           paperBorderM={paperBorderM}
+          paperBorderYM={paperBorderYM}
           mouldingWidthM={mouldingWidthM}
           mouldingDepthM={mouldingDepthM}
           frameMaterial={frameMaterial}
@@ -201,6 +209,7 @@ export const PreviewArtwork = ({
           printWidthM={widthM}
           printHeightM={heightM}
           paperBorderM={paperBorderM}
+          paperBorderYM={paperBorderYM}
           matBorderM={matBorderM}
           matHex={matHex}
           mouldingWidthM={mouldingWidthM}
@@ -216,6 +225,7 @@ export const PreviewArtwork = ({
           printWidthM={widthM}
           printHeightM={heightM}
           paperBorderM={paperBorderM}
+          paperBorderYM={paperBorderYM}
           matBorderM={matBorderM}
           matHex={matHex}
           mouldingWidthM={mouldingWidthM}

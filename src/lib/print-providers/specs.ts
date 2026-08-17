@@ -87,7 +87,13 @@ function renderDimensionValue(
     // "this dimension exists, you chose none" rather than the row
     // vanishing. 0 (or unset) renders as "N/A".
     const cm = getEffectiveBorderCm(config, dim.id)
-    if (cm <= 0) return '—'
+    const verticalCm = config.borders?.[dim.id]?.verticalCm
+    if (cm <= 0 && !verticalCm) return '—'
+    // Fixed-sheet editions have unequal borders by design — showing one
+    // number would misdescribe the object the buyer receives.
+    if (typeof verticalCm === 'number' && Math.abs(verticalCm - cm) >= 0.05) {
+      return `${roundCm(verticalCm)} cm top and bottom, ${roundCm(cm)} cm left and right`
+    }
     return `${roundCm(cm)} cm`
   }
   return null

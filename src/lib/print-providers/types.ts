@@ -163,12 +163,16 @@ export type WizardConfig = {
   /** Custom size when the size dimension is in custom mode. */
   customSize?: { widthCm: number; heightCm: number }
   /**
-   * Per-border-dimension uniform value, in cm, keyed by dimension id.
-   * Catalogs can declare multiple `border`-kind dimensions (e.g. TPS
-   * has both `border` for paper border and `windowMountSize` for mat
-   * width). Each is uniform on all four sides — no asymmetric inputs.
+   * Per-border-dimension value, in cm, keyed by dimension id. Catalogs
+   * can declare multiple `border`-kind dimensions (e.g. TPS has both
+   * `border` for paper border and `windowMountSize` for mat width).
+   * `allCm` is the horizontal (left/right) value and what every
+   * existing consumer + the TPS field expect. `verticalCm` is optional
+   * and only set for fixed-sheet limited editions, where the sheet's
+   * shape differs from the artwork's and the top/bottom border is
+   * genuinely different from left/right.
    */
-  borders?: Record<string, { allCm: number }>
+  borders?: Record<string, { allCm: number; verticalCm?: number }>
 }
 
 // ── Quotes ───────────────────────────────────────────────────────
