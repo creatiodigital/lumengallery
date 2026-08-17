@@ -56,14 +56,18 @@ test('rejects a sheet narrower than the TPS reference width', () => {
   if (!res.ok) expect(res.error).toContain('40 cm')
 })
 
+// Fixture note: the sheet cap must be DISTINCT from the generic 10 cm
+// border ceiling or this test cannot tell the two rules apart. A 40x20
+// sheet gives a cap of 5 cm, so a 7 cm border passes the generic ceiling
+// and is rejected by the cap alone.
 test('rejects a border above a quarter of the shortest sheet side', () => {
-  // Shortest side 40 -> cap 10. A 12cm border would be silently clipped.
   const res = validateVariantInput({
-    variant: { ...baseVariant, borderCm: 12, sheetWidthCm: 50, sheetHeightCm: 40 },
+    variant: { ...baseVariant, borderCm: 7, sheetWidthCm: 40, sheetHeightCm: 20 },
     artwork: ARTWORK_3_2,
     siblingSizes: [],
   })
   expect(res.ok).toBe(false)
+  if (!res.ok) expect(res.error).toContain('5.0 cm')
 })
 
 test('rejects only one sheet dimension being set', () => {
