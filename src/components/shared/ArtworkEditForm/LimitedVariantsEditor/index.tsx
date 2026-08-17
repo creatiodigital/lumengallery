@@ -22,6 +22,7 @@ import {
 import { buildTpsRecipe, formatTpsRecipe } from '@/lib/editions/tpsRecipe'
 import { TPS_PAPERS, TPS_SIZE_BOUNDS, MIN_SHORT_EDGE_CM } from '@/lib/print-providers/printspace'
 import type { PrintLongEdgeBounds } from '@/lib/print-providers/printspace'
+import { remapIndexKeys } from './remapIndexKeys'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
 import styles from './LimitedVariantsEditor.module.scss'
@@ -144,6 +145,12 @@ export const LimitedVariantsEditor = ({
   }
 
   const remove = (index: number) => {
+    // Unsaved rows are keyed by index (see keyFor) — deleting one shifts
+    // every later sibling's index, so both index-keyed state maps must be
+    // remapped or a later row inherits a removed row's stale entry.
+    const removedKey = keyFor(variants[index], index)
+    setExpanded((e) => remapIndexKeys(e, index, removedKey))
+    setSheetModeMap((m) => remapIndexKeys(m, index, removedKey))
     onChange(variants.filter((_, i) => i !== index))
   }
 
