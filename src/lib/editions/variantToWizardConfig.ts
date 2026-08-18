@@ -13,6 +13,7 @@
  * ids here (`printType`, `paper`, `format`, `size` via `customSize`,
  * `border`) match the TPS catalog in `printspace/buildCatalog.ts`.
  */
+import { computeSheetLayout, isFixedSheet } from '@/lib/editions/sheetLayout'
 import type { WizardConfig } from '@/lib/print-providers/types'
 
 export type VariantConfigInput = {
@@ -21,10 +22,13 @@ export type VariantConfigInput = {
   widthCm: number
   heightCm: number
   borderCm: number
+  /** Fixed-sheet mode: total sheet size in cm. See LimitedVariantView. */
+  sheetWidthCm?: number | null
+  sheetHeightCm?: number | null
 }
 
 export function variantToWizardConfig(variant: VariantConfigInput): WizardConfig {
-  return {
+  const config: WizardConfig = {
     values: {
       printType: variant.printTypeId,
       paper: variant.paperId,
@@ -33,4 +37,25 @@ export function variantToWizardConfig(variant: VariantConfigInput): WizardConfig
     customSize: { widthCm: variant.widthCm, heightCm: variant.heightCm },
     borders: { border: { allCm: variant.borderCm } },
   }
+
+  // Fixed-sheet variants have different horizontal and vertical borders.
+  // `allCm` stays the horizontal value (what every existing consumer and
+  // the TPS field expect); the vertical one rides alongside so the
+  // previewers can draw the real sheet shape.
+  if (isFixedSheet(variant)) {
+    const layout = computeSheetLayout({
+      sheetWidthCm: variant.sheetWidthCm as number,
+      sheetHeightCm: variant.sheetHeightCm as number,
+      minBorderCm: variant.borderCm,
+      aspectRatio: variant.widthCm / variant.heightCm,
+    })
+    if (layout) {
+      config.borders = {
+        ...config.borders,
+        border: { allCm: layout.borderXCm, verticalCm: layout.borderYCm },
+      }
+    }
+  }
+
+  return config
 }

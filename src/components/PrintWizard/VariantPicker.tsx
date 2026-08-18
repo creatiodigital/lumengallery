@@ -2,6 +2,7 @@
 
 import { formatDualDimensions, formatEuro } from '@/lib/print-providers'
 import { TPS_PAPERS, TPS_PRINT_TYPES } from '@/lib/print-providers/printspace'
+import { isFixedSheet } from '@/lib/editions/sheetLayout'
 import type { LimitedVariantView } from '@/lib/editions/types'
 
 import styles from './PrintWizard.module.scss'
@@ -41,7 +42,9 @@ export const VariantPicker = ({ variants, selectedVariantId, onSelect }: Props) 
           <span className={styles.variantCardName}>{v.name}</span>
           <span className={styles.variantCardMeta}>{medium}</span>
           <span className={styles.variantCardMeta}>
-            {formatDualDimensions(v.widthCm, v.heightCm)} · Unframed
+            {isFixedSheet(v)
+              ? `${formatDualDimensions(v.sheetWidthCm as number, v.sheetHeightCm as number)} sheet · ${formatDualDimensions(v.widthCm, v.heightCm)} image · Unframed`
+              : `${formatDualDimensions(v.widthCm, v.heightCm)} · Unframed`}
           </span>
           <span className={styles.variantCardMeta}>Printed by The Print Space</span>
           <span className={styles.variantCardStock}>Edition of {v.editionSize}</span>

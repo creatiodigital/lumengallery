@@ -47,7 +47,10 @@ export function renderOrderShippedEmail(args: OrderShippedArgs): { subject: stri
     ]) +
     emailDivider() +
     emailParagraph(
-      `Please unwrap carefully when it arrives. If anything looks wrong on delivery, just reply to this email with a photo and we&rsquo;ll sort it out.`,
+      `When it arrives, we kindly suggest taking a few photos, or a short video, as you unwrap it &mdash; the sealed parcel first, then the moment you open it.`,
+    ) +
+    emailParagraph(
+      `Damage in transit is rare and your print travels well protected. But should anything arrive less than perfect, those images let us arrange a reprint or a refund right away, with no back-and-forth. Just reply to this email.`,
     ) +
     emailParagraph(`Enjoy the work.`)
 

@@ -13,12 +13,22 @@
  *     identity on the unframed print size)
  */
 import {
+  computeSheetLayout,
+  isFixedSheet,
+  TPS_BORDER_REFERENCE_WIDTH_CM,
+  TPS_BORDER_CAP_FRACTION,
+} from '@/lib/editions/sheetLayout'
+import { estimateVariantMarginCents } from '@/lib/editions/variantMargin'
+import {
   TPS_PAPERS,
   TPS_SIZE_BOUNDS,
   TPS_BORDER_BOUNDS,
 } from '@/lib/print-providers/printspace/data'
 import type { TpsPrintTypeId } from '@/lib/print-providers/printspace/data'
-import { getPrintLongEdgeBounds } from '@/lib/print-providers/printspace/sizeBounds'
+import {
+  getPrintLongEdgeBounds,
+  MIN_SHORT_EDGE_CM,
+} from '@/lib/print-providers/printspace/sizeBounds'
 
 /**
  * Minimum paper border for a limited edition, in cm. Large enough for
@@ -40,6 +50,9 @@ export type VariantInput = {
   widthCm: number
   heightCm: number
   borderCm: number
+  /** Fixed-sheet mode: total sheet in cm. Both null/absent = adaptive. */
+  sheetWidthCm?: number | null
+  sheetHeightCm?: number | null
   editionSize: number
   /** Artist's cut for this variant, in cents. Required (> 0). */
   priceCents: number
@@ -127,6 +140,88 @@ export function validateVariantInput(args: ValidateVariantArgs): ValidateVariant
 
   if (!Number.isInteger(variant.priceCents) || variant.priceCents < 1) {
     return { ok: false, error: 'Each variant needs a price greater than 0.' }
+  }
+
+  // ── Fixed-sheet mode ──────────────────────────────────────────
+  // The artist pinned the total sheet; the image and per-axis borders are
+  // derived. Everything here guards against promising a layout TPS would
+  // silently alter.
+  const hasAnySheet = variant.sheetWidthCm != null || variant.sheetHeightCm != null
+  if (hasAnySheet) {
+    if (!isFixedSheet(variant)) {
+      return { ok: false, error: 'Set both sheet dimensions, or neither.' }
+    }
+    const sheetWidthCm = variant.sheetWidthCm as number
+    const sheetHeightCm = variant.sheetHeightCm as number
+
+    // TPS measures a targeted border at a 40 cm reference width and scales
+    // it DOWN below that, so a narrower sheet would not get the border the
+    // artist entered and our derived layout would stop matching the print.
+    if (sheetWidthCm < TPS_BORDER_REFERENCE_WIDTH_CM) {
+      return {
+        ok: false,
+        error: `The sheet must be at least ${TPS_BORDER_REFERENCE_WIDTH_CM} cm wide — below that the print lab scales the border down and the layout would not match.`,
+      }
+    }
+
+    // TPS clips a border above a quarter of the shortest side without
+    // telling you.
+    const capCm = Math.min(sheetWidthCm, sheetHeightCm) * TPS_BORDER_CAP_FRACTION
+    if (variant.borderCm > capCm + 0.001) {
+      return {
+        ok: false,
+        error: `On a ${sheetHeightCm} × ${sheetWidthCm} cm sheet the border can be at most ${capCm.toFixed(1)} cm.`,
+      }
+    }
+
+    const layout = computeSheetLayout({
+      sheetWidthCm,
+      sheetHeightCm,
+      minBorderCm: variant.borderCm,
+      aspectRatio: artwork.widthPx / artwork.heightPx,
+    })
+    if (!layout) {
+      return { ok: false, error: 'That border leaves no printable area on the sheet.' }
+    }
+
+    // The stored image size must be exactly what the sheet derives, or the
+    // previews, buyer copy and TPS instruction would disagree with the DB.
+    if (
+      Math.abs(layout.imageWidthCm - variant.widthCm) >= 0.05 ||
+      Math.abs(layout.imageHeightCm - variant.heightCm) >= 0.05
+    ) {
+      return {
+        ok: false,
+        error: `The print size must be the size derived from the sheet (${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm).`,
+      }
+    }
+
+    if (Math.min(layout.imageWidthCm, layout.imageHeightCm) < MIN_SHORT_EDGE_CM) {
+      return {
+        ok: false,
+        error: `The derived print would be ${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm — its shortest side must be at least ${MIN_SHORT_EDGE_CM} cm. Use a bigger sheet or a smaller border.`,
+      }
+    }
+  }
+
+  // Guardrail: the gallery absorbs the sheet-vs-image cost, so an oversized
+  // sheet can silently make every sale lose money. Fixed-sheet mode only —
+  // the sheet is free-entry there, so the gap is unbounded.
+  const margin = isFixedSheet(variant)
+    ? estimateVariantMarginCents({
+        widthCm: variant.widthCm,
+        heightCm: variant.heightCm,
+        borderCm: variant.borderCm,
+        sheetWidthCm: variant.sheetWidthCm,
+        sheetHeightCm: variant.sheetHeightCm,
+        artistPriceCents: variant.priceCents,
+      })
+    : null
+  if (margin && margin.marginCents <= 0) {
+    return {
+      ok: false,
+      error: `This sheet costs more to produce than the variant earns. Raise the price, shrink the sheet, or reduce the border.`,
+    }
   }
 
   // Distinct print size within the artwork — TPS edition-identity rule.

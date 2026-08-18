@@ -13,6 +13,10 @@ interface StandardPreviewProps {
   printHeightM: number
   /** White paper border around the print (same sheet). 0 = none. */
   paperBorderM: number
+  /** Vertical (top/bottom) paper border in metres. Defaults to
+   *  `paperBorderM`. Differs only for fixed-sheet editions, where the sheet
+   *  is a different shape from the image so the two axes diverge. */
+  paperBorderYM?: number
   /** Passepartout border. 0 = no mat. */
   matBorderM: number
   matHex: string
@@ -41,6 +45,7 @@ export const StandardPreview = ({
   printWidthM,
   printHeightM,
   paperBorderM,
+  paperBorderYM = paperBorderM,
   matBorderM,
   matHex,
   mouldingWidthM,
@@ -49,7 +54,7 @@ export const StandardPreview = ({
   paperRoughness,
 }: StandardPreviewProps) => {
   const paperWidthM = printWidthM + paperBorderM * 2
-  const paperHeightM = printHeightM + paperBorderM * 2
+  const paperHeightM = printHeightM + paperBorderYM * 2
   const matWidthM = paperWidthM + matBorderM * 2
   const matHeightM = paperHeightM + matBorderM * 2
 

@@ -74,6 +74,10 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.getByText(/on its way, jane/i)).toBeVisible()
     await expect(page.getByText(/your print has shipped/i)).toBeVisible()
     await expect(page.getByRole('link', { name: 'Track your shipment' })).toBeVisible()
+    // The unboxing request rides on THIS email on purpose: it lands with the
+    // tracking link, days before the parcel does.
+    await expect(page.getByText(/kindly suggest taking a few photos/i)).toBeVisible()
+    await expect(page.getByText(/reprint or a refund right away/i)).toBeVisible()
     await expect(page.getByText(/puerta verde/i)).toBeVisible()
     await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)
     await expect(page.locator('body')).not.toContainText(/printspace/i)
@@ -83,6 +87,7 @@ test.describe('branded email layout (dev preview)', () => {
     await page.goto('/dev/emails/order-delivered')
     await expect(page.getByText(/your artwork has arrived, jane/i)).toBeVisible()
     await expect(page.getByText(/even better in the flesh/i)).toBeVisible()
+    await expect(page.getByText(/unboxing photos or video/i)).toBeVisible()
     await expect(page.getByText(/puerta verde/i)).toBeVisible()
     await expect(page.getByText(/artist will receive their payout/i)).toBeVisible()
     await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)

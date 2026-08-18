@@ -117,6 +117,11 @@ export const SummaryPanel = ({
   const visuals = useMemo(() => collectVisualHints(catalog, config), [catalog, config])
 
   const borderCm = getEffectiveBorderCm(config, 'border')
+  // Vertical (top/bottom) paper border — only diverges from the
+  // horizontal value for fixed-sheet limited editions (see
+  // variantToWizardConfig.ts). Falls back to the horizontal value
+  // everywhere else so nothing diverges.
+  const borderYCm = config.borders?.['border']?.verticalCm ?? borderCm
   const matCm = getEffectiveMatCm(catalog, config)
 
   const showFrame = visuals.framed === true
@@ -177,6 +182,7 @@ export const SummaryPanel = ({
             showFrame={showFrame}
             imageUrl={artwork.imageUrl}
             paperBorderCm={borderCm}
+            paperBorderYCm={borderYCm}
             backboardBorderCm={backboardBorderCm}
             backboardColorHex={backboardColorHex}
             editionLabel={editionLabel}

@@ -245,9 +245,21 @@ model LimitedVariant {
   name        String // free title, e.g. "Small"
   paperId     String // TPS paper id (validated against TPS_PAPERS)
   printTypeId String // 'giclee' | 'ctype', derived from the paper
-  widthCm     Float // locked to the artwork's aspect ratio
+  // IMAGE size, in both modes. Locked to the artwork's aspect ratio.
+  // In fixed-sheet mode this is DERIVED from the sheet + minimum border
+  // and stored, so the @@unique key, pricing and every existing consumer
+  // keep working unchanged.
+  widthCm     Float
   heightCm    Float
-  borderCm    Float  @default(0) // uniform paper border (holds the number)
+  // The border value handed to TPS. In adaptive mode it is exact and
+  // uniform on all four sides. In fixed-sheet mode it is a MINIMUM: the
+  // real borders differ per axis and are derived via computeSheetLayout.
+  borderCm    Float  @default(0)
+  // Fixed-sheet mode: the artist pins the total sheet and the image is
+  // fitted inside it. NULL on both = adaptive mode (sheet = image +
+  // 2*border). Never set only one. See src/lib/editions/sheetLayout.ts.
+  sheetWidthCm  Float?
+  sheetHeightCm Float?
   editionSize Int // this variant's own edition size, e.g. 50
   priceCents  Int? // artist's cut for THIS variant, in cents (size-based pricing)
 

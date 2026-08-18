@@ -13,6 +13,10 @@ interface TrayPreviewProps {
   /** White paper border around the image, in metres. The paper sheet
    *  bonded to Dibond is (print + 2 × border) on each axis. */
   paperBorderM: number
+  /** Vertical (top/bottom) paper border in metres. Defaults to
+   *  `paperBorderM`. Differs only for fixed-sheet editions, where the sheet
+   *  is a different shape from the image so the two axes diverge. */
+  paperBorderYM?: number
   mouldingWidthM: number
   mouldingDepthM: number
   frameMaterial: Material
@@ -57,6 +61,7 @@ export const TrayPreview = ({
   printWidthM,
   printHeightM,
   paperBorderM,
+  paperBorderYM = paperBorderM,
   mouldingWidthM,
   mouldingDepthM,
   frameMaterial,
@@ -64,7 +69,7 @@ export const TrayPreview = ({
 }: TrayPreviewProps) => {
   // Paper sheet bonded to Dibond — image + uniform paper border.
   const paperWidthM = printWidthM + paperBorderM * 2
-  const paperHeightM = printHeightM + paperBorderM * 2
+  const paperHeightM = printHeightM + paperBorderYM * 2
 
   // Inner cavity dimensions — paper sheet plus the slot on each side.
   // (Slot sits between the paper, not the image, and the moulding.)

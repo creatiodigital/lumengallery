@@ -13,6 +13,11 @@ export type LimitedVariantDraft = {
   widthCm: number
   heightCm: number
   borderCm: number
+  /** Fixed-sheet mode: total sheet size in cm. Both null/absent = adaptive
+   *  mode, where the sheet is image + 2*borderCm. When set, `borderCm` is a
+   *  MINIMUM and the real per-axis borders come from computeSheetLayout. */
+  sheetWidthCm?: number | null
+  sheetHeightCm?: number | null
   editionSize: number
   /** Artist's cut for this variant, as the artist types it in euros. The
    *  server converts to cents. Derived from `priceCents` on load. */
@@ -36,6 +41,11 @@ export type LimitedVariantView = {
   widthCm: number
   heightCm: number
   borderCm: number
+  /** Fixed-sheet mode: total sheet size in cm. Both null/absent = adaptive
+   *  mode, where the sheet is image + 2*borderCm. When set, `borderCm` is a
+   *  MINIMUM and the real per-axis borders come from computeSheetLayout. */
+  sheetWidthCm?: number | null
+  sheetHeightCm?: number | null
   editionSize: number
   /** Artist's cut for this variant, in cents. */
   priceCents: number | null
