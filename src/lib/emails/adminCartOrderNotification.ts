@@ -11,6 +11,7 @@ import {
 import { formatAmount } from './format'
 import { renderEmailLayout } from './layout'
 import { ADMIN_EMAIL_TO, ADMIN_EMAIL_CC } from './recipients'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -52,7 +53,7 @@ export function renderAdminCartOrderNotificationEmail(args: AdminCartOrderNotifi
   subject: string
   html: string
 } {
-  const id8 = args.orderId.slice(0, 8).toUpperCase()
+  const id8 = formatOrderRef(args.orderId)
   const safeId8 = escapeHtml(id8)
   const safeOrderIdFull = escapeHtml(args.orderId)
   const safeBuyerName = escapeHtml(args.buyerName || '—')

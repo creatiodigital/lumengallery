@@ -10,6 +10,7 @@ import {
   emailParagraph,
 } from './components'
 import { renderEmailLayout } from './layout'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -40,7 +41,7 @@ export function renderOrderCancelledEmail(args: OrderCancelledArgs): {
   const firstName = escapeHtml(rawFirstName)
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
+  const safeOrderId = formatOrderRef(args.orderId)
 
   // What do we tell the buyer about the money? Preserve exact copy from the
   // original implementation — each branch maps to the same Stripe state.

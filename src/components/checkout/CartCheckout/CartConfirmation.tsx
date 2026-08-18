@@ -53,13 +53,16 @@ function markReminderSeen(paymentIntentId: string): void {
  */
 export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => {
   const [status, setStatus] = useState<Status>('finalizing')
+  const [orderRef, setOrderRef] = useState<string | null>(null)
   const [showReminder, setShowReminder] = useState(false)
 
   useEffect(() => {
     let active = true
     ensureOrderAction(paymentIntentId)
       .then((res) => {
-        if (active) setStatus(res.ok ? 'confirmed' : 'failed')
+        if (!active) return
+        setStatus(res.ok ? 'confirmed' : 'failed')
+        if (res.orderRef) setOrderRef(res.orderRef)
       })
       .catch(() => {
         if (active) setStatus('failed')
@@ -130,12 +133,16 @@ export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => 
         tracking details as soon as they ship.
       </Text>
 
+      {/* The buyer's ONE reference — identical to the string on every email and
+          the invoice, so quoting it back to us always finds this order. The
+          PaymentIntent id stays out of the customer's way; it appears only on
+          the failed path below, where it is the only identifier that exists. */}
       <div className={styles.confirmReference}>
         <Text as="span" size="xs" className={styles.confirmReferenceLabel}>
-          Reference
+          Order reference
         </Text>
         <Text as="span" size="sm" className={styles.confirmReferenceValue}>
-          {paymentIntentId}
+          {orderRef ?? paymentIntentId}
         </Text>
       </div>
 

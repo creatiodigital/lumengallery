@@ -15,6 +15,7 @@ import {
 import { formatAmount } from './format'
 import { renderEmailLayout } from './layout'
 import { estimateDeliveryWindow, mayOweImportDuty } from './delivery'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -58,7 +59,7 @@ export function renderCartOrderPlacedEmail(args: CartOrderPlacedArgs): {
 } {
   const rawFirstName = args.buyerName.split(' ')[0] || 'there'
   const firstName = escapeHtml(rawFirstName)
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
+  const safeOrderId = formatOrderRef(args.orderId)
 
   const deliveryWindow = estimateDeliveryWindow(args.shippingCountryCode)
   const dutyLikely = mayOweImportDuty(args.shippingCountryCode)

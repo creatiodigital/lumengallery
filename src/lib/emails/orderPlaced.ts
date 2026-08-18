@@ -14,6 +14,7 @@ import {
 import { formatAmount } from './format'
 import { renderEmailLayout } from './layout'
 import { estimateDeliveryWindow, mayOweImportDuty } from './delivery'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -48,7 +49,7 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
   const firstName = escapeHtml(rawFirstName)
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8))
+  const safeOrderId = formatOrderRef(args.orderId)
   const total = formatAmount(args.totalCents, args.currency)
   const safeSpecs = args.specs?.map((s) => ({
     label: escapeHtml(s.label),

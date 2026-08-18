@@ -38,6 +38,7 @@ import {
 import { REORDER_REASONS, REORDER_REASON_LABELS } from '@/lib/orders/reorderReasons'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 // Order hard-delete is a dev/staging cleanup tool only — in production the
 // Danger zone does not render (and the server action refuses regardless).
@@ -893,7 +894,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 className={dashboardStyles.pageTitle} style={{ margin: 0 }}>
-            Order #{order.id.slice(0, 8)}
+            Order {formatOrderRef(order.id)}
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: 14 }}>
             {order.isCart ? (
@@ -1557,7 +1558,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             <>
               This will transfer <strong>{formatEuro(order.artistCents)}</strong> to{' '}
               <strong>{order.artist.name}</strong>&apos;s Stripe account for order{' '}
-              <code>#{order.id.slice(0, 8)}</code>. The order will then move into the Done tab.
+              <code>{formatOrderRef(order.id)}</code>. The order will then move into the Done tab.
               <br />
               <br />
               Once released, the money is on the artist&apos;s side — you can&apos;t pull it back
@@ -2139,7 +2140,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               </>
             ) : (
               <>
-                This will issue an invoice for order <code>#{order.id.slice(0, 8)}</code> and email
+                This will issue an invoice for order <code>{formatOrderRef(order.id)}</code> and email
                 it to <strong>{order.buyerEmail}</strong>. The invoice number is permanent — it
                 cannot be voided from this screen.
               </>
@@ -2237,7 +2238,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             <>
               This will refund <strong>{formatEuro(order.totalCents)}</strong> to{' '}
               <strong>{order.buyerName || order.buyerEmail}</strong> for order{' '}
-              <code>#{order.id.slice(0, 8)}</code>.
+              <code>{formatOrderRef(order.id)}</code>.
               <br />
               <br />
               {order.paymentStatus === 'authorized'
@@ -2354,7 +2355,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           message={
             <>
               This will <strong>permanently remove</strong> order{' '}
-              <code>#{order.id.slice(0, 8)}</code> and its entire event history from the database.
+              <code>{formatOrderRef(order.id)}</code> and its entire event history from the database.
               {order.paymentStatus === 'authorized' && (
                 <>
                   <br />

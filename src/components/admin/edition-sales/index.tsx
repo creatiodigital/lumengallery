@@ -30,6 +30,7 @@ import {
 } from '@/lib/orders/offPlatformKinds'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const formatDate = (iso: string | null) =>
   iso
@@ -354,7 +355,7 @@ export const AdminEditionSales = () => {
                           href={`/admin/orders/${s.orderId}`}
                           style={{ fontSize: 'var(--text-xs)', textDecoration: 'underline' }}
                         >
-                          #{s.orderId.slice(0, 8)}
+                          {formatOrderRef(s.orderId)}
                         </Link>
                       ) : (
                         '—'

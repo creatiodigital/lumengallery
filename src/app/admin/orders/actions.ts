@@ -33,6 +33,7 @@ import { renderInvoicePdf } from '@/lib/invoices/renderInvoicePdf'
 import { buildInvoiceKey, deletePrivateR2Key, uploadPrivateToR2, r2ObjectExists } from '@/lib/r2'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 export type AdminOrderRow = {
   id: string
@@ -907,7 +908,7 @@ export async function releaseOrphanedEditionNumber(
   if (boundOrderId) {
     return {
       ok: false,
-      error: `This copy is attached to order #${boundOrderId.slice(0, 8)}. Cancel or refund that order instead.`,
+      error: `This copy is attached to order ${formatOrderRef(boundOrderId)}. Cancel or refund that order instead.`,
     }
   }
   if (row.offPlatformOrderId) {

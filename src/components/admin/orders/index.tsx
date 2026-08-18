@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
+import { formatOrderRef, orderMatchesQuery } from '@/lib/orders/orderRef'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -122,6 +124,7 @@ export const AdminOrders = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeBucket, setActiveBucket] = useState<Bucket>('new')
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
@@ -163,7 +166,15 @@ export const AdminOrders = () => {
     return map
   }, [orders])
 
-  const visibleOrders = grouped[activeBucket]
+  const searching = query.trim().length > 0
+  // A search deliberately ignores the bucket tabs: a buyer quoting a reference
+  // has no idea whether their order is "New" or "Shipped", and hunting through
+  // tabs is exactly the friction this box exists to remove.
+  const visibleOrders = useMemo(
+    () =>
+      searching ? orders.filter((o) => orderMatchesQuery(o, query)) : grouped[activeBucket],
+    [searching, orders, query, grouped, activeBucket],
+  )
   const activeMeta = BUCKET_META[activeBucket]
 
   return (
@@ -254,11 +265,30 @@ export const AdminOrders = () => {
       </div>
 
       <div className={dashboardStyles.section}>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search order reference, payment id, buyer or artwork…"
+          aria-label="Search orders"
+          style={{
+            width: '100%',
+            maxWidth: 420,
+            padding: '8px 12px',
+            marginBottom: 16,
+            fontSize: 14,
+            border: '1px solid var(--color-border-default)',
+            background: 'var(--color-white)',
+            color: 'var(--color-text-primary)',
+          }}
+        />
         <p
           className={dashboardStyles.sectionDescription}
           style={{ margin: '0 0 16px 0', fontSize: 13 }}
         >
-          {activeMeta.helper}
+          {searching
+            ? `${visibleOrders.length} ${visibleOrders.length === 1 ? 'order' : 'orders'} matching “${query.trim()}” — across every stage.`
+            : activeMeta.helper}
         </p>
 
         {(() => {
@@ -269,9 +299,11 @@ export const AdminOrders = () => {
             return (
               <EmptyState
                 message={
-                  activeBucket === 'new'
-                    ? 'No new orders right now.'
-                    : `No orders in "${activeMeta.title}".`
+                  searching
+                    ? `Nothing matches “${query.trim()}”. Order references look like AD81E642; payment ids start with pi_.`
+                    : activeBucket === 'new'
+                      ? 'No new orders right now.'
+                      : `No orders in "${activeMeta.title}".`
                 }
               />
             )
@@ -298,6 +330,16 @@ export const AdminOrders = () => {
                   <tr key={o.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(o.createdAt)}</td>
                     <td>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-mono, monospace)',
+                          fontSize: 'var(--text-xs)',
+                          letterSpacing: '0.04em',
+                          marginBottom: 2,
+                        }}
+                      >
+                        {formatOrderRef(o.id)}
+                      </div>
                       {o.itemCount > 0 ? (
                         <div>
                           {o.itemCount} {o.itemCount === 1 ? 'print' : 'prints'}

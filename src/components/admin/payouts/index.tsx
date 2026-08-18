@@ -12,6 +12,7 @@ import { formatEuro } from '@/lib/print-providers/format'
 import { listArtistPayouts, type AdminPayoutRow } from '@/app/admin/orders/actions'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, {
@@ -117,7 +118,7 @@ export const AdminPayouts = () => {
                         href={`/admin/orders/${p.orderId}`}
                         style={{ fontSize: 'var(--text-xs)', textDecoration: 'underline' }}
                       >
-                        #{p.orderId.slice(0, 8)}
+                        {formatOrderRef(p.orderId)}
                       </Link>
                     </td>
                   </tr>
