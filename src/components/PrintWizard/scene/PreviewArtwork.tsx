@@ -14,6 +14,14 @@ import {
   getEffectiveSizeCm,
 } from '@/lib/print-providers'
 
+import {
+  EDITION_INK_HEIGHT_EM,
+  EDITION_INK_TOP_EM,
+  EDITION_NUMBER_CLEARANCE_CM,
+  EDITION_NUMBER_FONT_SIZE_CM,
+  editionLeftBearingEm,
+} from '../editionNumberMetrics'
+
 import { BoxPreview } from './preview/BoxPreview'
 import { FloatingPreview } from './preview/FloatingPreview'
 import { PaperSheet } from './preview/parts/PaperSheet'
@@ -34,31 +42,10 @@ interface PreviewArtworkProps {
 // falls back to its default font if it's missing.
 const EDITION_FONT_URL = '/fonts/caveat-regular.ttf'
 
-// Simulates a real edition number an artist pencils in the bottom margin:
-// a roughly constant physical size no matter how big the print is. troika
-// renders digits at ~70% of the em size, so 0.022m em ≈ 15mm digits —
-// legible in-preview while still reading as hand-written. FIXED, never
-// scaled to the print's dimensions; only shrunk if the paper border is too
-// thin to hold it (the border is a fixed cm per variant, itself independent
-// of the print size). Kept in sync with EDITION_NUMBER_HEIGHT_CM (SizeSchema).
-const EDITION_NUMBER_HEIGHT_M = 0.022
-
-// troika renders glyphs at roughly this fraction of the font's em size —
-// used below to turn the actual (possibly border-capped) font size into a
-// real visual half-height, so the gap is derived from true glyph geometry
-// rather than a second, independently-tuned constant that could drift out
-// of sync with EDITION_NUMBER_HEIGHT_M.
-const EDITION_GLYPH_HEIGHT_RATIO = 0.7
-
-// Tiny fixed clearance between the image's bottom edge and the top of the
-// glyphs — just enough that the number reads as sitting right under the
-// print without touching it. This is the ONLY absolute-metre term in the
-// vertical offset; the rest scales with the rendered font size, which is
-// itself capped to a fraction of the border (see below). That keeps the
-// number close to the image and safely inside the border at every print
-// size, instead of a fixed gap that reads as too generous on a thin border
-// or arbitrarily far from the image on a thick one.
-const EDITION_NUMBER_TOUCH_CLEARANCE_M = 0.003
+// Em size of the pencilled number, metres — the shared physical size the 2D
+// schema uses too, so the two previewers show the same number-to-print ratio.
+const EDITION_NUMBER_FONT_SIZE_M = EDITION_NUMBER_FONT_SIZE_CM / 100
+const EDITION_NUMBER_CLEARANCE_M = EDITION_NUMBER_CLEARANCE_CM / 100
 
 const ARTWORK_Z = 0.012
 
@@ -162,26 +149,38 @@ export const PreviewArtwork = ({
         {/* Limited-edition number — bottom-left, in the paper margin just
             below the image, in the Caveat hand it ships with. The number
             sits in the BOTTOM margin, so it's bounded by the vertical
-            border, not the horizontal one. Left edge lines up with the
-            image's own left edge (anchorX="left" + x = -widthM / 2, the
-            image's left edge in this plane's local coordinates), and the
-            vertical gap is derived from the actual rendered glyph height
-            (see EDITION_GLYPH_HEIGHT_RATIO) so it sits as close to the
-            image as it can without touching it, at every print size. */}
+            border, not the horizontal one.
+
+            Placed by the glyphs' INK box (see editionNumberMetrics), not by
+            troika's text box: anchoring the box at the image's edges leaves
+            Caveat's own side bearings as visible slack, which reads as the
+            number being indented from the left edge and floating below the
+            image. Anchoring at the baseline and offsetting by the measured
+            ink instead puts the ink's left edge flush with the image's left
+            edge and its top a hair under the image, at every print size. */}
         {editionLabel &&
           paperBorderYM > 0 &&
           (() => {
-            const editionFontSizeM = Math.min(EDITION_NUMBER_HEIGHT_M, paperBorderYM * 0.7)
-            const editionGapToCenterM =
-              (editionFontSizeM * EDITION_GLYPH_HEIGHT_RATIO) / 2 + EDITION_NUMBER_TOUCH_CLEARANCE_M
+            const fontSizeM = Math.min(EDITION_NUMBER_FONT_SIZE_M, paperBorderYM * 0.7)
+            // Clamped to what the border has left below the ink, so the
+            // descending slash can never cross the sheet's bottom edge.
+            const clearanceM = Math.max(
+              0,
+              Math.min(
+                EDITION_NUMBER_CLEARANCE_M,
+                paperBorderYM - fontSizeM * EDITION_INK_HEIGHT_EM,
+              ),
+            )
+            const baselineY = -(heightM / 2 + clearanceM + fontSizeM * EDITION_INK_TOP_EM)
+            const inkLeftX = -widthM / 2 - editionLeftBearingEm(editionLabel) * fontSizeM
             return (
               <Text
                 font={EDITION_FONT_URL}
                 color="#111111"
                 anchorX="left"
-                anchorY="middle"
-                fontSize={editionFontSizeM}
-                position={[-widthM / 2, -(heightM / 2 + editionGapToCenterM), 0.002]}
+                anchorY="top-baseline"
+                fontSize={fontSizeM}
+                position={[inkLeftX, baselineY, 0.002]}
               >
                 {editionLabel}
               </Text>

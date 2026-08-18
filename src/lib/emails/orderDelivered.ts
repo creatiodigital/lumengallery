@@ -46,7 +46,7 @@ export function renderOrderDeliveredEmail(args: OrderDeliveredArgs): {
     ]) +
     emailDivider() +
     emailParagraph(
-      `If anything looks wrong &mdash; damaged in transit, mis-printed, or simply not what you expected &mdash; just reply to this email with a photo and we&rsquo;ll make it right.`,
+      `If anything looks wrong &mdash; damaged in transit, mis-printed, or simply not what you expected &mdash; just reply to this email with your unboxing photos or video, or a photo of the problem, and we&rsquo;ll make it right.`,
     ) +
     emailParagraph(
       `Otherwise, enjoy living with the work. The artist will receive their payout shortly.`,

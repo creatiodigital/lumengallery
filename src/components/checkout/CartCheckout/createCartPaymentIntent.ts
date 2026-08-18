@@ -48,6 +48,16 @@ export type CreateCartPaymentIntentResult =
   | { ok: true; clientSecret: string; paymentIntentId: string; totals: CartTotals }
   | { ok: false; error: string }
 
+/**
+ * Shown when we can't open a PaymentIntent at all. A buyer at the card step is
+ * deciding whether to trust us with their card, so this says the two things
+ * that matter: nothing was charged, and a human will finish the order if the
+ * machine won't. It never says "try again" on its own — a message that invites
+ * an action which then fails again is what makes a site feel broken.
+ */
+const PAYMENT_START_FAILED =
+  "We couldn't start your payment, and your card has not been charged. Please refresh this page and try again — if it still won't go through, email contact@theartroom.gallery and we'll complete your order by hand."
+
 export async function createCartPaymentIntent(
   input: CreateCartPaymentIntentInput,
 ): Promise<CreateCartPaymentIntentResult> {
@@ -185,59 +195,54 @@ export async function createCartPaymentIntent(
   // ── 4–7. Create the PI, bind numbers, persist PendingCart ────────
   // Wrap from PI creation onward so a Stripe failure releases ONLY the
   // replacements we reserved this call.
-  // Best-effort human summary of WHAT was bought, written onto the PI so the
-  // order is identifiable + fulfillable from Stripe alone — never just
-  // "Cart: N item(s)". Cosmetic: any failure here falls back to the bland
-  // description so it can NEVER block the payment.
-  let piDescription = `Cart: ${items.length} item(s)`
-  const piMetadata: Record<string, string> = { kind: 'cart' }
-  try {
-    const allNumberIds = Array.from(lineNumberIds.values()).flat()
-    const numberRows = allNumberIds.length
-      ? await prisma.editionNumber.findMany({
-          where: { id: { in: allNumberIds } },
-          select: { id: true, number: true },
-        })
-      : []
-    const numberById = new Map(numberRows.map((r) => [r.id, r.number]))
 
-    const variantIds = items.map((i) => i.variantId).filter((v): v is string => Boolean(v))
-    const variantRows = variantIds.length
-      ? await prisma.limitedVariant.findMany({
-          where: { id: { in: variantIds } },
-          select: { id: true, editionSize: true },
-        })
-      : []
-    const sizeByVariant = new Map(variantRows.map((v) => [v.id, v.editionSize]))
-
-    const lineStrings = items.map((item) => {
-      const priced = pricedByLine.get(item.lineId)
-      const title = priced?.title ?? item.artworkSlug
-      const specs = (priced?.specsSummary ?? []).map((s) => s.value).join(', ')
-      const ids = lineNumberIds.get(item.lineId) ?? []
-      const nums = ids
-        .map((id) => numberById.get(id))
-        .filter((n): n is number => n != null)
-        .sort((a, b) => a - b)
-      const size = item.variantId ? sizeByVariant.get(item.variantId) : undefined
-      const edition = nums.length && size ? ` · No.${nums.join(',')}/${size}` : ''
-      const qty = item.quantity > 1 ? ` ×${item.quantity}` : ''
-      return `${title}${specs ? ` — ${specs}` : ''}${edition}${qty}`.trim()
-    })
-
-    // Stripe caps description at 1000 chars; truncate safely.
-    const joined = lineStrings.join(' | ')
-    if (joined) piDescription = joined.length > 990 ? `${joined.slice(0, 986)} …` : joined
-    // Per-item metadata: ≤50 keys / ≤500 chars each (Stripe limits).
-    lineStrings.slice(0, 40).forEach((s, i) => {
-      piMetadata[`item_${i + 1}`] = s.length > 500 ? `${s.slice(0, 497)}…` : s
-    })
-  } catch (summaryErr) {
-    console.warn(
-      '[create-cart-pi] order summary build failed (non-fatal):',
-      summaryErr instanceof Error ? summaryErr.message : summaryErr,
-    )
+  // Human summary of WHAT was bought, written onto the PI so the order is
+  // identifiable + fulfillable from Stripe alone — never just
+  // "Cart: N item(s)".
+  //
+  // CRITICAL: everything passed to `create()` below must be derivable from the
+  // SAME inputs the idempotency key hashes (§3). In particular it must NOT
+  // depend on the reserved edition numbers. Those legitimately differ between
+  // re-entries: the first call binds its numbers to the PI, so a reload can't
+  // re-adopt them (the candidate filter in §2a requires `paymentIntentId:
+  // null`) and reserves the next ones instead. Under an unchanged key, any
+  // differing param makes Stripe reject the whole request with
+  // StripeIdempotencyError — which would strand the buyer, unable to pay for
+  // that cart at all, and would fire BEFORE the replay reconciliation in §5
+  // that exists to heal exactly this case. The numbers are attached by an
+  // `update()` in §7 instead, which carries no idempotency key.
+  const lineSummary = (
+    item: CartCheckoutItem,
+    numbers: number[],
+    editionSize?: number | null,
+  ): string => {
+    const priced = pricedByLine.get(item.lineId)
+    const title = priced?.title ?? item.artworkSlug
+    const specs = (priced?.specsSummary ?? []).map((s) => s.value).join(', ')
+    const edition = numbers.length && editionSize ? ` · No.${numbers.join(',')}/${editionSize}` : ''
+    const qty = item.quantity > 1 ? ` ×${item.quantity}` : ''
+    return `${title}${specs ? ` — ${specs}` : ''}${edition}${qty}`.trim()
   }
+
+  // Stripe caps description at 1000 chars, and metadata at ≤50 keys /
+  // ≤500 chars each — truncate safely for both.
+  const summaryFrom = (lineStrings: string[]) => {
+    const joined = lineStrings.join(' | ')
+    const description = joined
+      ? joined.length > 990
+        ? `${joined.slice(0, 986)} …`
+        : joined
+      : `Cart: ${items.length} item(s)`
+    const metadata: Record<string, string> = { kind: 'cart' }
+    lineStrings.slice(0, 40).forEach((s, i) => {
+      metadata[`item_${i + 1}`] = s.length > 500 ? `${s.slice(0, 497)}…` : s
+    })
+    return { description, metadata }
+  }
+
+  // Pure string building over already-validated pricing — no I/O, nothing to
+  // fail, so no fallback needed here (unlike the enrich in §7).
+  const stableSummary = summaryFrom(items.map((item) => lineSummary(item, [])))
 
   try {
     const pi = await stripe.paymentIntents.create(
@@ -249,7 +254,7 @@ export async function createCartPaymentIntent(
         // places the order at the provider. One PI for the whole cart.
         capture_method: 'manual',
         receipt_email: address.email || undefined,
-        description: piDescription,
+        description: stableSummary.description,
         shipping: {
           name: address.fullName,
           phone: address.phone || undefined,
@@ -262,17 +267,19 @@ export async function createCartPaymentIntent(
             country: address.countryCode,
           },
         },
-        // A per-item order summary (title · specs · edition no · qty), so the
-        // order is identifiable from Stripe alone. The PendingCart row remains
-        // the AUTHORITATIVE item source for the webhook; this is for humans.
-        metadata: piMetadata,
+        // A per-item order summary (title · specs · qty), so the order is
+        // identifiable from Stripe alone; the edition numbers land via the
+        // update() in §7. The PendingCart row remains the AUTHORITATIVE item
+        // source for the webhook; this is for humans.
+        metadata: stableSummary.metadata,
       },
       { idempotencyKey },
     )
 
     if (!pi.client_secret) {
       await releaseFreshlyReserved()
-      return { ok: false, error: 'Could not start payment. Please try again.' }
+      console.error('[create-cart-pi] Stripe returned a PaymentIntent with no client_secret:', pi.id)
+      return { ok: false, error: PAYMENT_START_FAILED }
     }
 
     // 5. Idempotent-replay reconciliation (mirrors the single-print guard at
@@ -412,6 +419,53 @@ export async function createCartPaymentIntent(
       },
     })
 
+    // 7. Now that the held numbers are final (freshly attached above, or
+    //    adopted from the replay), stamp them onto the PI so a human reading
+    //    Stripe alone can see WHICH copies were sold. Deliberately an
+    //    `update()`: it carries no idempotency key, so number-dependent text
+    //    may differ between re-entries without invalidating the create replay
+    //    (see the §4 note). Cosmetic — the PendingCart row is authoritative,
+    //    so any failure here is logged and swallowed. It must NOT reach the
+    //    outer catch, which would release the buyer's numbers over a
+    //    description.
+    try {
+      const allNumberIds = Array.from(lineNumberIds.values()).flat()
+      if (allNumberIds.length > 0) {
+        const variantIds = items.map((i) => i.variantId).filter((v): v is string => Boolean(v))
+        const [numberRows, variantRows] = await Promise.all([
+          prisma.editionNumber.findMany({
+            where: { id: { in: allNumberIds } },
+            select: { id: true, number: true },
+          }),
+          prisma.limitedVariant.findMany({
+            where: { id: { in: variantIds } },
+            select: { id: true, editionSize: true },
+          }),
+        ])
+        const numberById = new Map(numberRows.map((r) => [r.id, r.number]))
+        const sizeByVariant = new Map(variantRows.map((v) => [v.id, v.editionSize]))
+
+        const enriched = summaryFrom(
+          items.map((item) => {
+            const nums = (lineNumberIds.get(item.lineId) ?? [])
+              .map((id) => numberById.get(id))
+              .filter((n): n is number => n != null)
+              .sort((a, b) => a - b)
+            return lineSummary(item, nums, item.variantId ? sizeByVariant.get(item.variantId) : null)
+          }),
+        )
+        await stripe.paymentIntents.update(pi.id, {
+          description: enriched.description,
+          metadata: enriched.metadata,
+        })
+      }
+    } catch (enrichErr) {
+      console.warn(
+        '[create-cart-pi] edition-number summary update failed (non-fatal):',
+        enrichErr instanceof Error ? enrichErr.message : enrichErr,
+      )
+    }
+
     // 8. Done.
     return {
       ok: true,
@@ -420,11 +474,19 @@ export async function createCartPaymentIntent(
       totals,
     }
   } catch (err) {
-    // 7. Stripe (or the persist) failed after we reserved replacements —
+    // 9. Stripe (or the persist) failed after we reserved replacements —
     //    return ONLY the numbers we reserved THIS call to the pool. The
     //    buyer's pre-existing valid holds are left untouched so a retry can
     //    reuse them.
     await releaseFreshlyReserved()
+    // Log the CAUSE server-side as well as shipping it to Sentry. captureError
+    // is Sentry-only, so without this a failure here is completely invisible
+    // in local and preview environments (no DSN) — the buyer sees a generic
+    // message and the developer sees nothing at all.
+    console.error(
+      '[create-cart-pi] failed to open PaymentIntent:',
+      err instanceof Error ? `${err.name}: ${err.message}` : err,
+    )
     captureError(err, {
       flow: 'payment',
       stage: 'create-cart-payment-intent',
@@ -437,6 +499,6 @@ export async function createCartPaymentIntent(
       level: 'error',
       fingerprint: ['payment:create-cart-intent-failed'],
     })
-    return { ok: false, error: 'Could not start payment. Please try again.' }
+    return { ok: false, error: PAYMENT_START_FAILED }
   }
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
 import { ensureOrderAction } from '@/lib/orders/ensureOrderAction'
 
+import { UnboxingReminderModal } from './UnboxingReminderModal'
 import styles from './CartCheckout.module.scss'
 
 type CartConfirmationProps = {
@@ -14,6 +15,27 @@ type CartConfirmationProps = {
 }
 
 type Status = 'finalizing' | 'confirmed' | 'failed'
+
+/** Per-order key, so the reminder shows once and a reload doesn't nag. */
+const REMINDER_DISMISSED_KEY = 'the-art-room:unboxing-reminder:'
+
+/** sessionStorage throws in Safari private mode — a reminder is never worth
+ *  breaking the confirmation screen over, so both accessors swallow. */
+function reminderAlreadySeen(paymentIntentId: string): boolean {
+  try {
+    return sessionStorage.getItem(`${REMINDER_DISMISSED_KEY}${paymentIntentId}`) !== null
+  } catch {
+    return false
+  }
+}
+
+function markReminderSeen(paymentIntentId: string): void {
+  try {
+    sessionStorage.setItem(`${REMINDER_DISMISSED_KEY}${paymentIntentId}`, '1')
+  } catch {
+    /* no-op */
+  }
+}
 
 /**
  * Cart confirmation step.
@@ -31,6 +53,7 @@ type Status = 'finalizing' | 'confirmed' | 'failed'
  */
 export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => {
   const [status, setStatus] = useState<Status>('finalizing')
+  const [showReminder, setShowReminder] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -45,6 +68,19 @@ export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => 
       active = false
     }
   }, [paymentIntentId])
+
+  // Ask for unboxing images once the order is actually confirmed — never on
+  // the failed path, where the buyer has a real problem to worry about first.
+  useEffect(() => {
+    if (status !== 'confirmed') return
+    if (reminderAlreadySeen(paymentIntentId)) return
+    setShowReminder(true)
+  }, [status, paymentIntentId])
+
+  const dismissReminder = () => {
+    setShowReminder(false)
+    markReminderSeen(paymentIntentId)
+  }
 
   if (status === 'finalizing') {
     return (
@@ -104,6 +140,8 @@ export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => 
       </div>
 
       <Button variant="primary" size="bigSquared" href="/prints" label="Browse more prints" />
+
+      {showReminder && <UnboxingReminderModal onClose={dismissReminder} />}
     </div>
   )
 }

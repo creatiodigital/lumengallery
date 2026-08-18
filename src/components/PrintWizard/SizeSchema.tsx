@@ -1,13 +1,13 @@
 'use client'
 
+import {
+  EDITION_INK_HEIGHT_EM,
+  EDITION_INK_TOP_EM,
+  EDITION_NUMBER_CLEARANCE_CM,
+  EDITION_NUMBER_FONT_SIZE_CM,
+  editionLeftBearingEm,
+} from './editionNumberMetrics'
 import styles from './PrintWizard.module.scss'
-
-// Edition number = a fixed PHYSICAL size (cm), mirroring the 3D preview
-// (EDITION_NUMBER_HEIGHT_M / _GAP_M in PreviewArtwork.tsx), so it reads like a
-// pencil number and does NOT shrink with the print. Converted to schema px via
-// the print's own scale; capped so it stays inside the paper margin.
-const EDITION_NUMBER_HEIGHT_CM = 2.2
-const EDITION_NUMBER_GAP_CM = 1.4
 
 interface SizeSchemaProps {
   printWidthCm: number
@@ -159,19 +159,30 @@ export const SizeSchema = ({
     effectivePaperBorder > 0 ||
     effectivePaperBorderY > 0
 
-  // Edition number sizing — fixed physical size + gap (see constants above),
-  // converted to schema px via the print's own scale (so it reflects the real
-  // number-to-print ratio, like the 3D), capped to stay inside the margin.
-  // The number sits BELOW the image, so it's bounded by the vertical
-  // (paperBorderH) border, not the horizontal one.
+  // Edition number — a fixed physical em size (see editionNumberMetrics),
+  // converted to schema px via the print's own scale so it reflects the real
+  // number-to-print ratio, like the 3D. The number sits BELOW the image, so
+  // it's bounded by the vertical (paperBorderH) border, not the horizontal
+  // one. A 7 px floor keeps it legible on a big print where the real ratio
+  // would render it sub-pixel.
   const editionFontPx = Math.max(
     7,
-    Math.min(EDITION_NUMBER_HEIGHT_CM * printScale, paperBorderH * 0.8),
+    Math.min(EDITION_NUMBER_FONT_SIZE_CM * printScale, paperBorderH * 0.8),
   )
-  const editionGapPx = Math.min(
-    EDITION_NUMBER_GAP_CM * printScale,
-    Math.max(0, paperBorderH - editionFontPx),
+  // Placed by its INK, not its baseline: the visual top of the glyphs sits
+  // `clearance` below the image and their left edge lines up with the image's
+  // own left edge. The clearance is clamped to whatever the border has left
+  // after the ink, so the number can't spill past the sheet edge.
+  const editionInkHeightPx = editionFontPx * EDITION_INK_HEIGHT_EM
+  const editionClearancePx = Math.max(
+    0,
+    Math.min(EDITION_NUMBER_CLEARANCE_CM * printScale, paperBorderH - editionInkHeightPx),
   )
+  const editionX = editionLabel
+    ? printX - editionLeftBearingEm(editionLabel) * editionFontPx
+    : printX
+  const editionBaselineY =
+    printY + printH + editionClearancePx + EDITION_INK_TOP_EM * editionFontPx
 
   return (
     <div className={styles.schemaWrapper}>
@@ -254,11 +265,13 @@ export const SizeSchema = ({
         )}
 
         {/* Limited-edition number — bottom-left, in the paper margin just
-            below the image, in the Caveat hand it ships with. */}
+            below the image, in the Caveat hand it ships with. Positioned by
+            its ink box (see editionNumberMetrics) so it reads flush-left with
+            the image and tight under it. */}
         {editionLabel && paperBorderH > 0 && (
           <text
-            x={printX}
-            y={printY + printH + editionGapPx + editionFontPx * 0.72}
+            x={editionX}
+            y={editionBaselineY}
             textAnchor="start"
             dominantBaseline="alphabetic"
             fill="#111111"
