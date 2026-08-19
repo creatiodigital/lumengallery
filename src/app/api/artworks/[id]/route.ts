@@ -327,6 +327,9 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 }
 
 // DELETE artwork (requires auth + ownership)
+/** Shape stored in Exhibition.autofocusGroups (JSON, hence hand-typed here). */
+type AutofocusGroupJson = { id: string; name: string; artworkIds: string[] }
+
 export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
@@ -392,6 +395,32 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
       } catch (error) {
         console.warn('Failed to delete video blob:', error)
       }
+    }
+
+    // Strip the artwork from every exhibition's autofocus groups BEFORE the
+    // row goes. `autofocusGroups` is a JSON column holding raw artworkIds, so
+    // no foreign key reaches inside it and the cascade below cannot clean it —
+    // without this, every exhibition that grouped this piece keeps a dead id
+    // forever. Surgical on purpose: the group survives with its other members,
+    // because losing one artwork is not a reason to lose the grouping.
+    const groupedIn = await prisma.exhibition.findMany({
+      where: { autofocusGroups: { not: Prisma.DbNull } },
+      select: { id: true, autofocusGroups: true },
+    })
+    for (const ex of groupedIn) {
+      const groups = ex.autofocusGroups as unknown as AutofocusGroupJson[] | null
+      if (!Array.isArray(groups)) continue
+      if (!groups.some((g) => Array.isArray(g?.artworkIds) && g.artworkIds.includes(id))) continue
+      const cleaned = groups.map((g) => ({
+        ...g,
+        artworkIds: Array.isArray(g?.artworkIds)
+          ? g.artworkIds.filter((aid) => aid !== id)
+          : g?.artworkIds,
+      }))
+      await prisma.exhibition.update({
+        where: { id: ex.id },
+        data: { autofocusGroups: cleaned as unknown as Prisma.InputJsonValue },
+      })
     }
 
     // Delete artwork record
