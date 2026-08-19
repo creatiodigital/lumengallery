@@ -122,6 +122,12 @@ export const LimitedVariantsEditor = ({
   // clicks "Ready to Sell"; then required-field errors show for that card and
   // clear live as each field is fixed (the gallery form-validation convention).
   const [triedReadyToSell, setTriedReadyToSell] = useState<Record<string, boolean>>({})
+  // Why the last "Ready to Sell" click refused, shown next to the button that
+  // refused. Putting one variant on sale saves the WHOLE form, so the blocker
+  // is often a DIFFERENT card — previously the click expanded that card and
+  // returned, which reads as "the button does nothing" when the card is
+  // scrolled out of view.
+  const [readyToSellBlockedBy, setReadyToSellBlockedBy] = useState<string | null>(null)
 
   const update = (index: number, patch: Partial<LimitedVariantDraft>) => {
     onChange(variants.map((v, i) => (i === index ? { ...v, ...patch } : v)))
@@ -331,21 +337,34 @@ export const LimitedVariantsEditor = ({
         // must be valid. Validate all on click; if any fail, reveal their errors
         // (expand the cards) and don't proceed — no blind 400.
         const handleReadyToSell = () => {
-          const invalidKeys = variants
-            .map((v, i) => [keyFor(v, i), variantHasErrors(v, i)] as const)
-            .filter(([, bad]) => bad)
-            .map(([k]) => k)
-          if (invalidKeys.length > 0) {
-            const flags = Object.fromEntries(invalidKeys.map((k) => [k, true]))
+          const invalid = variants
+            .map((v, i) => ({ key: keyFor(v, i), name: v.name || `Variant ${i + 1}`, bad: variantHasErrors(v, i) }))
+            .filter((entry) => entry.bad)
+          if (invalid.length > 0) {
+            const flags = Object.fromEntries(invalid.map((entry) => [entry.key, true]))
             setTriedReadyToSell((t) => ({ ...t, ...flags }))
             setExpanded((e) => ({ ...e, ...flags }))
+            const first = invalid[0]
+            // Name the blocker — it is frequently not the card you clicked.
+            setReadyToSellBlockedBy(
+              invalid.length === 1
+                ? `“${first.name}” needs fixing before anything can go on sale — its card is open below.`
+                : `${invalid.length} variants need fixing before anything can go on sale, starting with “${first.name}”.`,
+            )
+            // Take the artist to the problem rather than leaving them to hunt.
+            requestAnimationFrame(() => {
+              document
+                .getElementById(`variant-card-${first.key}`)
+                ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+            })
             return
           }
+          setReadyToSellBlockedBy(null)
           onReadyToSellVariant?.(index)
         }
 
         return (
-          <div key={key} className={styles.variantCard}>
+          <div key={key} id={`variant-card-${key}`} className={styles.variantCard}>
             <button
               type="button"
               className={styles.variantHeader}
@@ -647,6 +666,9 @@ export const LimitedVariantsEditor = ({
                       <Button type="button" variant="primary" onClick={handleReadyToSell}>
                         Ready to Sell
                       </Button>
+                    )}
+                    {showReadyToSell && readyToSellBlockedBy && (
+                      <ErrorText>{readyToSellBlockedBy}</ErrorText>
                     )}
                     {/* Live variant: take it off sale to edit it — admin only. */}
                     {showUnblock && variant.id && (

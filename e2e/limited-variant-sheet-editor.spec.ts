@@ -33,6 +33,20 @@ test('seedSheetForVariant preserves an existing print size as print + 2*border',
   expect(isFixedSheet(seed)).toBe(true)
 })
 
+test('seedSheetForVariant seeds whole millimetres, not the aspect lock raw float', () => {
+  // A 36 cm wide print on a 4000x2806 artwork derives 25.2665319087496 cm of
+  // height; with a 7 cm border the naive sheet is 39.2665319087496, which the
+  // artist then sees in an input beside a border field marked "whole cm".
+  const seeded = seedSheetForVariant({
+    widthCm: 36,
+    heightCm: 25.2665319087496,
+    borderCm: 7,
+    aspectRatio: 36 / 25.2665319087496,
+  })
+  expect(seeded.sheetWidthCm).toBe(50)
+  expect(seeded.sheetHeightCm).toBe(39.3)
+})
+
 test('seedSheetForVariant falls back to a standard sheet, oriented to the artwork, when there is no print size yet', () => {
   const landscape = seedSheetForVariant({ widthCm: 0, heightCm: 0, borderCm: 3, aspectRatio: 1.5 })
   expect(landscape).toEqual({ sheetWidthCm: 50, sheetHeightCm: 40 })

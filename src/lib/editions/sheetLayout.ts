@@ -128,6 +128,11 @@ export type SeedSheetArgs = {
  * landscape/square, 40x50 for portrait. The result always satisfies
  * isFixedSheet.
  */
+/** Millimetre precision — matches TPS_SIZE_BOUNDS.stepCm (0.1 cm). */
+function roundToMm(cm: number): number {
+  return Math.round(cm * 10) / 10
+}
+
 export function seedSheetForVariant(
   args: SeedSheetArgs,
 ): { sheetWidthCm: number; sheetHeightCm: number } {
@@ -135,5 +140,9 @@ export function seedSheetForVariant(
   const hasPrint = widthCm > 0 && heightCm > 0
   const sheetWidthCm = hasPrint ? widthCm + borderCm * 2 : aspectRatio >= 1 ? 50 : 40
   const sheetHeightCm = hasPrint ? heightCm + borderCm * 2 : aspectRatio >= 1 ? 40 : 50
-  return { sheetWidthCm, sheetHeightCm }
+  // A sheet is a real piece of paper an artist types a number into, so seed it
+  // at mm precision — the same 0.1 cm step every size input uses. The print
+  // height it derives from carries the aspect lock's full float, which reached
+  // the editor as "39.2665319087496 cm" in the Sheet height field.
+  return { sheetWidthCm: roundToMm(sheetWidthCm), sheetHeightCm: roundToMm(sheetHeightCm) }
 }
