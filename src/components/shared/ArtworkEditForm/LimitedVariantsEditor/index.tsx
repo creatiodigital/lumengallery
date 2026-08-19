@@ -47,6 +47,11 @@ type VariantTemplate = {
   widthCm: number
   heightCm: number
   borderCm: number
+  /** Present only for FIXED-SHEET templates. When set, these — not the print
+   *  size — are what the template really carries, and the image is re-derived
+   *  for whatever artwork it lands on. */
+  sheetWidthCm: number | null
+  sheetHeightCm: number | null
   editionSize: number
   priceEuros: string
   sourceArtworkTitle: string
@@ -190,23 +195,37 @@ export const LimitedVariantsEditor = ({
 
   const applyTemplate = (t: VariantTemplate) => {
     if (variants.length >= MAX_LIMITED_VARIANTS) return
-    // Templates are offered only for EXACT aspect-ratio matches, so the spec
-    // applies verbatim — identical print size, border and margins across the
-    // whole series. No adaptation, ever.
-    setExpanded((e) => ({ ...e, [`new-${variants.length}`]: true }))
+    const key = `new-${variants.length}`
+    setExpanded((e) => ({ ...e, [key]: true }))
     setTemplatePickerOpen(false)
-    onChange([
-      ...variants,
-      {
-        name: t.name,
-        paperId: t.paperId,
-        widthCm: t.widthCm,
-        heightCm: t.heightCm,
-        borderCm: t.borderCm,
-        editionSize: t.editionSize,
-        priceEuros: t.priceEuros,
-      },
-    ])
+
+    const isFixedTemplate = t.sheetWidthCm != null && t.sheetHeightCm != null
+
+    // ADAPTIVE templates are offered only for EXACT aspect-ratio matches, so
+    // the spec applies verbatim — identical print size, border and margins
+    // across the whole series.
+    //
+    // FIXED-SHEET templates carry the sheet and the minimum border instead,
+    // neither of which depends on the artwork, so they apply to ANY piece: we
+    // re-derive the print size from this artwork's ratio inside the same sheet.
+    const draft: LimitedVariantDraft = {
+      name: t.name,
+      paperId: t.paperId,
+      widthCm: t.widthCm,
+      heightCm: t.heightCm,
+      borderCm: t.borderCm,
+      editionSize: t.editionSize,
+      priceEuros: t.priceEuros,
+      ...(isFixedTemplate
+        ? { sheetWidthCm: t.sheetWidthCm, sheetHeightCm: t.sheetHeightCm }
+        : {}),
+    }
+    const applied = isFixedTemplate ? { ...draft, ...withDerivedImage(draft) } : draft
+
+    // Keep the card's own toggle in step with the data it just received.
+    if (isFixedTemplate) setSheetModeMap((m) => ({ ...m, [key]: true }))
+
+    onChange([...variants, applied])
   }
 
   // Duplicate-size detection (TPS keys edition identity on print size).

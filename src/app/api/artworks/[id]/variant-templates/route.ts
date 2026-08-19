@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 
 import { requireOwnership } from '@/lib/authUtils'
 import prisma from '@/lib/prisma'
+import { isVariantTemplateApplicable } from '@/lib/editions/sheetLayout'
 
 /**
  * Reusable variant templates for a limited-edition artwork — the same
@@ -45,6 +46,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         widthCm: true,
         heightCm: true,
         borderCm: true,
+        sheetWidthCm: true,
+        sheetHeightCm: true,
         editionSize: true,
         priceCents: true,
         artwork: { select: { title: true, originalWidth: true, originalHeight: true } },
@@ -64,13 +67,26 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     const seen = new Set<string>()
     const templates = variants
       .filter((v) => {
-        const w = v.artwork.originalWidth
-        const h = v.artwork.originalHeight
-        if (!w || !h) return false
-        return w * th === h * tw
+        // FIXED-SHEET templates apply to ANY artwork. What the artist authored
+        // there is the SHEET and the minimum border — neither depends on the
+        // image. The print size is derived from the sheet and the target
+        // artwork's own ratio, so a different ratio simply yields a different
+        // (correct) image inside the same piece of paper; only the second
+        // margin moves, which is the entire point of the mode. The verbatim
+        // rule below exists for adaptive variants, where widthCm/heightCm ARE
+        // the artist's aspect-locked print size.
+        return isVariantTemplateApplicable(
+          {
+            sheetWidthCm: v.sheetWidthCm,
+            sheetHeightCm: v.sheetHeightCm,
+            sourceWidthPx: v.artwork.originalWidth,
+            sourceHeightPx: v.artwork.originalHeight,
+          },
+          { widthPx: tw, heightPx: th },
+        )
       })
       .filter((v) => {
-        const key = `${v.name}|${v.paperId}|${v.widthCm}x${v.heightCm}|${v.borderCm}|${v.editionSize}`
+        const key = `${v.name}|${v.paperId}|${v.widthCm}x${v.heightCm}|${v.borderCm}|${v.editionSize}|${v.sheetWidthCm ?? ''}x${v.sheetHeightCm ?? ''}`
         if (seen.has(key)) return false
         seen.add(key)
         return true
@@ -81,6 +97,8 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         widthCm: v.widthCm,
         heightCm: v.heightCm,
         borderCm: v.borderCm,
+        sheetWidthCm: v.sheetWidthCm,
+        sheetHeightCm: v.sheetHeightCm,
         editionSize: v.editionSize,
         priceEuros: v.priceCents != null ? String(v.priceCents / 100) : '',
         sourceArtworkTitle: v.artwork.title ?? '(untitled)',

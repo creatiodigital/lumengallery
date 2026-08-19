@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { computeSheetLayout, isFixedSheet, seedSheetForVariant } from '../src/lib/editions/sheetLayout'
+import {
+  computeSheetLayout,
+  isFixedSheet,
+  isVariantTemplateApplicable,
+  seedSheetForVariant,
+} from '../src/lib/editions/sheetLayout'
 import { remapIndexKeys } from '../src/components/shared/ArtworkEditForm/LimitedVariantsEditor/remapIndexKeys'
 
 // The editor keeps widthCm/heightCm in lockstep with the sheet. This spec
@@ -95,4 +100,37 @@ test('remapIndexKeys handles a mix of id-keyed and index-keyed entries on delete
   const state = { 'new-0': true, 'new-1': false, savedVariantId: true }
   const remapped = remapIndexKeys(state, 0, 'new-0')
   expect(remapped).toEqual({ 'new-0': false, savedVariantId: true })
+})
+
+// A 3:2 artwork and a 4:3 artwork — the ratio mismatch that used to hide every
+// template from the picker, including fixed-sheet ones it could never affect.
+const THREE_TWO = { widthPx: 6000, heightPx: 4000 }
+const FOUR_THREE = { widthPx: 4000, heightPx: 3000 }
+
+test('a fixed-sheet template applies to ANY artwork, whatever its ratio', () => {
+  const fixed = { sheetWidthCm: 50, sheetHeightCm: 40, sourceWidthPx: 3000, sourceHeightPx: 2000 }
+  expect(isVariantTemplateApplicable(fixed, THREE_TWO)).toBe(true)
+  expect(isVariantTemplateApplicable(fixed, FOUR_THREE)).toBe(true)
+})
+
+test('an adaptive template still requires an exact ratio match', () => {
+  const adaptive = {
+    sheetWidthCm: null,
+    sheetHeightCm: null,
+    sourceWidthPx: 3000,
+    sourceHeightPx: 2000,
+  }
+  // Same 3:2 shape at a different resolution — still applies.
+  expect(isVariantTemplateApplicable(adaptive, THREE_TWO)).toBe(true)
+  // Different shape — the print size it carries would misdescribe the margins.
+  expect(isVariantTemplateApplicable(adaptive, FOUR_THREE)).toBe(false)
+})
+
+test('an adaptive template with unknown source pixels is never offered', () => {
+  expect(
+    isVariantTemplateApplicable(
+      { sheetWidthCm: null, sheetHeightCm: null, sourceWidthPx: null, sourceHeightPx: null },
+      THREE_TWO,
+    ),
+  ).toBe(false)
 })

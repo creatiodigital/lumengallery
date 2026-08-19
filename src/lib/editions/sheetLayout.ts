@@ -146,3 +146,35 @@ export function seedSheetForVariant(
   // the editor as "39.2665319087496 cm" in the Sheet height field.
   return { sheetWidthCm: roundToMm(sheetWidthCm), sheetHeightCm: roundToMm(sheetHeightCm) }
 }
+
+/**
+ * May a saved variant be offered as a template for another artwork?
+ *
+ * ADAPTIVE variants carry the artist's aspect-locked print size, so they only
+ * apply to an artwork of the SAME ratio — a near miss would silently change
+ * the margin proportions.
+ *
+ * FIXED-SHEET variants carry the sheet and the minimum border, neither of
+ * which depends on the image. The print is derived to fit whatever ratio it
+ * lands on, so they apply to ANY artwork; only the second margin differs,
+ * which is precisely what fixed-sheet mode is for.
+ *
+ * Ratios are compared by integer cross-multiplication (no float noise), and
+ * pixel RESOLUTION is deliberately ignored: 3000x2000 and 6000x4000 are both
+ * exactly 3:2 and print identically.
+ */
+export function isVariantTemplateApplicable(
+  template: {
+    sheetWidthCm?: number | null
+    sheetHeightCm?: number | null
+    sourceWidthPx?: number | null
+    sourceHeightPx?: number | null
+  },
+  target: { widthPx?: number | null; heightPx?: number | null },
+): boolean {
+  if (template.sheetWidthCm != null && template.sheetHeightCm != null) return true
+  const { sourceWidthPx: sw, sourceHeightPx: sh } = template
+  const { widthPx: tw, heightPx: th } = target
+  if (!sw || !sh || !tw || !th) return false
+  return sw * th === sh * tw
+}
