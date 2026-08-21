@@ -68,6 +68,11 @@ type Artwork = {
   createdAt: string
   order?: number
   exhibitionArtworks: ExhibitionArtwork[]
+  /** Buyable as a print right now: print sales on, and either a live priced
+   *  variant (limited) or an artwork-level price (open). Computed by
+   *  GET /api/artworks with the same rule the checkout enforces. Only images
+   *  can ever be true. */
+  sellingNow?: boolean
 }
 
 // Extracts first frame from a video URL and renders it as a thumbnail
@@ -117,9 +122,13 @@ function VideoThumbnail({ videoUrl, alt }: { videoUrl: string; alt: string }) {
       ref={canvasRef}
       aria-label={alt}
       style={{
-        width: 60,
-        height: 60,
-        objectFit: 'cover',
+        // Match the still-image tile: fill the box and CONTAIN, so a landscape
+        // video reads as landscape instead of being cropped square. The canvas
+        // carries the video's natural dimensions, so contain has a real ratio
+        // to work with.
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
         borderRadius: 'var(--radius-sm)',
         display: ready ? 'block' : 'none',
       }}
@@ -228,6 +237,7 @@ function ArtworkCard({
         )}
       </div>
       <div className={styles.cardInfo}>
+        {artwork.sellingNow && <span className={styles.sellingTag}>Currently Selling</span>}
         <Text font="dashboard" as="h3">
           {artwork.title}
         </Text>

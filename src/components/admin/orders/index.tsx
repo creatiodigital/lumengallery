@@ -171,8 +171,7 @@ export const AdminOrders = () => {
   // has no idea whether their order is "New" or "Shipped", and hunting through
   // tabs is exactly the friction this box exists to remove.
   const visibleOrders = useMemo(
-    () =>
-      searching ? orders.filter((o) => orderMatchesQuery(o, query)) : grouped[activeBucket],
+    () => (searching ? orders.filter((o) => orderMatchesQuery(o, query)) : grouped[activeBucket]),
     [searching, orders, query, grouped, activeBucket],
   )
   const activeMeta = BUCKET_META[activeBucket]
@@ -341,9 +340,38 @@ export const AdminOrders = () => {
                         {formatOrderRef(o.id)}
                       </div>
                       {o.itemCount > 0 ? (
-                        <div>
-                          {o.itemCount} {o.itemCount === 1 ? 'print' : 'prints'}
-                        </div>
+                        <>
+                          {/* Say WHAT was bought, not just how many. An admin
+                              chasing "the order that owns copy 1/100" has to be
+                              able to see it from the list. */}
+                          {o.itemSummaries.slice(0, 3).map((it, i) => (
+                            <div key={i} style={{ marginBottom: 2 }}>
+                              <span>{it.artworkTitle ?? 'Artwork'}</span>
+                              {it.editionName && (
+                                <span style={{ opacity: 0.7 }}> · {it.editionName}</span>
+                              )}
+                              {it.editionLabels.length > 0 && (
+                                <span
+                                  style={{
+                                    fontFamily: 'var(--font-mono, monospace)',
+                                    fontSize: 'var(--text-xs)',
+                                    marginLeft: 6,
+                                  }}
+                                >
+                                  #{it.editionLabels.join(', #')}
+                                </span>
+                              )}
+                              {it.editionLabels.length === 0 && it.quantity > 1 && (
+                                <span style={{ opacity: 0.7 }}> × {it.quantity}</span>
+                              )}
+                            </div>
+                          ))}
+                          {o.itemSummaries.length > 3 && (
+                            <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>
+                              +{o.itemSummaries.length - 3} more
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <>
                           <div>{o.artwork.title ?? o.artwork.slug ?? o.artwork.id}</div>

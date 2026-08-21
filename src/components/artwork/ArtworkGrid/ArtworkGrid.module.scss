@@ -26,6 +26,39 @@
   @include breakpoint(lg) {
     gap: var(--space-8);
   }
+
+  // From two columns up, every card shares the SAME two rows — image, then
+  // caption — via subgrid, so the divider above the caption sits on one
+  // continuous line across the row. Bottom-aligning the cards (the flex
+  // fallback) can't do that: the divider then lands wherever each caption
+  // happens to start, so a work with no technique or no dimensions pushed its
+  // rule lower than its neighbour's.
+  @include breakpoint(md) {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+    // One column that FILLS the card. Without it the implicit column is
+    // `auto`-sized, so it shrank to the image and the inherited
+    // `justify-content: flex-end` pushed that track against the card's right
+    // edge — a portrait work then sat ~19px off-centre while a landscape one
+    // (which fills the width) looked fine. minmax(0, …) so a wide caption
+    // can't force the track past the column.
+    grid-template-columns: minmax(0, 1fr);
+    // MUST override the flex `align-items: center` above. Under grid that
+    // centres each item within its track, so a shorter caption sank by half
+    // the row's slack and its rule sat below its neighbour's — measured at
+    // exactly 12px for a 200px caption beside a 224px one. Stretching makes
+    // every caption start at the top of the shared row, which is what puts
+    // the rules on one line.
+    align-items: stretch;
+    // A subgrid inherits the parent's gutters; this restores the intended
+    // spacing INSIDE a card, leaving the parent's larger gap between rows.
+    row-gap: var(--space-6);
+  }
+
+  @include breakpoint(lg) {
+    row-gap: var(--space-8);
+  }
 }
 
 .imageWrapper {
@@ -35,6 +68,12 @@
   justify-content: center;
   margin-bottom: 0;
   flex-grow: 1;
+
+  // Inside the shared image row, sit on the row's baseline so a landscape work
+  // rests level with a portrait one beside it instead of floating mid-row.
+  @include breakpoint(md) {
+    align-self: end;
+  }
 }
 
 .image {
@@ -60,8 +99,10 @@
   border-top: 1px solid var(--color-border-default);
   width: 100%;
 
-  // Equal-height caption blocks keep multi-column rows aligned; in the
-  // single-column mobile layout this just adds dead space before the footer.
+  // The shared caption row (see .card subgrid) is what actually aligns these
+  // now; this only sets a floor so a sparse caption still gives the card some
+  // presence. In the single-column mobile layout it just adds dead space
+  // before the footer, so it stays scoped to md and up.
   @include breakpoint(md) {
     min-height: 200px;
   }

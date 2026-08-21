@@ -151,7 +151,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface-subtle);
+  // No fill here. `cover` used to hide this behind the image; now that images
+  // are CONTAINed to show their real proportions, a background would read as
+  // grey letterbox bars around every artwork. The placeholder / text tiles
+  // below carry their own, since those genuinely need a surface.
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
@@ -159,12 +162,18 @@
 .thumbnail {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  // CONTAIN, not cover: the box is square, so cropping to fill it made every
+  // artwork look square and hid whether it was landscape or portrait — the
+  // thing an artist scans this list for. Letterboxing against the tile's
+  // background shows the real proportions at a glance.
+  object-fit: contain;
 }
 
 .textPreview {
   width: 100%;
   height: 100%;
+  // Carries the surface itself now that .cardThumbnail is transparent.
+  background: var(--color-surface-subtle);
   padding: var(--space-1);
   font-size: 7px;
   line-height: 1.2;
@@ -180,6 +189,9 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+  // Carries the surface itself now that .cardThumbnail is transparent — an
+  // icon floating on white would look like a rendering failure.
+  background: var(--color-surface-subtle);
 
   &.soundPlayable {
     cursor: pointer;
@@ -281,4 +293,34 @@
   display: flex;
   gap: var(--space-2);
   justify-content: center;
+}
+
+// "Currently Selling" pill above an artwork's title. Same treatment as the
+// per-variant badge in LimitedVariantsEditor so one status reads identically
+// wherever it appears.
+.sellingTag {
+  // Sits on its own line above the title (.cardInfo is a block container and
+  // the h3 that follows is block-level), so it needs its own bottom spacing.
+  margin-bottom: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-badge-success-bg);
+  color: var(--color-badge-success-text);
+  font-family: var(--font-dashboard), var(--font-dashboard-fallback);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success);
+    flex-shrink: 0;
+  }
 }

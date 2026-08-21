@@ -69,6 +69,16 @@ export type AdminOrderRow = {
   /** Number of PrintOrderItem line rows. 0 = legacy single-print order
    *  (data on the header), > 0 = cart order. */
   itemCount: number
+  /** One entry per purchased line: what it is, and which numbered copies it
+   *  owns. Lets the orders LIST say "Landscape and River — 40x50 #1/100"
+   *  instead of "1 print", so an admin can find the order holding a given
+   *  edition number without opening every row. */
+  itemSummaries: {
+    artworkTitle: string | null
+    editionName: string | null
+    editionLabels: string[]
+    quantity: number
+  }[]
   /** Replacement-reprint marker. > 0 = this order has been re-ordered (see
    *  reorderReason); drives the permanent "⟳ Replacement" badge. */
   reorderCount: number
@@ -106,7 +116,21 @@ export async function listOrders(): Promise<
         take: 1,
         select: { kind: true, message: true, at: true },
       },
-      items: { select: { paidOutAt: true, transferStatus: true } },
+      items: {
+        select: {
+          paidOutAt: true,
+          transferStatus: true,
+          quantity: true,
+          artwork: { select: { title: true, slug: true } },
+          // What this line actually IS, for the list row. Without it a cart
+          // order reads only as "1 print", so an admin told to "cancel the
+          // order that owns copy 1" has no way to find which one that is.
+          editionNumbers: {
+            select: { number: true, variant: { select: { name: true, editionSize: true } } },
+            orderBy: { number: 'asc' },
+          },
+        },
+      },
       _count: { select: { items: true } },
     },
   })
@@ -148,6 +172,12 @@ export async function listOrders(): Promise<
         ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
         : null,
       itemCount: r._count.items,
+      itemSummaries: r.items.map((it) => ({
+        artworkTitle: it.artwork?.title ?? it.artwork?.slug ?? null,
+        editionName: it.editionNumbers[0]?.variant.name ?? null,
+        editionLabels: it.editionNumbers.map((en) => `${en.number}/${en.variant.editionSize}`),
+        quantity: it.quantity,
+      })),
       reorderCount: r.reorderCount,
       reorderReason: r.reorderReason,
     }
@@ -1144,6 +1174,13 @@ export async function getOrderDetail(
       ? { kind: r.events[0].kind, message: r.events[0].message, at: r.events[0].at.toISOString() }
       : null,
     itemCount: items.length,
+    // Same shape the list uses, rebuilt from the already-resolved line items.
+    itemSummaries: items.map((it) => ({
+      artworkTitle: it.artworkTitle,
+      editionName: it.editionName,
+      editionLabels: it.editionLabels,
+      quantity: it.quantity,
+    })),
     reorderCount: r.reorderCount,
     reorderReason: r.reorderReason,
     reorderNote: r.reorderNote,
