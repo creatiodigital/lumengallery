@@ -7,7 +7,8 @@ import {
   type PrintArtistOption,
   type PrintArtwork,
 } from '@/components/prints/types'
-import { purchasableArtworkWhere } from '@/lib/editions/printable'
+import { minimumPriceForArtwork } from '@/lib/editions/minimumPrice'
+import { LIVE_VARIANT_WHERE, purchasableArtworkWhere } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 import { getPurchasesPaused } from '@/lib/settings'
 
@@ -42,6 +43,24 @@ const PRINT_SELECT = {
   originalWidth: true,
   originalHeight: true,
   createdAt: true,
+  // Needed to price the card — an OPEN edition uses the artwork price, a
+  // LIMITED one the cheapest variant that is actually on sale.
+  printEnabled: true,
+  printPriceCents: true,
+  limitedVariants: {
+    where: LIVE_VARIANT_WHERE,
+    select: {
+      name: true,
+      priceCents: true,
+      paperId: true,
+      printTypeId: true,
+      widthCm: true,
+      heightCm: true,
+      borderCm: true,
+      sheetWidthCm: true,
+      sheetHeightCm: true,
+    },
+  },
   user: {
     select: {
       id: true,
@@ -105,8 +124,27 @@ export async function getPrintsCatalogPage({
     prisma.artwork.count({ where }),
   ])
 
-  // The client expects createdAt as a serializable ISO string.
-  const items = rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }))
+  // The client expects createdAt as a serializable ISO string. The pricing
+  // inputs (printPriceCents, the live variants) are stripped here — the card
+  // only needs the resolved figure, and the artist's cut is not public.
+  const items = rows.map((row) => {
+    const { printEnabled, printPriceCents, limitedVariants, ...rest } = row
+    const min = minimumPriceForArtwork(
+      {
+        editionType: rest.editionType,
+        originalWidth: rest.originalWidth,
+        originalHeight: rest.originalHeight,
+        printEnabled,
+        printPriceCents,
+      },
+      limitedVariants,
+    )
+    return {
+      ...rest,
+      createdAt: row.createdAt.toISOString(),
+      minPriceCents: min?.cents ?? null,
+    }
+  })
   return { items, totalCount }
 }
 

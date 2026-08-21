@@ -143,3 +143,13 @@
 .orderAction {
   margin-top: var(--space-4);
 }
+
+// The figure on a prints card. A bare number, stated plainly — no "from",
+// no "starting at". What it means differs by edition type and the page
+// footnote carries that, so nothing here hedges.
+.price {
+  display: block;
+  margin-bottom: var(--space-3);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}

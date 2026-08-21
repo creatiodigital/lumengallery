@@ -26,6 +26,10 @@ type Artwork = {
   // reserves the correct slot — fixes CLS without forcing a square crop.
   originalWidth?: number | null
   originalHeight?: number | null
+  /** Cheapest completable purchase, in cents, excluding shipping and tax.
+   *  Null = nothing purchasable, shown as "Sold". Only supplied by the prints
+   *  catalog; other grids leave it undefined and render no price. */
+  minPriceCents?: number | null
 }
 
 interface ArtworkGridProps {
@@ -40,6 +44,9 @@ interface ArtworkGridProps {
 // jarring shift a square placeholder gives when the real image is wide.
 const FALLBACK_WIDTH = 800
 const FALLBACK_HEIGHT = 600
+
+/** Whole euros — no cents on a listing; the wizard shows the exact figure. */
+const formatEuros = (cents: number) => `€${Math.round(cents / 100).toLocaleString('es-ES')}`
 
 export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: ArtworkGridProps) => {
   return (
@@ -90,6 +97,20 @@ export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: Ar
                   <Text as="span" className={styles.editionTag}>
                     {artwork.editionType === 'limited' ? 'Limited Edition' : 'Open Edition'}
                   </Text>
+                  {/* A bare figure, no "from" or "starting at" — a gallery states
+                      a price. What it means differs by edition type and the page
+                      footnote carries that: a limited variant's price is exact,
+                      an open edition's moves with size and framing. `null` means
+                      nothing is purchasable, which is the Sold case. */}
+                  {artwork.minPriceCents != null ? (
+                    <Text as="span" className={styles.price}>
+                      {formatEuros(artwork.minPriceCents)}
+                    </Text>
+                  ) : (
+                    <Text as="span" className={styles.price}>
+                      Sold
+                    </Text>
+                  )}
                   <Button
                     href={`/artworks/${artwork.slug}/print`}
                     label="Order Print"
