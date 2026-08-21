@@ -3,9 +3,11 @@ import type { Metadata } from 'next'
 
 import { PrintWizard } from '@/components/PrintWizard'
 import { PurchasesPausedNotice } from '@/components/checkout/PurchasesPausedNotice'
+import { captureError } from '@/lib/observability/captureError'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 import type { LimitedVariantView } from '@/lib/editions/types'
+import { sweepExpiredCartHolds } from '@/lib/editions/reserveForCart'
 import prisma from '@/lib/prisma'
 import { getPurchasesPaused } from '@/lib/settings'
 
@@ -84,6 +86,25 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
   const isLimited = artwork.editionType === 'limited'
   let variants: LimitedVariantView[] = []
   if (isLimited && artwork.limitedVariants.length > 0) {
+    // Reclaim lapsed cart holds BEFORE counting, so a buyer who closed the tab
+    // doesn't leave stock looking unavailable. This matters most on the last
+    // copy: the count would read 0, the variant would be hidden, nobody could
+    // add it to cart — and add-to-cart (`reserveForCart`) is the only other
+    // caller of the sweep, so the variant would stay stuck as sold out. Sweeping
+    // on the read that drives the UI makes it self-healing. Best-effort: a
+    // failed sweep must not take the print page down, it just shows stale stock.
+    try {
+      await sweepExpiredCartHolds()
+    } catch (err) {
+      captureError(err, {
+        flow: 'content',
+        stage: 'sweep-expired-cart-holds',
+        extra: { slug },
+        level: 'warning',
+        fingerprint: ['content:sweep-cart-holds-failed'],
+      })
+    }
+
     const counts = await prisma.editionNumber.groupBy({
       by: ['variantId'],
       where: {
