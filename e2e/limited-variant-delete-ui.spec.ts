@@ -250,20 +250,26 @@ test('an unblocked variant with a sold copy shows no delete button', async ({ pa
     await expect(page.getByText('Currently Selling')).toHaveCount(0)
     await expect(page.getByText(/1 sold · paused/i)).toBeVisible()
 
+    // A card's footer only exists while the card is OPEN, so each has to be
+    // expanded before its controls can be counted.
     await page.getByRole('button', { name: /E2E Small/i }).click()
     await expect(
       page.getByText(/already been reserved or sold, so it can’t be deleted/i),
     ).toBeVisible()
 
-    // Exactly one delete button on the page: the plain draft's, not this one.
+    // The sold variant is open and offers no delete control at all.
     await expect(
       page.getByRole('button', { name: /Delete variant/i }),
-      'only the draft sibling should be deletable',
-    ).toHaveCount(1)
+      'a variant holding a sold copy must not be deletable',
+    ).toHaveCount(0)
 
-    // And it really is the draft's — deleting it leaves the sold variant alone.
+    // Open the plain draft too. It SHOULD be deletable, which proves the gate
+    // is per-variant rather than "this page has no delete buttons".
     await page.getByRole('button', { name: /E2E Plain Draft/i }).click()
-    await expect(page.getByRole('button', { name: /Delete variant/i })).toHaveCount(1)
+    await expect(
+      page.getByRole('button', { name: /Delete variant/i }),
+      'the draft sibling should still be deletable',
+    ).toHaveCount(1)
   } finally {
     await teardownLimitedFixture(fx)
   }

@@ -46,12 +46,12 @@ async function addFixedSheetVariant(artworkId: string, name: string) {
   })
 }
 
-async function createLimitedArtworkFor(userId: string, slug: string) {
+async function createLimitedArtworkFor(userId: string, slug: string, title: string) {
   return prisma.artwork.create({
     data: {
-      name: 'E2E Template Source',
+      name: title,
       slug,
-      title: 'E2E Template Source',
+      title,
       userId,
       originalWidth: 6000,
       originalHeight: 4000,
@@ -80,8 +80,18 @@ test('a variant template never crosses from one artist to another', async ({ pag
   test.skip(!otherUser, 'needs a second artist account in the dev DB')
 
   const stamp = Date.now().toString(36)
-  const mine = await createLimitedArtworkFor(ownerId, `e2e-tpl-mine-${stamp}`)
-  const theirs = await createLimitedArtworkFor(otherUser!.id, `e2e-tpl-theirs-${stamp}`)
+  // DISTINCT titles per owner. Sharing one made the source-title cross-check
+  // below match my own template against the other artist's artwork list.
+  const mine = await createLimitedArtworkFor(
+    ownerId,
+    `e2e-tpl-mine-${stamp}`,
+    `E2E Mine Source ${stamp}`,
+  )
+  const theirs = await createLimitedArtworkFor(
+    otherUser!.id,
+    `e2e-tpl-theirs-${stamp}`,
+    `E2E Theirs Source ${stamp}`,
+  )
 
   const MY_TEMPLATE = `E2E Mine ${stamp}`
   const THEIR_TEMPLATE = `E2E Theirs ${stamp}`
