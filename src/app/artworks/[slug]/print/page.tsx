@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 
 import { PrintWizard } from '@/components/PrintWizard'
 import { PurchasesPausedNotice } from '@/components/checkout/PurchasesPausedNotice'
+import { isArtworkPurchasable, LIVE_VARIANT_WHERE } from '@/lib/editions/printable'
 import { captureError } from '@/lib/observability/captureError'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
@@ -45,7 +46,7 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
         user: { select: { name: true, lastName: true } },
         // Buyers only see published variants that are currently blocked (on
         // sale). An admin-unblocked variant is mid-edit and paused from sale.
-        limitedVariants: { where: { published: true, blocked: true }, orderBy: { order: 'asc' } },
+        limitedVariants: { where: LIVE_VARIANT_WHERE, orderBy: { order: 'asc' } },
       },
     }),
   ])
@@ -57,7 +58,17 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
   if (!artwork || !artwork.imageUrl) {
     notFound()
   }
-  if (!artwork.printEnabled || !artwork.printPriceCents) {
+  // A LIMITED edition has no artwork-level price — it is priced per variant, so
+  // gating on `printPriceCents` 404'd every limited edition that had never
+  // carried a leftover artwork price, even with a live priced variant.
+  if (
+    !isArtworkPurchasable({
+      printEnabled: artwork.printEnabled,
+      editionType: artwork.editionType,
+      printPriceCents: artwork.printPriceCents,
+      liveVariantCount: artwork.limitedVariants.length,
+    })
+  ) {
     notFound()
   }
   // Missing original pixel dimensions = we can't compute a sharp print
@@ -139,7 +150,11 @@ const PrintWizardPage = async ({ params }: PrintWizardPageProps) => {
         imageUrl: artwork.imageUrl,
         originalWidthPx,
         originalHeightPx,
-        printPriceCents: artwork.printPriceCents,
+        // Open editions are priced on the artwork; LIMITED ones carry no
+        // artwork price and are quoted per variant, and the open wizard is
+        // never rendered for them. `isArtworkPurchasable` above guarantees a
+        // non-null price in every case where this value is actually read.
+        printPriceCents: artwork.printPriceCents ?? 0,
         editionType: isLimited ? 'limited' : 'open',
         variants,
         editionLimited: artwork.printEditionLimited ?? false,

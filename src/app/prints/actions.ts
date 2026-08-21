@@ -7,6 +7,7 @@ import {
   type PrintArtistOption,
   type PrintArtwork,
 } from '@/components/prints/types'
+import { purchasableArtworkWhere } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 import { getPurchasesPaused } from '@/lib/settings'
 
@@ -55,9 +56,13 @@ const PRINT_SELECT = {
 // price set, narrowed by the optional artist + edition filters. Edition is
 // re-validated here ('open' | 'limited' only) so a bad client value can't widen
 // or break the query.
+/**
+ * Who appears in the prints catalog: exactly what a buyer can purchase. The
+ * open/limited fork lives in `purchasableArtworkWhere` so the catalog, the
+ * wizard, checkout, payment and the public API can't drift apart again.
+ */
 const buildPrintsWhere = (artistId: string, edition: EditionFilter): Prisma.ArtworkWhereInput => ({
-  printEnabled: true,
-  printPriceCents: { not: null },
+  ...purchasableArtworkWhere(),
   user: { published: true },
   ...(artistId ? { userId: artistId } : {}),
   ...(edition === 'open' || edition === 'limited' ? { editionType: edition } : {}),
