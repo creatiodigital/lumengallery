@@ -115,7 +115,29 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Artwork not found' }, { status: 404 })
     }
 
-    return NextResponse.json(artwork)
+    // How many copies of each variant are already committed (reserved or sold).
+    // The dashboard needs this to tell the truth about what can be deleted: a
+    // variant an admin has unblocked shows no "Currently Selling" badge, yet
+    // still can't be removed if a real order owns one of its numbers. Without
+    // it the editor offers a Delete button the server can only refuse.
+    const variantIds = artwork.limitedVariants.map((v) => v.id)
+    const committedByVariant = new Map<string, number>()
+    if (variantIds.length > 0) {
+      const grouped = await prisma.editionNumber.groupBy({
+        by: ['variantId'],
+        where: { variantId: { in: variantIds }, state: { in: ['reserved', 'sold'] } },
+        _count: { _all: true },
+      })
+      for (const g of grouped) committedByVariant.set(g.variantId, g._count._all)
+    }
+
+    return NextResponse.json({
+      ...artwork,
+      limitedVariants: artwork.limitedVariants.map((v) => ({
+        ...v,
+        committedCount: committedByVariant.get(v.id) ?? 0,
+      })),
+    })
   } catch (error) {
     console.error('[GET /api/artworks/[id]] error:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

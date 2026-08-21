@@ -20,6 +20,10 @@ type ConfirmModalProps = {
   destructive?: boolean
   /** Hide the confirm button while the action is running so it can't fire twice. */
   busy?: boolean
+  /** Drop the confirm button entirely, leaving only the dismiss control. For a
+   *  modal that has become a REFUSAL — the action was attempted and the server
+   *  said no — so the only honest thing left to offer is "Close". */
+  hideConfirm?: boolean
   /** 'wide' fits form-sized content: broader panel, message area scrolls
    *  internally (title + actions stay pinned). Default fits short confirms. */
   size?: 'regular' | 'wide'
@@ -35,6 +39,7 @@ export const ConfirmModal = ({
   cancelLabel = 'Cancel',
   destructive = false,
   busy = false,
+  hideConfirm = false,
   size = 'regular',
   onConfirm,
   onCancel,
@@ -64,13 +69,15 @@ export const ConfirmModal = ({
             onClick={onCancel}
             disabled={busy}
           />
-          <Button
-            font="dashboard"
-            variant={destructive ? 'danger' : 'primary'}
-            label={busy ? 'Working…' : confirmLabel}
-            onClick={onConfirm}
-            disabled={busy}
-          />
+          {!hideConfirm && (
+            <Button
+              font="dashboard"
+              variant={destructive ? 'danger' : 'primary'}
+              label={busy ? 'Working…' : confirmLabel}
+              onClick={onConfirm}
+              disabled={busy}
+            />
+          )}
         </div>
       </div>
     </Modal>

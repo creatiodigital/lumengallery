@@ -30,6 +30,11 @@ export type LimitedVariantDraft = {
   /** Per-variant lock. Only meaningful when published: true = frozen + on
    *  sale; false = an admin unblocked it (editable + paused from sale). */
   blocked?: boolean
+  /** Copies of this variant already reserved or sold, from the GET. Separate
+   *  from `blocked` on purpose: an UNBLOCKED variant shows no "Currently
+   *  Selling" badge but may still own real orders, so this — not the lock —
+   *  is what decides whether deleting is even offered. */
+  committedCount?: number
 }
 
 /** A published variant as shown to the buyer, with live stock. */

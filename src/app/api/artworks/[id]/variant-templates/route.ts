@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 
 import { requireOwnership } from '@/lib/authUtils'
 import prisma from '@/lib/prisma'
-import { isVariantTemplateApplicable } from '@/lib/editions/sheetLayout'
+import { isVariantTemplateApplicable, variantTemplateKey } from '@/lib/editions/sheetLayout'
 
 /**
  * Reusable variant templates for a limited-edition artwork — the same
@@ -29,8 +29,11 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     const { error: authError } = await requireOwnership(artwork.userId)
     if (authError) return authError
 
+    // Without the image's dimensions we can't derive a print size for ANY
+    // template, fixed-sheet included. Say so: reporting this as "no matching
+    // proportions" blames the aspect ratio for an artwork that has no image.
     if (!artwork.originalWidth || !artwork.originalHeight) {
-      return NextResponse.json({ templates: [] })
+      return NextResponse.json({ templates: [], reason: 'no-dimensions' })
     }
 
     const variants = await prisma.limitedVariant.findMany({
@@ -86,7 +89,9 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         )
       })
       .filter((v) => {
-        const key = `${v.name}|${v.paperId}|${v.widthCm}x${v.heightCm}|${v.borderCm}|${v.editionSize}|${v.sheetWidthCm ?? ''}x${v.sheetHeightCm ?? ''}`
+        // Dedup on what the artist AUTHORED — see variantTemplateKey for why a
+        // fixed-sheet template must not be keyed on its derived print size.
+        const key = variantTemplateKey(v)
         if (seen.has(key)) return false
         seen.add(key)
         return true
@@ -104,7 +109,13 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         sourceArtworkTitle: v.artwork.title ?? '(untitled)',
       }))
 
-    return NextResponse.json({ templates })
+    // Distinguish "you have nothing saved yet" from "you have saved variants,
+    // but none share this artwork's exact proportions" — very different things
+    // to tell an artist staring at an empty picker.
+    const reason =
+      templates.length > 0 ? null : variants.length === 0 ? 'none-saved' : 'no-ratio-match'
+
+    return NextResponse.json({ templates, reason })
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to load variant templates' },

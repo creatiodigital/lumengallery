@@ -133,9 +133,10 @@ function roundToMm(cm: number): number {
   return Math.round(cm * 10) / 10
 }
 
-export function seedSheetForVariant(
-  args: SeedSheetArgs,
-): { sheetWidthCm: number; sheetHeightCm: number } {
+export function seedSheetForVariant(args: SeedSheetArgs): {
+  sheetWidthCm: number
+  sheetHeightCm: number
+} {
   const { widthCm, heightCm, borderCm, aspectRatio } = args
   const hasPrint = widthCm > 0 && heightCm > 0
   const sheetWidthCm = hasPrint ? widthCm + borderCm * 2 : aspectRatio >= 1 ? 50 : 40
@@ -177,4 +178,36 @@ export function isVariantTemplateApplicable(
   const { widthPx: tw, heightPx: th } = target
   if (!sw || !sh || !tw || !th) return false
   return sw * th === sh * tw
+}
+
+/**
+ * Identity of a variant TEMPLATE, for deduping the "Apply saved variant"
+ * picker. Two of the artist's variants are the same template when they were
+ * authored the same, which differs by mode:
+ *
+ *  - FIXED SHEET — the artist authored the SHEET and a minimum border.
+ *    `widthCm`/`heightCm` are the image DERIVED from that sheet against each
+ *    source artwork's own ratio, so one authored template stored on two
+ *    differently-proportioned artworks carries different derived sizes.
+ *    Including them listed the same template twice.
+ *  - ADAPTIVE — `widthCm`/`heightCm` ARE the authored, aspect-locked print
+ *    size, so they are exactly what identifies it.
+ *
+ * Lengths are rounded to the 0.1 cm the UI displays so float noise from the
+ * derivation can't split two identical templates apart.
+ */
+export function variantTemplateKey(v: {
+  name: string
+  paperId: string
+  widthCm: number
+  heightCm: number
+  borderCm: number
+  sheetWidthCm?: number | null
+  sheetHeightCm?: number | null
+  editionSize: number
+}): string {
+  const cm = (n: number) => n.toFixed(1)
+  return isFixedSheet(v)
+    ? `sheet|${v.name}|${v.paperId}|${cm(v.sheetHeightCm as number)}x${cm(v.sheetWidthCm as number)}|${cm(v.borderCm)}|${v.editionSize}`
+    : `print|${v.name}|${v.paperId}|${cm(v.heightCm)}x${cm(v.widthCm)}|${cm(v.borderCm)}|${v.editionSize}`
 }

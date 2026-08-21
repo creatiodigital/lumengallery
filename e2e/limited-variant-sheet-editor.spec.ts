@@ -3,6 +3,7 @@ import {
   computeSheetLayout,
   isFixedSheet,
   isVariantTemplateApplicable,
+  variantTemplateKey,
   seedSheetForVariant,
 } from '../src/lib/editions/sheetLayout'
 import { remapIndexKeys } from '../src/components/shared/ArtworkEditForm/LimitedVariantsEditor/remapIndexKeys'
@@ -72,7 +73,7 @@ test('remapIndexKeys shifts an index-keyed entry after the removed row down by o
   expect(remapped).toEqual({ 'new-0': 'B' })
 })
 
-test('remapIndexKeys drops the removed row\'s own entry', () => {
+test("remapIndexKeys drops the removed row's own entry", () => {
   const remapped = remapIndexKeys({ 'new-0': 'A', 'new-1': 'B', 'new-2': 'C' }, 1, 'new-1')
   expect(remapped).toEqual({ 'new-0': 'A', 'new-1': 'C' })
   expect(remapped['new-1']).not.toBe('B')
@@ -133,4 +134,54 @@ test('an adaptive template with unknown source pixels is never offered', () => {
       THREE_TWO,
     ),
   ).toBe(false)
+})
+
+/**
+ * Template dedup — reported 2026-08-21: the "Apply saved variant" picker
+ * listed the SAME 40x50 Baryta template twice, once "from Passeur" and once
+ * "from High Res". Both rows were one authored template; the old key included
+ * widthCm/heightCm, which for a FIXED SHEET is the image derived per source
+ * artwork, so two ratios produced two keys.
+ */
+const BARYTA_40x50 = {
+  name: '40x50 Baryta',
+  paperId: 'canson-baryta-gloss',
+  borderCm: 7,
+  editionSize: 100,
+  sheetWidthCm: 50,
+  sheetHeightCm: 40,
+}
+
+test('one fixed-sheet template stored on differently-shaped artworks dedupes to one', () => {
+  // Same authored sheet + border; the derived image differs per source ratio.
+  const onThreeTwo = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.2 }
+  const onSomethingElse = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.3689583077112 }
+  expect(variantTemplateKey(onThreeTwo)).toBe(variantTemplateKey(onSomethingElse))
+})
+
+test('fixed-sheet templates with genuinely different sheets stay separate', () => {
+  const a = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.2 }
+  const b = { ...BARYTA_40x50, sheetHeightCm: 30, sheetWidthCm: 40, widthCm: 26, heightCm: 17.5 }
+  expect(variantTemplateKey(a)).not.toBe(variantTemplateKey(b))
+})
+
+test('a different border or edition size is a different template', () => {
+  const base = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.2 }
+  expect(variantTemplateKey(base)).not.toBe(variantTemplateKey({ ...base, borderCm: 5 }))
+  expect(variantTemplateKey(base)).not.toBe(variantTemplateKey({ ...base, editionSize: 50 }))
+  expect(variantTemplateKey(base)).not.toBe(variantTemplateKey({ ...base, name: 'Other' }))
+})
+
+test('ADAPTIVE templates are still identified by their authored print size', () => {
+  // No sheet — widthCm/heightCm are what the artist set, so they must count.
+  const a = { ...BARYTA_40x50, sheetWidthCm: null, sheetHeightCm: null, widthCm: 36, heightCm: 24 }
+  const b = { ...a, widthCm: 30, heightCm: 20 }
+  expect(variantTemplateKey(a)).not.toBe(variantTemplateKey(b))
+  expect(variantTemplateKey(a)).toBe(variantTemplateKey({ ...a }))
+})
+
+test('a fixed-sheet and an adaptive template never collide', () => {
+  const fixed = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.2 }
+  const adaptive = { ...fixed, sheetWidthCm: null, sheetHeightCm: null }
+  expect(variantTemplateKey(fixed)).not.toBe(variantTemplateKey(adaptive))
 })

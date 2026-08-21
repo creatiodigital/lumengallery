@@ -224,6 +224,14 @@ type ArtworkEditFormProps = {
   onUnblockVariant?: (variantId: string) => void
   /** Put an off-sale limited variant on sale ("Ready to Sell"). */
   onReadyToSellVariant?: (index: number) => void
+  /** Delete a saved limited variant on the server, at once (confirmed in the
+   *  editor). Unsaved rows never reach this. */
+  onDeleteVariant?: (variantId: string) => Promise<{ ok: boolean; error?: string }>
+  /** Save (or create) one variant on its own, without an artwork save. */
+  onSaveVariant?: (
+    variantId: string | null,
+    values: LimitedVariantDraft,
+  ) => Promise<{ ok: boolean; error?: string; variantId?: string }>
   onImageUpload: (file: File, previewUrl?: string) => Promise<void>
   onImageRemove: () => void | Promise<void>
   onSoundUpload?: (file: File) => Promise<void>
@@ -420,6 +428,8 @@ export const ArtworkEditForm = ({
   onUnblock,
   onUnblockVariant,
   onReadyToSellVariant,
+  onDeleteVariant,
+  onSaveVariant,
   onImageUpload,
   onImageRemove,
   onSoundUpload,
@@ -777,6 +787,8 @@ export const ArtworkEditForm = ({
                     isAdmin={isAdmin}
                     onUnblockVariant={onUnblockVariant}
                     onReadyToSellVariant={onReadyToSellVariant}
+                    onDeleteVariant={onDeleteVariant}
+                    onSaveVariant={onSaveVariant}
                   />
                 </div>
               )}

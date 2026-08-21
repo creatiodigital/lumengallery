@@ -9,8 +9,9 @@
  * authoritative gate):
  *   - every variant validated via `validateVariantInput` (aspect lock,
  *     distinct sizes, border min, derived print type)
- *   - a BLOCKED published variant is frozen: it can't be deleted and none of
- *     its fields can change (its edition numbers are selling)
+ *   - a BLOCKED published variant is frozen: it can't be deleted, and only its
+ *     NAME and PRICE can change (its edition numbers are selling, so size,
+ *     sheet, paper, border and edition size are what a buyer was promised)
  *   - an UNBLOCKED published variant (admin reopened it to fix a mistake) is
  *     editable: fields change and the edition-number ledger is reconciled to
  *     the new size — but edition size can never drop below an already
@@ -110,9 +111,16 @@ export async function saveLimitedVariants(args: {
       const prev = existingById.get(v.id)
       if (prev?.published) {
         if (prev.blocked) {
-          // Blocked = on sale. Everything is frozen EXCEPT the price, which can
-          // be raised as the edition sells (price escalation). Reject any change
-          // to a non-price field; the price itself is persisted in the write loop.
+          // Blocked = on sale. The variant's PHYSICAL identity is frozen — size,
+          // sheet, paper, border, edition size are what a buyer is promised and
+          // what the lab prints. Two things stay editable:
+          //   - price, raised as the edition sells (price escalation)
+          //   - NAME, which is only a label. Nothing financial or physical hangs
+          //     off it: invoices never reference it, buyer emails bake it in at
+          //     order-creation time, and every other surface (ledger, gift
+          //     orders, variant picker, admin rows) joins it live, so a rename
+          //     propagates everywhere and rewrites no history.
+          // Reject any change outside those two.
           const sizeChanged =
             Math.abs(prev.widthCm - v.widthCm) >= 0.05 ||
             Math.abs(prev.heightCm - v.heightCm) >= 0.05
@@ -121,19 +129,21 @@ export async function saveLimitedVariants(args: {
           const sheetChanged =
             Math.abs((prev.sheetWidthCm ?? 0) - (v.sheetWidthCm ?? 0)) >= 0.005 ||
             Math.abs((prev.sheetHeightCm ?? 0) - (v.sheetHeightCm ?? 0)) >= 0.005
-          const nonPriceChanged =
+          const frozenFieldChanged =
             sizeChanged ||
             sheetChanged ||
             prev.editionSize !== v.editionSize ||
-            prev.name !== v.name.trim() ||
             prev.paperId !== v.paperId ||
             Math.abs(prev.borderCm - v.borderCm) >= 0.005
-          if (nonPriceChanged) {
+          if (frozenFieldChanged) {
             return {
               ok: false,
               error:
-                'A published variant is locked while on sale — only its price can change. Ask an admin to unblock it to edit anything else.',
+                'A published variant is locked while on sale — only its name and price can change. Ask an admin to unblock it to edit anything else.',
             }
+          }
+          if (!v.name.trim()) {
+            return { ok: false, error: 'A variant needs a name.' }
           }
         } else {
           // Unblocked: edits allowed, but edition size can never drop below
@@ -177,14 +187,15 @@ export async function saveLimitedVariants(args: {
       const { input, printTypeId } = validated[i]
       const prev = input.id ? existingById.get(input.id) : undefined
 
-      // Blocked published variants are frozen EXCEPT for the price — persist
-      // only the (possibly raised) price and skip every other field. The guard
-      // above has already rejected any non-price change.
+      // Blocked published variants are frozen EXCEPT for name + price — persist
+      // just those and skip every other field. The guard above has already
+      // rejected any change to a frozen one.
       if (prev?.published && prev.blocked) {
-        if (prev.priceCents !== input.priceCents) {
+        const nextName = input.name.trim()
+        if (prev.priceCents !== input.priceCents || prev.name !== nextName) {
           await tx.limitedVariant.update({
             where: { id: prev.id },
-            data: { priceCents: input.priceCents },
+            data: { priceCents: input.priceCents, name: nextName },
           })
         }
         continue

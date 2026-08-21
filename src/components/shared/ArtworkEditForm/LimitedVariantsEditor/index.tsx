@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 import { Button } from '@/components/ui/Button'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { ErrorText } from '@/components/ui/ErrorText'
 import { Input } from '@/components/ui/Input'
 import { SelectDropdown, type SelectOption } from '@/components/ui/SelectDropdown'
@@ -73,6 +74,20 @@ type Props = {
    *  publishes a draft (materialises its edition) or resumes a previously
    *  unblocked variant. */
   onReadyToSellVariant?: (index: number) => void
+  /** Delete a SAVED variant on the server, at once — the artist confirms and
+   *  it is gone, rather than waiting on an artwork save that may never come.
+   *  Rows with no id were never persisted, so they skip this and are simply
+   *  dropped from the list. Resolves false (with `error`) when the server
+   *  refuses — on-sale, sold copies, last variant — and the row is kept. */
+  onDeleteVariant?: (variantId: string) => Promise<{ ok: boolean; error?: string }>
+  /** Save JUST this variant's name + price, without saving the artwork. Lets
+   *  the artist raise a price or fix a name in place instead of scrolling to
+   *  the form's Save — and it can't be blocked by an unrelated variant whose
+   *  geometry has drifted. Physical fields still go through the artwork save. */
+  onSaveVariant?: (
+    variantId: string | null,
+    values: LimitedVariantDraft,
+  ) => Promise<{ ok: boolean; error?: string; variantId?: string }>
 }
 
 /**
@@ -90,6 +105,8 @@ export const LimitedVariantsEditor = ({
   isAdmin = false,
   onUnblockVariant,
   onReadyToSellVariant,
+  onDeleteVariant,
+  onSaveVariant,
 }: Props) => {
   const keyFor = (v: LimitedVariantDraft, i: number) => v.id ?? `new-${i}`
   // A variant with nothing worth summarising still needs its fields visible.
@@ -121,7 +138,8 @@ export const LimitedVariantsEditor = ({
     })
     return init
   })
-  const isFixedFor = (v: LimitedVariantDraft, i: number) => sheetMode[keyFor(v, i)] ?? isFixedSheet(v)
+  const isFixedFor = (v: LimitedVariantDraft, i: number) =>
+    sheetMode[keyFor(v, i)] ?? isFixedSheet(v)
 
   // Per-variant "tried to go live" flag. Validation is silent until the artist
   // clicks "Ready to Sell"; then required-field errors show for that card and
@@ -166,6 +184,130 @@ export const LimitedVariantsEditor = ({
     onChange(variants.filter((_, i) => i !== index))
   }
 
+  // Deleting is destructive and now IMMEDIATE for a saved variant, so it asks
+  // first. `pendingDelete` is the row awaiting confirmation; the modal stays
+  // open on failure with the server's reason, since the row is still there and
+  // the artist needs to know why.
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  // ── Per-variant save ─────────────────────────────────────────────
+  // Each card saves itself: an artist shouldn't scroll to the bottom of the
+  // artwork form to store one variant, and the whole-artwork save re-validates
+  // EVERY variant, so one drifted row can block an edit to a healthy one.
+  //
+  // `baselines` is what is currently STORED for each saved variant, so we can
+  // tell "edited but not saved" from "same as the database". Rows are keyed by
+  // id; a brand-new row has none yet and counts as dirty by definition.
+  const snapshotOf = (v: LimitedVariantDraft) =>
+    JSON.stringify({
+      name: v.name,
+      paperId: v.paperId,
+      widthCm: v.widthCm,
+      heightCm: v.heightCm,
+      borderCm: v.borderCm,
+      sheetWidthCm: v.sheetWidthCm ?? null,
+      sheetHeightCm: v.sheetHeightCm ?? null,
+      editionSize: v.editionSize,
+      priceEuros: v.priceEuros ?? '',
+    })
+
+  const [baselines, setBaselines] = useState<Record<string, string>>({})
+  const [savingKey, setSavingKey] = useState<string | null>(null)
+  const [savedKey, setSavedKey] = useState<string | null>(null)
+  const [saveErrorByKey, setSaveErrorByKey] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const missing = variants.filter((v) => v.id && !(v.id in baselines))
+    if (missing.length === 0) return
+    setBaselines((prev) => {
+      const next = { ...prev }
+      for (const v of missing) next[v.id as string] = snapshotOf(v)
+      return next
+    })
+  }, [variants, baselines])
+
+  /** Is there something here the database doesn't have yet? A row with no id
+   *  has never been saved, so it always is — provided it's worth saving. */
+  const variantIsDirty = (v: LimitedVariantDraft) => {
+    if (!v.id) return Boolean(v.name?.trim()) && v.widthCm > 0
+    const base = baselines[v.id]
+    if (!base) return false
+    return base !== snapshotOf(v)
+  }
+
+  const dirtyCount = variants.filter(variantIsDirty).length
+
+  const saveVariant = async (index: number) => {
+    const v = variants[index]
+    if (!onSaveVariant) return
+    // New rows have no id to key state by, so fall back to the row key.
+    const key = v.id ?? keyFor(v, index)
+
+    setSavingKey(key)
+    setSavedKey(null)
+    setSaveErrorByKey((e) => {
+      const next = { ...e }
+      delete next[key]
+      return next
+    })
+    try {
+      const res = await onSaveVariant(v.id ?? null, v)
+      if (!res.ok) {
+        setSaveErrorByKey((e) => ({ ...e, [key]: res.error || 'Could not save this variant.' }))
+        return
+      }
+      // A create hands back the new id — adopt it so the row stops being "new"
+      // and the artwork save updates it instead of creating a duplicate.
+      const savedId = res.variantId ?? v.id
+      if (savedId) {
+        if (savedId !== v.id) update(index, { id: savedId })
+        setBaselines((prev) => ({ ...prev, [savedId]: snapshotOf({ ...v, id: savedId }) }))
+        setSavedKey(savedId)
+      }
+    } finally {
+      setSavingKey(null)
+    }
+  }
+
+  const requestDelete = (index: number) => {
+    setDeleteError(null)
+    setPendingDelete(index)
+  }
+
+  const cancelDelete = () => {
+    setPendingDelete(null)
+    setDeleteError(null)
+  }
+
+  const confirmDelete = async () => {
+    if (pendingDelete === null) return
+    const index = pendingDelete
+    const variantId = variants[index]?.id
+
+    // A row that was never saved exists only in this form — nothing to call.
+    if (!variantId || !onDeleteVariant) {
+      remove(index)
+      cancelDelete()
+      return
+    }
+
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      const res = await onDeleteVariant(variantId)
+      if (!res.ok) {
+        setDeleteError(res.error || 'Could not delete this variant.')
+        return
+      }
+      remove(index)
+      setPendingDelete(null)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   // "Apply saved variant" — reuse a spec from the artist's other artworks
   // (ratio-matched by the API) instead of retyping it per photo. Loaded
   // lazily on first click; applying appends a prefilled, still-editable
@@ -173,6 +315,9 @@ export const LimitedVariantsEditor = ({
   const [templates, setTemplates] = useState<VariantTemplate[] | null>(null)
   const [templatesLoading, setTemplatesLoading] = useState(false)
   const [templatesError, setTemplatesError] = useState<string | null>(null)
+  /** Why the picker came back empty — the API distinguishes "no image
+   *  dimensions", "nothing saved yet" and "nothing matches this ratio". */
+  const [templatesReason, setTemplatesReason] = useState<string | null>(null)
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
 
   const openTemplatePicker = async () => {
@@ -185,6 +330,7 @@ export const LimitedVariantsEditor = ({
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to load saved variants.')
       setTemplates(data.templates ?? [])
+      setTemplatesReason(data.reason ?? null)
     } catch (err) {
       setTemplatesError(err instanceof Error ? err.message : 'Failed to load saved variants.')
       setTemplates(null)
@@ -216,9 +362,7 @@ export const LimitedVariantsEditor = ({
       borderCm: t.borderCm,
       editionSize: t.editionSize,
       priceEuros: t.priceEuros,
-      ...(isFixedTemplate
-        ? { sheetWidthCm: t.sheetWidthCm, sheetHeightCm: t.sheetHeightCm }
-        : {}),
+      ...(isFixedTemplate ? { sheetWidthCm: t.sheetWidthCm, sheetHeightCm: t.sheetHeightCm } : {}),
     }
     const applied = isFixedTemplate ? { ...draft, ...withDerivedImage(draft) } : draft
 
@@ -326,6 +470,18 @@ export const LimitedVariantsEditor = ({
 
   return (
     <div className={styles.editor}>
+      {dirtyCount > 0 && (
+        <div className={styles.variantLockedBanner}>
+          <span className={styles.variantLockedBadge}>Unsaved</span>
+          <div>
+            {dirtyCount === 1
+              ? 'One variant has unsaved changes.'
+              : `${dirtyCount} variants have unsaved changes.`}{' '}
+            Use “Save variant” on each card to store them now — leaving this page without saving
+            loses them.
+          </div>
+        </div>
+      )}
       {variants.map((variant, index) => {
         // Everything keys off one fact: a variant is LIVE (on sale) only while
         // it's published AND blocked. Live variants are frozen and can be taken
@@ -339,9 +495,24 @@ export const LimitedVariantsEditor = ({
         const showUnblock = isAdmin && isLive
         // Off-sale variants can be put on sale and deleted.
         const showReadyToSell = !isLive && !!onReadyToSellVariant
-        const showDelete = !isLive
+        // Copies already reserved/sold. A variant an admin has UNBLOCKED shows
+        // no "Currently Selling" badge, yet real orders may own its numbers —
+        // so the lock alone must not decide whether Delete is offered, or the
+        // UI promises something the server can only refuse.
+        const committedCount = variant.committedCount ?? 0
+        const hasSales = committedCount > 0
+        const showDelete = !isLive && !hasSales
         const duplicateSize = isDuplicate(variant)
         const key = keyFor(variant, index)
+        // Saving this card on its own. Offered only when something here differs
+        // from what is stored, so the button is a statement of fact ("there is
+        // something to save") rather than permanent furniture.
+        const variantDirty = variantIsDirty(variant)
+        const showSaveVariant = variantDirty && Boolean(onSaveVariant)
+        const saveKey = variant.id ?? key
+        const variantSaving = savingKey === saveKey
+        const variantSaveError = saveErrorByKey[saveKey]
+        const variantJustSaved = savedKey === variant.id && !variantDirty
         const isOpen = !!expanded[key]
         // The UI's own toggle state — see `sheetMode` above for why this,
         // not isFixedSheet(variant), drives everything this card renders.
@@ -357,7 +528,11 @@ export const LimitedVariantsEditor = ({
         // (expand the cards) and don't proceed — no blind 400.
         const handleReadyToSell = () => {
           const invalid = variants
-            .map((v, i) => ({ key: keyFor(v, i), name: v.name || `Variant ${i + 1}`, bad: variantHasErrors(v, i) }))
+            .map((v, i) => ({
+              key: keyFor(v, i),
+              name: v.name || `Variant ${i + 1}`,
+              bad: variantHasErrors(v, i),
+            }))
             .filter((entry) => entry.bad)
           if (invalid.length > 0) {
             const flags = Object.fromEntries(invalid.map((entry) => [entry.key, true]))
@@ -392,6 +567,11 @@ export const LimitedVariantsEditor = ({
             >
               <span className={styles.variantTag}>{variant.name || `Variant ${index + 1}`}</span>
               {isLive && <span className={styles.sellingTag}>Currently Selling</span>}
+              {hasSales && (
+                <span className={styles.variantLockedBadge}>
+                  {committedCount} sold{!isLive && ' · paused'}
+                </span>
+              )}
               <ChevronDown
                 size={16}
                 strokeWidth={ICON_STROKE_WIDTH}
@@ -411,8 +591,8 @@ export const LimitedVariantsEditor = ({
                     <div>
                       <strong>This variant is on sale and frozen.</strong>{' '}
                       {isAdmin
-                        ? 'Only its price can change — raise it as copies sell. Unblock it below to edit anything else.'
-                        : 'Only its price can change — raise it as copies sell. Ask an admin to unblock it to edit anything else.'}
+                        ? 'Only its name and price can change — raise the price as copies sell. Unblock it below to edit anything else.'
+                        : 'Only its name and price can change — raise the price as copies sell. Ask an admin to unblock it to edit anything else.'}
                     </div>
                   </div>
                 )}
@@ -422,11 +602,21 @@ export const LimitedVariantsEditor = ({
                     type="text"
                     size="medium"
                     value={variant.name}
-                    disabled={variantLocked}
+                    // Editable even while on sale, like the price. The name is
+                    // just a label — no invoice references it, and every live
+                    // surface joins it fresh, so a rename never rewrites a
+                    // record. The physical fields below stay frozen.
+                    disabled={false}
                     placeholder="e.g. Small"
                     invalid={!!errFor('name')}
                     onChange={(e) => update(index, { name: e.target.value })}
                   />
+                  {isLive && (
+                    <span className={styles.hint}>
+                      You can rename this variant at any time — it updates everywhere it is shown.
+                      Already-sent emails keep the name they were sent with.
+                    </span>
+                  )}
                   <ErrorText>{errFor('name')}</ErrorText>
                 </div>
 
@@ -606,8 +796,8 @@ export const LimitedVariantsEditor = ({
                         return margin.marginCents <= 0 ? (
                           <ErrorText>
                             The paper around the print costs €{euros(margin.absorbedCents)} more to
-                            produce than the print alone, which is more than this variant earns. Raise
-                            the price or reduce the border.
+                            produce than the print alone, which is more than this variant earns.
+                            Raise the price or reduce the border.
                           </ErrorText>
                         ) : (
                           <p className={styles.layoutLine}>
@@ -639,8 +829,9 @@ export const LimitedVariantsEditor = ({
                     size="medium"
                     value={variant.priceEuros ?? ''}
                     // Price stays editable even when the variant is locked — the
-                    // artist can raise it as the edition sells. Every other field
-                    // is frozen (size + edition size are materialised).
+                    // artist can raise it as the edition sells. Name is editable
+                    // too (see above); every other field is frozen (size + edition
+                    // size are materialised).
                     disabled={false}
                     placeholder="Add your price here"
                     invalid={!!errFor('price')}
@@ -658,7 +849,7 @@ export const LimitedVariantsEditor = ({
                   <ErrorText>{errFor('price')}</ErrorText>
                 </div>
 
-                {(showUnblock || showReadyToSell || showDelete) && (
+                {(showUnblock || showReadyToSell || showDelete || showSaveVariant) && (
                   <div className={styles.variantFooter}>
                     {/* Admin shortcut: consume a number of this variant
                         off-platform (gift / artist copy / test) — jumps to the
@@ -699,13 +890,47 @@ export const LimitedVariantsEditor = ({
                         Unblock
                       </Button>
                     )}
+                    {showSaveVariant && (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        disabled={variantSaving}
+                        onClick={() => saveVariant(index)}
+                      >
+                        {variantSaving
+                          ? 'Saving…'
+                          : variant.id
+                            ? 'Save variant'
+                            : 'Save new variant'}
+                      </Button>
+                    )}
                     {showDelete && (
-                      <Button type="button" variant="danger" onClick={() => remove(index)}>
+                      <Button type="button" variant="danger" onClick={() => requestDelete(index)}>
                         Delete variant
                       </Button>
                     )}
                   </div>
                 )}
+                {hasSales && !isLive && (
+                  <span className={styles.hint}>
+                    This variant is paused from sale, but{' '}
+                    {committedCount === 1 ? 'a copy has' : `${committedCount} copies have`} already
+                    been reserved or sold, so it can’t be deleted. Cancel or refund the
+                    {committedCount === 1 ? ' order that owns it' : ' orders that own them'} to free{' '}
+                    {committedCount === 1 ? 'the number' : 'those numbers'}.
+                  </span>
+                )}
+                {variantDirty && !variantSaving && (
+                  <span className={styles.hint}>
+                    {variant.id
+                      ? isLive
+                        ? 'Unsaved changes. “Save variant” stores this variant’s name and price on their own — no need to save the artwork.'
+                        : 'Unsaved changes. “Save variant” stores this variant on its own — no need to save the artwork.'
+                      : 'This variant hasn’t been saved yet. “Save new variant” creates it on its own — no need to save the artwork.'}
+                  </span>
+                )}
+                {variantJustSaved && <span className={styles.hint}>Saved.</span>}
+                {variantSaveError && <ErrorText>{variantSaveError}</ErrorText>}
               </div>
             )}
           </div>
@@ -737,18 +962,47 @@ export const LimitedVariantsEditor = ({
             <ErrorText>{templatesError}</ErrorText>
           ) : templates && templates.length === 0 ? (
             <span className={styles.hint}>
-              No saved variants match this artwork&apos;s exact proportions. Only variants from
-              artworks with the SAME aspect ratio appear here, so the print size and margins apply
-              identically across the series. Differently-proportioned images need their own variant.
+              {templatesReason === 'no-dimensions' ? (
+                <>
+                  We don&apos;t know this artwork&apos;s dimensions yet, so no saved variant can be
+                  sized to it. Upload the image first — then your saved variants will appear here.
+                </>
+              ) : templatesReason === 'none-saved' ? (
+                <>
+                  You haven&apos;t saved any variants on your other artworks yet. Once you do,
+                  they&apos;ll show up here to reuse instead of retyping them.
+                </>
+              ) : (
+                <>
+                  No saved variants match this artwork&apos;s exact proportions. Only variants from
+                  artworks with the SAME aspect ratio appear here, so the print size and margins
+                  apply identically across the series. Differently-proportioned images need their
+                  own variant. (Fixed-sheet variants fit any shape — save one and it will appear for
+                  every artwork.)
+                </>
+              )}
             </span>
           ) : templates ? (
             <SelectDropdown<string>
-              options={templates.map((t, i) => ({
-                value: String(i),
-                label: `${t.name} — ${t.widthCm}×${t.heightCm} cm · ${
-                  TPS_PAPERS.find((p) => p.id === t.paperId)?.label ?? t.paperId
-                } · /${t.editionSize} (from “${t.sourceArtworkTitle}”)`,
-              }))}
+              options={templates.map((t, i) => {
+                const paper = TPS_PAPERS.find((p) => p.id === t.paperId)?.label ?? t.paperId
+                // Height × width to one decimal, matching the recipe line on the
+                // card. The raw values carry the full float from the aspect
+                // derivation (24.3689583077112 cm helps nobody).
+                //
+                // A FIXED-SHEET template is defined by its SHEET — the image is
+                // re-derived for whatever artwork it lands on — so showing the
+                // source artwork's print size would describe something this
+                // template will not reproduce.
+                const size =
+                  t.sheetWidthCm && t.sheetHeightCm
+                    ? `${t.sheetHeightCm.toFixed(1)} × ${t.sheetWidthCm.toFixed(1)} cm sheet`
+                    : `${t.heightCm.toFixed(1)} × ${t.widthCm.toFixed(1)} cm print`
+                return {
+                  value: String(i),
+                  label: `${t.name} — ${size} · ${paper} · edition of ${t.editionSize} (from “${t.sourceArtworkTitle}”)`,
+                }
+              })}
               value={''}
               placeholder="Pick a saved variant to apply…"
               onChange={(v) => {
@@ -759,6 +1013,35 @@ export const LimitedVariantsEditor = ({
           ) : null}
         </div>
       )}
+
+      {pendingDelete !== null &&
+        (() => {
+          const label = variants[pendingDelete]?.name?.trim() || 'This variant'
+          // Once the server has refused, the modal is no longer a question —
+          // it is an answer. Showing "will be deleted straight away" beside
+          // "can't be deleted", with a confirm button that can only fail
+          // again, is worse than showing nothing.
+          const refused = Boolean(deleteError)
+          return (
+            <ConfirmModal
+              title={refused ? `“${label}” can’t be deleted` : 'Delete this variant?'}
+              message={
+                refused
+                  ? deleteError
+                  : variants[pendingDelete]?.id
+                    ? `“${label}” will be deleted straight away — you don’t need to save the artwork afterwards. Its unsold edition numbers go with it. This can’t be undone.`
+                    : `“${label}” was never saved, so removing it just clears it from this form.`
+              }
+              confirmLabel="Yes, delete it"
+              cancelLabel={refused ? 'Close' : 'Cancel'}
+              hideConfirm={refused}
+              destructive
+              busy={deleting}
+              onConfirm={confirmDelete}
+              onCancel={cancelDelete}
+            />
+          )
+        })()}
     </div>
   )
 }
