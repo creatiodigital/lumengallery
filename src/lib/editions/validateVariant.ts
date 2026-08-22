@@ -18,6 +18,7 @@ import {
   TPS_BORDER_REFERENCE_WIDTH_CM,
   TPS_BORDER_CAP_FRACTION,
 } from '@/lib/editions/sheetLayout'
+import { formatCm } from '@/lib/print-providers/format'
 import { estimateVariantMarginCents } from '@/lib/editions/variantMargin'
 import {
   TPS_PAPERS,
@@ -95,12 +96,30 @@ export function validateVariantInput(args: ValidateVariantArgs): ValidateVariant
     }
   }
 
-  // Aspect-ratio lock: the variant must keep the artwork's ratio so the
-  // print is never cropped or padded. Compare on the long/short ratio so
-  // orientation doesn't matter.
   if (artwork.widthPx <= 0 || artwork.heightPx <= 0) {
     return { ok: false, error: 'Artwork has no usable image dimensions.' }
   }
+
+  // Orientation lock, checked BEFORE the ratio so the artist gets the useful
+  // message. The ratio test below compares long/short, which by design ignores
+  // orientation — so a portrait print of a landscape work passes it while
+  // describing the artwork rotated a quarter turn, which is not the artwork.
+  // A square work constrains nothing.
+  const artworkLandscape = artwork.widthPx > artwork.heightPx
+  const artworkPortrait = artwork.heightPx > artwork.widthPx
+  const variantLandscape = variant.widthCm > variant.heightCm
+  const variantPortrait = variant.heightCm > variant.widthCm
+  if ((artworkLandscape && !variantLandscape) || (artworkPortrait && !variantPortrait)) {
+    return {
+      ok: false,
+      error: artworkLandscape
+        ? 'This artwork is landscape, so its prints must be wider than they are tall. Swap the two numbers.'
+        : 'This artwork is portrait, so its prints must be taller than they are wide. Swap the two numbers.',
+    }
+  }
+
+  // Aspect-ratio lock: the variant must keep the artwork's ratio so the print
+  // is never cropped or padded.
   const artworkRatio =
     Math.max(artwork.widthPx, artwork.heightPx) / Math.min(artwork.widthPx, artwork.heightPx)
   const variantRatio = longCm / shortCm
@@ -154,6 +173,22 @@ export function validateVariantInput(args: ValidateVariantArgs): ValidateVariant
     const sheetWidthCm = variant.sheetWidthCm as number
     const sheetHeightCm = variant.sheetHeightCm as number
 
+    // The SHEET carries the orientation lock too, not only the derived print.
+    // A landscape image centred on a portrait sheet leaves a deep band of paper
+    // above and below — a legitimate object, but not this gallery's, and the
+    // print inside would still pass the check above because its own shape is
+    // correct. Same orientation is the minimum condition for both.
+    const sheetLandscape = sheetWidthCm > sheetHeightCm
+    const sheetPortrait = sheetHeightCm > sheetWidthCm
+    if ((artworkLandscape && sheetPortrait) || (artworkPortrait && sheetLandscape)) {
+      return {
+        ok: false,
+        error: artworkLandscape
+          ? 'This artwork is landscape, so its sheet must be landscape too. Swap the sheet’s width and height.'
+          : 'This artwork is portrait, so its sheet must be portrait too. Swap the sheet’s width and height.',
+      }
+    }
+
     // TPS measures a targeted border at a 40 cm reference width and scales
     // it DOWN below that, so a narrower sheet would not get the border the
     // artist entered and our derived layout would stop matching the print.
@@ -170,7 +205,7 @@ export function validateVariantInput(args: ValidateVariantArgs): ValidateVariant
     if (variant.borderCm > capCm + 0.001) {
       return {
         ok: false,
-        error: `On a ${sheetHeightCm} × ${sheetWidthCm} cm sheet the border can be at most ${capCm.toFixed(1)} cm.`,
+        error: `On a ${formatCm(sheetHeightCm)} × ${formatCm(sheetWidthCm)} cm sheet the border can be at most ${formatCm(capCm)} cm.`,
       }
     }
 
@@ -192,14 +227,14 @@ export function validateVariantInput(args: ValidateVariantArgs): ValidateVariant
     ) {
       return {
         ok: false,
-        error: `The print size must be the size derived from the sheet (${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm).`,
+        error: `The print size must be the size derived from the sheet (${formatCm(layout.imageHeightCm)} × ${formatCm(layout.imageWidthCm)} cm).`,
       }
     }
 
     if (Math.min(layout.imageWidthCm, layout.imageHeightCm) < MIN_SHORT_EDGE_CM) {
       return {
         ok: false,
-        error: `The derived print would be ${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm — its shortest side must be at least ${MIN_SHORT_EDGE_CM} cm. Use a bigger sheet or a smaller border.`,
+        error: `The derived print would be ${formatCm(layout.imageHeightCm)} × ${formatCm(layout.imageWidthCm)} cm — its shortest side must be at least ${MIN_SHORT_EDGE_CM} cm. Use a bigger sheet or a smaller border.`,
       }
     }
   }

@@ -15,7 +15,6 @@ import {
   releaseEditionNumberById,
   releaseEditionNumberForPaymentIntent,
 } from '@/lib/editions/releaseEditionNumber'
-import { CART_HOLD_TTL_MS, extendCartHold } from '@/lib/editions/reserveForCart'
 import { captureError } from '@/lib/observability/captureError'
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
@@ -46,7 +45,13 @@ export type CreateCartPaymentIntentInput = {
 
 export type CreateCartPaymentIntentResult =
   | { ok: true; clientSecret: string; paymentIntentId: string; totals: CartTotals }
-  | { ok: false; error: string }
+  | {
+      ok: false
+      error: string
+      /** The line that sold out, so the cart can drop exactly that one and
+       *  let the rest of the order through. */
+      soldOutLineId?: string
+    }
 
 /**
  * Shown when we can't open a PaymentIntent at all. A buyer at the card step is
@@ -113,38 +118,14 @@ export async function createCartPaymentIntent(
     const variantId = item.variantId
     const quantity = item.quantity
 
-    // a. Verify the client-supplied ids: still-valid cart holds (reserved,
-    //    no PI, no order item, TTL not lapsed) for THIS variant — these are
-    //    reused as-is. The reservedAt cutoff mirrors sweepExpiredCartHolds:
-    //    an already-expired hold must count as deficit (fresh re-reserve
-    //    below), not be adopted — adopting it would carry a sweepable
-    //    reservedAt through the multi-second Stripe round-trip, exactly the
-    //    window in which a concurrent buyer's sweep can reclaim the row.
-    const candidateIds = item.editionNumberIds ?? []
-    let validIds: string[] = []
-    if (candidateIds.length > 0) {
-      const validRows = await prisma.editionNumber.findMany({
-        where: {
-          id: { in: candidateIds },
-          variantId,
-          state: 'reserved',
-          paymentIntentId: null,
-          orderItemId: null,
-          reservedAt: { gte: new Date(Date.now() - CART_HOLD_TTL_MS) },
-        },
-        select: { id: true },
-      })
-      // Cap at quantity in case a stale tab sent more ids than it needs.
-      validIds = validRows.slice(0, quantity).map((r) => r.id)
-      // Restart the adopted holds' clock now that checkout has begun, so a
-      // hold with (say) 20s of TTL left can't lapse mid-Stripe-call.
-      if (validIds.length > 0) await extendCartHold(validIds)
-    }
-
-    // b. Reserve the deficit (lapsed/swept holds) one number at a time.
-    const deficit = quantity - validIds.length
+    // Claim every number for this line here, atomically. This is the FIRST and
+    // ONLY moment stock is decided: the cart reserves nothing, so a limited
+    // edition can sell out while it sits there, and the buyer finds out now.
+    // `reserveNextEditionNumber` takes the lowest available number under
+    // FOR UPDATE SKIP LOCKED, so two buyers can never be handed the same one.
+    const validIds: string[] = []
     let soldOut = false
-    for (let i = 0; i < deficit; i++) {
+    for (let i = 0; i < quantity; i++) {
       const reserved = await reserveNextEditionNumber({
         variantId,
         buyerEmail: address.email,
@@ -157,13 +138,34 @@ export async function createCartPaymentIntent(
       freshlyReservedIds.push(reserved.numberId)
     }
 
-    // c. Still short → sold out. Release our replacements (NOT the buyer's
-    //    pre-existing holds) and bail.
+    // Short → sold out. Release whatever we managed to claim so a partial grab
+    // can't strand numbers, then name the exact thing that went: a cart can
+    // hold several editions by several artists, and "this edition sold out"
+    // leaves the buyer hunting for which one.
     if (soldOut || validIds.length < quantity) {
       await releaseFreshlyReserved()
+      const variant = await prisma.limitedVariant.findUnique({
+        where: { id: variantId },
+        select: {
+          name: true,
+          artwork: { select: { title: true, user: { select: { name: true, lastName: true } } } },
+        },
+      })
+      const work = variant?.artwork.title
+      const artist = variant
+        ? `${variant.artwork.user.name} ${variant.artwork.user.lastName}`.trim()
+        : ''
+      // Work first — that is what the buyer recognises — then the artist, then
+      // the variant in parentheses, because a cart can hold two variants of the
+      // SAME work and the title alone would not say which one went.
+      const named = [work && `“${work}”`, artist && `by ${artist}`].filter(Boolean).join(' ')
+      const what = named && variant?.name ? `${named} (${variant.name})` : named
       return {
         ok: false,
-        error: 'This edition has just sold out. Please adjust your cart.',
+        error: what
+          ? `Sorry — ${what} has just sold out. We’ve removed it from your cart; the rest of your order is unaffected.`
+          : 'Sorry — one of the editions in your cart has just sold out. We’ve removed it; the rest of your order is unaffected.',
+        soldOutLineId: item.lineId,
       }
     }
 
@@ -278,7 +280,10 @@ export async function createCartPaymentIntent(
 
     if (!pi.client_secret) {
       await releaseFreshlyReserved()
-      console.error('[create-cart-pi] Stripe returned a PaymentIntent with no client_secret:', pi.id)
+      console.error(
+        '[create-cart-pi] Stripe returned a PaymentIntent with no client_secret:',
+        pi.id,
+      )
       return { ok: false, error: PAYMENT_START_FAILED }
     }
 
@@ -451,7 +456,11 @@ export async function createCartPaymentIntent(
               .map((id) => numberById.get(id))
               .filter((n): n is number => n != null)
               .sort((a, b) => a - b)
-            return lineSummary(item, nums, item.variantId ? sizeByVariant.get(item.variantId) : null)
+            return lineSummary(
+              item,
+              nums,
+              item.variantId ? sizeByVariant.get(item.variantId) : null,
+            )
           }),
         )
         await stripe.paymentIntents.update(pi.id, {

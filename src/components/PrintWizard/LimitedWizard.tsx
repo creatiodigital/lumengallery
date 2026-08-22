@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 
 import { CartIcon } from '@/components/cart/CartIcon'
 import { Button } from '@/components/ui/Button'
@@ -14,14 +14,13 @@ import Logo from '@/icons/logo.svg'
 import Monogram from '@/icons/monogram.svg'
 
 import { buildCartItem } from '@/lib/cart/buildCartItem'
-import { hasMatchingCartLine } from '@/lib/cart/cartMath'
 import { useCart } from '@/lib/cart/useCart'
 import { type Catalog, type Quote, summarizeConfig } from '@/lib/print-providers'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
+import { cartedVariantIds, resolveSelectedVariant } from '@/lib/editions/variantSelection'
 import { TABLET_BREAKPOINT_PX, useIsMobile } from '@/hooks/useIsMobile'
 
-import { CartAddedModal } from './CartAddedModal'
 import { EditionBadge } from './EditionBadge'
 import { Scene } from './Scene'
 import { SummaryPanel } from './SummaryPanel'
@@ -57,7 +56,6 @@ function readCountryFromStash(slug: string): string {
  */
 export const LimitedWizard = ({ artwork, catalog }: Props) => {
   const router = useRouter()
-  const searchParams = useSearchParams()
   // Desktop-only 3D preview — same rationale and breakpoint as the open
   // wizard: never mount the WebGL canvas on mobile, and only mount it after
   // hydration so SSR and the first client render agree.
@@ -66,24 +64,33 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
   useEffect(() => {
     setSceneReady(true)
   }, [])
-  // Set when the buyer came from the cart's "Edit item" link — re-adding
-  // replaces this line (removed just before the add) instead of duplicating it.
-  const editLineId = searchParams.get('editLineId')
+  // NOTE: the cart shows no "Edit item" for a limited line and this wizard
+  // reads no `editLineId` / `variant` param. Nothing here edits a line — see
+  // the "marked, not locked" comment below.
+
+  const { addItem, items } = useCart()
 
   // Sold-out variants are hidden — only buyable ones are offered.
   const available = useMemo(
     () => (artwork.variants ?? []).filter((v) => v.remaining > 0),
     [artwork.variants],
   )
-  // Restore the buyer's chosen variant when re-entering via the cart's "Edit
-  // item" link (which passes `?variant=<id>`); otherwise default to the first
-  // available edition. Without this, editing always reset to the first variant.
-  const requestedVariantId = searchParams.get('variant')
-  const [selectedVariantId, setSelectedVariantId] = useState(() =>
-    requestedVariantId && available.some((v) => v.id === requestedVariantId)
-      ? requestedVariantId
-      : (available[0]?.id ?? ''),
-  )
+
+  // A variant already in the cart is MARKED, not locked.
+  //
+  // Selecting is how an edition gets hung on the wall in the 3D preview, and a
+  // buyer coming back for a last look at what they bought must not lose that as
+  // a side effect of buying it. What a carted variant loses is only the add —
+  // the cart offers no edit for a limited line and no second copy of one, the
+  // variant being the object rather than a configuration of it.
+  const cartedIds = useMemo(() => cartedVariantIds(items, artwork.id), [items, artwork.id])
+
+  // One edition at a time, and always one: the preview, the schema and the spec
+  // list all describe exactly one print, and the panel has nothing to say
+  // without it. `resolveSelectedVariant` supplies the opening default, so this
+  // starts empty and is filled by the buyer's first click. Picking another
+  // switches; there is no unselecting.
+  const [selectedId, setSelectedId] = useState('')
   const [country] = useState<string>(() => readCountryFromStash(artwork.slug))
 
   // Edition-details modal — opened ONLY when the buyer clicks "See Details" on
@@ -92,12 +99,28 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
   const [introOpen, setIntroOpen] = useState(false)
   const dismissIntro = () => setIntroOpen(false)
 
-  const selected = available.find((v) => v.id === selectedVariantId) ?? available[0] ?? null
+  // Re-resolved every render: it supplies the opening selection, and moves off
+  // an edition that sells out under a selection left sitting there before it
+  // can reach the preview or the add.
+  const selected = useMemo(
+    () => resolveSelectedVariant(selectedId, available),
+    [selectedId, available],
+  )
+  // Already bought: the card stays selectable so it can be looked at again, but
+  // the panel offers "Go to cart" in place of an add.
+  const selectedInCart = !!selected && cartedIds.has(selected.id)
   // For the details modal: fall back to any variant (incl. sold-out) so the
-  // edition-size text still renders when the whole edition is sold out.
+  // edition-size text still renders when nothing is selected.
   const detailVariant = selected ?? artwork.variants?.[0] ?? null
 
   const config = useMemo(() => (selected ? variantToWizardConfig(selected) : null), [selected])
+
+  // The mark stays in the preview — it is part of what the buyer is buying, and
+  // showing where it sits on the sheet matters. It is ILLUSTRATIVE: nothing is
+  // reserved before payment, so the real number is unknown here. The terms say
+  // so ("the number shown in the preview is for reference only"), which is what
+  // stops "1/100" reading as a promise of the first copy.
+  const editionLabel = selected ? `1/${selected.editionSize}` : undefined
 
   const quote: Quote | null = useMemo(
     () =>
@@ -113,63 +136,55 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
     [config, country, catalog.providerId, selected?.priceCents, artwork.printPriceCents],
   )
 
-  // Per-variant price for the picker cards (same pre-country basis the
-  // summary uses on fresh entry).
+  // One quote per variant, keyed by id. The picker needs a price on every card
+  // and an add commits several lines at once, so both read from here rather
+  // than re-quoting per render or per click.
+  const quotesByVariantId = useMemo(() => {
+    const quotes = new Map<string, Quote>()
+    for (const v of available) {
+      quotes.set(
+        v.id,
+        getProviderQuote(catalog.providerId, {
+          config: variantToWizardConfig(v),
+          country,
+          artistPriceCents: v.priceCents ?? artwork.printPriceCents,
+        }),
+      )
+    }
+    return quotes
+  }, [available, country, catalog.providerId, artwork.printPriceCents])
+
   const pickerItems: VariantPickerItem[] = useMemo(
     () =>
       available.map((v) => ({
         ...v,
-        priceCents: getProviderQuote(catalog.providerId, {
-          config: variantToWizardConfig(v),
-          country,
-          artistPriceCents: v.priceCents ?? artwork.printPriceCents,
-        }).subtotalCents,
+        priceCents: quotesByVariantId.get(v.id)?.subtotalCents ?? 0,
       })),
-    [available, country, catalog.providerId, artwork.printPriceCents],
+    [available, quotesByVariantId],
   )
 
-  const { addItem, removeItem, items } = useCart()
   const [addError, setAddError] = useState<string | null>(null)
-  const [cartAddedOpen, setCartAddedOpen] = useState(false)
 
-  // Clear any stale add error when the buyer switches variant — the previous
-  // sold-out message no longer applies to the new selection.
+  // Clear any stale add error when the selection changes — the previous
+  // sold-out message no longer applies to what is chosen now.
   useEffect(() => {
     setAddError(null)
-  }, [selectedVariantId])
+  }, [selectedId])
 
   const close = () => {
     clearPrintSession(artwork.slug)
     router.push(consumePrintReturnUrl(artwork.slug) ?? '/prints')
   }
 
-  // Same variant + config already in the cart (ignoring any line being edited)
-  // → adding merges into a quantity bump, so we confirm first.
-  const isDuplicate = useMemo(
-    () =>
-      !!config &&
-      hasMatchingCartLine(
-        items,
-        { artworkId: artwork.id, variantId: selected?.id, config },
-        editLineId ?? undefined,
-      ),
-    [items, artwork.id, selected?.id, config, editLineId],
-  )
-
   const handleAddToCart = async () => {
-    if (!selected || !config || !quote) return
+    if (!selected || !config || !quote || selectedInCart) return
 
     setAddError(null)
 
-    // Editing: carry the original line's quantity (the edit applies to the
-    // whole line), then drop that line so the re-add replaces it.
-    const quantity = editLineId ? (items.find((i) => i.lineId === editLineId)?.quantity ?? 1) : 1
-    if (editLineId) await removeItem(editLineId)
-
-    // `addItem` reserves the edition number server-side BEFORE committing the
-    // line; on sold-out / insufficient stock it throws so we surface a
-    // friendly message and leave the cart untouched. Re-throw so SummaryPanel
-    // does not flip to its "added" state.
+    // Always an ADD, never a replace — nothing here edits an existing line.
+    // `addItem` commits the line locally; stock is settled once, atomically,
+    // when payment starts. Re-throw on failure so the panel does not flip to
+    // its "added" state.
     try {
       await addItem({
         ...buildCartItem({
@@ -189,9 +204,14 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
           artistCents: selected.priceCents ?? artwork.printPriceCents,
           specsSummary: summarizeConfig(catalog, config),
         }),
-        quantity,
+        quantity: 1,
       })
-      setCartAddedOpen(true)
+      // Straight to the cart. A limited edition is one numbered copy of one
+      // work — nobody arrives here to browse on, and offering "Continue
+      // shopping" beside "Go to cart" made walking away look like an ordinary
+      // next step. The cart is where the price and checkout live, so it IS the
+      // next page.
+      router.push('/cart')
     } catch (error) {
       const reason = error instanceof Error ? error.message : ''
       setAddError(
@@ -226,38 +246,51 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
       </header>
 
       <main className={styles.body}>
-        <EditionBadge editionType="limited" onDetails={() => setIntroOpen(true)} />
-        {selected && config ? (
+        {/* The caveat rides on the badge, before anything is chosen — there is
+            no hold and no clock, so the one thing the buyer must know up front
+            is that taking their time carries a risk. */}
+        <EditionBadge
+          editionType="limited"
+          onDetails={() => setIntroOpen(true)}
+          note="Not reserved until you pay — another collector may take it first."
+        />
+        {available.length > 0 ? (
           <>
             <VariantPicker
               variants={pickerItems}
-              selectedVariantId={selected.id}
-              onSelect={setSelectedVariantId}
+              selectedVariantId={selected?.id ?? ''}
+              onSelect={setSelectedId}
+              cartedVariantIds={cartedIds}
             />
-            {sceneReady && !isMobile && (
+            {/* The wall is the reason to select at all. Nothing chosen yet,
+                nothing to hang. */}
+            {sceneReady && !isMobile && selected && config && (
               <Scene
                 imageUrl={artwork.imageUrl}
                 catalog={catalog}
                 config={config}
                 configReady
-                editionLabel={`1/${selected.editionSize}`}
+                editionLabel={editionLabel}
               />
             )}
-            <SummaryPanel
-              artwork={artwork}
-              catalog={catalog}
-              config={config}
-              quote={quote}
-              quoteLoading={false}
-              canContinue
-              configReady
-              onAddToCart={handleAddToCart}
-              onContinueShopping={close}
-              editionLabel={`1/${selected.editionSize}`}
-              addError={addError}
-              isEditing={editLineId !== null}
-              isDuplicate={isDuplicate}
-            />
+            {selected && config && (
+              <SummaryPanel
+                artwork={artwork}
+                catalog={catalog}
+                config={config}
+                quote={quote}
+                quoteLoading={false}
+                canContinue
+                configReady
+                onAddToCart={handleAddToCart}
+                onContinueShopping={close}
+                editionLabel={editionLabel}
+                navigatesAfterAdd
+                alreadyInCart={selectedInCart}
+                addError={addError}
+                isDuplicate={selectedInCart}
+              />
+            )}
           </>
         ) : (
           <div className={styles.soldOutPanel}>
@@ -266,16 +299,16 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
         )}
       </main>
 
-      {cartAddedOpen && (
-        <CartAddedModal onClose={() => setCartAddedOpen(false)} edited={editLineId !== null} />
-      )}
-
       {introOpen && detailVariant && (
         <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px">
           <div className={styles.introModal}>
             <Monogram className={styles.introMonogram} aria-hidden="true" />
-            <p id="print-intro-title" className={styles.detailLead}>
-              <strong>{artwork.title}</strong> by <strong>{artwork.artistName}</strong>.
+            {/* Not shown: the buyer is already on this artwork's page, so the
+                line only restated what sits behind the modal. It stays in the
+                markup, visually hidden, because `titleId` points at it for the
+                dialog's accessible name. */}
+            <p id="print-intro-title" className="sr-only">
+              {artwork.title} by {artwork.artistName}
             </p>
             <div className={styles.detailSections}>
               <p className={styles.detailSubhead}>Terms of sale</p>
@@ -290,7 +323,10 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
                 </li>
                 <li>Sold unframed, on premium archival paper — frame it your way.</li>
                 <li>Price might rise as the edition sells.</li>
-                <li>Your edition number is allocated at the point of sale.</li>
+                <li>
+                  Your edition number is allocated at the point of sale — the number shown in the
+                  preview is for reference only.
+                </li>
                 <li>Final VAT is calculated when you confirm your delivery address at checkout.</li>
                 <li>Sales are strictly limited to one edition per household.</li>
                 <li>We reserve the right to cancel or refund an order if needed.</li>
@@ -302,16 +338,13 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
                   archival materials.
                 </li>
                 <li>Shipping is calculated at checkout, based on your delivery address.</li>
-                <li>Most editions are dispatched within about two weeks of purchase.</li>
+                <li>Most editions are dispatched within about a week of purchase.</li>
                 <li>
                   Sent with tracked delivery &mdash; we&rsquo;ll email you the tracking when
                   it&rsquo;s on its way.
                 </li>
-                <li>
-                  Delivery is typically 1&ndash;2 weeks in Europe and 2&ndash;4 weeks
-                  internationally (international orders may be subject to customs and local import
-                  duties).
-                </li>
+                <li>Delivery is typically 1&ndash;2 weeks.</li>
+                <li>Orders may be subject to customs and local import duties.</li>
               </ul>
             </div>
             <p className={styles.detailTerms}>

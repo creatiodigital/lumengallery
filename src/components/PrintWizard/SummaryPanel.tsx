@@ -48,6 +48,16 @@ interface SummaryPanelProps {
   /** True when the current configuration exactly matches a line already in the
    *  cart — adding would merge into a quantity bump, so we confirm first. */
   isDuplicate?: boolean
+  /** True when the caller navigates away on a successful add (the limited path
+   *  goes straight to the cart). Suppresses the "Continue shopping / Go to
+   *  cart" pair, which would otherwise flash for a frame on the way out — and
+   *  which a limited buyer should never be offered: walking away from a live
+   *  hold is not an ordinary next step. */
+  navigatesAfterAdd?: boolean
+  /** True when a cart line already matches the CURRENT selection. Nothing is
+   *  reserved by that — it just means the buyer has this exact print in their
+   *  cart, so the action is to go and finish rather than add it twice. */
+  alreadyInCart?: boolean
 }
 
 export const SummaryPanel = ({
@@ -64,6 +74,8 @@ export const SummaryPanel = ({
   addError,
   isEditing = false,
   isDuplicate = false,
+  navigatesAfterAdd = false,
+  alreadyInCart = false,
 }: SummaryPanelProps) => {
   const ctaLabel = isEditing ? 'Update cart' : 'Add to cart'
   const ctaBusyLabel = isEditing ? 'Updating…' : 'Adding…'
@@ -72,6 +84,11 @@ export const SummaryPanel = ({
   const [added, setAdded] = useState(false)
   const [adding, setAdding] = useState(false)
   const [confirmDupOpen, setConfirmDupOpen] = useState(false)
+
+  // Arrive from "Edit item" and change nothing and the line still matches, so
+  // the button is "Go to cart" — there is no update to make. Pick a different
+  // variant and it stops matching, and "Update cart" returns.
+  const alreadyHeld = alreadyInCart
 
   // Reset add-to-cart state when the buyer changes their configuration
   // or switches variant — the previously added item no longer reflects
@@ -86,7 +103,7 @@ export const SummaryPanel = ({
     setAdding(true)
     try {
       await onAddToCart()
-      setAdded(true)
+      if (!navigatesAfterAdd) setAdded(true)
     } catch {
       // The reservation failed (sold out / insufficient stock). The parent
       // surfaces the message via `addError`; keep the CTA on "Add to cart"
@@ -144,10 +161,12 @@ export const SummaryPanel = ({
   if (!configReady) {
     return (
       <aside className={styles.summaryPanel}>
+        {/* Artist and title only — the year belongs to the artwork's own page,
+            where the buyer is deciding whether they want the work. Here they
+            have already decided and are choosing paper and size. */}
         <div className={styles.summaryHeader}>
           <span className={styles.summaryEyebrow}>{artwork.artistName}</span>
           <h2 className={styles.summaryTitle}>{artwork.title}</h2>
-          {artwork.year && <span className={styles.summaryYear}>{artwork.year}</span>}
         </div>
         <Button
           variant="primary"
@@ -167,7 +186,6 @@ export const SummaryPanel = ({
       <div className={styles.summaryHeader}>
         <span className={styles.summaryEyebrow}>{artwork.artistName}</span>
         <h2 className={styles.summaryTitle}>{artwork.title}</h2>
-        {artwork.year && <span className={styles.summaryYear}>{artwork.year}</span>}
       </div>
 
       {effectiveSize && (
@@ -193,22 +211,40 @@ export const SummaryPanel = ({
       <SpecList specs={summarizeConfig(catalog, config)} />
 
       {(() => {
-        // Item price only — the wizard shows the per-configuration price
-        // (artwork + production, no shipping, no VAT) so buyers can compare
-        // options. Shipping and tax are folded in later at the cart/checkout.
+        // Base price — the per-configuration figure (artwork + production, no
+        // shipping, no VAT) so buyers can compare options. Shipping and tax are
+        // folded in later at the cart/checkout. "Base" is the honest word for
+        // it: "Item price" read like the amount that would be charged.
         const artworkLine = quote?.lines.find((l) => l.id === 'artwork')
         const placeholder = quoteLoading ? '…' : '—'
         return (
           <dl className={styles.priceList}>
             <div className={styles.priceRow}>
-              <dt>Item price</dt>
+              <dt>Base price</dt>
               <dd>{artworkLine ? formatEuro(artworkLine.amountCents) : placeholder}</dd>
             </div>
+            {/* Says out loud what "base" leaves out, at the point of decision
+                rather than a page later. Same sentence the cart uses. */}
+            <p className={styles.priceNote}>Shipping and taxes calculated at checkout.</p>
           </dl>
         )
       })()}
 
-      {added ? (
+      {/* Already holding this exact print: the action is to go and finish, not
+          to reserve a second numbered copy. "Add to cart" here both misread the
+          state and pointed at the one thing the Terms forbid — one edition per
+          household. Not while EDITING, where the buyer came from the cart to
+          change this very line and still needs "Update cart". */}
+      {alreadyHeld ? (
+        <Button
+          variant="primary"
+          size="bigSquared"
+          fullWidth
+          href="/cart"
+          label="Go to cart"
+          className={styles.ctaButton}
+        />
+      ) : added ? (
         <div className={styles.addedActions}>
           <Button
             variant="secondary"

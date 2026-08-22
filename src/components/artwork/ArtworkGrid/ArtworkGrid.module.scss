@@ -95,7 +95,7 @@
 
 .info {
   text-align: center;
-  padding-top: var(--space-5);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--color-border-default);
   width: 100%;
 
@@ -104,23 +104,42 @@
   // presence. In the single-column mobile layout it just adds dead space
   // before the footer, so it stays scoped to md and up.
   @include breakpoint(md) {
-    min-height: 200px;
+    min-height: 96px;
   }
 }
 
 .artist {
   font-weight: 600;
-  margin-bottom: var(--space-1);
+  margin-bottom: 0;
   color: var(--color-text-primary);
+  line-height: 1.35;
 }
 
 .title {
   color: var(--color-text-primary);
-  margin-bottom: var(--space-3);
+  // Tight to the details below it — artist / title / technique are one block
+  // of identity, not separately spaced lines.
+  margin-bottom: var(--space-1);
+  line-height: 1.35;
 }
 
 .detail {
   color: var(--color-text-primary);
+  line-height: 1.35;
+}
+
+// The technique comes through RichText's `compact` variant, which carries
+// editorial leading (line-height 2) and a bottom margin — right for a
+// paragraph of prose, far too airy for the one line of it a card shows. It was
+// the single biggest source of slack in the caption. The doubled class
+// out-specifies `.richText.compact` without reaching for `!important`.
+.info .detail.detail {
+  margin-bottom: 0;
+
+  p {
+    margin-bottom: 0;
+    line-height: 1.35;
+  }
 }
 
 .viewDetailsLink {
@@ -132,7 +151,9 @@
 // Edition tag shown with the Order Print CTA (prints page only).
 .editionTag {
   display: block;
-  margin-bottom: var(--space-3);
+  // Sits right on top of the price: what it is and what it costs are a pair,
+  // and the gap above (.orderAction) is what separates them from the details.
+  margin-bottom: 2px;
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -141,7 +162,15 @@
 
 // Order Print CTA (prints page only — gated by the withOrderPrint prop).
 .orderAction {
-  margin-top: var(--space-4);
+  // The one real break in the caption — identity above, commerce below.
+  margin-top: var(--space-3);
+  // Column flex rather than a stack of blocks: the Button is `inline-flex`, so
+  // in an inline flow it sat on a text baseline and carried the line-box's
+  // descender space under it — a few stray pixels that read as a gap between
+  // the price and the CTA. As a flex item it has none.
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 // The figure on a prints card. A bare number, stated plainly — no "from",
@@ -149,7 +178,24 @@
 // footnote carries that, so nothing here hedges.
 .price {
   display: block;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
   color: var(--color-text-primary);
   font-weight: 500;
+  line-height: 1.3;
+}
+
+// A sold-out edition stays in the catalogue and is MARKED, not hidden — the
+// work sold, which is the good news. A badge rather than a button: it replaces
+// the CTA, so it must not look like one.
+.soldOut {
+  display: inline-block;
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.4;
 }

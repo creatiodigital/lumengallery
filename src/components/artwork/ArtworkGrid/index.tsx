@@ -87,7 +87,12 @@ export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: Ar
               {artwork.technique && (
                 <RichText content={artwork.technique} variant="compact" className={styles.detail} />
               )}
-              {artwork.dimensions && (
+              {/* The work's own dimensions. Deliberately absent from a prints
+                  card: the sheet the buyer receives comes in several sizes, so
+                  the painting's 40x50 there reads as a print size and isn't
+                  one. It stays on the artist and exhibition grids, where it
+                  describes the actual object. */}
+              {!withOrderPrint && artwork.dimensions && (
                 <Text as="p" size="sm" className={styles.detail}>
                   {artwork.dimensions}
                 </Text>
@@ -100,23 +105,28 @@ export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: Ar
                   {/* A bare figure, no "from" or "starting at" — a gallery states
                       a price. What it means differs by edition type and the page
                       footnote carries that: a limited variant's price is exact,
-                      an open edition's moves with size and framing. `null` means
-                      nothing is purchasable, which is the Sold case. */}
+                      an open edition's moves with size and framing.
+                      `null` = nothing left to buy. The work STAYS in the
+                      catalogue and says so: a sold-out edition is the best
+                      thing on the page, and an "Order Print" button that leads
+                      to a wizard refusing the sale is the worst. */}
                   {artwork.minPriceCents != null ? (
-                    <Text as="span" className={styles.price}>
-                      {formatEuros(artwork.minPriceCents)}
-                    </Text>
+                    <>
+                      <Text as="span" className={styles.price}>
+                        {formatEuros(artwork.minPriceCents)}
+                      </Text>
+                      <Button
+                        href={`/artworks/${artwork.slug}/print`}
+                        label="Order Print"
+                        variant="primary"
+                        size="regularSquared"
+                      />
+                    </>
                   ) : (
-                    <Text as="span" className={styles.price}>
-                      Sold
+                    <Text as="span" className={styles.soldOut}>
+                      Sold out
                     </Text>
                   )}
-                  <Button
-                    href={`/artworks/${artwork.slug}/print`}
-                    label="Order Print"
-                    variant="primary"
-                    size="regularSquared"
-                  />
                 </div>
               )}
             </div>

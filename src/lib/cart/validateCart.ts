@@ -65,6 +65,9 @@ export type CartTotals = {
   itemsPreTaxCents: number
   shippingCents: number
   customerVatCents: number
+  /** The rate applied, e.g. 0.21. Carried so the buyer-facing VAT row can name
+   *  it without dividing two rounded figures back out. */
+  vatRate: number
   totalCents: number
   currency: string
 }
@@ -183,7 +186,8 @@ export async function validateCart(
   // subtotals + the single shipping line). Same per-country rate table as
   // the single-print path and the checkout preview.
   const taxableBase = itemsPreTaxCents + shippingCents
-  const customerVatCents = Math.round(taxableBase * getVatRate(address.countryCode))
+  const vatRate = getVatRate(address.countryCode)
+  const customerVatCents = Math.round(taxableBase * vatRate)
   const totalCents = taxableBase + customerVatCents
 
   // Final sanity check — same ceiling as the single-print path. Anything
@@ -204,6 +208,7 @@ export async function validateCart(
       itemsPreTaxCents,
       shippingCents,
       customerVatCents,
+      vatRate,
       totalCents,
       currency,
     },

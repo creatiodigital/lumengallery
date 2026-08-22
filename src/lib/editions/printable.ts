@@ -41,6 +41,31 @@ export const purchasableArtworkWhere = (): Prisma.ArtworkWhereInput => ({
 })
 
 /**
+ * A LIMITED edition whose live variants have no numbers left. Distinct from
+ * "not purchasable": the work is still for sale in every sense the catalogue
+ * cares about — published, priced, blocked — there is simply nothing left to
+ * buy. `isArtworkPurchasable` cannot see this, because LIVE_VARIANT_WHERE says
+ * nothing about remaining stock, which is why a sold-out edition kept showing
+ * an "Order Print" button that led to a wizard refusing the sale.
+ *
+ * Open editions never sell out.
+ *
+ * @param availableNumberCount EditionNumbers in state 'available' across the
+ *   artwork's live variants.
+ */
+export function isEditionSoldOut(artwork: {
+  editionType: string
+  liveVariantCount: number
+  availableNumberCount: number
+}): boolean {
+  return (
+    artwork.editionType === 'limited' &&
+    artwork.liveVariantCount > 0 &&
+    artwork.availableNumberCount === 0
+  )
+}
+
+/**
  * The same rule for an artwork already loaded on a page. `liveVariantCount` is
  * how many variants matched `LIVE_VARIANT_WHERE` — pass 0 for an open edition,
  * where it is irrelevant.

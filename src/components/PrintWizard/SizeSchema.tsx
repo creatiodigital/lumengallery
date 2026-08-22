@@ -7,6 +7,8 @@ import {
   EDITION_NUMBER_FONT_SIZE_CM,
   editionLeftBearingEm,
 } from './editionNumberMetrics'
+import { formatCm } from '@/lib/print-providers/format'
+
 import styles from './PrintWizard.module.scss'
 
 interface SizeSchemaProps {
@@ -34,8 +36,9 @@ interface SizeSchemaProps {
    *  Floating from Standard (which has a passepartout instead). */
   backboardBorderCm?: number
   backboardColorHex?: string
-  /** Limited editions only: the number ("1/50") printed bottom-left in
-   *  the paper margin, in the Caveat hand it ships with. Absent = nothing. */
+  /** Limited editions only: the edition mark printed bottom-left in the paper
+   *  margin, in the Caveat hand it ships with. A PLACEHOLDER ("n/50") — the
+   *  buyer's real number is allocated at payment. Absent = nothing. */
   editionLabel?: string
 }
 
@@ -83,10 +86,8 @@ export const SizeSchema = ({
   const overallWidthCm = matWidthCm + effectiveFrame * 2
   const overallHeightCm = matHeightCm + effectiveFrame * 2
 
-  // Match the size-input precision (0.1 cm step): show one decimal
-  // when the value isn't a whole cm, otherwise drop the trailing .0.
-  // Keeps "22 cm" tidy and "22.4 cm" honest.
-  const formatDim = (cm: number) => `${Number.isInteger(cm) ? cm : cm.toFixed(1)} cm`
+  // Shared with every other surface that writes a length — see formatCm.
+  const formatDim = (cm: number) => `${formatCm(cm)} cm`
 
   // Square viewBox so portrait and landscape renders get the same visual
   // budget. Scaling by the *longest* side means a 30×20 print looks the
@@ -181,8 +182,7 @@ export const SizeSchema = ({
   const editionX = editionLabel
     ? printX - editionLeftBearingEm(editionLabel) * editionFontPx
     : printX
-  const editionBaselineY =
-    printY + printH + editionClearancePx + EDITION_INK_TOP_EM * editionFontPx
+  const editionBaselineY = printY + printH + editionClearancePx + EDITION_INK_TOP_EM * editionFontPx
 
   return (
     <div className={styles.schemaWrapper}>

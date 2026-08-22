@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test'
 import {
   computeSheetLayout,
   isFixedSheet,
-  isVariantTemplateApplicable,
   variantTemplateKey,
   seedSheetForVariant,
 } from '../src/lib/editions/sheetLayout'
@@ -103,85 +102,14 @@ test('remapIndexKeys handles a mix of id-keyed and index-keyed entries on delete
   expect(remapped).toEqual({ 'new-0': false, savedVariantId: true })
 })
 
-// A 3:2 artwork and a 4:3 artwork — the ratio mismatch that used to hide every
-// template from the picker, including fixed-sheet ones it could never affect.
-const THREE_TWO = { widthPx: 6000, heightPx: 4000 }
-const FOUR_THREE = { widthPx: 4000, heightPx: 3000 }
+// Template applicability was REMOVED on 2026-08-22. The picker used to filter
+// saved variants by the target artwork's ratio, which in practice offered only
+// fixed-sheet ones and silently withheld the rest — an artist with three saved
+// variants saw one, with no reason given. Every variant is now listed, deduped
+// by name, and a template that does not fit is rejected at save with a sentence
+// naming the variant and the reason.
 
-test('a fixed-sheet template applies to ANY artwork, whatever its ratio', () => {
-  const fixed = { sheetWidthCm: 50, sheetHeightCm: 40, sourceWidthPx: 3000, sourceHeightPx: 2000 }
-  expect(isVariantTemplateApplicable(fixed, THREE_TWO)).toBe(true)
-  expect(isVariantTemplateApplicable(fixed, FOUR_THREE)).toBe(true)
-})
-
-test('an adaptive template still requires an exact ratio match', () => {
-  const adaptive = {
-    sheetWidthCm: null,
-    sheetHeightCm: null,
-    sourceWidthPx: 3000,
-    sourceHeightPx: 2000,
-  }
-  // Same 3:2 shape at a different resolution — still applies.
-  expect(isVariantTemplateApplicable(adaptive, THREE_TWO)).toBe(true)
-  // Different shape — the print size it carries would misdescribe the margins.
-  expect(isVariantTemplateApplicable(adaptive, FOUR_THREE)).toBe(false)
-})
-
-test('an adaptive template with unknown source pixels is never offered', () => {
-  expect(
-    isVariantTemplateApplicable(
-      { sheetWidthCm: null, sheetHeightCm: null, sourceWidthPx: null, sourceHeightPx: null },
-      THREE_TWO,
-    ),
-  ).toBe(false)
-})
-
-/**
- * Template dedup — reported 2026-08-21: the "Apply saved variant" picker
- * listed the SAME 40x50 Baryta template twice, once "from Passeur" and once
- * "from High Res". Both rows were one authored template; the old key included
- * widthCm/heightCm, which for a FIXED SHEET is the image derived per source
- * artwork, so two ratios produced two keys.
- */
-const BARYTA_40x50 = {
-  name: '40x50 Baryta',
-  paperId: 'canson-baryta-gloss',
-  borderCm: 7,
-  editionSize: 100,
-  sheetWidthCm: 50,
-  sheetHeightCm: 40,
-}
-
-test('one fixed-sheet template stored on differently-shaped artworks dedupes to one', () => {
-  // Same authored sheet + border; the derived image differs per source ratio.
-  const onThreeTwo = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.2 }
-  const onSomethingElse = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.3689583077112 }
-  expect(variantTemplateKey(onThreeTwo)).toBe(variantTemplateKey(onSomethingElse))
-})
-
-test('fixed-sheet templates with genuinely different sheets stay separate', () => {
-  const a = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.2 }
-  const b = { ...BARYTA_40x50, sheetHeightCm: 30, sheetWidthCm: 40, widthCm: 26, heightCm: 17.5 }
-  expect(variantTemplateKey(a)).not.toBe(variantTemplateKey(b))
-})
-
-test('a different border or edition size is a different template', () => {
-  const base = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.2 }
-  expect(variantTemplateKey(base)).not.toBe(variantTemplateKey({ ...base, borderCm: 5 }))
-  expect(variantTemplateKey(base)).not.toBe(variantTemplateKey({ ...base, editionSize: 50 }))
-  expect(variantTemplateKey(base)).not.toBe(variantTemplateKey({ ...base, name: 'Other' }))
-})
-
-test('ADAPTIVE templates are still identified by their authored print size', () => {
-  // No sheet — widthCm/heightCm are what the artist set, so they must count.
-  const a = { ...BARYTA_40x50, sheetWidthCm: null, sheetHeightCm: null, widthCm: 36, heightCm: 24 }
-  const b = { ...a, widthCm: 30, heightCm: 20 }
-  expect(variantTemplateKey(a)).not.toBe(variantTemplateKey(b))
-  expect(variantTemplateKey(a)).toBe(variantTemplateKey({ ...a }))
-})
-
-test('a fixed-sheet and an adaptive template never collide', () => {
-  const fixed = { ...BARYTA_40x50, widthCm: 36, heightCm: 24.2 }
-  const adaptive = { ...fixed, sheetWidthCm: null, sheetHeightCm: null }
-  expect(variantTemplateKey(fixed)).not.toBe(variantTemplateKey(adaptive))
-})
+// Template dedup by composite key was REMOVED on 2026-08-22 along with the
+// applicability filter: the picker now lists one entry per distinct NAME, which
+// is how an artist identifies a variant anyway, and duplicate names are refused
+// at save. See saveLimitedVariants.

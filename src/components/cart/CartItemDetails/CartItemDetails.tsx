@@ -1,6 +1,5 @@
 'use client'
 
-import { HoldCountdown } from '@/components/cart/HoldCountdown/HoldCountdown'
 import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
 import { SpecList } from '@/components/print/SpecList/SpecList'
 import { Text } from '@/components/ui/Typography'
@@ -19,10 +18,6 @@ type Props = {
    * card width at its natural aspect ratio.
    */
   thumbHeight?: number
-  /** How many spec rows to show before the "show all" toggle. */
-  specsVisible?: number
-  /** Cart removes the line when its hold lapses; checkout (read-only) omits this. */
-  onHoldExpire?: () => void
   /** Per-line server-revalidation error (checkout). */
   error?: string
   /**
@@ -42,13 +37,9 @@ type Props = {
 export const CartItemDetails = ({
   item,
   thumbHeight = 120,
-  specsVisible = 4,
-  onHoldExpire,
   error,
   showEditionTag = true,
 }: Props) => {
-  const isLimited = item.editionType === 'limited'
-
   return (
     <div
       className={styles.item}
@@ -81,17 +72,11 @@ export const CartItemDetails = ({
           </Text>
         )}
 
-        <SpecList
-          specs={item.specsSummary}
-          visibleByDefault={specsVisible}
-          className={styles.specs}
-        />
-
-        {isLimited && item.holdExpiresAt && (
-          <div className={styles.hold}>
-            <HoldCountdown expiresAt={item.holdExpiresAt} onExpire={onHoldExpire} />
-          </div>
-        )}
+        {/* No per-surface row budget: the cart and checkout render the same
+            line, and giving them different budgets meant the same purchase
+            showed five specs on one page and three plus a toggle on the next.
+            SpecList owns the budget for every surface. */}
+        <SpecList specs={item.specsSummary} className={styles.specs} />
 
         {error && (
           <Text as="span" size="xs" className={styles.errorText}>

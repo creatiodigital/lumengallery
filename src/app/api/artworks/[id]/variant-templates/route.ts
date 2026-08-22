@@ -3,7 +3,6 @@ import type { NextRequest } from 'next/server'
 
 import { requireOwnership } from '@/lib/authUtils'
 import prisma from '@/lib/prisma'
-import { isVariantTemplateApplicable, variantTemplateKey } from '@/lib/editions/sheetLayout'
 
 /**
  * Reusable variant templates for a limited-edition artwork — the same
@@ -57,42 +56,25 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       },
     })
 
-    // EXACT aspect-ratio match — no tolerance, no adaptation (Eduardo,
-    // 2026-07-25): a template must apply VERBATIM (identical print size,
-    // identical border, identical paper geometry across the series) or not
-    // be offered at all. A near-miss ratio would silently change the margin
-    // proportions. Integer cross-multiplication avoids float noise; pixel
-    // RESOLUTION is deliberately ignored (a 3000×2000 and a 6000×4000 file
-    // are both exactly 3:2 — same print geometry; resolution only gates the
-    // max printable size, which variant validation already enforces).
-    const tw = artwork.originalWidth
-    const th = artwork.originalHeight
+    // EVERY variant this artist has authored, one entry per distinct NAME
+    // (Eduardo, 2026-08-22). This replaces an exact-ratio filter that only ever
+    // offered fixed-sheet templates in practice: an adaptive template made on a
+    // portrait work was silently withheld from a landscape one, so an artist
+    // with three saved variants saw one and no reason why.
+    //
+    // Offering all of them is safe because the shape rules moved to where they
+    // belong — save-time validation now rejects a mismatched orientation or
+    // ratio by name, loudly, instead of the picker quietly deciding for the
+    // artist. Applying a template that does not fit is answered with a sentence
+    // rather than an absence.
+    //
+    // `orderBy: updatedAt desc` above means the FIRST occurrence of a name is
+    // its most recently touched version, which is the one to offer.
     const seen = new Set<string>()
     const templates = variants
       .filter((v) => {
-        // FIXED-SHEET templates apply to ANY artwork. What the artist authored
-        // there is the SHEET and the minimum border — neither depends on the
-        // image. The print size is derived from the sheet and the target
-        // artwork's own ratio, so a different ratio simply yields a different
-        // (correct) image inside the same piece of paper; only the second
-        // margin moves, which is the entire point of the mode. The verbatim
-        // rule below exists for adaptive variants, where widthCm/heightCm ARE
-        // the artist's aspect-locked print size.
-        return isVariantTemplateApplicable(
-          {
-            sheetWidthCm: v.sheetWidthCm,
-            sheetHeightCm: v.sheetHeightCm,
-            sourceWidthPx: v.artwork.originalWidth,
-            sourceHeightPx: v.artwork.originalHeight,
-          },
-          { widthPx: tw, heightPx: th },
-        )
-      })
-      .filter((v) => {
-        // Dedup on what the artist AUTHORED — see variantTemplateKey for why a
-        // fixed-sheet template must not be keyed on its derived print size.
-        const key = variantTemplateKey(v)
-        if (seen.has(key)) return false
+        const key = (v.name ?? '').trim().toLowerCase()
+        if (key.length === 0 || seen.has(key)) return false
         seen.add(key)
         return true
       })

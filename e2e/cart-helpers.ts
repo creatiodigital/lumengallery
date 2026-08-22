@@ -39,8 +39,6 @@ export type SeedCartItem = {
   title: string
   artistName: string
   specsSummary: SeedSpec[]
-  editionNumberIds?: string[]
-  holdExpiresAt?: number
 }
 
 const DEFAULT_SPECS: SeedSpec[] = [

@@ -12,7 +12,10 @@
  * case) and the per-order COA + letter cost. It exists to catch a
  * configuration mistake, not to be an accounting figure.
  */
-import { getPrintBaseCents, TPS_GALLERY_MARKUP_RATE } from '@/lib/print-providers/printspace/pricing'
+import {
+  getPrintBaseCents,
+  TPS_GALLERY_MARKUP_RATE,
+} from '@/lib/print-providers/printspace/pricing'
 import { buildTpsRecipe } from '@/lib/editions/tpsRecipe'
 
 export type VariantMargin = {

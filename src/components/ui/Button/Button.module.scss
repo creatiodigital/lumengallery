@@ -6,6 +6,13 @@
   justify-content: center;
   gap: var(--space-2);
   text-decoration: none;
+  // Explicit, because this component renders as EITHER <button> or <a>
+  // depending on `href`, and the two inherit differently: globals.scss gives
+  // <button> `font-family` and `font-size` but not line-height, so it falls to
+  // the UA's ~1.2 while an anchor inherits the body's 1.6. Same size prop, same
+  // padding, ~6px difference in height — which is why "Go to cart" (a link) and
+  // "Add to cart" (a button) did not match.
+  line-height: 1.2;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;

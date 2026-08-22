@@ -114,7 +114,7 @@ export function formatTpsRecipe(recipe: TpsRecipe, opts?: { title?: string }): s
     `Targeted border       ${recipe.borderMm} mm`,
     `Paper                 ${recipe.paperLabel}`,
     '',
-    `Expect: image ${round1(recipe.expectedImageWidthCm)} × ${round1(recipe.expectedImageHeightCm)} cm · borders ${recipe.expectedBorderXCm.toFixed(1)} h / ${recipe.expectedBorderYCm.toFixed(1)} v`,
+    `Expect: image ${round1(recipe.expectedImageWidthCm)} × ${round1(recipe.expectedImageHeightCm)} cm · borders ${round1(recipe.expectedBorderXCm)} h / ${round1(recipe.expectedBorderYCm)} v`,
   )
   return lines.join('\n')
 }

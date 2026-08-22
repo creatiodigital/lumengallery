@@ -1,7 +1,12 @@
 'use server'
 
 import { requireAdminAction } from '@/lib/authUtils'
-import { summarizeConfig, type SpecsSummary, type WizardConfig } from '@/lib/print-providers'
+import {
+  formatDualDimensions,
+  summarizeConfig,
+  type SpecsSummary,
+  type WizardConfig,
+} from '@/lib/print-providers'
 import { TPS_PAPERS, TPS_PRINT_TYPES } from '@/lib/print-providers/printspace'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
 import { sendAdminOrderCancelledAlert } from '@/lib/emails/adminOrderCancelled'
@@ -1075,7 +1080,7 @@ export async function getOrderDetail(
       TPS_PRINT_TYPES.find((t) => t.id === v.printTypeId)?.label ?? v.printTypeId
     const label = `${v.name} #${en.number}/${v.editionSize}`
     const tpsSku =
-      `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm` +
+      `${printTypeLabel} · ${paperLabel} · ${formatDualDimensions(v.widthCm, v.heightCm)}` +
       ` + ${v.borderCm}cm border · Print Only · ${en.number}/${v.editionSize}`
     edition = {
       variantName: v.name,
@@ -1115,7 +1120,7 @@ export async function getOrderDetail(
         const printTypeLabel =
           TPS_PRINT_TYPES.find((t) => t.id === v.printTypeId)?.label ?? v.printTypeId
         return (
-          `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm` +
+          `${printTypeLabel} · ${paperLabel} · ${formatDualDimensions(v.widthCm, v.heightCm)}` +
           ` + ${v.borderCm}cm border · Print Only · ${en.number}/${v.editionSize}`
         )
       })

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { formatCm } from '@/lib/print-providers/format'
 import { ChevronDown } from 'lucide-react'
 
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
@@ -422,7 +423,7 @@ export const LimitedVariantsEditor = ({
             : !(v.widthCm > 0 && v.heightCm > 0)
               ? 'That sheet and border leave no printable area.'
               : Math.min(v.widthCm, v.heightCm) < MIN_SHORT_EDGE_CM
-                ? `The derived print would be ${v.heightCm.toFixed(1)} × ${v.widthCm.toFixed(1)} cm — its shortest side must be at least ${MIN_SHORT_EDGE_CM} cm. Use a bigger sheet or a smaller border.`
+                ? `The derived print would be ${formatCm(v.heightCm)} × ${formatCm(v.widthCm)} cm — its shortest side must be at least ${MIN_SHORT_EDGE_CM} cm. Use a bigger sheet or a smaller border.`
                 : null,
   })
   const variantHasErrors = (v: LimitedVariantDraft, i: number) =>
@@ -775,12 +776,12 @@ export const LimitedVariantsEditor = ({
                     <div className={styles.layoutSummary}>
                       {/* Our own convention: height x width. */}
                       <p className={styles.layoutLine}>
-                        <strong>Sheet</strong> {recipe.sheetHeightCm.toFixed(1)} ×{' '}
-                        {recipe.sheetWidthCm.toFixed(1)} cm · <strong>Print</strong>{' '}
-                        {recipe.expectedImageHeightCm.toFixed(1)} ×{' '}
-                        {recipe.expectedImageWidthCm.toFixed(1)} cm · <strong>Borders</strong>{' '}
-                        {recipe.expectedBorderYCm.toFixed(1)} top/bottom,{' '}
-                        {recipe.expectedBorderXCm.toFixed(1)} left/right cm
+                        <strong>Sheet</strong> {formatCm(recipe.sheetHeightCm)} ×{' '}
+                        {formatCm(recipe.sheetWidthCm)} cm · <strong>Print</strong>{' '}
+                        {formatCm(recipe.expectedImageHeightCm)} ×{' '}
+                        {formatCm(recipe.expectedImageWidthCm)} cm · <strong>Borders</strong>{' '}
+                        {formatCm(recipe.expectedBorderYCm)} top/bottom,{' '}
+                        {formatCm(recipe.expectedBorderXCm)} left/right cm
                       </p>
                       {(() => {
                         const margin = estimateVariantMarginCents({
@@ -996,8 +997,8 @@ export const LimitedVariantsEditor = ({
                 // template will not reproduce.
                 const size =
                   t.sheetWidthCm && t.sheetHeightCm
-                    ? `${t.sheetHeightCm.toFixed(1)} × ${t.sheetWidthCm.toFixed(1)} cm sheet`
-                    : `${t.heightCm.toFixed(1)} × ${t.widthCm.toFixed(1)} cm print`
+                    ? `${formatCm(t.sheetHeightCm)} × ${formatCm(t.sheetWidthCm)} cm sheet`
+                    : `${formatCm(t.heightCm)} × ${formatCm(t.widthCm)} cm print`
                 return {
                   value: String(i),
                   label: `${t.name} — ${size} · ${paper} · edition of ${t.editionSize} (from “${t.sourceArtworkTitle}”)`,

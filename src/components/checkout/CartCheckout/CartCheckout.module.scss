@@ -353,3 +353,10 @@
   color: var(--color-text-primary);
   word-break: break-all;
 }
+
+// Availability caveat for limited lines — quiet, factual, above the errors.
+.limitedNotice {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}

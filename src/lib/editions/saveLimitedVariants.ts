@@ -22,6 +22,7 @@
  * in the publish action — this only manages the variant rows + ledger.
  */
 import prisma from '@/lib/prisma'
+import { TPS_PAPERS } from '@/lib/print-providers/printspace'
 import { validateVariantInput, MAX_LIMITED_VARIANTS } from './validateVariant'
 
 export type IncomingVariant = {
@@ -94,6 +95,26 @@ export async function saveLimitedVariants(args: {
     }
   }
 
+  // Distinct names within the artwork. The name is how a variant is identified
+  // everywhere it matters — the picker, the cart line, the invoice, the ledger,
+  // the admin's paste-into-TPS block — so two "40x50 Baryta" on one work makes
+  // every one of those ambiguous. Trimmed and case-insensitive, because "Small"
+  // and "small " are the same name to everyone except a database.
+  const byName = new Map<string, number>()
+  for (const v of variants) {
+    const key = (v.name ?? '').trim().toLowerCase()
+    if (key.length === 0) continue
+    byName.set(key, (byName.get(key) ?? 0) + 1)
+  }
+  const duplicate = [...byName.entries()].find(([, n]) => n > 1)
+  if (duplicate) {
+    const shown = variants.find((v) => (v.name ?? '').trim().toLowerCase() === duplicate[0])?.name
+    return {
+      ok: false,
+      error: `Two variants are both called “${shown?.trim()}”. Give each one its own name.`,
+    }
+  }
+
   // Validate every incoming variant. siblingSizes = all the OTHER
   // incoming sizes so the distinctness rule is checked against the final
   // set, not the stored one.
@@ -103,8 +124,38 @@ export async function saveLimitedVariants(args: {
     const siblingSizes = variants
       .filter((_, j) => j !== i)
       .map((s) => ({ widthCm: s.widthCm, heightCm: s.heightCm }))
-    const result = validateVariantInput({ variant: v, artwork: artworkPixels, siblingSizes })
-    if (!result.ok) return { ok: false, error: result.error }
+    // Only judge what this save actually proposes. An untouched variant is
+    // already live and already sold from; re-testing it against today's rules
+    // means a row created before a rule existed blocks every unrelated edit to
+    // the artwork — and if it holds sold copies it cannot be deleted either, so
+    // the artist is simply stuck. Grandfathered, not endorsed: change any
+    // measurement on it and it must pass in full like anything else.
+    const prior = v.id ? existingById.get(v.id) : undefined
+    const unchanged =
+      prior !== undefined &&
+      prior.paperId === v.paperId &&
+      prior.widthCm === v.widthCm &&
+      prior.heightCm === v.heightCm &&
+      prior.borderCm === v.borderCm &&
+      (prior.sheetWidthCm ?? null) === (v.sheetWidthCm ?? null) &&
+      (prior.sheetHeightCm ?? null) === (v.sheetHeightCm ?? null)
+
+    // The paper is unchanged too (it is one of the compared fields), so its
+    // print type is whatever it already was — but fall back to the full check
+    // if the paper id has somehow stopped resolving.
+    const grandfatheredPrintType = unchanged
+      ? TPS_PAPERS.find((pp) => pp.id === v.paperId)?.printType
+      : undefined
+    const result = grandfatheredPrintType
+      ? ({ ok: true, printTypeId: grandfatheredPrintType } as const)
+      : validateVariantInput({ variant: v, artwork: artworkPixels, siblingSizes })
+    // Name the variant: every variant is checked on every save, so an
+    // unattributed message sends the artist looking at whichever one they just
+    // touched rather than the one that actually broke a rule.
+    if (!result.ok) {
+      const label = v.name?.trim()
+      return { ok: false, error: label ? `“${label}”: ${result.error}` : result.error }
+    }
 
     // Lock guard for published variants.
     if (v.id) {

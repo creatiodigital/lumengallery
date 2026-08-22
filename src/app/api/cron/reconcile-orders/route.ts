@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { findOrphanedReservations } from '@/lib/editions/findOrphanedReservations'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
-import { sweepExpiredCartHolds } from '@/lib/editions/reserveForCart'
 import { ensureOrderForPaymentIntent } from '@/lib/orders/ensureOrderForPaymentIntent'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { captureError } from '@/lib/observability/captureError'
@@ -65,26 +64,6 @@ export async function GET(req: NextRequest) {
   // Housekeeping: prune lapsed rate-limit counter rows so the table stays small.
   // Best-effort (never throws) and independent of the order-reconciliation work.
   await cleanupExpiredRateLimits()
-
-  // Housekeeping: reclaim lapsed CART holds (reserved, no PI — a buyer who added
-  // a limited edition and closed the tab). Phase B below cannot see these: it
-  // only handles rows that HAVE a PaymentIntent. Without this the sole caller of
-  // the sweep is `reserveForCart`, i.e. the next add-to-cart — so if an abandoned
-  // hold is on the LAST available copy, the variant reads sold-out, the UI hides
-  // it, nothing calls reserveForCart for it, and it can stay stuck until someone
-  // adds a DIFFERENT limited edition. Scoped to PI-less, order-less holds, so it
-  // can never touch an in-flight checkout or a sold copy.
-  let cartHoldsSwept = 0
-  try {
-    cartHoldsSwept = await sweepExpiredCartHolds()
-  } catch (err) {
-    captureError(err, {
-      flow: 'cron',
-      stage: 'sweep-expired-cart-holds',
-      level: 'warning',
-      fingerprint: ['cron:sweep-cart-holds-failed'],
-    })
-  }
 
   // 24h lookback. Stripe retries failed webhooks for up to 3 days; a 24h window
   // catches any orphan within a cron tick of it stabilising.
@@ -282,6 +261,5 @@ export async function GET(req: NextRequest) {
     reservationsScanned: orphanReservations.length,
     reservationsReleased,
     reservationsUnresolvedPI,
-    cartHoldsSwept,
   })
 }

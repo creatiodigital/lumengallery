@@ -18,11 +18,14 @@ import styles from './SpecList.module.scss'
  * catalog (e.g. when a glass option is added) shows up here automatically —
  * no edit to this file required.
  *
- * Collapsible: when the buyer has more than `visibleByDefault` rows
- * (default 4), the rest are hidden behind a "Show all selected
- * options" toggle so the summary panel doesn't push the CTA off-screen
- * on shorter viewports. configs commonly produce 9–10 rows.
+ * Collapsible: when enough rows sit past `visibleByDefault`, the rest hide
+ * behind a "Show all selected options" toggle so the summary panel doesn't
+ * push the CTA off-screen on shorter viewports. Framed configs commonly
+ * produce 9–10 rows, which is what the toggle is for.
  */
+/** Fewest rows worth hiding behind the toggle. */
+const MIN_HIDDEN_ROWS = 2
+
 interface SpecListProps {
   specs: SpecsSummary
   className?: string
@@ -33,7 +36,11 @@ export const SpecList = ({ specs, className, visibleByDefault = 5 }: SpecListPro
   const [expanded, setExpanded] = useState(false)
   if (specs.length === 0) return null
 
-  const collapsible = specs.length > visibleByDefault
+  // Collapsing has to earn its place: the toggle is itself a row of chrome, so
+  // hiding a single spec saves nothing and just adds a control. A limited
+  // edition produces exactly five rows against the cart's four-row budget,
+  // which put a "Show all selected options" button there to hide one line.
+  const collapsible = specs.length - visibleByDefault >= MIN_HIDDEN_ROWS
   const visible = expanded || !collapsible ? specs : specs.slice(0, visibleByDefault)
 
   return (
