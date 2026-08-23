@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import { chromium, type FullConfig } from '@playwright/test'
 
 import { getAdminCredentials, getArtistCredentials, signInThroughUi } from './auth-helpers'
+import { disableWebhookEndpoints } from './webhook-guard'
 
 /**
  * Logs in as admin and as artist once, saving each session's
@@ -29,6 +30,11 @@ async function globalSetup(_config: FullConfig) {
     console.log('[globalSetup] E2E_SKIP_AUTH=1 — skipping login (no authed specs in this run)')
     return
   }
+
+  // Stop staging (or any other registered endpoint) reacting to the events this
+  // suite fires — it shares this database and would race the tests. Restored in
+  // globalTeardown, and defensively at the start of the next run.
+  await disableWebhookEndpoints()
 
   const authDir = path.join(__dirname, '.auth')
   if (!fs.existsSync(authDir)) fs.mkdirSync(authDir, { recursive: true })

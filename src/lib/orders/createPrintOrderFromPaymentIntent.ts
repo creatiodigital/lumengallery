@@ -360,6 +360,9 @@ export async function createPrintOrderFromPaymentIntent(
       orderId: order.id,
       artworkTitle: artwork.title ?? '',
       artistName,
+      // A limited order has a number coming; the buyer is told when, not what
+      // — see editionNumberNotice.
+      hasLimitedEdition: editionType === 'limited',
       specs: buyerSpecs,
       itemTotalCents,
       shippingCents: order.productionShippingCents,

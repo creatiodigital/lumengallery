@@ -9,6 +9,7 @@ import {
   emailParagraph,
 } from './components'
 import { renderEmailLayout } from './layout'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -42,7 +43,7 @@ export function renderOrderInProductionEmail(args: OrderInProductionArgs): {
   const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8)).toUpperCase()
+  const safeOrderId = formatOrderRef(args.orderId)
 
   const editions = args.editions ?? []
   const hasEditions = editions.length > 0

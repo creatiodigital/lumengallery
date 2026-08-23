@@ -9,7 +9,7 @@ import type { Page } from '@playwright/test'
  * provider's storage key, then load `/cart` — the `CartProvider` hydrates from
  * it on mount exactly as if the buyer had added the items. This lets us test
  * every cart-page behavior (stepper, remove-confirm, edit link, spec toggle,
- * hold countdown, totals, badge) with zero 3D.
+ * totals, badge) with zero 3D.
  *
  * `addInitScript` runs before the app's first script, so the cart is present at
  * first paint — same approach as `seedCookieConsent`.
@@ -39,8 +39,6 @@ export type SeedCartItem = {
   title: string
   artistName: string
   specsSummary: SeedSpec[]
-  editionNumberIds?: string[]
-  holdExpiresAt?: number
 }
 
 const DEFAULT_SPECS: SeedSpec[] = [

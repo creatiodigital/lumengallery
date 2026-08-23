@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { ArtworkDetailPage } from '@/components/artwork/detail'
+import { LIVE_VARIANT_WHERE } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 
 // Render per request and read straight from the DB so artwork edits appear
@@ -26,6 +27,11 @@ const getArtwork = (slug: string) =>
       originalHeight: true,
       printEnabled: true,
       printPriceCents: true,
+      editionType: true,
+      // Live variants only — a published-but-unblocked variant is paused from
+      // sale and would refuse the reservation. Selected rather than counted so
+      // the shape is the same one LIVE_VARIANT_WHERE guards everywhere else.
+      limitedVariants: { where: LIVE_VARIANT_WHERE, select: { id: true } },
       user: {
         select: {
           id: true,
@@ -81,8 +87,24 @@ const ArtworkPage = async ({ params }: ArtworkPageProps) => {
   const artwork = await getArtwork(slug)
   if (!artwork) notFound()
 
-  const { user, ...artworkData } = artwork
-  return <ArtworkDetailPage artwork={artworkData} artist={user} />
+  const { user, limitedVariants, ...artworkData } = artwork
+
+  // How many numbers are left across the live variants. Live variants can all
+  // exist while every copy is gone — that is sold out, not unpurchasable, and
+  // the page says so rather than offering a button the wizard would refuse.
+  const availableNumberCount =
+    limitedVariants.length > 0
+      ? await prisma.editionNumber.count({
+          where: { variantId: { in: limitedVariants.map((v) => v.id) }, state: 'available' },
+        })
+      : 0
+
+  return (
+    <ArtworkDetailPage
+      artwork={{ ...artworkData, liveVariantCount: limitedVariants.length, availableNumberCount }}
+      artist={user}
+    />
+  )
 }
 
 export default ArtworkPage

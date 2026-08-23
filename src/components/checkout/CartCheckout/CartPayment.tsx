@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { Text } from '@/components/ui/Typography'
 import type { CartTotals } from '@/lib/cart/validateCart'
+import { vatLabel } from '@/lib/checkout/vatLabel'
 import { formatEuro } from '@/lib/print-providers'
 import type { ShippingAddress } from '@/components/checkout/PrintCheckout/createPaymentIntent'
 
@@ -225,7 +226,7 @@ const CartPaymentForm = ({ totals, address, onSuccess, onBack }: CartPaymentForm
           </div>
           <div className={styles.totalRow}>
             <Text as="span" size="sm" className={styles.totalLabel}>
-              VAT
+              {vatLabel(totals.vatRate)}
             </Text>
             <Text as="span" size="sm" className={styles.totalValue}>
               {formatEuro(totals.customerVatCents)}

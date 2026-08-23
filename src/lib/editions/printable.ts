@@ -1,0 +1,106 @@
+/**
+ * ONE definition of "a buyer can purchase a print of this artwork".
+ *
+ * The rule forks on edition type, and getting the fork wrong is invisible until
+ * a buyer hits a 404:
+ *
+ *   - OPEN editions are priced on the ARTWORK (`printPriceCents`).
+ *   - LIMITED editions have NO artwork-level price. They are priced PER VARIANT,
+ *     and are only purchasable while a variant is `published && blocked` — an
+ *     unblocked variant is paused from sale and refuses reservations.
+ *
+ * Before this existed the catalog, the print wizard, checkout, payment, the
+ * public prints API and admin analytics each spelled the rule out for
+ * themselves, and every one of them gated on `printPriceCents` alone. On
+ * 2026-08-21 that meant three of five live artworks were missing from /prints
+ * and `notFound()` on "Order Print" — priced, live, and unreachable.
+ *
+ * `validateAndPriceItem` is the authority on what checkout accepts; this mirrors
+ * it. Anything hidden here is unsellable in practice, and anything shown that
+ * checkout would refuse is a dead end for a buyer.
+ */
+import type { Prisma } from '@/generated/prisma'
+
+/** A live, priced variant — the only kind a buyer can reserve against. */
+export const LIVE_VARIANT_WHERE = {
+  published: true,
+  blocked: true,
+  priceCents: { not: null },
+} satisfies Prisma.LimitedVariantWhereInput
+
+/**
+ * A live variant that also still has a copy to sell — the only kind a buyer can
+ * complete a purchase against.
+ *
+ * `LIVE_VARIANT_WHERE` says published + blocked + priced and nothing about
+ * remaining stock, which is correct for "is this variant on sale" and wrong for
+ * "can this be bought right now". Pricing a variant with that alone put a
+ * figure and an "Order Print" button on a sold-out edition in the catalogue —
+ * a dead end into a wizard that refuses the sale.
+ *
+ * Only `available` counts. A `reserved` number is held by a live PaymentIntent
+ * and `reserveEditionNumber` will not take it, so treating it as stock would
+ * make the catalogue promise what checkout would refuse; a `sold` one is gone.
+ *
+ * Use this to PRICE an artwork. Use `LIVE_VARIANT_WHERE` to decide whether the
+ * work is on sale at all — a sold-out edition still belongs in the catalogue,
+ * carrying no price, which is what the grid renders as "Sold out".
+ */
+export const SELLABLE_VARIANT_WHERE = {
+  ...LIVE_VARIANT_WHERE,
+  editionNumbers: { some: { state: 'available' } },
+} satisfies Prisma.LimitedVariantWhereInput
+
+/**
+ * Prisma `where` fragment for list queries (catalog, public API). Combine with
+ * whatever else the caller needs — e.g. `user: { published: true }`.
+ */
+export const purchasableArtworkWhere = (): Prisma.ArtworkWhereInput => ({
+  printEnabled: true,
+  OR: [
+    { editionType: { not: 'limited' }, printPriceCents: { not: null } },
+    { editionType: 'limited', limitedVariants: { some: LIVE_VARIANT_WHERE } },
+  ],
+})
+
+/**
+ * A LIMITED edition whose live variants have no numbers left. Distinct from
+ * "not purchasable": the work is still for sale in every sense the catalogue
+ * cares about — published, priced, blocked — there is simply nothing left to
+ * buy. `isArtworkPurchasable` cannot see this, because LIVE_VARIANT_WHERE says
+ * nothing about remaining stock, which is why a sold-out edition kept showing
+ * an "Order Print" button that led to a wizard refusing the sale.
+ *
+ * Open editions never sell out.
+ *
+ * @param availableNumberCount EditionNumbers in state 'available' across the
+ *   artwork's live variants.
+ */
+export function isEditionSoldOut(artwork: {
+  editionType: string
+  liveVariantCount: number
+  availableNumberCount: number
+}): boolean {
+  return (
+    artwork.editionType === 'limited' &&
+    artwork.liveVariantCount > 0 &&
+    artwork.availableNumberCount === 0
+  )
+}
+
+/**
+ * The same rule for an artwork already loaded on a page. `liveVariantCount` is
+ * how many variants matched `LIVE_VARIANT_WHERE` — pass 0 for an open edition,
+ * where it is irrelevant.
+ */
+export function isArtworkPurchasable(artwork: {
+  printEnabled: boolean
+  editionType: string
+  printPriceCents: number | null
+  liveVariantCount: number
+}): boolean {
+  if (!artwork.printEnabled) return false
+  return artwork.editionType === 'limited'
+    ? artwork.liveVariantCount > 0
+    : artwork.printPriceCents != null
+}

@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
+import { formatOrderRef, orderMatchesQuery } from '@/lib/orders/orderRef'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -8,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { authorizationHold } from '@/lib/orders/authorizationPolicy'
 import { type Bucket, BUCKET_ORDER, bucketOf } from '@/lib/orders/orderBuckets'
 import { daysSinceDelivered, PAYOUT_SAFE_WINDOW_DAYS } from '@/lib/orders/payoutPolicy'
 import { formatEuro } from '@/lib/print-providers/format'
@@ -47,6 +50,51 @@ const Dot = ({ color }: { color: keyof typeof DOT_COLORS }) => (
     }}
   />
 )
+
+/**
+ * How long this order's authorization has left, shown under its date.
+ *
+ * We authorize at checkout and capture at placement, so a "New" order is a
+ * sale resting on a hold Stripe will void on its own. Once it lapses the buyer
+ * is never charged and the copy goes back in the pool — silently, days after
+ * anyone last looked. This is the only place an admin can see that clock while
+ * the sale is still savable.
+ *
+ * Renders nothing for an order that holds no authorization, which is most of
+ * them, so the column stays quiet everywhere it has nothing to say.
+ */
+const HoldCountdown = ({ order }: { order: AdminOrderRow }) => {
+  const hold = authorizationHold(order)
+  if (!hold) return null
+
+  const urgent = hold.status !== 'fresh'
+  const label =
+    hold.status === 'expired'
+      ? 'Hold expired'
+      : // "~" is honest: 7 days is the CARD figure and we don't record the
+        // method, so a PayPal hold (up to 20 days) is quoted short on purpose.
+        `Hold ${hold.days}d · ~${hold.daysLeft}d left`
+
+  return (
+    <div
+      title={
+        hold.status === 'expired'
+          ? 'Stripe has very likely voided this authorization already — a capture will fail. Cancel the order and ask the buyer to re-order.'
+          : 'Authorizations lapse about 7 days after checkout. Capture the payment, or cancel and tell the buyer, before this runs out.'
+      }
+      style={{
+        fontSize: 'var(--text-xs)',
+        marginTop: 2,
+        color: urgent ? '#b91c1c' : 'inherit',
+        opacity: urgent ? 1 : 0.6,
+        fontWeight: urgent ? 600 : 400,
+      }}
+    >
+      {urgent && <Dot color="red" />}
+      {label}
+    </div>
+  )
+}
 
 const BUCKET_META: Record<
   Bucket,
@@ -122,6 +170,7 @@ export const AdminOrders = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeBucket, setActiveBucket] = useState<Bucket>('new')
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
@@ -163,7 +212,14 @@ export const AdminOrders = () => {
     return map
   }, [orders])
 
-  const visibleOrders = grouped[activeBucket]
+  const searching = query.trim().length > 0
+  // A search deliberately ignores the bucket tabs: a buyer quoting a reference
+  // has no idea whether their order is "New" or "Shipped", and hunting through
+  // tabs is exactly the friction this box exists to remove.
+  const visibleOrders = useMemo(
+    () => (searching ? orders.filter((o) => orderMatchesQuery(o, query)) : grouped[activeBucket]),
+    [searching, orders, query, grouped, activeBucket],
+  )
   const activeMeta = BUCKET_META[activeBucket]
 
   return (
@@ -254,11 +310,30 @@ export const AdminOrders = () => {
       </div>
 
       <div className={dashboardStyles.section}>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search order reference, payment id, buyer or artwork…"
+          aria-label="Search orders"
+          style={{
+            width: '100%',
+            maxWidth: 420,
+            padding: '8px 12px',
+            marginBottom: 16,
+            fontSize: 14,
+            border: '1px solid var(--color-border-default)',
+            background: 'var(--color-white)',
+            color: 'var(--color-text-primary)',
+          }}
+        />
         <p
           className={dashboardStyles.sectionDescription}
           style={{ margin: '0 0 16px 0', fontSize: 13 }}
         >
-          {activeMeta.helper}
+          {searching
+            ? `${visibleOrders.length} ${visibleOrders.length === 1 ? 'order' : 'orders'} matching “${query.trim()}” — across every stage.`
+            : activeMeta.helper}
         </p>
 
         {(() => {
@@ -269,9 +344,11 @@ export const AdminOrders = () => {
             return (
               <EmptyState
                 message={
-                  activeBucket === 'new'
-                    ? 'No new orders right now.'
-                    : `No orders in "${activeMeta.title}".`
+                  searching
+                    ? `Nothing matches “${query.trim()}”. Order references look like AD81E642; payment ids start with pi_.`
+                    : activeBucket === 'new'
+                      ? 'No new orders right now.'
+                      : `No orders in "${activeMeta.title}".`
                 }
               />
             )
@@ -296,12 +373,54 @@ export const AdminOrders = () => {
               <tbody>
                 {visibleOrders.map((o) => (
                   <tr key={o.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(o.createdAt)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {formatDate(o.createdAt)}
+                      <HoldCountdown order={o} />
+                    </td>
                     <td>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-mono, monospace)',
+                          fontSize: 'var(--text-xs)',
+                          letterSpacing: '0.04em',
+                          marginBottom: 2,
+                        }}
+                      >
+                        {formatOrderRef(o.id)}
+                      </div>
                       {o.itemCount > 0 ? (
-                        <div>
-                          {o.itemCount} {o.itemCount === 1 ? 'print' : 'prints'}
-                        </div>
+                        <>
+                          {/* Say WHAT was bought, not just how many. An admin
+                              chasing "the order that owns copy 1/100" has to be
+                              able to see it from the list. */}
+                          {o.itemSummaries.slice(0, 3).map((it, i) => (
+                            <div key={i} style={{ marginBottom: 2 }}>
+                              <span>{it.artworkTitle ?? 'Artwork'}</span>
+                              {it.editionName && (
+                                <span style={{ opacity: 0.7 }}> · {it.editionName}</span>
+                              )}
+                              {it.editionLabels.length > 0 && (
+                                <span
+                                  style={{
+                                    fontFamily: 'var(--font-mono, monospace)',
+                                    fontSize: 'var(--text-xs)',
+                                    marginLeft: 6,
+                                  }}
+                                >
+                                  #{it.editionLabels.join(', #')}
+                                </span>
+                              )}
+                              {it.editionLabels.length === 0 && it.quantity > 1 && (
+                                <span style={{ opacity: 0.7 }}> × {it.quantity}</span>
+                              )}
+                            </div>
+                          ))}
+                          {o.itemSummaries.length > 3 && (
+                            <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>
+                              +{o.itemSummaries.length - 3} more
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <>
                           <div>{o.artwork.title ?? o.artwork.slug ?? o.artwork.id}</div>

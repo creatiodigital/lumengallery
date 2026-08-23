@@ -13,6 +13,13 @@ type MoneyParts = Pick<
  * Also folds in customSize and borders so custom-size or border-only changes
  * correctly produce a new line rather than merging with an existing one.
  */
+/** Does the cart contain a limited edition? Drives the one notice the cart
+ *  shows about them: nothing is reserved until payment, so a copy can sell out
+ *  from under the buyer while it sits here. */
+export function hasLimitedItems(items: CartItem[]): boolean {
+  return items.some((item) => item.editionType === 'limited')
+}
+
 export function configKey(config: WizardConfig): string {
   const values = Object.fromEntries(
     Object.entries(config.values ?? {}).sort(([a], [b]) => a.localeCompare(b)),
@@ -44,17 +51,27 @@ export function cartCount(items: Array<Pick<CartItem, 'quantity'>>): number {
  * confirmation before a duplicate add merges into a quantity bump. The
  * `excludeLineId` lets the edit flow ignore the line currently being edited.
  */
-export function hasMatchingCartLine(
+export function findMatchingCartLine(
   items: CartItem[],
   candidate: { artworkId: string; variantId?: string; config: WizardConfig },
   excludeLineId?: string,
-): boolean {
+): CartItem | undefined {
   const candidateKey = configKey(candidate.config)
-  return items.some(
+  return items.find(
     (item) =>
       item.lineId !== excludeLineId &&
       item.artworkId === candidate.artworkId &&
       item.variantId === candidate.variantId &&
       configKey(item.config) === candidateKey,
   )
+}
+
+/** Boolean form of {@link findMatchingCartLine}. The wizard needs the line
+ *  itself to show what is being held, and a yes/no for the duplicate check. */
+export function hasMatchingCartLine(
+  items: CartItem[],
+  candidate: { artworkId: string; variantId?: string; config: WizardConfig },
+  excludeLineId?: string,
+): boolean {
+  return findMatchingCartLine(items, candidate, excludeLineId) !== undefined
 }

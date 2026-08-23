@@ -2,6 +2,7 @@ import type { FullConfig } from '@playwright/test'
 
 import prisma from '@/lib/prisma'
 import { stripe } from '@/lib/stripe/client'
+import { restoreWebhookEndpoints } from './webhook-guard'
 
 /**
  * Safety-net cleanup after the WHOLE e2e run. Per-spec `finally{}` teardown is
@@ -139,6 +140,14 @@ async function globalTeardown(_config: FullConfig): Promise<void> {
       err instanceof Error ? err.message : err,
     )
   } finally {
+    // Put staging's webhook back on, whatever happened above. Also re-run at the
+    // START of the next suite, because a killed process never reaches here.
+    await restoreWebhookEndpoints().catch((err) =>
+      console.warn(
+        '[globalTeardown] could not restore webhooks:',
+        err instanceof Error ? err.message : err,
+      ),
+    )
     await prisma.$disconnect().catch(() => {})
   }
 }

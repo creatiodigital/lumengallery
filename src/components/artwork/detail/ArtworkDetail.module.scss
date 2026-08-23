@@ -97,3 +97,20 @@
 .share {
   margin-top: var(--space-10);
 }
+
+// A sold-out edition, marked where the Order Print button would have been.
+// A BADGE, never a button: nothing here is clickable, so it must not borrow a
+// control's shape. Squared, like every other client-facing surface.
+.soldOut {
+  display: inline-block;
+  margin-top: var(--space-4);
+  align-self: flex-start;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}

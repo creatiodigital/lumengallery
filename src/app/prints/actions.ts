@@ -7,6 +7,8 @@ import {
   type PrintArtistOption,
   type PrintArtwork,
 } from '@/components/prints/types'
+import { minimumPriceForArtwork } from '@/lib/editions/minimumPrice'
+import { purchasableArtworkWhere, SELLABLE_VARIANT_WHERE } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 import { getPurchasesPaused } from '@/lib/settings'
 
@@ -41,6 +43,30 @@ const PRINT_SELECT = {
   originalWidth: true,
   originalHeight: true,
   createdAt: true,
+  // Needed to price the card — an OPEN edition uses the artwork price, a
+  // LIMITED one the cheapest variant a buyer can actually complete. Loaded
+  // through SELLABLE_VARIANT_WHERE rather than LIVE_VARIANT_WHERE, so a variant
+  // with no copies left never sets the price: it drops out, the figure rises to
+  // the next variant that still has stock, and an edition with nothing left
+  // prices at null — which the grid renders as "Sold out". The work itself
+  // stays listed; `buildPrintsWhere` decides that, and it is deliberately still
+  // LIVE_VARIANT_WHERE.
+  printEnabled: true,
+  printPriceCents: true,
+  limitedVariants: {
+    where: SELLABLE_VARIANT_WHERE,
+    select: {
+      name: true,
+      priceCents: true,
+      paperId: true,
+      printTypeId: true,
+      widthCm: true,
+      heightCm: true,
+      borderCm: true,
+      sheetWidthCm: true,
+      sheetHeightCm: true,
+    },
+  },
   user: {
     select: {
       id: true,
@@ -55,9 +81,13 @@ const PRINT_SELECT = {
 // price set, narrowed by the optional artist + edition filters. Edition is
 // re-validated here ('open' | 'limited' only) so a bad client value can't widen
 // or break the query.
+/**
+ * Who appears in the prints catalog: exactly what a buyer can purchase. The
+ * open/limited fork lives in `purchasableArtworkWhere` so the catalog, the
+ * wizard, checkout, payment and the public API can't drift apart again.
+ */
 const buildPrintsWhere = (artistId: string, edition: EditionFilter): Prisma.ArtworkWhereInput => ({
-  printEnabled: true,
-  printPriceCents: { not: null },
+  ...purchasableArtworkWhere(),
   user: { published: true },
   ...(artistId ? { userId: artistId } : {}),
   ...(edition === 'open' || edition === 'limited' ? { editionType: edition } : {}),
@@ -100,8 +130,27 @@ export async function getPrintsCatalogPage({
     prisma.artwork.count({ where }),
   ])
 
-  // The client expects createdAt as a serializable ISO string.
-  const items = rows.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() }))
+  // The client expects createdAt as a serializable ISO string. The pricing
+  // inputs (printPriceCents, the live variants) are stripped here — the card
+  // only needs the resolved figure, and the artist's cut is not public.
+  const items = rows.map((row) => {
+    const { printEnabled, printPriceCents, limitedVariants, ...rest } = row
+    const min = minimumPriceForArtwork(
+      {
+        editionType: rest.editionType,
+        originalWidth: rest.originalWidth,
+        originalHeight: rest.originalHeight,
+        printEnabled,
+        printPriceCents,
+      },
+      limitedVariants,
+    )
+    return {
+      ...rest,
+      createdAt: row.createdAt.toISOString(),
+      minPriceCents: min?.cents ?? null,
+    }
+  })
   return { items, totalCount }
 }
 

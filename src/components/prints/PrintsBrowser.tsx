@@ -117,6 +117,16 @@ export const PrintsBrowser = ({ initialItems, initialTotal, artistOptions }: Pro
           <EmptyState message={emptyMessage} />
         ) : (
           <>
+            {/* Above the grid, so it is read BEFORE the prices rather than
+                found after them — still quiet type, still nothing to act on.
+                Sentence one is OPEN-only: a limited variant's price is exact,
+                because the buyer picks a variant rather than configuring one.
+                Sentence two covers BOTH — shipping and tax are destination-
+                dependent and so can't be known on a listing. */}
+            <p className={styles.priceNote}>
+              Open edition prices vary with size and framing. Shipping and tax calculated at
+              checkout.
+            </p>
             <div className={loading ? styles.gridLoading : undefined}>
               <ArtworkGrid artworks={gridArtworks} withOrderPrint />
             </div>

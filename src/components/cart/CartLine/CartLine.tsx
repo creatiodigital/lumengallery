@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 
 import { CartItemDetails } from '@/components/cart/CartItemDetails/CartItemDetails'
 import { configToWizardParams } from '@/components/PrintWizard/wizardParams'
@@ -44,12 +44,6 @@ export const CartLine = ({ item }: CartLineProps) => {
     await setQuantity(item.lineId, item.quantity - 1)
   }
 
-  // Stable across renders so HoldCountdown's interval isn't torn down (and its
-  // one-shot onExpire guard re-armed) on every parent re-render.
-  const handleExpire = useCallback(() => {
-    removeItem(item.lineId)
-  }, [removeItem, item.lineId])
-
   // "Edit item" re-opens the wizard pre-filled with this line's selection. The
   // lineId rides along so the wizard replaces this line on re-add (rather than
   // leaving a duplicate). Encoding shared with the checkout "back to wizard".
@@ -63,12 +57,7 @@ export const CartLine = ({ item }: CartLineProps) => {
   return (
     <div className={styles.line}>
       <div className={styles.body}>
-        <CartItemDetails
-          item={item}
-          thumbHeight={140}
-          specsVisible={4}
-          onHoldExpire={handleExpire}
-        />
+        <CartItemDetails item={item} thumbHeight={140} />
       </div>
 
       <div className={styles.panel}>
@@ -96,7 +85,7 @@ export const CartLine = ({ item }: CartLineProps) => {
 
         <div className={styles.totalBlock}>
           <Text as="span" size="sm" className={styles.panelLabel}>
-            Total Price
+            Base price
           </Text>
           <Text as="span" font="serif" size="xl" className={styles.totalValue}>
             {formatEuro(lineItemCents)}
@@ -104,14 +93,21 @@ export const CartLine = ({ item }: CartLineProps) => {
         </div>
 
         <div className={styles.actions}>
-          <Button
-            variant="secondary"
-            size="regularSquared"
-            fullWidth
-            icon="square-pen"
-            label="Edit Item"
-            href={editHref}
-          />
+          {/* Open editions only. A limited line has nothing to edit — the
+              variant IS the object, not a configuration of it, and the wizard
+              it led to could only ever offer "Go to cart" or add a second
+              line. A button labelled Edit that cannot edit is worse than no
+              button. */}
+          {!isLimited && (
+            <Button
+              variant="secondary"
+              size="regularSquared"
+              fullWidth
+              icon="square-pen"
+              label="Edit Item"
+              href={editHref}
+            />
+          )}
         </div>
       </div>
 

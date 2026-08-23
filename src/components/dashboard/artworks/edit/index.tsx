@@ -234,6 +234,69 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
     [artworkId],
   )
 
+  // Delete ONE saved variant, immediately. Deleting used to be a local edit
+  // that only reached the database if the artist went on to save the whole
+  // artwork — so a delete followed by a reload silently came back. The editor
+  // owns the confirm modal and removes the row once this resolves ok; here we
+  // only talk to the server and report refusals back for the modal to show.
+  const handleDeleteVariant = useCallback(
+    async (variantId: string): Promise<{ ok: boolean; error?: string }> => {
+      setError('')
+      try {
+        const res = await fetch(`/api/artworks/${artworkId}/variants/${variantId}`, {
+          method: 'DELETE',
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          return { ok: false, error: data.error || 'Failed to delete variant.' }
+        }
+        // Mirror the server's editionLocked recompute, exactly as unblocking
+        // does: the series type is frozen only while a LIVE variant remains.
+        // The editor drops the row straight after this resolves and
+        // handleVariantsChange merges onto `prev`, so this flag survives.
+        setFormData((prev) => {
+          const remaining = prev.limitedVariants.filter((v) => v.id !== variantId)
+          const stillLive = remaining.some((v) => v.published === true && v.blocked !== false)
+          return { ...prev, editionLocked: stillLive }
+        })
+        return { ok: true }
+      } catch {
+        return { ok: false, error: 'Failed to delete variant.' }
+      }
+    },
+    [artworkId],
+  )
+
+  // Save ONE variant on its own — create it when it has no id yet, update it
+  // when it does. Deliberately independent of the artwork save, which
+  // re-validates EVERY variant and so can be blocked by an unrelated row whose
+  // geometry has drifted (a replaced image, say). What may actually change is
+  // decided server-side: a live variant accepts only its name and price.
+  const handleSaveVariant = useCallback(
+    async (
+      variantId: string | null,
+      values: LimitedVariantDraft,
+    ): Promise<{ ok: boolean; error?: string; variantId?: string }> => {
+      setError('')
+      const url = variantId
+        ? `/api/artworks/${artworkId}/variants/${variantId}`
+        : `/api/artworks/${artworkId}/variants`
+      try {
+        const res = await fetch(url, {
+          method: variantId ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) return { ok: false, error: data.error || 'Failed to save variant.' }
+        return { ok: true, variantId: data.variantId }
+      } catch {
+        return { ok: false, error: 'Failed to save variant.' }
+      }
+    },
+    [artworkId],
+  )
+
   // Persist the whole form (pending image + metadata + limited variants).
   // Returns true on success. Used by both the Save button and the per-variant
   // "Ready to Sell" flow (which saves before it publishes). Does not navigate
@@ -633,6 +696,8 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
         onUnblock={handleUnblock}
         onUnblockVariant={handleUnblockVariant}
         onReadyToSellVariant={handleReadyToSellVariant}
+        onDeleteVariant={handleDeleteVariant}
+        onSaveVariant={handleSaveVariant}
         onImageUpload={handleImageUpload}
         onImageRemove={handleRemoveImage}
         onSoundUpload={handleSoundUpload}

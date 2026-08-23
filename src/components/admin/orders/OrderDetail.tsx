@@ -11,6 +11,7 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { Input } from '@/components/ui/Input'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { editionTypeLabel } from '@/lib/editions/editionLabel'
+import { AUTHORIZATION_LIFETIME_DAYS, authorizationHold } from '@/lib/orders/authorizationPolicy'
 import { daysSinceDelivered, PAYOUT_SAFE_WINDOW_DAYS } from '@/lib/orders/payoutPolicy'
 import { formatEuro } from '@/lib/print-providers/format'
 import { countryName } from '@/utils/countryName'
@@ -38,6 +39,7 @@ import {
 import { REORDER_REASONS, REORDER_REASON_LABELS } from '@/lib/orders/reorderReasons'
 
 import dashboardStyles from '@/components/dashboard/DashboardLayout/DashboardLayout.module.scss'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 // Order hard-delete is a dev/staging cleanup tool only — in production the
 // Danger zone does not render (and the server action refuses regardless).
@@ -110,10 +112,6 @@ const IssueBanner = ({
     </div>
   )
 }
-
-// Stripe holds a manual-capture card authorization for ~7 days; after
-// that it lapses and the sale can no longer be collected.
-const AUTH_HOLD_DAYS = 7
 
 const TERMINAL_STAGES = new Set(['Complete', 'Cancelled'])
 
@@ -866,14 +864,16 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
   const isAuthExpired = order.paymentStatus === 'canceled' && order.fulfillmentStatus === null
   const isPaymentFailed = order.paymentStatus === 'failed'
 
-  // Proactive warning as the ~7-day auth window closes (or has lapsed)
-  // on a still-authorized, unplaced order — capture before the sale is lost.
-  const authExpiresAt =
-    order.paymentStatus === 'authorized' && order.fulfillmentStatus === null
-      ? new Date(new Date(order.createdAt).getTime() + AUTH_HOLD_DAYS * 86_400_000)
-      : null
-  const authExpiringSoon =
-    authExpiresAt !== null && authExpiresAt.getTime() - Date.now() <= 2 * 86_400_000
+  // Proactive warning as the auth window closes (or has lapsed) on a
+  // still-authorized, unplaced order — capture before the sale is lost. The
+  // countdown itself comes from authorizationPolicy, which the orders list and
+  // the reconcile cron's daily warning also read, so the three cannot drift
+  // apart on either the lifetime or the day it starts warning.
+  const hold = order.fulfillmentStatus === null ? authorizationHold(order) : null
+  const authExpiresAt = hold
+    ? new Date(new Date(order.createdAt).getTime() + AUTHORIZATION_LIFETIME_DAYS * 86_400_000)
+    : null
+  const authExpiringSoon = hold !== null && hold.status !== 'fresh'
 
   return (
     <DashboardLayout backLink="/admin/orders" backLabel="← Back to Orders">
@@ -893,7 +893,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 className={dashboardStyles.pageTitle} style={{ margin: 0 }}>
-            Order #{order.id.slice(0, 8)}
+            Order {formatOrderRef(order.id)}
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: 14 }}>
             {order.isCart ? (
@@ -978,7 +978,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               : '⏳ Authorization expires soon'
           }
         >
-          Stripe holds the buyer&apos;s card for about {AUTH_HOLD_DAYS} days. This hold{' '}
+          Stripe holds the buyer&apos;s card for about {AUTHORIZATION_LIFETIME_DAYS} days. This hold{' '}
           {authExpiresAt.getTime() <= Date.now() ? 'was expected to lapse' : 'lapses'} around{' '}
           <strong>{formatDateTime(authExpiresAt.toISOString())}</strong>. Capture the payment
           (button below) before then or the sale — <strong>{formatEuro(order.totalCents)}</strong> —
@@ -1557,7 +1557,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             <>
               This will transfer <strong>{formatEuro(order.artistCents)}</strong> to{' '}
               <strong>{order.artist.name}</strong>&apos;s Stripe account for order{' '}
-              <code>#{order.id.slice(0, 8)}</code>. The order will then move into the Done tab.
+              <code>{formatOrderRef(order.id)}</code>. The order will then move into the Done tab.
               <br />
               <br />
               Once released, the money is on the artist&apos;s side — you can&apos;t pull it back
@@ -2139,9 +2139,9 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
               </>
             ) : (
               <>
-                This will issue an invoice for order <code>#{order.id.slice(0, 8)}</code> and email
-                it to <strong>{order.buyerEmail}</strong>. The invoice number is permanent — it
-                cannot be voided from this screen.
+                This will issue an invoice for order <code>{formatOrderRef(order.id)}</code> and
+                email it to <strong>{order.buyerEmail}</strong>. The invoice number is permanent —
+                it cannot be voided from this screen.
               </>
             )
           }
@@ -2237,7 +2237,7 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
             <>
               This will refund <strong>{formatEuro(order.totalCents)}</strong> to{' '}
               <strong>{order.buyerName || order.buyerEmail}</strong> for order{' '}
-              <code>#{order.id.slice(0, 8)}</code>.
+              <code>{formatOrderRef(order.id)}</code>.
               <br />
               <br />
               {order.paymentStatus === 'authorized'
@@ -2354,7 +2354,8 @@ export const AdminOrderDetail = ({ orderId }: { orderId: string }) => {
           message={
             <>
               This will <strong>permanently remove</strong> order{' '}
-              <code>#{order.id.slice(0, 8)}</code> and its entire event history from the database.
+              <code>{formatOrderRef(order.id)}</code> and its entire event history from the
+              database.
               {order.paymentStatus === 'authorized' && (
                 <>
                   <br />

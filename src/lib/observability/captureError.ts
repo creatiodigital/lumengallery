@@ -11,6 +11,7 @@ type Flow =
   | 'cron' // Scheduled jobs (reconciliation, etc.)
   | 'content' // Public content reads (exhibition/artwork queries for display)
   | 'image' // Image load failures on display surfaces (client-side)
+  | 'checkout' // Buyer-facing checkout helpers (address lookup) — never money
 
 export type CaptureContext = {
   /** Broad business domain — groups related errors in Sentry filters. */

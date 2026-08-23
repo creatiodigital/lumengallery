@@ -3,9 +3,19 @@ import crypto from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { findOrphanedReservations } from '@/lib/editions/findOrphanedReservations'
+import {
+  isDeadPaymentIntentStatus,
+  settleDeadPaymentIntent,
+} from '@/lib/orders/settleDeadPaymentIntent'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { ensureOrderForPaymentIntent } from '@/lib/orders/ensureOrderForPaymentIntent'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
+import {
+  sendAuthorizationExpiryWarning,
+  type ExpiringAuthorization,
+} from '@/lib/emails/authorizationExpiryWarning'
+import { authorizationHold } from '@/lib/orders/authorizationPolicy'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 import { captureError } from '@/lib/observability/captureError'
 import { cleanupExpiredRateLimits } from '@/lib/rateLimit'
 import prisma from '@/lib/prisma'
@@ -17,7 +27,7 @@ export const dynamic = 'force-dynamic'
 const DEFAULT_MIN_AGE_MINUTES = 30
 
 /**
- * Safety-net cron (Layer 3 of guaranteed order capture). Two phases:
+ * Safety-net cron (Layer 3 of guaranteed order capture). Four phases:
  *
  *   A. RECOVER — list Stripe PaymentIntents from the last 24h that originated
  *      from our checkout (wizardConfig metadata for single-print, kind='cart'
@@ -35,6 +45,20 @@ const DEFAULT_MIN_AGE_MINUTES = 30
  *      (`canceled`/`requires_payment_method`/`requires_confirmation`); leave
  *      authorized/in-flight ones; if the PI can't be retrieved at all, leave it
  *      and alert (never auto-release on incomplete info).
+ *
+ *   C. SETTLE — find orders stuck at `authorized` whose PaymentIntent Stripe
+ *      reports as canceled. Phase B only sees reservations NEVER bound to an
+ *      order, so once a number is bound its only release path was the
+ *      `payment_intent.canceled` webhook; wherever that is missing, the order
+ *      freezes forever holding an unsellable copy. Deliberately NOT time-boxed
+ *      to the 24h listing — a hold that died while the webhook was down can be
+ *      arbitrarily old, and those are the ones nothing else will find.
+ *
+ *   D. WARN — the preventive half. A, B and C are all cleanup, running after a
+ *      hold is already dead and the sale already lost. This one names the
+ *      orders whose authorization is close to lapsing while capturing them is
+ *      still possible, in one daily email. Runs last, so phase C has already
+ *      removed the genuinely dead ones.
  *
  * Why this exists: order creation must not depend solely on the Stripe webhook
  * (mid-deploy, DNS blip, our app down). Layer 1 closes the gap at confirmation;
@@ -206,11 +230,124 @@ export async function GET(req: NextRequest) {
     // we never free a number whose card is still held.
   }
 
+  // Phase C — settle orders whose authorization died.
+  //
+  // The gap this closes: phase B only looks at reservations NOT bound to an
+  // order (`orderId: null, orderItemId: null`). Once a number is bound, its
+  // only release path was the `payment_intent.canceled` webhook — so whenever
+  // that webhook is missing, an expired hold leaves the order stuck at
+  // `authorized` forever, still offering a Capture button that can only fail,
+  // with its edition number out of stock permanently.
+  //
+  // That is not hypothetical: the sandbox had no webhook endpoint registered
+  // for two months, and four orders from June and July were found in exactly
+  // this state, holding four copies that could never be sold.
+  //
+  // Deliberately NOT time-boxed to the 24h PI listing above: a hold that died
+  // while the webhook was down may be arbitrarily old, and those are precisely
+  // the ones nothing else will ever find.
+  const stuckOrders = await prisma.printOrder.findMany({
+    where: {
+      paymentStatus: 'authorized',
+      createdAt: { lt: new Date(Date.now() - minAgeMinutes * 60 * 1000) },
+    },
+    select: { id: true, paymentIntentId: true },
+  })
+
+  let deadAuthsSettled = 0
+  let deadAuthNumbersReleased = 0
+  let deadAuthUnresolved = 0
+  const deadAuthLines: string[] = []
+
+  for (const order of stuckOrders) {
+    const piId = order.paymentIntentId
+    const pi = await stripe.paymentIntents.retrieve(piId).catch(() => null)
+    if (!pi) {
+      // Same rule as phase B: never act on incomplete information. Flag it.
+      deadAuthUnresolved += 1
+      deadAuthLines.push(`${piId} — PI could not be retrieved from Stripe`)
+      continue
+    }
+    if (!isDeadPaymentIntentStatus(pi.status)) continue
+    const settled = await settleDeadPaymentIntent(piId, 'cron')
+    if (settled.orderCanceled || settled.numbersReleased > 0) {
+      deadAuthsSettled += 1
+      deadAuthNumbersReleased += settled.numbersReleased
+      deadAuthLines.push(`${piId} — order canceled, ${settled.numbersReleased} number(s) released`)
+    }
+  }
+
+  // Phase D — warn about holds that are STILL ALIVE but running out.
+  //
+  // Phases B and C are both cleanup: they run after a hold has already died,
+  // and by then the sale is gone and the copy has spent days out of stock. This
+  // is the preventive half. An authorization lapses on Stripe's schedule with
+  // no event we act on until it is too late, so once a day we say which orders
+  // are close, while capturing them is still possible.
+  //
+  // Runs LAST on purpose: phase C has just settled the genuinely dead ones, so
+  // whatever is still 'authorized' here has a live PaymentIntent and a real
+  // decision attached to it.
+  //
+  // The cron is daily (vercel.json: "0 9 * * *"), so "once a day" needs no
+  // dedupe state — one tick is one email. There is no all-clear email: a daily
+  // "nothing to do" trains the reader to delete the one that matters unread.
+  const ageingOrders = await prisma.printOrder.findMany({
+    where: { paymentStatus: 'authorized', fulfillmentStatus: null },
+    select: {
+      id: true,
+      createdAt: true,
+      paymentStatus: true,
+      buyerName: true,
+      totalCents: true,
+      currency: true,
+    },
+  })
+
+  const expiring: ExpiringAuthorization[] = []
+  for (const o of ageingOrders) {
+    const hold = authorizationHold(o)
+    if (!hold || hold.status === 'fresh') continue
+    expiring.push({
+      orderRef: formatOrderRef(o.id),
+      buyerName: o.buyerName,
+      totalCents: o.totalCents,
+      currency: o.currency,
+      days: hold.days,
+      daysLeft: hold.daysLeft,
+      lapsed: hold.status === 'expired',
+    })
+  }
+
+  if (expiring.length > 0) {
+    const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://theartroom.gallery'
+    // Never let a failed reminder take down the cron — phases A to C repair
+    // real data and must not be undone by a Resend blip.
+    try {
+      await sendAuthorizationExpiryWarning({
+        orders: expiring,
+        ordersUrl: `${base}/admin/orders`,
+      })
+    } catch (err) {
+      captureError(err instanceof Error ? err : new Error(String(err)), {
+        flow: 'cron',
+        stage: 'reconcile-orders-expiry-warning',
+        level: 'warning',
+        fingerprint: ['cron:expiry-warning-failed'],
+      })
+    }
+  }
+
   // Always alert when anything was auto-fixed or still needs a human: an
   // auto-recovery or an auto-release happening at all means the webhook path is
   // degraded (Eduardo, 2026-06-24).
   const needsAlert =
-    recovered > 0 || recoveryFailed > 0 || reservationsReleased > 0 || reservationsUnresolvedPI > 0
+    recovered > 0 ||
+    recoveryFailed > 0 ||
+    reservationsReleased > 0 ||
+    reservationsUnresolvedPI > 0 ||
+    deadAuthsSettled > 0 ||
+    deadAuthUnresolved > 0
   if (needsAlert) {
     const parts: string[] = []
     if (recovered > 0) {
@@ -221,6 +358,16 @@ export async function GET(req: NextRequest) {
     if (reservationsReleased > 0) {
       parts.push(
         `${reservationsReleased} orphaned edition-number reservation${reservationsReleased === 1 ? '' : 's'} (PI canceled/abandoned, never bound to an order) were AUTO-RELEASED back to the available pool.`,
+      )
+    }
+    if (deadAuthsSettled > 0) {
+      parts.push(
+        `${deadAuthsSettled} order${deadAuthsSettled === 1 ? '' : 's'} had an EXPIRED AUTHORIZATION (Stripe canceled the hold; the webhook never told us). They have been canceled and ${deadAuthNumbersReleased} edition number${deadAuthNumbersReleased === 1 ? '' : 's'} returned to the pool. The buyer was never charged and must be asked to re-order:\n\n${deadAuthLines.join('\n')}`,
+      )
+    }
+    if (deadAuthUnresolved > 0) {
+      parts.push(
+        `${deadAuthUnresolved} order${deadAuthUnresolved === 1 ? '' : 's'} sitting at 'authorized' could not be checked against Stripe — left untouched, needs a manual look.`,
       )
     }
     if (recoveryFailed > 0) {
@@ -242,6 +389,9 @@ export async function GET(req: NextRequest) {
         stillPending,
         reservationsReleased,
         reservationsUnresolvedPI,
+        deadAuthsSettled,
+        deadAuthNumbersReleased,
+        deadAuthUnresolved,
         checked: ourPIs.length,
       },
       whatToDo: [
@@ -261,5 +411,11 @@ export async function GET(req: NextRequest) {
     reservationsScanned: orphanReservations.length,
     reservationsReleased,
     reservationsUnresolvedPI,
+    stuckOrdersScanned: stuckOrders.length,
+    deadAuthsSettled,
+    deadAuthNumbersReleased,
+    deadAuthUnresolved,
+    authorizationsExpiring: expiring.length,
+    authorizationsLapsed: expiring.filter((o) => o.lapsed).length,
   })
 }

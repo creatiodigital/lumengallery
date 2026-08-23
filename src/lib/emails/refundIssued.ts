@@ -10,6 +10,7 @@ import {
 } from './components'
 import { formatAmount } from './format'
 import { renderEmailLayout } from './layout'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -27,7 +28,7 @@ type RefundIssuedArgs = {
  */
 export function renderRefundIssuedEmail(args: RefundIssuedArgs): { subject: string; html: string } {
   const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8)).toUpperCase()
+  const safeOrderId = formatOrderRef(args.orderId)
   const amount = formatAmount(args.amountCents, args.currency)
 
   const body =

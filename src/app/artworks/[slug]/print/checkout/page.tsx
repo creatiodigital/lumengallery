@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { PrintCheckout } from '@/components/checkout/PrintCheckout'
 import { PurchasesPausedNotice } from '@/components/checkout/PurchasesPausedNotice'
 import { loadProviderCatalog } from '@/lib/print-providers/loadCatalog'
+import { isArtworkPurchasable, LIVE_VARIANT_WHERE } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 import { getPurchasesPaused } from '@/lib/settings'
 
@@ -34,6 +35,8 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
       where: { slug },
       include: {
         user: { select: { name: true, lastName: true } },
+        // Live priced variants — what makes a LIMITED edition purchasable.
+        _count: { select: { limitedVariants: { where: LIVE_VARIANT_WHERE } } },
       },
     }),
   ])
@@ -43,7 +46,17 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
   }
 
   if (!artwork || !artwork.imageUrl) notFound()
-  if (!artwork.printEnabled || !artwork.printPriceCents) notFound()
+  // Limited editions are priced PER VARIANT and carry no artwork-level price;
+  // gating on `printPriceCents` closed the flow for every one of them.
+  if (
+    !isArtworkPurchasable({
+      printEnabled: artwork.printEnabled,
+      editionType: artwork.editionType,
+      printPriceCents: artwork.printPriceCents,
+      liveVariantCount: artwork._count.limitedVariants,
+    })
+  )
+    notFound()
   // Stay in sync with the wizard entry — no original dims means we
   // can't compute a sharp print ceiling, so the print flow is closed.
   if (!artwork.originalWidth || !artwork.originalHeight) notFound()
@@ -68,7 +81,11 @@ const CheckoutPage = async ({ params, searchParams }: CheckoutPageProps) => {
         imageUrl: artwork.imageUrl,
         originalWidthPx: artwork.originalWidth,
         originalHeightPx: artwork.originalHeight,
-        printPriceCents: artwork.printPriceCents,
+        // Open editions are priced on the artwork; LIMITED ones carry no
+        // artwork price and are quoted per variant, and the open wizard is
+        // never rendered for them. `isArtworkPurchasable` above guarantees a
+        // non-null price in every case where this value is actually read.
+        printPriceCents: artwork.printPriceCents ?? 0,
       }}
       providerId="printspace"
       supportedCountries={catalog.supportedCountries}

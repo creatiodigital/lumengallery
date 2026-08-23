@@ -142,3 +142,14 @@
     transform: rotate(360deg);
   }
 }
+
+// Fine print under the catalog. Deliberately quiet — it exists so a buyer
+// isn't surprised at checkout, not to be read first.
+.priceNote {
+  margin-bottom: var(--space-6);
+  text-align: center;
+  // --text-sm (14px), not --text-xs: quiet, but this has to be readable —
+  // it is the only place a buyer is told tax and shipping come later.
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}

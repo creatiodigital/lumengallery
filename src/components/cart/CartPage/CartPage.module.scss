@@ -84,3 +84,20 @@
 .secondaryCta {
   margin-top: var(--space-1);
 }
+
+// One plain sentence: a limited edition in this cart is not reserved. No
+// border, no clock — it is a caveat, not a countdown.
+.limitedNotice {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+// The way back out of the cart, under everything in it. Left-aligned with the
+// lines above rather than centred, so it reads as "leave this list" and never
+// competes with the checkout button in the summary.
+.backRow {
+  display: flex;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-light);
+}

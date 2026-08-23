@@ -10,6 +10,7 @@ import {
   emailParagraph,
 } from './components'
 import { renderEmailLayout } from './layout'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -30,7 +31,7 @@ export function renderOrderShippedEmail(args: OrderShippedArgs): { subject: stri
   const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8)).toUpperCase()
+  const safeOrderId = formatOrderRef(args.orderId)
   const safeTrackingUrl = args.trackingUrl ? escapeHtml(args.trackingUrl) : null
 
   const body =
@@ -47,7 +48,10 @@ export function renderOrderShippedEmail(args: OrderShippedArgs): { subject: stri
     ]) +
     emailDivider() +
     emailParagraph(
-      `Please unwrap carefully when it arrives. If anything looks wrong on delivery, just reply to this email with a photo and we&rsquo;ll sort it out.`,
+      `When it arrives, we kindly suggest taking a few photos, or a short video, as you unwrap it &mdash; the sealed parcel first, then the moment you open it.`,
+    ) +
+    emailParagraph(
+      `Damage in transit is rare and your print travels well protected. But should anything arrive less than perfect, those images let us arrange a reprint or a refund right away, with no back-and-forth. Just reply to this email.`,
     ) +
     emailParagraph(`Enjoy the work.`)
 

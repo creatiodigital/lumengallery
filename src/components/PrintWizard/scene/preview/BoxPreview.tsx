@@ -11,6 +11,10 @@ interface BoxPreviewProps {
   printWidthM: number
   printHeightM: number
   paperBorderM: number
+  /** Vertical (top/bottom) paper border in metres. Defaults to
+   *  `paperBorderM`. Differs only for fixed-sheet editions, where the sheet
+   *  is a different shape from the image so the two axes diverge. */
+  paperBorderYM?: number
   matBorderM: number
   matHex: string
   mouldingWidthM: number
@@ -44,6 +48,7 @@ export const BoxPreview = ({
   printWidthM,
   printHeightM,
   paperBorderM,
+  paperBorderYM = paperBorderM,
   matBorderM,
   matHex,
   mouldingWidthM,
@@ -52,7 +57,7 @@ export const BoxPreview = ({
   paperRoughness,
 }: BoxPreviewProps) => {
   const paperWidthM = printWidthM + paperBorderM * 2
-  const paperHeightM = printHeightM + paperBorderM * 2
+  const paperHeightM = printHeightM + paperBorderYM * 2
   const matWidthM = paperWidthM + matBorderM * 2
   const matHeightM = paperHeightM + matBorderM * 2
 

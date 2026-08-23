@@ -10,6 +10,12 @@ type Props = {
   editionType: 'open' | 'limited'
   /** Opens the edition-details modal. */
   onDetails: () => void
+  /** Optional line under the badge — the limited path's availability caveat.
+   *  Rendered HERE rather than beside the badge in the wizard because
+   *  `.body` is a three-column grid: a sibling would take a cell and displace
+   *  the picker, preview and summary. The badge already spans the full first
+   *  row, so anything that belongs to it goes inside it. */
+  note?: string
 }
 
 /**
@@ -19,7 +25,7 @@ type Props = {
  * Deliberately quiet: a bordered badge with a soft text link below — the
  * modal is supporting information, not a step in the purchase.
  */
-export const EditionBadge = ({ editionType, onDetails }: Props) => (
+export const EditionBadge = ({ editionType, onDetails, note }: Props) => (
   <div className={styles.editionBadge}>
     <span className={styles.editionBadgeLabel}>
       <OrnamentRule className={styles.editionBadgeOrnament} aria-hidden="true" />
@@ -35,5 +41,10 @@ export const EditionBadge = ({ editionType, onDetails }: Props) => (
       onClick={onDetails}
       className={styles.editionBadgeCta}
     />
+    {note && (
+      <Text as="p" size="sm" className={styles.editionBadgeNote}>
+        {note}
+      </Text>
+    )}
   </div>
 )

@@ -1,13 +1,15 @@
 'use client'
 
-import styles from './PrintWizard.module.scss'
+import {
+  EDITION_INK_HEIGHT_EM,
+  EDITION_INK_TOP_EM,
+  EDITION_NUMBER_CLEARANCE_CM,
+  EDITION_NUMBER_FONT_SIZE_CM,
+  editionLeftBearingEm,
+} from './editionNumberMetrics'
+import { formatCm } from '@/lib/print-providers/format'
 
-// Edition number = a fixed PHYSICAL size (cm), mirroring the 3D preview
-// (EDITION_NUMBER_HEIGHT_M / _GAP_M in PreviewArtwork.tsx), so it reads like a
-// pencil number and does NOT shrink with the print. Converted to schema px via
-// the print's own scale; capped so it stays inside the paper margin.
-const EDITION_NUMBER_HEIGHT_CM = 2.2
-const EDITION_NUMBER_GAP_CM = 1.4
+import styles from './PrintWizard.module.scss'
 
 interface SizeSchemaProps {
   printWidthCm: number
@@ -24,14 +26,19 @@ interface SizeSchemaProps {
    *  in cm. Rendered as a WHITE sheet layer OUTSIDE the image — the
    *  buyer's print size is the image, the paper sheet is bigger. */
   paperBorderCm?: number
+  /** Vertical (top/bottom) paper border, in cm. Defaults to
+   *  `paperBorderCm`. Differs only for fixed-sheet editions, where the
+   *  sheet is a different shape from the image so the two axes diverge. */
+  paperBorderYCm?: number
   /** Floating-frame only: visible backboard border extending past the
    *  paper sheet on every side, in cm. Rendered as a colored layer
    *  between the paper and the frame so the schema differentiates
    *  Floating from Standard (which has a passepartout instead). */
   backboardBorderCm?: number
   backboardColorHex?: string
-  /** Limited editions only: the number ("1/50") printed bottom-left in
-   *  the paper margin, in the Caveat hand it ships with. Absent = nothing. */
+  /** Limited editions only: the edition mark printed bottom-left in the paper
+   *  margin, in the Caveat hand it ships with. A PLACEHOLDER ("n/50") — the
+   *  buyer's real number is allocated at payment. Absent = nothing. */
   editionLabel?: string
 }
 
@@ -57,17 +64,19 @@ export const SizeSchema = ({
   showFrame,
   imageUrl,
   paperBorderCm = 0,
+  paperBorderYCm = paperBorderCm,
   backboardBorderCm = 0,
   backboardColorHex = '#f6f3ec',
   editionLabel,
 }: SizeSchemaProps) => {
   const effectivePaperBorder = Math.max(paperBorderCm, 0)
+  const effectivePaperBorderY = Math.max(paperBorderYCm, 0)
   const effectiveMatting = showFrame ? mattingBorderCm : 0
   const effectiveFrame = showFrame ? moldingWidthCm : 0
   const effectiveBackboard = showFrame ? Math.max(backboardBorderCm, 0) : 0
 
   const paperWidthCm = printWidthCm + effectivePaperBorder * 2
-  const paperHeightCm = printHeightCm + effectivePaperBorder * 2
+  const paperHeightCm = printHeightCm + effectivePaperBorderY * 2
   // Floating frame: backboard sits between the paper and the moulding.
   // Standard frame: backboard is 0, mat takes its place.
   const backboardWidthCm = paperWidthCm + effectiveBackboard * 2
@@ -77,10 +86,8 @@ export const SizeSchema = ({
   const overallWidthCm = matWidthCm + effectiveFrame * 2
   const overallHeightCm = matHeightCm + effectiveFrame * 2
 
-  // Match the size-input precision (0.1 cm step): show one decimal
-  // when the value isn't a whole cm, otherwise drop the trailing .0.
-  // Keeps "22 cm" tidy and "22.4 cm" honest.
-  const formatDim = (cm: number) => `${Number.isInteger(cm) ? cm : cm.toFixed(1)} cm`
+  // Shared with every other surface that writes a length — see formatCm.
+  const formatDim = (cm: number) => `${formatCm(cm)} cm`
 
   // Square viewBox so portrait and landscape renders get the same visual
   // budget. Scaling by the *longest* side means a 30×20 print looks the
@@ -107,17 +114,23 @@ export const SizeSchema = ({
     effectiveBackboard > 0 ? Math.max(effectiveBackboard * rawScale, MIN_BACKBOARD_PX) : 0
   const paperBorderW =
     effectivePaperBorder > 0 ? Math.max(effectivePaperBorder * rawScale, MIN_PAPER_PX) : 0
+  // Vertical companion to paperBorderW — same rawScale, same floor, so
+  // the sheet stays a rectangle of the right proportions rather than
+  // skewing (each axis MUST share rawScale; never scale independently).
+  const paperBorderH =
+    effectivePaperBorderY > 0 ? Math.max(effectivePaperBorderY * rawScale, MIN_PAPER_PX) : 0
 
   // Re-fit the print (image) so the exaggerated borders still leave room
   // inside the viewBox. The image itself stays proportional to real
   // dimensions, only the surrounding layers are nudged up to a min size.
-  const borderPx = (frameW + matBorderW + backboardW + paperBorderW) * 2
+  // Use the larger of the two paper borders so the layout still fits.
+  const borderPx = (frameW + matBorderW + backboardW + Math.max(paperBorderW, paperBorderH)) * 2
   const longestPrintCm = Math.max(printWidthCm, printHeightCm)
   const printScale = (Math.min(availableW, availableH) - borderPx) / longestPrintCm
   const printW = printWidthCm * printScale
   const printH = printHeightCm * printScale
   const paperW = printW + paperBorderW * 2
-  const paperH = printH + paperBorderW * 2
+  const paperH = printH + paperBorderH * 2
   const backboardSchemaW = paperW + backboardW * 2
   const backboardSchemaH = paperH + backboardW * 2
   const matW = backboardSchemaW + matBorderW * 2
@@ -135,25 +148,41 @@ export const SizeSchema = ({
   const paperX = backboardX + backboardW
   const paperY = backboardY + backboardW
   const printX = paperX + paperBorderW
-  const printY = paperY + paperBorderW
+  const printY = paperY + paperBorderH
 
   // "Outer" arrows are shown when any layer surrounds the image — frame,
-  // mat, backboard, or paper border. Otherwise the diagram is just the
-  // bare image.
+  // mat, backboard, or paper border (either axis). Otherwise the diagram
+  // is just the bare image.
   const hasOuter =
-    showFrame || effectiveMatting > 0 || effectiveBackboard > 0 || effectivePaperBorder > 0
+    showFrame ||
+    effectiveMatting > 0 ||
+    effectiveBackboard > 0 ||
+    effectivePaperBorder > 0 ||
+    effectivePaperBorderY > 0
 
-  // Edition number sizing — fixed physical size + gap (see constants above),
-  // converted to schema px via the print's own scale (so it reflects the real
-  // number-to-print ratio, like the 3D), capped to stay inside the margin.
+  // Edition number — a fixed physical em size (see editionNumberMetrics),
+  // converted to schema px via the print's own scale so it reflects the real
+  // number-to-print ratio, like the 3D. The number sits BELOW the image, so
+  // it's bounded by the vertical (paperBorderH) border, not the horizontal
+  // one. A 7 px floor keeps it legible on a big print where the real ratio
+  // would render it sub-pixel.
   const editionFontPx = Math.max(
     7,
-    Math.min(EDITION_NUMBER_HEIGHT_CM * printScale, paperBorderW * 0.8),
+    Math.min(EDITION_NUMBER_FONT_SIZE_CM * printScale, paperBorderH * 0.8),
   )
-  const editionGapPx = Math.min(
-    EDITION_NUMBER_GAP_CM * printScale,
-    Math.max(0, paperBorderW - editionFontPx),
+  // Placed by its INK, not its baseline: the visual top of the glyphs sits
+  // `clearance` below the image and their left edge lines up with the image's
+  // own left edge. The clearance is clamped to whatever the border has left
+  // after the ink, so the number can't spill past the sheet edge.
+  const editionInkHeightPx = editionFontPx * EDITION_INK_HEIGHT_EM
+  const editionClearancePx = Math.max(
+    0,
+    Math.min(EDITION_NUMBER_CLEARANCE_CM * printScale, paperBorderH - editionInkHeightPx),
   )
+  const editionX = editionLabel
+    ? printX - editionLeftBearingEm(editionLabel) * editionFontPx
+    : printX
+  const editionBaselineY = printY + printH + editionClearancePx + EDITION_INK_TOP_EM * editionFontPx
 
   return (
     <div className={styles.schemaWrapper}>
@@ -194,9 +223,10 @@ export const SizeSchema = ({
         )}
 
         {/* Paper sheet — white border extending around the image. Visible
-            when paperBorderCm > 0. A thin stroke shows the sheet boundary
-            when nothing else is around it. */}
-        {effectivePaperBorder > 0 && (
+            when paperBorderCm > 0 or paperBorderYCm > 0 — a fixed-sheet
+            edition can have a zero border on one axis. A thin stroke shows
+            the sheet boundary when nothing else is around it. */}
+        {(effectivePaperBorder > 0 || effectivePaperBorderY > 0) && (
           <rect
             x={paperX}
             y={paperY}
@@ -235,11 +265,13 @@ export const SizeSchema = ({
         )}
 
         {/* Limited-edition number — bottom-left, in the paper margin just
-            below the image, in the Caveat hand it ships with. */}
-        {editionLabel && paperBorderW > 0 && (
+            below the image, in the Caveat hand it ships with. Positioned by
+            its ink box (see editionNumberMetrics) so it reads flush-left with
+            the image and tight under it. */}
+        {editionLabel && paperBorderH > 0 && (
           <text
-            x={printX}
-            y={printY + printH + editionGapPx + editionFontPx * 0.72}
+            x={editionX}
+            y={editionBaselineY}
             textAnchor="start"
             dominantBaseline="alphabetic"
             fill="#111111"

@@ -9,6 +9,7 @@ import {
   emailParagraph,
 } from './components'
 import { renderEmailLayout } from './layout'
+import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -31,7 +32,7 @@ export function renderOrderDeliveredEmail(args: OrderDeliveredArgs): {
   const firstName = escapeHtml(args.buyerName.split(' ')[0] || 'there')
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)
-  const safeOrderId = escapeHtml(args.orderId.slice(0, 8)).toUpperCase()
+  const safeOrderId = formatOrderRef(args.orderId)
 
   const body =
     emailHeading(`Your artwork has arrived, ${firstName}`) +
@@ -46,7 +47,7 @@ export function renderOrderDeliveredEmail(args: OrderDeliveredArgs): {
     ]) +
     emailDivider() +
     emailParagraph(
-      `If anything looks wrong &mdash; damaged in transit, mis-printed, or simply not what you expected &mdash; just reply to this email with a photo and we&rsquo;ll make it right.`,
+      `If anything looks wrong &mdash; damaged in transit, mis-printed, or simply not what you expected &mdash; just reply to this email with your unboxing photos or video, or a photo of the problem, and we&rsquo;ll make it right.`,
     ) +
     emailParagraph(
       `Otherwise, enjoy living with the work. The artist will receive their payout shortly.`,

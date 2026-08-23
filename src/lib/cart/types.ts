@@ -21,9 +21,6 @@ export type CartItem = {
   artistName: string
   /** Specs snapshot captured at add time — drives CartLine display. */
   specsSummary: SpecsSummary
-  // Limited-edition cart hold (filled by the reservation step in a later task; optional now).
-  editionNumberIds?: string[]
-  holdExpiresAt?: number // epoch ms, server-provided
 }
 
 export type CartItemTotals = {

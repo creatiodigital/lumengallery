@@ -14,6 +14,14 @@ import {
   getEffectiveSizeCm,
 } from '@/lib/print-providers'
 
+import {
+  EDITION_INK_HEIGHT_EM,
+  EDITION_INK_TOP_EM,
+  EDITION_NUMBER_CLEARANCE_CM,
+  EDITION_NUMBER_FONT_SIZE_CM,
+  editionLeftBearingEm,
+} from '../editionNumberMetrics'
+
 import { BoxPreview } from './preview/BoxPreview'
 import { FloatingPreview } from './preview/FloatingPreview'
 import { PaperSheet } from './preview/parts/PaperSheet'
@@ -34,19 +42,10 @@ interface PreviewArtworkProps {
 // falls back to its default font if it's missing.
 const EDITION_FONT_URL = '/fonts/caveat-regular.ttf'
 
-// Simulates a real edition number an artist pencils in the bottom margin:
-// a roughly constant physical size no matter how big the print is. troika
-// renders digits at ~70% of the em size, so 0.022m em ≈ 15mm digits —
-// legible in-preview while still reading as hand-written. FIXED, never
-// scaled to the print's dimensions; only shrunk if the paper border is too
-// thin to hold it (the border is a fixed cm per variant, itself independent
-// of the print size). Kept in sync with EDITION_NUMBER_HEIGHT_CM (SizeSchema).
-const EDITION_NUMBER_HEIGHT_M = 0.022
-
-// Fixed gap from the bottom edge of the image to the number's baseline so the
-// spacing stays constant across prints — it does NOT scale with the print or
-// the border. Capped only so the number can't fall outside a thin border.
-const EDITION_NUMBER_GAP_M = 0.014
+// Em size of the pencilled number, metres — the shared physical size the 2D
+// schema uses too, so the two previewers show the same number-to-print ratio.
+const EDITION_NUMBER_FONT_SIZE_M = EDITION_NUMBER_FONT_SIZE_CM / 100
+const EDITION_NUMBER_CLEARANCE_M = EDITION_NUMBER_CLEARANCE_CM / 100
 
 const ARTWORK_Z = 0.012
 
@@ -107,10 +106,16 @@ export const PreviewArtwork = ({
   if (!effectiveSize) return null
 
   const borderCm = getEffectiveBorderCm(config, 'border')
+  // Vertical (top/bottom) border — only diverges from the horizontal
+  // value for fixed-sheet limited editions, where the sheet's shape
+  // differs from the artwork's (see variantToWizardConfig.ts). Falls
+  // back to the horizontal value everywhere else so nothing diverges.
+  const borderYCm = config.borders?.['border']?.verticalCm ?? borderCm
   const matCm = getEffectiveMatCm(catalog, config)
 
   const framed = visuals.framed === true
   const paperBorderM = borderCm / 100
+  const paperBorderYM = borderYCm / 100
   const mouldingWidthM = (visuals.mouldingWidthCm ?? DEFAULT_MOULDING_WIDTH_CM) / 100
   const mouldingDepthM = (visuals.mouldingDepthCm ?? DEFAULT_MOULDING_DEPTH_CM) / 100
   const paperRoughness = visuals.paperRoughness ?? DEFAULT_PAPER_ROUGHNESS
@@ -125,8 +130,11 @@ export const PreviewArtwork = ({
   // paper sheet sits behind the print, extending outward by the
   // border on every side — same convention as the framed previews.
   if (!framed) {
+    // Paper sheet, metres — horizontal and vertical borders each apply
+    // to their own axis so a fixed-sheet edition draws the real sheet
+    // shape instead of a uniform-border approximation.
     const paperWidthM = widthM + paperBorderM * 2
-    const paperHeightM = heightM + paperBorderM * 2
+    const paperHeightM = heightM + paperBorderYM * 2
     return (
       <group position={[0, 0, ARTWORK_Z]}>
         {paperBorderM > 0 && (
@@ -139,23 +147,45 @@ export const PreviewArtwork = ({
           roughness={paperRoughness}
         />
         {/* Limited-edition number — bottom-left, in the paper margin just
-            below the image, in the Caveat hand it ships with. */}
-        {editionLabel && paperBorderM > 0 && (
-          <Text
-            font={EDITION_FONT_URL}
-            color="#111111"
-            anchorX="left"
-            anchorY="middle"
-            fontSize={Math.min(EDITION_NUMBER_HEIGHT_M, paperBorderM * 0.7)}
-            position={[
-              -widthM / 2,
-              -(heightM / 2 + Math.min(EDITION_NUMBER_GAP_M, paperBorderM * 0.6)),
-              0.002,
-            ]}
-          >
-            {editionLabel}
-          </Text>
-        )}
+            below the image, in the Caveat hand it ships with. The number
+            sits in the BOTTOM margin, so it's bounded by the vertical
+            border, not the horizontal one.
+
+            Placed by the glyphs' INK box (see editionNumberMetrics), not by
+            troika's text box: anchoring the box at the image's edges leaves
+            Caveat's own side bearings as visible slack, which reads as the
+            number being indented from the left edge and floating below the
+            image. Anchoring at the baseline and offsetting by the measured
+            ink instead puts the ink's left edge flush with the image's left
+            edge and its top a hair under the image, at every print size. */}
+        {editionLabel &&
+          paperBorderYM > 0 &&
+          (() => {
+            const fontSizeM = Math.min(EDITION_NUMBER_FONT_SIZE_M, paperBorderYM * 0.7)
+            // Clamped to what the border has left below the ink, so the
+            // descending slash can never cross the sheet's bottom edge.
+            const clearanceM = Math.max(
+              0,
+              Math.min(
+                EDITION_NUMBER_CLEARANCE_M,
+                paperBorderYM - fontSizeM * EDITION_INK_HEIGHT_EM,
+              ),
+            )
+            const baselineY = -(heightM / 2 + clearanceM + fontSizeM * EDITION_INK_TOP_EM)
+            const inkLeftX = -widthM / 2 - editionLeftBearingEm(editionLabel) * fontSizeM
+            return (
+              <Text
+                font={EDITION_FONT_URL}
+                color="#111111"
+                anchorX="left"
+                anchorY="top-baseline"
+                fontSize={fontSizeM}
+                position={[inkLeftX, baselineY, 0.002]}
+              >
+                {editionLabel}
+              </Text>
+            )
+          })()}
       </group>
     )
   }
@@ -174,6 +204,7 @@ export const PreviewArtwork = ({
           printWidthM={widthM}
           printHeightM={heightM}
           paperBorderM={paperBorderM}
+          paperBorderYM={paperBorderYM}
           mouldingWidthM={mouldingWidthM}
           mouldingDepthM={mouldingDepthM}
           frameMaterial={frameMaterial}
@@ -185,6 +216,7 @@ export const PreviewArtwork = ({
           printWidthM={widthM}
           printHeightM={heightM}
           paperBorderM={paperBorderM}
+          paperBorderYM={paperBorderYM}
           mouldingWidthM={mouldingWidthM}
           mouldingDepthM={mouldingDepthM}
           frameMaterial={frameMaterial}
@@ -196,6 +228,7 @@ export const PreviewArtwork = ({
           printWidthM={widthM}
           printHeightM={heightM}
           paperBorderM={paperBorderM}
+          paperBorderYM={paperBorderYM}
           matBorderM={matBorderM}
           matHex={matHex}
           mouldingWidthM={mouldingWidthM}
@@ -211,6 +244,7 @@ export const PreviewArtwork = ({
           printWidthM={widthM}
           printHeightM={heightM}
           paperBorderM={paperBorderM}
+          paperBorderYM={paperBorderYM}
           matBorderM={matBorderM}
           matHex={matHex}
           mouldingWidthM={mouldingWidthM}

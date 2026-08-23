@@ -408,11 +408,8 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
                   Sent with tracked delivery &mdash; we&rsquo;ll email you the tracking when
                   it&rsquo;s on its way.
                 </li>
-                <li>
-                  Delivery is typically 1&ndash;2 weeks in Europe and 2&ndash;4 weeks
-                  internationally (international orders may be subject to customs and local import
-                  duties).
-                </li>
+                <li>Delivery is typically 1&ndash;2 weeks.</li>
+                <li>Orders may be subject to customs and local import duties.</li>
               </ul>
             </div>
             <p className={styles.detailTerms}>

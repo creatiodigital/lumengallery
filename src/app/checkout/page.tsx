@@ -37,7 +37,15 @@ const Checkout = async ({ searchParams }: CheckoutPageProps) => {
   // Restrict the address form to the provider's shippable countries (the same
   // set the server-side validation enforces) so a buyer can't pick an
   // unshippable destination and hit a rejection. Single provider today.
-  return <CartCheckout supportedCountries={TPS_SUPPORTED_COUNTRIES} />
+  // Whether address autocomplete is available is decided HERE, on the server,
+  // from the presence of a server-only Maps key. The key itself never reaches
+  // the browser — see /api/checkout/address-lookup for why.
+  return (
+    <CartCheckout
+      supportedCountries={TPS_SUPPORTED_COUNTRIES}
+      addressAutocomplete={Boolean(process.env.GOOGLE_MAPS_API_KEY)}
+    />
+  )
 }
 
 export default Checkout

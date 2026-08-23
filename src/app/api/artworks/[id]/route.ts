@@ -5,7 +5,8 @@ import { deleteFromR2 } from '@/lib/r2'
 
 import { isAdminOrAbove, requireOwnership } from '@/lib/authUtils'
 import { PUBLIC_ARTWORK_OMIT } from '@/lib/artworkFields'
-import { saveLimitedVariants, type IncomingVariant } from '@/lib/editions/saveLimitedVariants'
+import { saveLimitedVariants } from '@/lib/editions/saveLimitedVariants'
+import { parseIncomingVariants } from '@/lib/editions/parseIncomingVariants'
 import { TPS_FRAME_TYPES, TPS_PAPERS, TPS_WINDOW_MOUNTS } from '@/lib/print-providers/printspace'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 import { Prisma } from '@/generated/prisma'
@@ -79,26 +80,6 @@ function sanitizePrintRecommendations(
   return out.length === 0 ? null : { paper: out }
 }
 
-// Coerce raw JSON variant rows from the dashboard into the typed shape
-// `saveLimitedVariants` validates. Numbers come over the wire as strings
-// from the form inputs; everything is re-validated server-side.
-function parseIncomingVariants(raw: unknown[]): IncomingVariant[] {
-  return raw.map((item) => {
-    const v = (item ?? {}) as Record<string, unknown>
-    return {
-      id: typeof v.id === 'string' && v.id.length > 0 ? v.id : undefined,
-      name: typeof v.name === 'string' ? v.name : '',
-      paperId: typeof v.paperId === 'string' ? v.paperId : '',
-      widthCm: Number(v.widthCm),
-      heightCm: Number(v.heightCm),
-      borderCm: Number(v.borderCm),
-      editionSize: Number(v.editionSize),
-      // Artist types price in euros; persist cents. Round to avoid FP drift.
-      priceCents: Math.round(Number(v.priceEuros) * 100) || 0,
-    }
-  })
-}
-
 // The exhibition profile API (/api/exhibitions/by-url/[url]) caches its
 // merged snapshot+live response under `exhibition-${url}` with a 1-hour
 // revalidate window. Artwork edits (title, image, etc.) would otherwise
@@ -134,7 +115,29 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       return NextResponse.json({ error: 'Artwork not found' }, { status: 404 })
     }
 
-    return NextResponse.json(artwork)
+    // How many copies of each variant are already committed (reserved or sold).
+    // The dashboard needs this to tell the truth about what can be deleted: a
+    // variant an admin has unblocked shows no "Currently Selling" badge, yet
+    // still can't be removed if a real order owns one of its numbers. Without
+    // it the editor offers a Delete button the server can only refuse.
+    const variantIds = artwork.limitedVariants.map((v) => v.id)
+    const committedByVariant = new Map<string, number>()
+    if (variantIds.length > 0) {
+      const grouped = await prisma.editionNumber.groupBy({
+        by: ['variantId'],
+        where: { variantId: { in: variantIds }, state: { in: ['reserved', 'sold'] } },
+        _count: { _all: true },
+      })
+      for (const g of grouped) committedByVariant.set(g.variantId, g._count._all)
+    }
+
+    return NextResponse.json({
+      ...artwork,
+      limitedVariants: artwork.limitedVariants.map((v) => ({
+        ...v,
+        committedCount: committedByVariant.get(v.id) ?? 0,
+      })),
+    })
   } catch (error) {
     console.error('[GET /api/artworks/[id]] error:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
@@ -346,6 +349,9 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 }
 
 // DELETE artwork (requires auth + ownership)
+/** Shape stored in Exhibition.autofocusGroups (JSON, hence hand-typed here). */
+type AutofocusGroupJson = { id: string; name: string; artworkIds: string[] }
+
 export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params
@@ -411,6 +417,32 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
       } catch (error) {
         console.warn('Failed to delete video blob:', error)
       }
+    }
+
+    // Strip the artwork from every exhibition's autofocus groups BEFORE the
+    // row goes. `autofocusGroups` is a JSON column holding raw artworkIds, so
+    // no foreign key reaches inside it and the cascade below cannot clean it —
+    // without this, every exhibition that grouped this piece keeps a dead id
+    // forever. Surgical on purpose: the group survives with its other members,
+    // because losing one artwork is not a reason to lose the grouping.
+    const groupedIn = await prisma.exhibition.findMany({
+      where: { autofocusGroups: { not: Prisma.DbNull } },
+      select: { id: true, autofocusGroups: true },
+    })
+    for (const ex of groupedIn) {
+      const groups = ex.autofocusGroups as unknown as AutofocusGroupJson[] | null
+      if (!Array.isArray(groups)) continue
+      if (!groups.some((g) => Array.isArray(g?.artworkIds) && g.artworkIds.includes(id))) continue
+      const cleaned = groups.map((g) => ({
+        ...g,
+        artworkIds: Array.isArray(g?.artworkIds)
+          ? g.artworkIds.filter((aid) => aid !== id)
+          : g?.artworkIds,
+      }))
+      await prisma.exhibition.update({
+        where: { id: ex.id },
+        data: { autofocusGroups: cleaned as unknown as Prisma.InputJsonValue },
+      })
     }
 
     // Delete artwork record

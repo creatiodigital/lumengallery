@@ -8,6 +8,7 @@ import { RichText } from '@/components/ui/RichText'
 import { Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
 import { InquireSidebar } from '@/components/ui/InquireSidebar'
+import { isArtworkPurchasable, isEditionSoldOut } from '@/lib/editions/printable'
 import { Share } from '@/components/ui/Share'
 import { setPrintReturnUrl } from '@/components/checkout/printReturnUrl'
 import { getPublicPurchasesPaused } from '@/app/prints/actions'
@@ -38,6 +39,15 @@ export type Artwork = {
   originalHeight?: number | null
   printEnabled?: boolean | null
   printPriceCents?: number | null
+  /** 'open' | 'limited'. Absent = treated as open, which is the pre-limited
+   *  behaviour: purchasability falls back to the artwork-level price. */
+  editionType?: string | null
+  /** Variants matching LIVE_VARIANT_WHERE. The ONLY thing that makes a limited
+   *  edition buyable — it carries no artwork-level price. */
+  liveVariantCount?: number | null
+  /** EditionNumbers still available across those variants. 0 with live variants
+   *  present = sold out, which is a different thing from unpurchasable. */
+  availableNumberCount?: number | null
 }
 
 const FALLBACK_WIDTH = 800
@@ -64,6 +74,12 @@ interface ArtworkDetailBodyProps {
 export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) => {
   const router = useRouter()
   const [isInquireOpen, setIsInquireOpen] = useState(false)
+
+  const soldOut = isEditionSoldOut({
+    editionType: artwork.editionType ?? 'open',
+    liveVariantCount: artwork.liveVariantCount ?? 0,
+    availableNumberCount: artwork.availableNumberCount ?? 0,
+  })
 
   // Purchases kill switch (admin dashboard). Read client-side because this
   // body is shared by the artwork page and the in-exhibition modal — one
@@ -139,7 +155,26 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
           onClick={() => setIsInquireOpen(true)}
           className={styles.inquireButton}
         />
-        {!purchasesPaused && artwork.printEnabled && artwork.printPriceCents ? (
+        {/* `isArtworkPurchasable` and not a `printPriceCents` check: a LIMITED
+            edition has no artwork-level price, so gating on it hid the button
+            on every limited work — buyable, listed on /prints, and with no way
+            to buy it from its own page or from inside an exhibition. That is
+            the exact failure printable.ts was written to end; this surface was
+            missed when the others were fixed. */}
+        {/* Sold out is stated, not hidden. The edition is still real and still
+            worth seeing — and an "Order Print" button on a sold-out edition
+            walks the buyer into a wizard that refuses them. */}
+        {!purchasesPaused && soldOut ? (
+          <Text as="p" className={styles.soldOut}>
+            Sold out
+          </Text>
+        ) : !purchasesPaused &&
+          isArtworkPurchasable({
+            printEnabled: !!artwork.printEnabled,
+            editionType: artwork.editionType ?? 'open',
+            printPriceCents: artwork.printPriceCents ?? null,
+            liveVariantCount: artwork.liveVariantCount ?? 0,
+          }) ? (
           <>
             <Button
               variant="primary"

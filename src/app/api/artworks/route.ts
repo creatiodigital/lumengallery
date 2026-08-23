@@ -90,10 +90,29 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        // Live variants only — `published && blocked` is what buyers can
+        // actually reserve against (an unblocked variant is paused from sale).
+        limitedVariants: {
+          where: { published: true, blocked: true, priceCents: { not: null } },
+          select: { id: true },
+        },
       },
     })
 
-    return NextResponse.json(artworks)
+    // `sellingNow` — is this artwork buyable as a print RIGHT NOW? Same rule
+    // the checkout enforces (`validateAndPriceItem`): print sales on, and
+    // either a live priced variant (limited) or an artwork-level price (open).
+    // Only images print, so nothing else can qualify.
+    const withSellingState = artworks.map((a) => {
+      const { limitedVariants, ...rest } = a
+      const sellingNow =
+        a.artworkType === 'image' &&
+        a.printEnabled === true &&
+        (a.editionType === 'limited' ? limitedVariants.length > 0 : Boolean(a.printPriceCents))
+      return { ...rest, sellingNow }
+    })
+
+    return NextResponse.json(withSellingState)
   } catch (error) {
     console.error('[GET /api/artworks] error:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })

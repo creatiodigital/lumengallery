@@ -10,8 +10,11 @@ import { PageLayout } from '@/components/ui/PageLayout'
 import { Text } from '@/components/ui/Typography'
 import { lineTotal } from '@/lib/cart/cartMath'
 import type { CartItem } from '@/lib/cart/types'
+import { hasLimitedItems } from '@/lib/cart/cartMath'
+import { LIMITED_NOT_RESERVED_NOTICE } from '@/lib/cart/notices'
 import { useCart } from '@/lib/cart/useCart'
 import type { CartLikeItem, CartTotals } from '@/lib/cart/validateCart'
+import { vatLabel } from '@/lib/checkout/vatLabel'
 import { formatEuro } from '@/lib/print-providers'
 import { getCountryName } from '@/lib/print-providers/dialCodes'
 import type { ShippingAddress } from '@/components/checkout/PrintCheckout/createPaymentIntent'
@@ -39,39 +42,37 @@ const toCartLikeItem = (item: CartItem): CartLikeItem => ({
 
 type Step = 'address' | 'review' | 'payment' | 'confirmation'
 
-// Mirror the cart page heartbeat so an engaged buyer's limited-edition hold
-// doesn't lapse while they fill in the address / review the order. Well under
-// the ~15-min server TTL; the server still owns the clock. Kept identical to
-// CartPage.HOLD_HEARTBEAT_MS.
-const HOLD_HEARTBEAT_MS = 5 * 60 * 1000
-
 type CartCheckoutProps = {
   /** Provider-shippable countries — restricts the address country picker so a
    *  buyer can't choose a destination the server-side validation will reject. */
   supportedCountries: string[]
+  /** Whether address autocomplete is configured. Decided on the server — the
+   *  Maps key never reaches the browser. */
+  addressAutocomplete?: boolean
 }
 
-export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
-  const { items, extendHolds, clear } = useCart()
-
-  // Keep limited-edition holds alive on the checkout surface too. Without this
-  // a buyer could sit on /checkout past the TTL and only discover the loss at
-  // Task 8's submit-time re-verify. The visible per-line HoldCountdown (below)
-  // mirrors the server's expiresAt so expiry is never silent here.
-  const hasLimitedHolds = items.some(
-    (item) => item.editionType === 'limited' && !!item.editionNumberIds?.length,
+/**
+ * Rewrite /checkout to carry ONLY the PaymentIntent id.
+ *
+ * The id is what lets a reload rebuild the confirmation. Stripe's redirect also
+ * appends `payment_intent_client_secret` and `redirect_status`; the client
+ * secret can confirm the PaymentIntent, so it has no business sitting in a URL
+ * the buyer may bookmark, copy to us or paste into a support chat. It is
+ * dropped here rather than merely ignored.
+ */
+function keepOnlyPaymentIntentInUrl(paymentIntentId: string): void {
+  window.history.replaceState(
+    null,
+    '',
+    `/checkout?payment_intent=${encodeURIComponent(paymentIntentId)}`,
   )
-  const extendHoldsRef = useRef(extendHolds)
-  useEffect(() => {
-    extendHoldsRef.current = extendHolds
-  }, [extendHolds])
-  useEffect(() => {
-    if (!hasLimitedHolds) return
-    const id = window.setInterval(() => {
-      void extendHoldsRef.current()
-    }, HOLD_HEARTBEAT_MS)
-    return () => window.clearInterval(id)
-  }, [hasLimitedHolds])
+}
+
+export const CartCheckout = ({
+  supportedCountries,
+  addressAutocomplete = false,
+}: CartCheckoutProps) => {
+  const { items, clear, removeItem } = useCart()
 
   // Becomes true the moment payment is authorized (no-redirect path) or a 3DS
   // return is verified. Suppresses the empty-cart view after clear() empties
@@ -92,39 +93,52 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
   const [lineErrors, setLineErrors] = useState<Record<string, string>>({})
   const [payError, setPayError] = useState<string | null>(null)
 
-  // 3DS return path. When a card needs authentication, Stripe redirects to
-  // return_url (/checkout) with ?payment_intent=... Verify it server-side
-  // (never trust redirect_status), then clear the cart and land on the
-  // confirmation step. Runs once on mount; the URL param presence gates it so
-  // a normal /checkout visit is unaffected.
+  // Redirect return path. Stripe sends the buyer back to return_url
+  // (/checkout) with ?payment_intent=... — after 3DS on a card, and ALWAYS for
+  // a redirect-based method like PayPal. Verify it server-side (never trust
+  // redirect_status), then clear the cart and land on the confirmation step.
+  //
+  // This is also the reload path: the id stays in the URL precisely so a
+  // refresh re-enters here and rebuilds the confirmation. Re-entry is
+  // idempotent — the PI is re-read from Stripe, the order is fetched (or
+  // created) by reference, and clear() no-ops on an emptied cart.
   const handledReturnRef = useRef(false)
+  // True from the first render after mount when the URL names a PaymentIntent,
+  // so the empty-cart view below yields while we verify. The cart IS empty on a
+  // reload — it was cleared when the order was placed — and showing "your cart
+  // is empty" over a completed order is exactly the bug this path fixes.
+  const [restoringOrder, setRestoringOrder] = useState(false)
   useEffect(() => {
     if (handledReturnRef.current) return
     handledReturnRef.current = true
     const params = new URLSearchParams(window.location.search)
     const returnedPi = params.get('payment_intent')
     if (!returnedPi) return
+    setRestoringOrder(true)
     void (async () => {
       const result = await verifyCartPaymentAction(returnedPi)
       if (!result.ok) {
         // Auth failed / unknown PI — drop the buyer back to the address step
         // with a retry message rather than a false success.
+        setRestoringOrder(false)
         setPayError('Payment could not be completed. Please try again.')
+        window.history.replaceState(null, '', '/checkout')
         return
       }
       paidRef.current = true
       setPaymentIntentId(result.paymentIntentId)
       setStep('confirmation')
+      setRestoringOrder(false)
       await clear()
-      // Strip the Stripe params so a refresh doesn't re-trigger this path.
-      window.history.replaceState(null, '', '/checkout')
+      keepOnlyPaymentIntentInUrl(result.paymentIntentId)
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // After a successful payment the cart is emptied — but we must keep showing
-  // the confirmation, not the "empty cart" view. paidRef gates that.
-  if (items.length === 0 && !paidRef.current) {
+  // the confirmation, not the "empty cart" view. paidRef gates that, and
+  // restoringOrder covers the reload, where paidRef starts false again.
+  if (items.length === 0 && !paidRef.current && !restoringOrder) {
     return (
       <PageLayout>
         <PageHeader pageTitle="Checkout" />
@@ -195,20 +209,20 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
     setPayError(null)
     try {
       const result = await createCartPaymentIntent({
-        // The PI call needs each limited line's client-held edition numbers
-        // so it can reuse them instead of minting fresh stock; carry them
-        // through (toCartLikeItem deliberately drops them for the cheaper
-        // address-step revalidation).
-        items: items.map((item) => ({
-          ...toCartLikeItem(item),
-          editionNumberIds: item.editionNumberIds,
-        })),
+        // Nothing is held client-side: the PI call claims every limited
+        // number itself, atomically, and is the first and only moment stock
+        // is decided.
+        items: items.map(toCartLikeItem),
         address,
       })
       if (!result.ok) {
         // Sold-out / validation failure: surface inline and send the buyer
         // back to the address step where the per-line cart context shows
         // which item is the problem.
+        // Sold out mid-checkout: drop exactly that line and let the buyer
+        // continue with the rest. The message names the edition, so the cart
+        // changing under them is explained rather than mysterious.
+        if (result.soldOutLineId) await removeItem(result.soldOutLineId)
         setPayError(result.error)
         setStep('address')
         return
@@ -233,6 +247,10 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
     setPaymentIntentId(confirmedPaymentIntentId)
     setStep('confirmation')
     void clear()
+    // Same URL contract as the redirect path, so a reload rebuilds the
+    // confirmation here too. Without it this branch — a card needing no 3DS —
+    // held the order only in memory, and one refresh lost the reference.
+    keepOnlyPaymentIntentInUrl(confirmedPaymentIntentId)
   }
 
   return (
@@ -258,6 +276,13 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
                 {orderError}
               </Text>
             )}
+            {/* Said again here, at the last screen before money moves: a cart
+                can sit for days, and availability moves while it does. */}
+            {hasLimitedItems(items) && (
+              <Text as="p" size="sm" className={styles.limitedNotice}>
+                {LIMITED_NOT_RESERVED_NOTICE}
+              </Text>
+            )}
             {Object.keys(lineErrors).length > 0 && (
               <Text as="p" size="sm" className={styles.orderError}>
                 Some items in your order are no longer available. Please update your cart and try
@@ -281,6 +306,7 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
               submitLabel="Continue to review"
               countryCodes={supportedCountries}
               initialAddress={address}
+              addressAutocomplete={addressAutocomplete}
             />
           </div>
         </div>
@@ -348,7 +374,7 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
                 </div>
                 <div className={styles.totalRow}>
                   <Text as="span" size="sm" className={styles.totalLabel}>
-                    VAT
+                    {vatLabel(totals.vatRate)}
                   </Text>
                   <Text as="span" size="sm" className={styles.totalValue}>
                     {formatEuro(totals.customerVatCents)}
@@ -418,7 +444,7 @@ const CheckoutLine = ({ item, error }: CheckoutLineProps) => {
   const { lineItemCents } = lineTotal(item)
   return (
     <div className={`${styles.line} ${error ? styles.lineError : ''}`}>
-      <CartItemDetails item={item} thumbHeight={88} specsVisible={3} error={error} />
+      <CartItemDetails item={item} thumbHeight={88} error={error} />
 
       <div className={styles.qtyCol}>
         <div className={styles.qtyRow}>
@@ -432,7 +458,7 @@ const CheckoutLine = ({ item, error }: CheckoutLineProps) => {
 
         <div className={styles.priceBlock}>
           <Text as="span" size="sm" className={styles.priceLabel}>
-            Total Price
+            Base price
           </Text>
           <Text as="span" font="serif" size="lg" className={styles.priceValue}>
             {formatEuro(lineItemCents)}

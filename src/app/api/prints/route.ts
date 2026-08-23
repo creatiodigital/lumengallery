@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { purchasableArtworkWhere } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
@@ -8,8 +9,9 @@ export async function GET() {
   try {
     const artworks = await prisma.artwork.findMany({
       where: {
-        printEnabled: true,
-        printPriceCents: { not: null },
+        // Same purchasability rule as the catalog and checkout — a limited
+        // edition has no artwork-level price, so gating on it hid them all.
+        ...purchasableArtworkWhere(),
         user: { published: true },
       },
       select: {

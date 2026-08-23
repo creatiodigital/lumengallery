@@ -11,6 +11,7 @@ import { unstable_cache } from 'next/cache'
 import { requireAdminAction } from '@/lib/authUtils'
 import { fetchGa4Snapshot, isGa4Configured } from '@/lib/analytics/ga4'
 import { captureError } from '@/lib/observability/captureError'
+import { isArtworkPurchasable, LIVE_VARIANT_WHERE } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 
 export type DashboardAnalytics = {
@@ -49,6 +50,9 @@ async function fetchAndEnrich(): Promise<DashboardAnalytics> {
       name: true,
       printEnabled: true,
       printPriceCents: true,
+      editionType: true,
+      // Live priced variants — what makes a limited edition sellable.
+      _count: { select: { limitedVariants: { where: LIVE_VARIANT_WHERE } } },
       user: { select: { name: true, lastName: true } },
     },
   })
@@ -62,7 +66,15 @@ async function fetchAndEnrich(): Promise<DashboardAnalytics> {
       slug: row.slug,
       title: artwork.title || artwork.name,
       artistName: [artwork.user.name, artwork.user.lastName].filter(Boolean).join(' ').trim(),
-      sellsPrints: !!artwork.printEnabled && !!artwork.printPriceCents,
+      // Limited editions have no artwork-level price — they're priced per
+      // variant — so `printPriceCents` alone reported every one of them as not
+      // selling. Mirrors the catalog and checkout.
+      sellsPrints: isArtworkPurchasable({
+        printEnabled: artwork.printEnabled,
+        editionType: artwork.editionType,
+        printPriceCents: artwork.printPriceCents,
+        liveVariantCount: artwork._count?.limitedVariants ?? 0,
+      }),
       views: row.views,
     })
     if (topArtworks.length >= TOP_ARTWORKS_SHOWN) break

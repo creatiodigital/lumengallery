@@ -26,6 +26,39 @@
   @include breakpoint(lg) {
     gap: var(--space-8);
   }
+
+  // From two columns up, every card shares the SAME two rows — image, then
+  // caption — via subgrid, so the divider above the caption sits on one
+  // continuous line across the row. Bottom-aligning the cards (the flex
+  // fallback) can't do that: the divider then lands wherever each caption
+  // happens to start, so a work with no technique or no dimensions pushed its
+  // rule lower than its neighbour's.
+  @include breakpoint(md) {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 2;
+    // One column that FILLS the card. Without it the implicit column is
+    // `auto`-sized, so it shrank to the image and the inherited
+    // `justify-content: flex-end` pushed that track against the card's right
+    // edge — a portrait work then sat ~19px off-centre while a landscape one
+    // (which fills the width) looked fine. minmax(0, …) so a wide caption
+    // can't force the track past the column.
+    grid-template-columns: minmax(0, 1fr);
+    // MUST override the flex `align-items: center` above. Under grid that
+    // centres each item within its track, so a shorter caption sank by half
+    // the row's slack and its rule sat below its neighbour's — measured at
+    // exactly 12px for a 200px caption beside a 224px one. Stretching makes
+    // every caption start at the top of the shared row, which is what puts
+    // the rules on one line.
+    align-items: stretch;
+    // A subgrid inherits the parent's gutters; this restores the intended
+    // spacing INSIDE a card, leaving the parent's larger gap between rows.
+    row-gap: var(--space-6);
+  }
+
+  @include breakpoint(lg) {
+    row-gap: var(--space-8);
+  }
 }
 
 .imageWrapper {
@@ -35,6 +68,12 @@
   justify-content: center;
   margin-bottom: 0;
   flex-grow: 1;
+
+  // Inside the shared image row, sit on the row's baseline so a landscape work
+  // rests level with a portrait one beside it instead of floating mid-row.
+  @include breakpoint(md) {
+    align-self: end;
+  }
 }
 
 .image {
@@ -56,30 +95,51 @@
 
 .info {
   text-align: center;
-  padding-top: var(--space-5);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--color-border-default);
   width: 100%;
 
-  // Equal-height caption blocks keep multi-column rows aligned; in the
-  // single-column mobile layout this just adds dead space before the footer.
+  // The shared caption row (see .card subgrid) is what actually aligns these
+  // now; this only sets a floor so a sparse caption still gives the card some
+  // presence. In the single-column mobile layout it just adds dead space
+  // before the footer, so it stays scoped to md and up.
   @include breakpoint(md) {
-    min-height: 200px;
+    min-height: 96px;
   }
 }
 
 .artist {
   font-weight: 600;
-  margin-bottom: var(--space-1);
+  margin-bottom: 0;
   color: var(--color-text-primary);
+  line-height: 1.35;
 }
 
 .title {
   color: var(--color-text-primary);
-  margin-bottom: var(--space-3);
+  // Tight to the details below it — artist / title / technique are one block
+  // of identity, not separately spaced lines.
+  margin-bottom: var(--space-1);
+  line-height: 1.35;
 }
 
 .detail {
   color: var(--color-text-primary);
+  line-height: 1.35;
+}
+
+// The technique comes through RichText's `compact` variant, which carries
+// editorial leading (line-height 2) and a bottom margin — right for a
+// paragraph of prose, far too airy for the one line of it a card shows. It was
+// the single biggest source of slack in the caption. The doubled class
+// out-specifies `.richText.compact` without reaching for `!important`.
+.info .detail.detail {
+  margin-bottom: 0;
+
+  p {
+    margin-bottom: 0;
+    line-height: 1.35;
+  }
 }
 
 .viewDetailsLink {
@@ -91,7 +151,9 @@
 // Edition tag shown with the Order Print CTA (prints page only).
 .editionTag {
   display: block;
-  margin-bottom: var(--space-3);
+  // Sits right on top of the price: what it is and what it costs are a pair,
+  // and the gap above (.orderAction) is what separates them from the details.
+  margin-bottom: 2px;
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -100,5 +162,40 @@
 
 // Order Print CTA (prints page only — gated by the withOrderPrint prop).
 .orderAction {
-  margin-top: var(--space-4);
+  // The one real break in the caption — identity above, commerce below.
+  margin-top: var(--space-3);
+  // Column flex rather than a stack of blocks: the Button is `inline-flex`, so
+  // in an inline flow it sat on a text baseline and carried the line-box's
+  // descender space under it — a few stray pixels that read as a gap between
+  // the price and the CTA. As a flex item it has none.
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+// The figure on a prints card. A bare number, stated plainly — no "from",
+// no "starting at". What it means differs by edition type and the page
+// footnote carries that, so nothing here hedges.
+.price {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+// A sold-out edition stays in the catalogue and is MARKED, not hidden — the
+// work sold, which is the good news. A badge rather than a button: it replaces
+// the CTA, so it must not look like one.
+.soldOut {
+  display: inline-block;
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.4;
 }

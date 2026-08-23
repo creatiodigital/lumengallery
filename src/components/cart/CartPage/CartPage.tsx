@@ -1,44 +1,23 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-
 import { CartLine } from '@/components/cart/CartLine'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PageLayout } from '@/components/ui/PageLayout'
 import { Text } from '@/components/ui/Typography'
-import { cartSubtotal } from '@/lib/cart/cartMath'
+import { cartSubtotal, hasLimitedItems } from '@/lib/cart/cartMath'
+import { LIMITED_NOT_RESERVED_NOTICE } from '@/lib/cart/notices'
 import { useCart } from '@/lib/cart/useCart'
 import { formatEuro } from '@/lib/print-providers'
 
 import styles from './CartPage.module.scss'
 
-// Refresh limited-edition holds while the buyer sits on the cart page so an
-// engaged viewer's reservation doesn't lapse under them. Well under the 15-min
-// server TTL; the server still owns the clock and re-syncs each expiry.
-const HOLD_HEARTBEAT_MS = 5 * 60 * 1000
-
 export const CartPage = () => {
-  const { items, extendHolds } = useCart()
+  const { items } = useCart()
 
-  const hasLimitedHolds = items.some(
-    (item) => item.editionType === 'limited' && !!item.editionNumberIds?.length,
-  )
-
-  // Keep the latest extendHolds in a ref so the heartbeat interval is stable
-  // across cart edits — a quantity/remove change shouldn't reset the timer.
-  const extendHoldsRef = useRef(extendHolds)
-  useEffect(() => {
-    extendHoldsRef.current = extendHolds
-  }, [extendHolds])
-
-  useEffect(() => {
-    if (!hasLimitedHolds) return
-    const id = window.setInterval(() => {
-      void extendHoldsRef.current()
-    }, HOLD_HEARTBEAT_MS)
-    return () => window.clearInterval(id)
-  }, [hasLimitedHolds])
+  // Nothing in this cart is reserved. A limited edition can sell out while it
+  // sits here, so say so once — plainly, with no clock and no countdown.
+  const hasLimited = hasLimitedItems(items)
 
   if (items.length === 0) {
     return (
@@ -66,6 +45,22 @@ export const CartPage = () => {
           {items.map((item) => (
             <CartLine key={item.lineId} item={item} />
           ))}
+          {/* Back to the wizard's first screen for the work they last added —
+              the variant picker — because that is where another edition of it
+              gets chosen. Deliberately NOT the browser's history and NOT the
+              catalogue: the useful destination after looking at your cart is
+              the list of editions you were just choosing from. No editLineId
+              and no variant param, so it opens clean rather than resuming a
+              line that is already in the cart. */}
+          <div className={styles.backRow}>
+            <Button
+              variant="secondary"
+              size="regularSquared"
+              icon="arrowLeft"
+              label="Back to editions"
+              href={`/artworks/${items[items.length - 1].artworkSlug}/print`}
+            />
+          </div>
         </div>
 
         <aside className={styles.summary}>
@@ -83,6 +78,13 @@ export const CartPage = () => {
           <Text as="p" size="sm" className={styles.note}>
             Shipping and taxes calculated at checkout.
           </Text>
+          {/* Same sentence, same place in the panel as the wizard's: the stake
+              stated above the button, not discovered after it. */}
+          {hasLimited && (
+            <Text as="p" size="sm" className={styles.limitedNotice}>
+              {LIMITED_NOT_RESERVED_NOTICE}
+            </Text>
+          )}
           <Button
             variant="primary"
             size="bigSquared"

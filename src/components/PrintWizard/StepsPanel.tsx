@@ -203,7 +203,6 @@ export const StepsPanel = ({
                     open={openSteps.has('frameGroup')}
                     onToggle={toggle('frameGroup')}
                     onChange={onChange}
-                    onBorderChange={onBorderChange}
                   />
                 )
               }
@@ -416,7 +415,6 @@ interface FrameSectionProps {
   open: boolean
   onToggle: (open: boolean) => void
   onChange: (patch: Record<string, string>) => void
-  onBorderChange: (dimensionId: string, allCm: number) => void
 }
 
 const FrameSection = ({
@@ -436,7 +434,6 @@ const FrameSection = ({
   open,
   onToggle,
   onChange,
-  onBorderChange,
 }: FrameSectionProps) => {
   const isFraming = config.values[format.id] === 'framing'
 

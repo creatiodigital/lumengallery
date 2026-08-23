@@ -9,8 +9,9 @@
  * authoritative gate):
  *   - every variant validated via `validateVariantInput` (aspect lock,
  *     distinct sizes, border min, derived print type)
- *   - a BLOCKED published variant is frozen: it can't be deleted and none of
- *     its fields can change (its edition numbers are selling)
+ *   - a BLOCKED published variant is frozen: it can't be deleted, and only its
+ *     NAME and PRICE can change (its edition numbers are selling, so size,
+ *     sheet, paper, border and edition size are what a buyer was promised)
  *   - an UNBLOCKED published variant (admin reopened it to fix a mistake) is
  *     editable: fields change and the edition-number ledger is reconciled to
  *     the new size — but edition size can never drop below an already
@@ -21,6 +22,7 @@
  * in the publish action — this only manages the variant rows + ledger.
  */
 import prisma from '@/lib/prisma'
+import { TPS_PAPERS } from '@/lib/print-providers/printspace'
 import { validateVariantInput, MAX_LIMITED_VARIANTS } from './validateVariant'
 
 export type IncomingVariant = {
@@ -30,6 +32,9 @@ export type IncomingVariant = {
   widthCm: number
   heightCm: number
   borderCm: number
+  /** Fixed-sheet mode: total sheet in cm. Both null/absent = adaptive. */
+  sheetWidthCm?: number | null
+  sheetHeightCm?: number | null
   editionSize: number
   priceCents: number
 }
@@ -64,6 +69,8 @@ export async function saveLimitedVariants(args: {
       widthCm: true,
       heightCm: true,
       borderCm: true,
+      sheetWidthCm: true,
+      sheetHeightCm: true,
       editionSize: true,
       priceCents: true,
     },
@@ -88,6 +95,26 @@ export async function saveLimitedVariants(args: {
     }
   }
 
+  // Distinct names within the artwork. The name is how a variant is identified
+  // everywhere it matters — the picker, the cart line, the invoice, the ledger,
+  // the admin's paste-into-TPS block — so two "40x50 Baryta" on one work makes
+  // every one of those ambiguous. Trimmed and case-insensitive, because "Small"
+  // and "small " are the same name to everyone except a database.
+  const byName = new Map<string, number>()
+  for (const v of variants) {
+    const key = (v.name ?? '').trim().toLowerCase()
+    if (key.length === 0) continue
+    byName.set(key, (byName.get(key) ?? 0) + 1)
+  }
+  const duplicate = [...byName.entries()].find(([, n]) => n > 1)
+  if (duplicate) {
+    const shown = variants.find((v) => (v.name ?? '').trim().toLowerCase() === duplicate[0])?.name
+    return {
+      ok: false,
+      error: `Two variants are both called “${shown?.trim()}”. Give each one its own name.`,
+    }
+  }
+
   // Validate every incoming variant. siblingSizes = all the OTHER
   // incoming sizes so the distinctness rule is checked against the final
   // set, not the stored one.
@@ -97,32 +124,77 @@ export async function saveLimitedVariants(args: {
     const siblingSizes = variants
       .filter((_, j) => j !== i)
       .map((s) => ({ widthCm: s.widthCm, heightCm: s.heightCm }))
-    const result = validateVariantInput({ variant: v, artwork: artworkPixels, siblingSizes })
-    if (!result.ok) return { ok: false, error: result.error }
+    // Only judge what this save actually proposes. An untouched variant is
+    // already live and already sold from; re-testing it against today's rules
+    // means a row created before a rule existed blocks every unrelated edit to
+    // the artwork — and if it holds sold copies it cannot be deleted either, so
+    // the artist is simply stuck. Grandfathered, not endorsed: change any
+    // measurement on it and it must pass in full like anything else.
+    const prior = v.id ? existingById.get(v.id) : undefined
+    const unchanged =
+      prior !== undefined &&
+      prior.paperId === v.paperId &&
+      prior.widthCm === v.widthCm &&
+      prior.heightCm === v.heightCm &&
+      prior.borderCm === v.borderCm &&
+      (prior.sheetWidthCm ?? null) === (v.sheetWidthCm ?? null) &&
+      (prior.sheetHeightCm ?? null) === (v.sheetHeightCm ?? null)
+
+    // The paper is unchanged too (it is one of the compared fields), so its
+    // print type is whatever it already was — but fall back to the full check
+    // if the paper id has somehow stopped resolving.
+    const grandfatheredPrintType = unchanged
+      ? TPS_PAPERS.find((pp) => pp.id === v.paperId)?.printType
+      : undefined
+    const result = grandfatheredPrintType
+      ? ({ ok: true, printTypeId: grandfatheredPrintType } as const)
+      : validateVariantInput({ variant: v, artwork: artworkPixels, siblingSizes })
+    // Name the variant: every variant is checked on every save, so an
+    // unattributed message sends the artist looking at whichever one they just
+    // touched rather than the one that actually broke a rule.
+    if (!result.ok) {
+      const label = v.name?.trim()
+      return { ok: false, error: label ? `“${label}”: ${result.error}` : result.error }
+    }
 
     // Lock guard for published variants.
     if (v.id) {
       const prev = existingById.get(v.id)
       if (prev?.published) {
         if (prev.blocked) {
-          // Blocked = on sale. Everything is frozen EXCEPT the price, which can
-          // be raised as the edition sells (price escalation). Reject any change
-          // to a non-price field; the price itself is persisted in the write loop.
+          // Blocked = on sale. The variant's PHYSICAL identity is frozen — size,
+          // sheet, paper, border, edition size are what a buyer is promised and
+          // what the lab prints. Two things stay editable:
+          //   - price, raised as the edition sells (price escalation)
+          //   - NAME, which is only a label. Nothing financial or physical hangs
+          //     off it: invoices never reference it, buyer emails bake it in at
+          //     order-creation time, and every other surface (ledger, gift
+          //     orders, variant picker, admin rows) joins it live, so a rename
+          //     propagates everywhere and rewrites no history.
+          // Reject any change outside those two.
           const sizeChanged =
             Math.abs(prev.widthCm - v.widthCm) >= 0.05 ||
             Math.abs(prev.heightCm - v.heightCm) >= 0.05
-          const nonPriceChanged =
+          // The sheet is part of the variant's physical identity — a live
+          // edition's paper size can never change under a buyer.
+          const sheetChanged =
+            Math.abs((prev.sheetWidthCm ?? 0) - (v.sheetWidthCm ?? 0)) >= 0.005 ||
+            Math.abs((prev.sheetHeightCm ?? 0) - (v.sheetHeightCm ?? 0)) >= 0.005
+          const frozenFieldChanged =
             sizeChanged ||
+            sheetChanged ||
             prev.editionSize !== v.editionSize ||
-            prev.name !== v.name.trim() ||
             prev.paperId !== v.paperId ||
             Math.abs(prev.borderCm - v.borderCm) >= 0.005
-          if (nonPriceChanged) {
+          if (frozenFieldChanged) {
             return {
               ok: false,
               error:
-                'A published variant is locked while on sale — only its price can change. Ask an admin to unblock it to edit anything else.',
+                'A published variant is locked while on sale — only its name and price can change. Ask an admin to unblock it to edit anything else.',
             }
+          }
+          if (!v.name.trim()) {
+            return { ok: false, error: 'A variant needs a name.' }
           }
         } else {
           // Unblocked: edits allowed, but edition size can never drop below
@@ -166,14 +238,15 @@ export async function saveLimitedVariants(args: {
       const { input, printTypeId } = validated[i]
       const prev = input.id ? existingById.get(input.id) : undefined
 
-      // Blocked published variants are frozen EXCEPT for the price — persist
-      // only the (possibly raised) price and skip every other field. The guard
-      // above has already rejected any non-price change.
+      // Blocked published variants are frozen EXCEPT for name + price — persist
+      // just those and skip every other field. The guard above has already
+      // rejected any change to a frozen one.
       if (prev?.published && prev.blocked) {
-        if (prev.priceCents !== input.priceCents) {
+        const nextName = input.name.trim()
+        if (prev.priceCents !== input.priceCents || prev.name !== nextName) {
           await tx.limitedVariant.update({
             where: { id: prev.id },
-            data: { priceCents: input.priceCents },
+            data: { priceCents: input.priceCents, name: nextName },
           })
         }
         continue
@@ -186,6 +259,8 @@ export async function saveLimitedVariants(args: {
         widthCm: input.widthCm,
         heightCm: input.heightCm,
         borderCm: input.borderCm,
+        sheetWidthCm: input.sheetWidthCm ?? null,
+        sheetHeightCm: input.sheetHeightCm ?? null,
         editionSize: input.editionSize,
         priceCents: input.priceCents,
         order: i,

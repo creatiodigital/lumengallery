@@ -65,6 +65,15 @@ type TInput = {
   disabled?: boolean
   readOnly?: boolean
   'aria-label'?: string
+  /** Combobox support, for an input that owns a suggestion list (see the
+   *  checkout address field). Without these the listbox is invisible to
+   *  assistive tech: a sighted user sees suggestions appear and a screen-reader
+   *  user hears nothing at all. */
+  role?: 'combobox'
+  'aria-expanded'?: boolean
+  'aria-controls'?: string
+  'aria-autocomplete'?: 'list' | 'none' | 'inline' | 'both'
+  'aria-activedescendant'?: string
 }
 
 const Input = ({
@@ -95,6 +104,11 @@ const Input = ({
   disabled,
   readOnly,
   'aria-label': ariaLabel,
+  role,
+  'aria-expanded': ariaExpanded,
+  'aria-controls': ariaControls,
+  'aria-autocomplete': ariaAutocomplete,
+  'aria-activedescendant': ariaActivedescendant,
 }: TInput) => {
   const [showPassword, setShowPassword] = useState(false)
 
@@ -141,6 +155,11 @@ const Input = ({
         readOnly={readOnly}
         aria-label={ariaLabel}
         aria-invalid={invalid || undefined}
+        role={role}
+        aria-expanded={ariaExpanded}
+        aria-controls={ariaControls}
+        aria-autocomplete={ariaAutocomplete}
+        aria-activedescendant={ariaActivedescendant}
       />
       {icon && (
         <div className={c(styles.icon, { [styles[`rotate${rotate}` as string]]: !!rotate })}>

@@ -18,6 +18,11 @@ export type PrintArtwork = {
   originalWidth?: number | null
   originalHeight?: number | null
   createdAt: string
+  /** Cheapest configuration a buyer can actually complete, in cents, EXCLUDING
+   *  shipping and tax (both destination-dependent, so unknowable on a
+   *  listing). Null means nothing is purchasable — a limited edition whose
+   *  variants have all sold. See lib/editions/minimumPrice. */
+  minPriceCents?: number | null
   user: {
     id: string
     name: string | null

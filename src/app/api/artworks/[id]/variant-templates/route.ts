@@ -28,8 +28,11 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     const { error: authError } = await requireOwnership(artwork.userId)
     if (authError) return authError
 
+    // Without the image's dimensions we can't derive a print size for ANY
+    // template, fixed-sheet included. Say so: reporting this as "no matching
+    // proportions" blames the aspect ratio for an artwork that has no image.
     if (!artwork.originalWidth || !artwork.originalHeight) {
-      return NextResponse.json({ templates: [] })
+      return NextResponse.json({ templates: [], reason: 'no-dimensions' })
     }
 
     const variants = await prisma.limitedVariant.findMany({
@@ -45,33 +48,33 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         widthCm: true,
         heightCm: true,
         borderCm: true,
+        sheetWidthCm: true,
+        sheetHeightCm: true,
         editionSize: true,
         priceCents: true,
         artwork: { select: { title: true, originalWidth: true, originalHeight: true } },
       },
     })
 
-    // EXACT aspect-ratio match — no tolerance, no adaptation (Eduardo,
-    // 2026-07-25): a template must apply VERBATIM (identical print size,
-    // identical border, identical paper geometry across the series) or not
-    // be offered at all. A near-miss ratio would silently change the margin
-    // proportions. Integer cross-multiplication avoids float noise; pixel
-    // RESOLUTION is deliberately ignored (a 3000×2000 and a 6000×4000 file
-    // are both exactly 3:2 — same print geometry; resolution only gates the
-    // max printable size, which variant validation already enforces).
-    const tw = artwork.originalWidth
-    const th = artwork.originalHeight
+    // EVERY variant this artist has authored, one entry per distinct NAME
+    // (Eduardo, 2026-08-22). This replaces an exact-ratio filter that only ever
+    // offered fixed-sheet templates in practice: an adaptive template made on a
+    // portrait work was silently withheld from a landscape one, so an artist
+    // with three saved variants saw one and no reason why.
+    //
+    // Offering all of them is safe because the shape rules moved to where they
+    // belong — save-time validation now rejects a mismatched orientation or
+    // ratio by name, loudly, instead of the picker quietly deciding for the
+    // artist. Applying a template that does not fit is answered with a sentence
+    // rather than an absence.
+    //
+    // `orderBy: updatedAt desc` above means the FIRST occurrence of a name is
+    // its most recently touched version, which is the one to offer.
     const seen = new Set<string>()
     const templates = variants
       .filter((v) => {
-        const w = v.artwork.originalWidth
-        const h = v.artwork.originalHeight
-        if (!w || !h) return false
-        return w * th === h * tw
-      })
-      .filter((v) => {
-        const key = `${v.name}|${v.paperId}|${v.widthCm}x${v.heightCm}|${v.borderCm}|${v.editionSize}`
-        if (seen.has(key)) return false
+        const key = (v.name ?? '').trim().toLowerCase()
+        if (key.length === 0 || seen.has(key)) return false
         seen.add(key)
         return true
       })
@@ -81,12 +84,20 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         widthCm: v.widthCm,
         heightCm: v.heightCm,
         borderCm: v.borderCm,
+        sheetWidthCm: v.sheetWidthCm,
+        sheetHeightCm: v.sheetHeightCm,
         editionSize: v.editionSize,
         priceEuros: v.priceCents != null ? String(v.priceCents / 100) : '',
         sourceArtworkTitle: v.artwork.title ?? '(untitled)',
       }))
 
-    return NextResponse.json({ templates })
+    // Distinguish "you have nothing saved yet" from "you have saved variants,
+    // but none share this artwork's exact proportions" — very different things
+    // to tell an artist staring at an empty picker.
+    const reason =
+      templates.length > 0 ? null : variants.length === 0 ? 'none-saved' : 'no-ratio-match'
+
+    return NextResponse.json({ templates, reason })
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to load variant templates' },

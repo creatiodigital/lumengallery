@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+import { LIVE_VARIANT_WHERE } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 
 export async function GET(_request: NextRequest, context: { params: Promise<{ slug: string }> }) {
@@ -10,6 +11,10 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
     const artwork = await prisma.artwork.findUnique({
       where: { slug },
       include: {
+        // Live variants only. This is what makes a LIMITED edition buyable —
+        // it carries no artwork-level price — and without it the exhibition
+        // modal hid "Order Print" on every limited work.
+        limitedVariants: { where: LIVE_VARIANT_WHERE, select: { id: true } },
         user: {
           select: {
             id: true,
@@ -20,6 +25,18 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
         },
       },
     })
+
+    // Numbers still available across the live variants — an exhibition visitor
+    // must see "Sold out" rather than a CTA into a wizard that refuses.
+    const availableNumberCount =
+      artwork && artwork.limitedVariants.length > 0
+        ? await prisma.editionNumber.count({
+            where: {
+              variantId: { in: artwork.limitedVariants.map((v) => v.id) },
+              state: 'available',
+            },
+          })
+        : 0
 
     const data = artwork
       ? {
@@ -38,6 +55,9 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ sl
             originalHeight: artwork.originalHeight,
             printEnabled: artwork.printEnabled,
             printPriceCents: artwork.printPriceCents,
+            editionType: artwork.editionType,
+            liveVariantCount: artwork.limitedVariants.length,
+            availableNumberCount,
           },
           artist: artwork.user,
         }
