@@ -7,15 +7,25 @@ import { seedCookieConsent } from './consent-helpers'
  * The checkout address step's two helping hands: the shipping-countries list,
  * and the warning that we print whatever is typed onto the parcel label.
  *
- * Google Places itself is NOT exercised here. The suite runs with no
- * GOOGLE_MAPS_API_KEY, so the checkout page resolves `addressAutocomplete` to
- * false server-side and the field is the plain manual input — precisely the
- * path most worth pinning, because it is what every buyer gets if the key is
- * ever missing, the route is throttled, or Google is down. A dead autocomplete
- * must never be able to stop someone buying a print.
+ * These run in BOTH modes, deliberately.
+ *
+ * Whether autocomplete exists is decided server-side from GOOGLE_MAPS_API_KEY,
+ * which the suite cannot set — so a spec that assumed one mode passed or failed
+ * depending on whether the developer running it happened to have a key. It did
+ * exactly that the first time someone added one.
+ *
+ * So the invariants (checkout works, the warning is shown, the modal works, the
+ * route never leaks a key) are asserted unconditionally, and only the
+ * mode-specific parts branch — each branch being the correct behaviour for that
+ * mode. Whichever way the environment is configured, one of them is exercised.
  *
  * Reached by seeding the cart into localStorage — no wizard, so no WebGL.
  */
+
+/** True when a Maps key is configured, i.e. the page will offer suggestions.
+ *  playwright.config loads .env.local into the runner, so this sees the same
+ *  value the dev server does. */
+const autocompleteEnabled = Boolean(process.env.GOOGLE_MAPS_API_KEY)
 
 async function openCheckout(page: import('@playwright/test').Page) {
   await seedCookieConsent(page)
@@ -24,19 +34,26 @@ async function openCheckout(page: import('@playwright/test').Page) {
   await expect(page.getByRole('heading', { name: /where should we send it\?/i })).toBeVisible()
 }
 
-test('without a Maps key the address field is the plain input, and checkout still works', async ({
+test('the address field matches the configured mode, and checkout works either way', async ({
   page,
 }) => {
   await openCheckout(page)
 
   const address = page.locator('#address1')
   await expect(address).toBeVisible()
-  // Degraded mode is the ordinary input: no combobox, and no escape hatch to
-  // offer because there is nothing to escape from.
-  await expect(address).not.toHaveAttribute('role', 'combobox')
-  await expect(page.getByRole('button', { name: /enter address manually/i })).toHaveCount(0)
 
-  // And it is still a working form: typing an address and continuing advances.
+  if (autocompleteEnabled) {
+    // Suggestions available: the field is a combobox and offers the way out.
+    await expect(address).toHaveAttribute('role', 'combobox')
+    await expect(page.getByRole('button', { name: /enter address manually/i })).toBeVisible()
+  } else {
+    // Degraded: an ordinary input, and no escape hatch because there is
+    // nothing to escape from.
+    await expect(address).not.toHaveAttribute('role', 'combobox')
+    await expect(page.getByRole('button', { name: /enter address manually/i })).toHaveCount(0)
+  }
+
+  // The invariant that matters in both modes: it is still a working form.
   await page.locator('#fullName').fill('John Doe')
   await page.locator('#email').fill('john.doe@example.com')
   await page.locator('#phone').fill('+34 600 000 000')
@@ -46,18 +63,23 @@ test('without a Maps key the address field is the plain input, and checkout stil
   await expect(address).toHaveValue('Calle de Serrano 21')
 })
 
-test('with no Maps key, Chrome autofill keeps its normal tokens on every field', async ({
+test('Chrome autofill is suppressed on the address block only while WE own it', async ({
   page,
 }) => {
   await openCheckout(page)
 
-  // Degraded mode must not cost the buyer their browser autofill. This is the
-  // state most buyers are in whenever the key is missing, blocked or rejected,
-  // and silently disabling autofill there would be a pure regression.
-  await expect(page.locator('#address1')).toHaveAttribute('autocomplete', 'address-line1')
-  await expect(page.locator('#city')).toHaveAttribute('autocomplete', 'address-level2')
-  await expect(page.locator('#state')).toHaveAttribute('autocomplete', 'address-level1')
-  await expect(page.locator('#postalCode')).toHaveAttribute('autocomplete', 'postal-code')
+  // Chrome ignores autocomplete="off", so suppression uses a token it does not
+  // recognise. It covers the whole address block, never just the street —
+  // suppressing the street alone leaves Chrome filling city and postcode while
+  // the street stays blank.
+  const suffix = autocompleteEnabled ? '-search' : ''
+  await expect(page.locator('#address1')).toHaveAttribute(
+    'autocomplete',
+    autocompleteEnabled ? 'address-line1-search' : 'address-line1',
+  )
+  await expect(page.locator('#city')).toHaveAttribute('autocomplete', `address-level2${suffix}`)
+  await expect(page.locator('#state')).toHaveAttribute('autocomplete', `address-level1${suffix}`)
+  await expect(page.locator('#postalCode')).toHaveAttribute('autocomplete', `postal-code${suffix}`)
 
   // Identity fields are never suppressed in either mode — nothing of ours
   // competes with them, and they are what a returning buyer wants filled.
@@ -67,20 +89,26 @@ test('with no Maps key, Chrome autofill keeps its normal tokens on every field',
 })
 
 test('the lookup route never leaks the key, and refuses unknown requests', async ({ request }) => {
-  // The whole point of proxying through our own server is that the Maps key
-  // stays here. With none configured the route reports itself disabled rather
-  // than erroring, which is what puts the buyer on the manual form.
-  const disabled = await request.post('/api/checkout/address-lookup', {
-    data: { kind: 'suggest', input: 'Calle de Serrano', countryCode: 'ES', sessionToken: 'x' },
+  const res = await request.post('/api/checkout/address-lookup', {
+    data: { kind: 'suggest', input: 'Calle de Serrano', countryCode: 'ES', sessionToken: 'e2e' },
   })
-  expect(disabled.ok()).toBe(true)
-  const body = await disabled.json()
-  expect(body).toEqual({ ok: false, reason: 'disabled' })
+  expect(res.ok()).toBe(true)
+  const body = await res.json()
 
-  // Whatever it answers, it must never echo a key back to the caller.
+  if (autocompleteEnabled) {
+    // Configured: real suggestions, and the key stays on the server.
+    expect(body.ok).toBe(true)
+    expect(Array.isArray(body.suggestions)).toBe(true)
+  } else {
+    // Not configured is a normal state, reported as such rather than as an
+    // error — that is what puts the buyer on the manual form.
+    expect(body).toEqual({ ok: false, reason: 'disabled' })
+  }
+
+  // The point of proxying at all: whatever it answers, no key ever comes back.
   expect(JSON.stringify(body)).not.toMatch(/AIza/)
 
-  // An unrecognised body is refused rather than passed to Google.
+  // An unrecognised body is refused rather than forwarded to Google.
   const junk = await request.post('/api/checkout/address-lookup', { data: { kind: 'nonsense' } })
   expect((await junk.json()).ok).toBe(false)
 })
