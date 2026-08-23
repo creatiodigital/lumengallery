@@ -75,8 +75,10 @@ const PRINT_BASE_TOP_SLOPE_CENTS_PER_CM2 = 1.9
 // insert (decided 2026-07-24). creativehub charges €2.44 + VAT for
 // each, per print → €4.88 ex-VAT. Priced at cost + ~8% like the
 // print-base anchors (reverse charge applies once the ES VAT number
-// is on the account).
-export const TPS_COA_LETTER_SUPPLEMENT_CENTS = 530
+// is on the account), then rounded UP to a whole euro so it doesn't
+// drag cents into the artwork line — €5.30 was what made a €443.67
+// out of an otherwise round price.
+export const TPS_COA_LETTER_SUPPLEMENT_CENTS = 600
 
 // ── Frame supplement (per tier × frame type, approximate) ───────
 //
@@ -162,20 +164,35 @@ const FRAME_SUPPLEMENT_CENTS: Record<TpsFrameTypeId, readonly SizeTier<number>[]
   ],
 }
 
+/**
+ * Round a production cost UP to a whole euro.
+ *
+ * The buyer never sees these components — they are summed into the single
+ * "Artwork" line — but the cents they carry surface there, and a gallery
+ * quoting €443.67 reads like a spreadsheet rather than a price. Keeping every
+ * production input at whole euros means the artwork line lands on whole euros
+ * too, provided the artist price is set so its 40% cut is also whole
+ * (multiples of €2.50; in practice we price in fives).
+ *
+ * Always UP, never nearest: like the anchor tables themselves, the variance
+ * lands in the gallery's favour rather than the buyer's.
+ */
+const ceilToEuro = (cents: number): number => Math.ceil(cents / 100) * 100
+
 export function getPrintBaseCents(widthCm: number, heightCm: number): number {
   const area = widthCm * heightCm
   const first = PRINT_BASE_CURVE[0]
-  if (area <= first.areaCm2) return first.cents
+  if (area <= first.areaCm2) return ceilToEuro(first.cents)
   for (let i = 1; i < PRINT_BASE_CURVE.length; i++) {
     const a = PRINT_BASE_CURVE[i - 1]
     const b = PRINT_BASE_CURVE[i]
     if (area <= b.areaCm2) {
       const t = (area - a.areaCm2) / (b.areaCm2 - a.areaCm2)
-      return Math.round(a.cents + t * (b.cents - a.cents))
+      return ceilToEuro(a.cents + t * (b.cents - a.cents))
     }
   }
   const last = PRINT_BASE_CURVE[PRINT_BASE_CURVE.length - 1]
-  return Math.round(last.cents + (area - last.areaCm2) * PRINT_BASE_TOP_SLOPE_CENTS_PER_CM2)
+  return ceilToEuro(last.cents + (area - last.areaCm2) * PRINT_BASE_TOP_SLOPE_CENTS_PER_CM2)
 }
 
 export function getFrameSupplementCents(
