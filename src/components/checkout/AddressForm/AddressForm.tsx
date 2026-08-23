@@ -373,6 +373,22 @@ export const AddressForm = ({
               label="Enter address manually"
             />
           )}
+          {/*
+            Google scopes every lookup to one country, so with no country
+            picked the route short-circuits to an EMPTY suggestion list — and
+            because that is `ok: true` rather than a failure, `onUnavailable`
+            never fires and the notice below stays hidden. The buyer would type
+            into a field that answers with total silence, indistinguishable
+            from "your address has no matches".
+
+            Held back until they have actually typed, so the form is still
+            silent on arrival: this explains an absence, it doesn't pre-empt it.
+          */}
+          {suggestionsOwnAddress && !country && !lookupFailure && address1.trim() !== '' && (
+            <span className={styles.lookupNotice}>
+              Choose a country above to see address suggestions.
+            </span>
+          )}
           {lookupFailure && (
             <span className={styles.lookupNotice}>
               {lookupFailure === 'rate_limited'
