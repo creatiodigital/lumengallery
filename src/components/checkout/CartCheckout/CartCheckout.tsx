@@ -46,6 +46,9 @@ type CartCheckoutProps = {
   /** Provider-shippable countries — restricts the address country picker so a
    *  buyer can't choose a destination the server-side validation will reject. */
   supportedCountries: string[]
+  /** Whether address autocomplete is configured. Decided on the server — the
+   *  Maps key never reaches the browser. */
+  addressAutocomplete?: boolean
 }
 
 /**
@@ -65,7 +68,10 @@ function keepOnlyPaymentIntentInUrl(paymentIntentId: string): void {
   )
 }
 
-export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
+export const CartCheckout = ({
+  supportedCountries,
+  addressAutocomplete = false,
+}: CartCheckoutProps) => {
   const { items, clear, removeItem } = useCart()
 
   // Becomes true the moment payment is authorized (no-redirect path) or a 3DS
@@ -300,6 +306,7 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
               submitLabel="Continue to review"
               countryCodes={supportedCountries}
               initialAddress={address}
+              addressAutocomplete={addressAutocomplete}
             />
           </div>
         </div>
