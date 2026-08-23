@@ -8,7 +8,7 @@ import {
   type PrintArtwork,
 } from '@/components/prints/types'
 import { minimumPriceForArtwork } from '@/lib/editions/minimumPrice'
-import { LIVE_VARIANT_WHERE, purchasableArtworkWhere } from '@/lib/editions/printable'
+import { purchasableArtworkWhere, SELLABLE_VARIANT_WHERE } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 import { getPurchasesPaused } from '@/lib/settings'
 
@@ -44,11 +44,17 @@ const PRINT_SELECT = {
   originalHeight: true,
   createdAt: true,
   // Needed to price the card — an OPEN edition uses the artwork price, a
-  // LIMITED one the cheapest variant that is actually on sale.
+  // LIMITED one the cheapest variant a buyer can actually complete. Loaded
+  // through SELLABLE_VARIANT_WHERE rather than LIVE_VARIANT_WHERE, so a variant
+  // with no copies left never sets the price: it drops out, the figure rises to
+  // the next variant that still has stock, and an edition with nothing left
+  // prices at null — which the grid renders as "Sold out". The work itself
+  // stays listed; `buildPrintsWhere` decides that, and it is deliberately still
+  // LIVE_VARIANT_WHERE.
   printEnabled: true,
   printPriceCents: true,
   limitedVariants: {
-    where: LIVE_VARIANT_WHERE,
+    where: SELLABLE_VARIANT_WHERE,
     select: {
       name: true,
       priceCents: true,

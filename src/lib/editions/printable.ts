@@ -29,6 +29,29 @@ export const LIVE_VARIANT_WHERE = {
 } satisfies Prisma.LimitedVariantWhereInput
 
 /**
+ * A live variant that also still has a copy to sell — the only kind a buyer can
+ * complete a purchase against.
+ *
+ * `LIVE_VARIANT_WHERE` says published + blocked + priced and nothing about
+ * remaining stock, which is correct for "is this variant on sale" and wrong for
+ * "can this be bought right now". Pricing a variant with that alone put a
+ * figure and an "Order Print" button on a sold-out edition in the catalogue —
+ * a dead end into a wizard that refuses the sale.
+ *
+ * Only `available` counts. A `reserved` number is held by a live PaymentIntent
+ * and `reserveEditionNumber` will not take it, so treating it as stock would
+ * make the catalogue promise what checkout would refuse; a `sold` one is gone.
+ *
+ * Use this to PRICE an artwork. Use `LIVE_VARIANT_WHERE` to decide whether the
+ * work is on sale at all — a sold-out edition still belongs in the catalogue,
+ * carrying no price, which is what the grid renders as "Sold out".
+ */
+export const SELLABLE_VARIANT_WHERE = {
+  ...LIVE_VARIANT_WHERE,
+  editionNumbers: { some: { state: 'available' } },
+} satisfies Prisma.LimitedVariantWhereInput
+
+/**
  * Prisma `where` fragment for list queries (catalog, public API). Combine with
  * whatever else the caller needs — e.g. `user: { published: true }`.
  */
