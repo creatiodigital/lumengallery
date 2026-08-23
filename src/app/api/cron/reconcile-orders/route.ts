@@ -3,6 +3,10 @@ import crypto from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { findOrphanedReservations } from '@/lib/editions/findOrphanedReservations'
+import {
+  isDeadPaymentIntentStatus,
+  settleDeadPaymentIntent,
+} from '@/lib/orders/settleDeadPaymentIntent'
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { ensureOrderForPaymentIntent } from '@/lib/orders/ensureOrderForPaymentIntent'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
@@ -206,11 +210,63 @@ export async function GET(req: NextRequest) {
     // we never free a number whose card is still held.
   }
 
+  // Phase C — settle orders whose authorization died.
+  //
+  // The gap this closes: phase B only looks at reservations NOT bound to an
+  // order (`orderId: null, orderItemId: null`). Once a number is bound, its
+  // only release path was the `payment_intent.canceled` webhook — so whenever
+  // that webhook is missing, an expired hold leaves the order stuck at
+  // `authorized` forever, still offering a Capture button that can only fail,
+  // with its edition number out of stock permanently.
+  //
+  // That is not hypothetical: the sandbox had no webhook endpoint registered
+  // for two months, and four orders from June and July were found in exactly
+  // this state, holding four copies that could never be sold.
+  //
+  // Deliberately NOT time-boxed to the 24h PI listing above: a hold that died
+  // while the webhook was down may be arbitrarily old, and those are precisely
+  // the ones nothing else will ever find.
+  const stuckOrders = await prisma.printOrder.findMany({
+    where: {
+      paymentStatus: 'authorized',
+      createdAt: { lt: new Date(Date.now() - minAgeMinutes * 60 * 1000) },
+    },
+    select: { id: true, paymentIntentId: true },
+  })
+
+  let deadAuthsSettled = 0
+  let deadAuthNumbersReleased = 0
+  let deadAuthUnresolved = 0
+  const deadAuthLines: string[] = []
+
+  for (const order of stuckOrders) {
+    const piId = order.paymentIntentId
+    const pi = await stripe.paymentIntents.retrieve(piId).catch(() => null)
+    if (!pi) {
+      // Same rule as phase B: never act on incomplete information. Flag it.
+      deadAuthUnresolved += 1
+      deadAuthLines.push(`${piId} — PI could not be retrieved from Stripe`)
+      continue
+    }
+    if (!isDeadPaymentIntentStatus(pi.status)) continue
+    const settled = await settleDeadPaymentIntent(piId, 'cron')
+    if (settled.orderCanceled || settled.numbersReleased > 0) {
+      deadAuthsSettled += 1
+      deadAuthNumbersReleased += settled.numbersReleased
+      deadAuthLines.push(`${piId} — order canceled, ${settled.numbersReleased} number(s) released`)
+    }
+  }
+
   // Always alert when anything was auto-fixed or still needs a human: an
   // auto-recovery or an auto-release happening at all means the webhook path is
   // degraded (Eduardo, 2026-06-24).
   const needsAlert =
-    recovered > 0 || recoveryFailed > 0 || reservationsReleased > 0 || reservationsUnresolvedPI > 0
+    recovered > 0 ||
+    recoveryFailed > 0 ||
+    reservationsReleased > 0 ||
+    reservationsUnresolvedPI > 0 ||
+    deadAuthsSettled > 0 ||
+    deadAuthUnresolved > 0
   if (needsAlert) {
     const parts: string[] = []
     if (recovered > 0) {
@@ -221,6 +277,16 @@ export async function GET(req: NextRequest) {
     if (reservationsReleased > 0) {
       parts.push(
         `${reservationsReleased} orphaned edition-number reservation${reservationsReleased === 1 ? '' : 's'} (PI canceled/abandoned, never bound to an order) were AUTO-RELEASED back to the available pool.`,
+      )
+    }
+    if (deadAuthsSettled > 0) {
+      parts.push(
+        `${deadAuthsSettled} order${deadAuthsSettled === 1 ? '' : 's'} had an EXPIRED AUTHORIZATION (Stripe canceled the hold; the webhook never told us). They have been canceled and ${deadAuthNumbersReleased} edition number${deadAuthNumbersReleased === 1 ? '' : 's'} returned to the pool. The buyer was never charged and must be asked to re-order:\n\n${deadAuthLines.join('\n')}`,
+      )
+    }
+    if (deadAuthUnresolved > 0) {
+      parts.push(
+        `${deadAuthUnresolved} order${deadAuthUnresolved === 1 ? '' : 's'} sitting at 'authorized' could not be checked against Stripe — left untouched, needs a manual look.`,
       )
     }
     if (recoveryFailed > 0) {
@@ -242,6 +308,9 @@ export async function GET(req: NextRequest) {
         stillPending,
         reservationsReleased,
         reservationsUnresolvedPI,
+        deadAuthsSettled,
+        deadAuthNumbersReleased,
+        deadAuthUnresolved,
         checked: ourPIs.length,
       },
       whatToDo: [
@@ -261,5 +330,9 @@ export async function GET(req: NextRequest) {
     reservationsScanned: orphanReservations.length,
     reservationsReleased,
     reservationsUnresolvedPI,
+    stuckOrdersScanned: stuckOrders.length,
+    deadAuthsSettled,
+    deadAuthNumbersReleased,
+    deadAuthUnresolved,
   })
 }

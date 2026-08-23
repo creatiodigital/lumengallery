@@ -2215,7 +2215,7 @@ export async function capturePayment(
     })
     return {
       ok: false,
-      error: `Stripe capture failed: ${err instanceof Error ? err.message : String(err)}. The buyer's card may be canceled or the hold expired — contact the buyer or cancel the order. TPS has not been paid.`,
+      error: `Stripe capture failed: ${err instanceof Error ? err.message : String(err)}. The authorization has expired or been cancelled — the buyer was never charged. Contact them to re-order, or cancel this order. TPS has not been paid.`,
     }
   }
 

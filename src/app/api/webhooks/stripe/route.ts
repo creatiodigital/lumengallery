@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { releaseEditionNumberForPaymentIntent } from '@/lib/editions/releaseEditionNumber'
 import { markEditionNumberSold } from '@/lib/editions/reserveEditionNumber'
+import { settleDeadPaymentIntent } from '@/lib/orders/settleDeadPaymentIntent'
 import { sendAdminCriticalAlert } from '@/lib/emails/adminCriticalAlert'
 import { createPrintOrderFromCart } from '@/lib/orders/createPrintOrderFromCart'
 import { createPrintOrderFromPaymentIntent } from '@/lib/orders/createPrintOrderFromPaymentIntent'
@@ -66,43 +67,10 @@ export async function POST(req: NextRequest) {
         break
       case 'payment_intent.canceled': {
         const pi = event.data.object as PaymentIntentLike
-        const order = await prisma.printOrder.findUnique({
-          where: { paymentIntentId: pi.id },
-          select: { id: true },
-        })
-        // Return any held limited-edition number to the pool. `canceled`
-        // also fires when an auth hold expires (~7 days), so this covers
-        // the expiry case. Idempotent + a no-op for open editions.
-        await releaseEditionNumberForPaymentIntent(pi.id).catch((err) =>
-          console.warn('[stripe-webhook] release edition number failed:', err),
-        )
-        // Cart PIs stage their lines in a PendingCart row that only gets
-        // consumed + deleted when the order is built. A canceled PI never
-        // completed, so the row is leftover — clean it up. No-op for
-        // single-print PIs (no row) or if it was already consumed.
-        await prisma.pendingCart.delete({ where: { paymentIntentId: pi.id } }).catch(() => {})
-        // Never overwrite a terminal/captured state. Stripe does not
-        // guarantee event ordering and can redeliver: a stale `canceled`
-        // arriving after a successful capture must not flip a paid order
-        // back to canceled. Mirrors the succeeded handler's guard.
-        await prisma.printOrder
-          .updateMany({
-            where: {
-              paymentIntentId: pi.id,
-              paymentStatus: { notIn: ['succeeded', 'refunded'] },
-            },
-            data: { paymentStatus: 'canceled' },
-          })
-          .catch((err) => console.warn('[stripe-webhook] update paymentStatus failed:', err))
-        if (order) {
-          await logOrderEvent({
-            orderId: order.id,
-            kind: 'auth_canceled',
-            actor: 'stripe',
-            message: 'PaymentIntent canceled — auth released',
-            payload: { paymentIntentId: pi.id },
-          })
-        }
+        // `canceled` also fires when an auth hold expires (~7 days), so this
+        // covers expiry. Shared with the reconcile cron's phase C so the fast
+        // path and the backstop can never settle a dead PI differently.
+        await settleDeadPaymentIntent(pi.id, 'stripe')
         break
       }
       case 'payment_intent.processing':
