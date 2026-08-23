@@ -122,6 +122,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     // it the editor offers a Delete button the server can only refuse.
     const variantIds = artwork.limitedVariants.map((v) => v.id)
     const committedByVariant = new Map<string, number>()
+    const soldByVariant = new Map<string, number>()
     if (variantIds.length > 0) {
       const grouped = await prisma.editionNumber.groupBy({
         by: ['variantId'],
@@ -129,6 +130,32 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
         _count: { _all: true },
       })
       for (const g of grouped) committedByVariant.set(g.variantId, g._count._all)
+
+      // How many copies a BUYER actually took, which is a narrower question
+      // than the one above and the only one the badge should answer.
+      //
+      // A number goes `reserved` the moment a PaymentIntent is created — the
+      // oversell guard, so two people checking out the last copy can't both be
+      // charged for it. Someone who opens checkout and wanders off therefore
+      // leaves a reserved number behind for up to a day, until the reconcile
+      // cron sweeps it. Counting those as sales told the owner "5 sold" on a
+      // variant nobody had paid a cent for.
+      //
+      // `orderItemId` is the line that separates the two: it is set at
+      // AUTHORIZATION (bindEditionNumbersToOrderItem), when a real order takes
+      // ownership. `state: 'sold'` only arrives later, at capture — so sold
+      // alone would hide an authorised order still waiting to be placed, which
+      // is wrong in the opposite direction. Either condition means a buyer
+      // committed; neither means someone was just playing with the wizard.
+      const soldGrouped = await prisma.editionNumber.groupBy({
+        by: ['variantId'],
+        where: {
+          variantId: { in: variantIds },
+          OR: [{ state: 'sold' }, { orderItemId: { not: null } }],
+        },
+        _count: { _all: true },
+      })
+      for (const g of soldGrouped) soldByVariant.set(g.variantId, g._count._all)
     }
 
     return NextResponse.json({
@@ -136,6 +163,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       limitedVariants: artwork.limitedVariants.map((v) => ({
         ...v,
         committedCount: committedByVariant.get(v.id) ?? 0,
+        soldCount: soldByVariant.get(v.id) ?? 0,
       })),
     })
   } catch (error) {

@@ -35,6 +35,12 @@ export type LimitedVariantDraft = {
    *  Selling" badge but may still own real orders, so this — not the lock —
    *  is what decides whether deleting is even offered. */
   committedCount?: number
+  /** Copies a BUYER actually took: bound to an order at authorisation, or
+   *  confirmed sold at capture. Excludes numbers merely claimed by a
+   *  PaymentIntent — opening checkout and walking away is not a sale, and
+   *  counting it as one is what made a variant with no orders read "5 sold".
+   *  This is the number the badge shows; `committedCount` still gates Delete. */
+  soldCount?: number
 }
 
 /** A published variant as shown to the buyer, with live stock. */

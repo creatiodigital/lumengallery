@@ -503,6 +503,11 @@ export const LimitedVariantsEditor = ({
         const committedCount = variant.committedCount ?? 0
         const hasSales = committedCount > 0
         const showDelete = !isLive && !hasSales
+        // What the badge says. `committedCount` above includes numbers claimed
+        // by a PaymentIntent that no buyer ever paid for — someone opening
+        // checkout and leaving — so showing it read "5 sold" on a variant with
+        // zero orders. `soldCount` counts only copies a buyer actually took.
+        const soldCount = variant.soldCount ?? 0
         const duplicateSize = isDuplicate(variant)
         const key = keyFor(variant, index)
         // Saving this card on its own. Offered only when something here differs
@@ -568,10 +573,13 @@ export const LimitedVariantsEditor = ({
             >
               <span className={styles.variantTag}>{variant.name || `Variant ${index + 1}`}</span>
               {isLive && <span className={styles.sellingTag}>Currently Selling</span>}
-              {hasSales && (
+              {soldCount > 0 && (
                 <span className={styles.variantLockedBadge}>
-                  {committedCount} sold{!isLive && ' · paused'}
+                  {soldCount} sold{!isLive && ' · paused'}
                 </span>
+              )}
+              {soldCount === 0 && !isLive && hasSales && (
+                <span className={styles.variantLockedBadge}>paused</span>
               )}
               <ChevronDown
                 size={16}
