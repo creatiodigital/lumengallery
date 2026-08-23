@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 
+import { LIMITED_NOT_RESERVED_NOTICE } from '../src/lib/cart/notices'
 import { makeCartItem, seedCart } from './cart-helpers'
 import { seedCookieConsent } from './consent-helpers'
 
@@ -11,7 +12,7 @@ import { seedCookieConsent } from './consent-helpers'
  * What this DOES cover (all cart-page logic): rendering, quantity stepper,
  * the qty-1 "minus becomes trash → confirm" remove flow, the Edit-item deep
  * link, the spec-list show-all toggle, distinct-config lines + totals, the
- * units-based badge count, and the limited-edition hold countdown + info tip.
+ * units-based badge count, and the limited-edition "nothing is reserved" notice.
  *
  * What this does NOT cover (lives in the wizard, which is WebGL and off-limits
  * here): the add-time merge of identical configs, the "Add anyway" duplicate
@@ -112,6 +113,7 @@ test.describe('shopping cart — /cart page', () => {
           { id: 'size', label: 'Print size', value: '30 × 20 cm' },
           { id: 'border', label: 'Paper border', value: '3 cm' },
           { id: 'frame', label: 'Frame', value: 'Oak' },
+          { id: 'hanging', label: 'Hanging', value: 'Wire' },
           { id: 'glazing', label: 'Glazing', value: 'Museum glass' },
         ],
       }),
@@ -162,25 +164,71 @@ test.describe('shopping cart — /cart page', () => {
     await expect(page.getByRole('link', { name: 'Cart, 2 items' })).toBeVisible()
   })
 
-  test('a limited line shows the hold countdown with an info tooltip', async ({ page }) => {
+  test('one hidden option is not worth a toggle', async ({ page }) => {
+    await seedCart(page, [
+      makeCartItem({
+        lineId: 'line-1',
+        specsSummary: [
+          { id: 'printType', label: 'Print type', value: 'Giclée' },
+          { id: 'paper', label: 'Paper', value: 'Hahnemühle German Etching' },
+          { id: 'sheet', label: 'Sheet size', value: '26.0 × 34.5 cm' },
+          { id: 'size', label: 'Print size', value: '20.0 × 28.5 cm' },
+          { id: 'border', label: 'Paper border', value: '3.0 cm' },
+          { id: 'format', label: 'Mounting / Framing', value: 'Print Only' },
+        ],
+      }),
+    ])
+    await page.goto('/cart')
+
+    // Six rows against a five-row budget hides exactly one — and a toggle that
+    // hides one line is more chrome than it saves, so every row is shown.
+    await expect(page.getByRole('button', { name: /show all selected options/i })).toHaveCount(0)
+    await expect(page.getByText('Print Only')).toBeVisible()
+  })
+
+  // Replaces the old hold-countdown test. The hold layer was deleted on
+  // 21 August — nothing is reserved while a line sits in the cart — so the
+  // assertion is now the OPPOSITE: the notice is stated plainly and there is no
+  // countdown anywhere. Runbook L-01.
+  test('a limited line states nothing is reserved, and shows no countdown', async ({ page }) => {
     await seedCart(page, [
       makeCartItem({
         lineId: 'line-ltd',
         editionType: 'limited',
         variantId: 'variant-1',
-        editionNumberIds: ['en-1'],
-        holdExpiresAt: Date.now() + 12 * 60 * 1000,
       }),
     ])
     await page.goto('/cart')
 
-    await expect(page.getByText('Limited Edition')).toBeVisible()
-    const hold = page.getByText(/Held for you —/)
-    await expect(hold).toBeVisible()
+    await expect(page.getByText(/^Limited Edition/).first()).toBeVisible()
+    await expect(page.getByText(LIMITED_NOT_RESERVED_NOTICE)).toBeVisible()
+    // The words the removed hold used. Any of them reappearing means an old
+    // build is deployed — which is exactly what the runbook tells the operator
+    // to stop for.
+    await expect(page.getByText(/Held for you/i)).toHaveCount(0)
+    await expect(page.getByText(/reserved while you decide/i)).toHaveCount(0)
+    await expect(page.getByText(/expires? in/i)).toHaveCount(0)
+  })
 
-    // The info icon explains the hold on hover.
-    const box = hold.locator('..')
-    await box.locator('svg').hover()
-    await expect(page.getByRole('tooltip')).toContainText(/reserved while you decide/i)
+  // Replaces the old "Edit item deep-links" test for limited lines. A limited
+  // variant is an object, not a configuration: the cart offers no edit for one
+  // and no second copy of one. Runbook L-13.
+  test('a limited line offers no Edit item, and its quantity cannot be raised', async ({
+    page,
+  }) => {
+    await seedCart(page, [
+      makeCartItem({ lineId: 'line-ltd', editionType: 'limited', variantId: 'variant-1' }),
+    ])
+    await page.goto('/cart')
+
+    await expect(page.getByRole('link', { name: /Edit Item/i })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Increase quantity' })).toBeDisabled()
+  })
+
+  test('an open line still offers Edit item', async ({ page }) => {
+    await seedCart(page, [makeCartItem({ lineId: 'line-open' })])
+    await page.goto('/cart')
+
+    await expect(page.getByRole('link', { name: /Edit Item/i })).toBeVisible()
   })
 })

@@ -177,7 +177,10 @@ test.describe('Deleting an artwork removes every trace of it', () => {
 
       // …and the cleanup must be surgical: the bystander keeps its membership,
       // and the groups themselves survive rather than being dropped wholesale.
-      expect(groups.map((g) => g.id), 'both groups still exist').toEqual(['group-1', 'group-2'])
+      expect(
+        groups.map((g) => g.id),
+        'both groups still exist',
+      ).toEqual(['group-1', 'group-2'])
       expect(
         groups.find((g) => g.id === 'group-1')?.artworkIds,
         'the other artwork keeps its place in the group',

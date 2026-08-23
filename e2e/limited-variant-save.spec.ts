@@ -78,7 +78,10 @@ test.describe('updateVariantNameAndPrice', () => {
         data: { originalHeight: Math.round((art!.originalHeight as number) * 0.85) },
       })
 
-      // The whole-artwork save is now blocked — this is the wall the artist hit.
+      // The whole-artwork save GRANDFATHERS the untouched variant through. Its
+      // stored geometry no longer matches the artwork, but re-testing an
+      // already-live row against today's file would stick the artist: it holds
+      // sold copies, so it cannot be deleted either.
       const viaArtwork = await saveLimitedVariants({
         artworkId: fx.artworkId,
         artworkPixels: {
@@ -98,8 +101,33 @@ test.describe('updateVariantNameAndPrice', () => {
           },
         ],
       })
-      expect(viaArtwork.ok, 'the whole-artwork save should be blocked here').toBe(false)
-      if (!viaArtwork.ok) expect(viaArtwork.error).toMatch(/aspect ratio/i)
+      expect(viaArtwork.ok, 'an untouched live variant is grandfathered').toBe(true)
+
+      // Grandfathered, NOT endorsed: touch any measurement on that same variant
+      // and it must pass in full. This is the half that keeps the escape hatch
+      // from becoming a way to save geometry that was never valid.
+      const withEditedSize = await saveLimitedVariants({
+        artworkId: fx.artworkId,
+        artworkPixels: {
+          widthPx: art!.originalWidth as number,
+          heightPx: Math.round((art!.originalHeight as number) * 0.85),
+        },
+        variants: [
+          {
+            id: fx.variantId,
+            name: 'Blocked By Geometry',
+            paperId: 'hahnemuhle-german-etching',
+            // One centimetre narrower is enough to forfeit the grandfathering.
+            widthCm: fx.widthCm - 1,
+            heightCm: fx.heightCm,
+            borderCm: 3,
+            editionSize: fx.editionSize,
+            priceCents: 42000,
+          },
+        ],
+      })
+      expect(withEditedSize.ok, 'an edited measurement is judged in full').toBe(false)
+      if (!withEditedSize.ok) expect(withEditedSize.error).toMatch(/aspect ratio/i)
 
       // The per-variant save goes through anyway — it never looks at geometry.
       const res = await updateVariantNameAndPrice({

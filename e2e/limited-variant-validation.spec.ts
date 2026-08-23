@@ -127,9 +127,15 @@ test('a sheet change always changes the derived image size', () => {
 // exactly satisfies the "stored size must match the derivation" check,
 // sits inside this file's 30.0-60.96 cm printable range (45 cm long
 // edge), and clears the 20 cm short-edge floor (30 cm).
+// A LONG, NARROW landscape sheet: 150 × 44 keeps the derived image (57 × 38)
+// inside the file's printable range while the sheet itself stays enormous, so
+// the sheet-vs-image cost gap is what the variant is judged on. Orientation
+// must match the landscape artwork — a portrait sheet is refused before the
+// cost gate is reached — and the image must not exceed the 61 cm long-edge cap
+// for this file, which is what a 150 × 51 sheet did.
 const bigSheetLayout = computeSheetLayout({
-  sheetWidthCm: 51,
-  sheetHeightCm: 150,
+  sheetWidthCm: 150,
+  sheetHeightCm: 44,
   minBorderCm: 3,
   aspectRatio: 1.5,
 })!
@@ -141,8 +147,8 @@ test('rejects a fixed sheet that costs more to produce than the variant earns', 
       widthCm: bigSheetLayout.imageWidthCm,
       heightCm: bigSheetLayout.imageHeightCm,
       borderCm: 3,
-      sheetWidthCm: 51,
-      sheetHeightCm: 150,
+      sheetWidthCm: 150,
+      sheetHeightCm: 44,
       // Low price -> gallery cut (price * TPS_GALLERY_MARKUP_RATE) is
       // nowhere near enough to cover the sheet-vs-image cost gap.
       priceCents: 500,
@@ -166,8 +172,8 @@ test('the same oversized sheet passes once the price covers the absorbed cost', 
       widthCm: bigSheetLayout.imageWidthCm,
       heightCm: bigSheetLayout.imageHeightCm,
       borderCm: 3,
-      sheetWidthCm: 51,
-      sheetHeightCm: 150,
+      sheetWidthCm: 150,
+      sheetHeightCm: 44,
       priceCents,
     },
     artwork: ARTWORK_3_2,

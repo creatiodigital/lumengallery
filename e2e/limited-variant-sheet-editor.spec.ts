@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test'
 import {
   computeSheetLayout,
   isFixedSheet,
-  variantTemplateKey,
   seedSheetForVariant,
 } from '../src/lib/editions/sheetLayout'
 import { remapIndexKeys } from '../src/components/shared/ArtworkEditForm/LimitedVariantsEditor/remapIndexKeys'
