@@ -22,8 +22,11 @@ type Props = {
 /**
  * Left-column selector for a limited edition: the buyer picks from the
  * artwork's pre-defined variants — no size/paper/framing configuration.
- * Sold-out variants are filtered out upstream; each card shows the live
- * remaining count to surface scarcity.
+ *
+ * A SOLD-OUT variant still appears, disabled and tagged. Removing it made the
+ * edition look smaller than it is and hid the most persuasive fact the page
+ * has: that a size sold out. Scarcity is the point of a limited edition, so an
+ * empty row earns its place.
  *
  * One edition at a time, and none on arrival: the preview, the size schema and
  * the spec list all describe exactly one print, and choosing for the buyer on
@@ -50,20 +53,26 @@ export const VariantPicker = ({
       const techniqueLabel = TPS_PRINT_TYPES.find((t) => t.id === v.printTypeId)?.label
       // White Cube–style medium line: "<technique> print on <paper>".
       const medium = techniqueLabel ? `${techniqueLabel} print on ${paperLabel}` : paperLabel
-      const inCart = cartedVariantIds?.has(v.id) ?? false
+      const soldOut = v.remaining <= 0
+      const inCart = !soldOut && (cartedVariantIds?.has(v.id) ?? false)
       const selected = v.id === selectedVariantId
       return (
         <button
           key={v.id}
           type="button"
           className={`${styles.variantCard} ${selected ? styles.variantCardSelected : ''} ${
-            inCart ? styles.variantCardInCart : ''
-          }`}
+            inCart || soldOut ? styles.variantCardInCart : ''
+          } ${soldOut ? styles.variantCardSoldOut : ''}`}
           onClick={() => onSelect(v.id)}
+          // Sold out is the one state that genuinely cannot be selected: there
+          // is nothing to buy and nothing to preview buying. A carted variant
+          // stays live by contrast — see the note above.
+          disabled={soldOut}
           aria-pressed={selected}
         >
           <span className={styles.variantCardHead}>
             <span className={styles.variantCardEyebrow}>Edition name</span>
+            {soldOut && <span className={styles.variantCardTag}>Sold out</span>}
             {inCart && (
               <span className={styles.variantCardTag}>
                 <Icon name="check-circle" size={13} />

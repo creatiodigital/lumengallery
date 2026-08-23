@@ -18,7 +18,11 @@ import { useCart } from '@/lib/cart/useCart'
 import { type Catalog, type Quote, summarizeConfig } from '@/lib/print-providers'
 import { getProviderQuote } from '@/lib/print-providers/quote'
 import { variantToWizardConfig } from '@/lib/editions/variantToWizardConfig'
-import { cartedVariantIds, resolveSelectedVariant } from '@/lib/editions/variantSelection'
+import {
+  cartedVariantIds,
+  resolveSelectedVariant,
+  selectableVariants,
+} from '@/lib/editions/variantSelection'
 import { TABLET_BREAKPOINT_PX, useIsMobile } from '@/hooks/useIsMobile'
 
 import { EditionBadge } from './EditionBadge'
@@ -70,11 +74,13 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
 
   const { addItem, items } = useCart()
 
-  // Sold-out variants are hidden — only buyable ones are offered.
-  const available = useMemo(
-    () => (artwork.variants ?? []).filter((v) => v.remaining > 0),
-    [artwork.variants],
-  )
+  // Every published variant is SHOWN, including sold-out ones — a buyer who saw
+  // a size last week should learn it sold out, not find it quietly missing.
+  const allVariants = useMemo(() => artwork.variants ?? [], [artwork.variants])
+  // …but only the ones with stock can be SELECTED. This drives the selection
+  // fallback and the whole-edition-sold-out panel; the picker renders from
+  // `allVariants` and disables the rest.
+  const available = useMemo(() => selectableVariants(allVariants), [allVariants])
 
   // A variant already in the cart is MARKED, not locked.
   //
@@ -141,7 +147,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
   // than re-quoting per render or per click.
   const quotesByVariantId = useMemo(() => {
     const quotes = new Map<string, Quote>()
-    for (const v of available) {
+    for (const v of allVariants) {
       quotes.set(
         v.id,
         getProviderQuote(catalog.providerId, {
@@ -152,15 +158,15 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
       )
     }
     return quotes
-  }, [available, country, catalog.providerId, artwork.printPriceCents])
+  }, [allVariants, country, catalog.providerId, artwork.printPriceCents])
 
   const pickerItems: VariantPickerItem[] = useMemo(
     () =>
-      available.map((v) => ({
+      allVariants.map((v) => ({
         ...v,
         priceCents: quotesByVariantId.get(v.id)?.subtotalCents ?? 0,
       })),
-    [available, quotesByVariantId],
+    [allVariants, quotesByVariantId],
   )
 
   const [addError, setAddError] = useState<string | null>(null)

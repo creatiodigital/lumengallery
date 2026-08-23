@@ -24,6 +24,22 @@ type CartedLine = { artworkId: string; variantId?: string }
 /** The only field a variant needs for these decisions. */
 type Selectable = { id: string }
 
+/** A variant plus its live stock, for deciding what can still be bought. */
+type Stocked = Selectable & { remaining: number }
+
+/**
+ * Of every published variant, the ones a buyer can actually choose.
+ *
+ * Sold-out variants are still SHOWN — a buyer who saw a size last week should
+ * learn it sold out rather than find it quietly missing, and a "Sold out" row
+ * against "Edition of 100" is public evidence the cap is being honoured. They
+ * just cannot be selected, priced or bought, which is what this filter draws
+ * the line for. The picker renders everything and disables the difference.
+ */
+export function selectableVariants<T extends Stocked>(all: readonly T[]): T[] {
+  return all.filter((v) => v.remaining > 0)
+}
+
 /**
  * Ids of THIS artwork's variants that already sit in the cart.
  *

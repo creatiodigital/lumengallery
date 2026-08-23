@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test'
 
-import { cartedVariantIds, resolveSelectedVariant } from '../src/lib/editions/variantSelection'
+import {
+  cartedVariantIds,
+  resolveSelectedVariant,
+  selectableVariants,
+} from '../src/lib/editions/variantSelection'
 
 /**
  * The limited picker is single-select and always has exactly one edition
@@ -59,4 +63,28 @@ test('a selected edition that sells out falls back to the first', () => {
 
 test('a work with nothing on sale selects nothing', () => {
   expect(resolveSelectedVariant('v-small', [])).toBeNull()
+})
+
+// A sold-out variant stays VISIBLE — a buyer who saw that size last week should
+// learn it sold out, not find it quietly missing, and the row is public evidence
+// the edition cap is being honoured. It simply cannot be chosen.
+test('a sold-out edition cannot be selected', () => {
+  const soldOut = { id: 'v-gone', remaining: 0 }
+  const inStock = { id: 'v-left', remaining: 4 }
+  expect(selectableVariants([soldOut, inStock])).toEqual([inStock])
+})
+
+test('the opening selection skips a sold-out first card', () => {
+  const soldOut = { id: 'v-gone', remaining: 0 }
+  const inStock = { id: 'v-left', remaining: 4 }
+  expect(resolveSelectedVariant('', selectableVariants([soldOut, inStock]))).toBe(inStock)
+})
+
+test('a whole sold-out edition leaves nothing selectable', () => {
+  expect(
+    selectableVariants([
+      { id: 'a', remaining: 0 },
+      { id: 'b', remaining: 0 },
+    ]),
+  ).toEqual([])
 })

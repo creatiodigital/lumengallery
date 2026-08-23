@@ -1307,6 +1307,24 @@
   color: var(--color-brand);
 }
 
+// Sold out: present, legible, unbuyable. Reuses the carted card's ground tint
+// so the picker has one "not on offer" register rather than two. The TAG stays
+// brand red rather than grey — a size selling out is the most persuasive fact
+// the page has, and greying it hides exactly what a collector should notice.
+.variantCardSoldOut {
+  cursor: default;
+
+  &:hover {
+    border-color: var(--color-border-light);
+  }
+
+  .variantCardName,
+  .variantCardMeta,
+  .variantCardPrice {
+    color: var(--color-text-secondary);
+  }
+}
+
 .variantCardEyebrow {
   font-size: var(--text-xs);
   letter-spacing: 0.06em;
