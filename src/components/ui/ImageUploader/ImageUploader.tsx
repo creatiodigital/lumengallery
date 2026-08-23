@@ -277,7 +277,11 @@ export const ImageUploader = ({
           : await getImageDimensions(url)
         if (minWidth > 0 && minHeight > 0 && (width < minWidth || height < minHeight)) {
           setResolutionError(
-            `Image is too small (${height} × ${width} px). Minimum resolution is ${minHeight} × ${minWidth} px.`,
+            // Pixels read width × height — the convention every other surface
+            // uses (the artwork form prints its own meta line the same way, and
+            // the two can sit on one screen). Only physical cm sizes are
+            // height-first, per gallery convention.
+            `Image is too small (${width} × ${height} px). Minimum resolution is ${minWidth} × ${minHeight} px.`,
           )
           return false
         }
@@ -425,7 +429,7 @@ export const ImageUploader = ({
               <div className={styles.imageMeta}>
                 {displayMeta && <span className={styles.imageMetaLabel}>Original file:</span>}
                 <span>
-                  {meta.height} × {meta.width} px
+                  {meta.width} × {meta.height} px
                 </span>
                 <span>{meta.format}</span>
                 {meta.sizeBytes > 0 && <span>{formatFileSize(meta.sizeBytes)}</span>}

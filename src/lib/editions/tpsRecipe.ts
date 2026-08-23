@@ -12,6 +12,9 @@
  * instruction, so the product config and the order can never disagree.
  */
 import { computeSheetLayout, isFixedSheet } from '@/lib/editions/sheetLayout'
+// ONE formatter writes every centimetre length in this app. A private round1
+// lived here and printed "7" where every other surface printed "7.0".
+import { formatCm } from '@/lib/print-providers/format'
 
 const CM_PER_INCH = 2.54
 
@@ -51,7 +54,11 @@ export type BuildTpsRecipeArgs = {
   paperLabel: string
 }
 
-const round1 = (n: number) => Math.round(n * 10) / 10
+// Inches get the same one-decimal treatment as centimetres. No shared inch
+// formatter exists because this file is the only place the app speaks inches —
+// TPS's form offers them and the operator may be reading either column. The
+// recipe itself holds raw numbers; formatting happens here, at the boundary.
+const oneDecimal = (n: number) => n.toFixed(1)
 
 export function buildTpsRecipe(args: BuildTpsRecipeArgs): TpsRecipe | null {
   const { widthCm, heightCm, borderCm, paperLabel } = args
@@ -84,8 +91,8 @@ export function buildTpsRecipe(args: BuildTpsRecipeArgs): TpsRecipe | null {
   return {
     sheetWidthCm,
     sheetHeightCm,
-    sheetWidthIn: round1(sheetWidthCm / CM_PER_INCH),
-    sheetHeightIn: round1(sheetHeightCm / CM_PER_INCH),
+    sheetWidthIn: sheetWidthCm / CM_PER_INCH,
+    sheetHeightIn: sheetHeightCm / CM_PER_INCH,
     borderMm: Math.round(borderCm * 10),
     distribution: DISTRIBUTION,
     fitMethod: FIT_METHOD,
@@ -106,7 +113,7 @@ export function formatTpsRecipe(recipe: TpsRecipe, opts?: { title?: string }): s
   const lines: string[] = []
   if (opts?.title) lines.push(`TPS setup — ${opts.title}`, '')
   lines.push(
-    `Custom size (W × H)   ${round1(recipe.sheetWidthCm)} × ${round1(recipe.sheetHeightCm)} cm      (${recipe.sheetWidthIn} × ${recipe.sheetHeightIn} in)`,
+    `Custom size (W × H)   ${formatCm(recipe.sheetWidthCm)} × ${formatCm(recipe.sheetHeightCm)} cm      (${oneDecimal(recipe.sheetWidthIn)} × ${oneDecimal(recipe.sheetHeightIn)} in)`,
     `Fit method            ${recipe.fitMethod}`,
     `Border size           Custom`,
     `Distribution          ${recipe.distribution}`,
@@ -114,7 +121,7 @@ export function formatTpsRecipe(recipe: TpsRecipe, opts?: { title?: string }): s
     `Targeted border       ${recipe.borderMm} mm`,
     `Paper                 ${recipe.paperLabel}`,
     '',
-    `Expect: image ${round1(recipe.expectedImageWidthCm)} × ${round1(recipe.expectedImageHeightCm)} cm · borders ${round1(recipe.expectedBorderXCm)} h / ${round1(recipe.expectedBorderYCm)} v`,
+    `Expect: image ${formatCm(recipe.expectedImageWidthCm)} × ${formatCm(recipe.expectedImageHeightCm)} cm · borders ${formatCm(recipe.expectedBorderXCm)} h / ${formatCm(recipe.expectedBorderYCm)} v`,
   )
   return lines.join('\n')
 }

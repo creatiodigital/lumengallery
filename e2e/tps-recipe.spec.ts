@@ -20,7 +20,9 @@ test('fixed-sheet recipe reproduces the verified TPS setup', () => {
   expect(recipe.expectedBorderYCm).toBeCloseTo(8, 5)
 })
 
-test('inches are rounded to one decimal, matching the TPS row', () => {
+// The recipe holds the raw conversion; one-decimal rendering happens at the
+// formatting boundary and is asserted with the rest of the block below.
+test('inches are converted from centimetres', () => {
   const recipe = buildTpsRecipe({
     widthCm: 36,
     heightCm: 24,
@@ -29,8 +31,8 @@ test('inches are rounded to one decimal, matching the TPS row', () => {
     sheetHeightCm: 40,
     paperLabel: 'Hahnemühle German Etching',
   })!
-  expect(recipe.sheetWidthIn).toBe(19.7)
-  expect(recipe.sheetHeightIn).toBe(15.7)
+  expect(recipe.sheetWidthIn).toBeCloseTo(19.685, 3)
+  expect(recipe.sheetHeightIn).toBeCloseTo(15.748, 3)
 })
 
 test('adaptive recipe derives the sheet as image plus twice the border', () => {
@@ -58,18 +60,18 @@ test('formatted output is width-first and explicitly labelled', () => {
   })!
   const text = formatTpsRecipe(recipe, { title: 'Saut de lange 50x40 Standard' })
   expect(text).toContain('W × H')
-  expect(text).toContain('50 × 40 cm')
+  expect(text).toContain('50.0 × 40.0 cm')
   expect(text).toContain('19.7 × 15.7 in')
   expect(text).toContain('70 mm')
   expect(text).toContain('Even')
   expect(text).toContain('Add a border')
   expect(text).toContain('Hahnemühle German Etching')
   // The acceptance line the operator checks against the TPS preview.
-  expect(text).toContain('36 × 24 cm')
+  expect(text).toContain('36.0 × 24.0 cm')
   expect(text).toContain('7.0')
   expect(text).toContain('8.0')
   // Must NOT print our own H×W order for the TPS fields.
-  expect(text).not.toContain('40 × 50 cm')
+  expect(text).not.toContain('40.0 × 50.0 cm')
 })
 
 test('returns null when the geometry is impossible', () => {
