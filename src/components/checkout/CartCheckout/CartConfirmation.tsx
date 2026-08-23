@@ -5,6 +5,10 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Text } from '@/components/ui/Typography'
 import { ensureOrderAction } from '@/lib/orders/ensureOrderAction'
+import {
+  EDITION_NUMBER_NOTICE_BODY,
+  EDITION_NUMBER_NOTICE_HEADING,
+} from '@/lib/editions/editionNumberNotice'
 
 import { UnboxingReminderModal } from './UnboxingReminderModal'
 import styles from './CartCheckout.module.scss'
@@ -54,6 +58,7 @@ function markReminderSeen(paymentIntentId: string): void {
 export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => {
   const [status, setStatus] = useState<Status>('finalizing')
   const [orderRef, setOrderRef] = useState<string | null>(null)
+  const [hasLimitedEdition, setHasLimitedEdition] = useState(false)
   const [showReminder, setShowReminder] = useState(false)
 
   useEffect(() => {
@@ -63,6 +68,7 @@ export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => 
         if (!active) return
         setStatus(res.ok ? 'confirmed' : 'failed')
         if (res.orderRef) setOrderRef(res.orderRef)
+        setHasLimitedEdition(res.hasLimitedEdition === true)
       })
       .catch(() => {
         if (active) setStatus('failed')
@@ -127,11 +133,30 @@ export const CartConfirmation = ({ paymentIntentId }: CartConfirmationProps) => 
       <Text as="h2" font="serif" size="xl" className={styles.confirmHeadline}>
         Thank you — your order is confirmed.
       </Text>
+      {/* Says "payment", never "card". Manual capture is offered on every
+          method Stripe gives us — a PayPal buyer was being told about a card
+          they never used. Method-agnostic wording stays true for whatever the
+          Payment Element offers next, without plumbing the method through. */}
       <Text as="p" size="md" className={styles.confirmBody}>
-        We&apos;ve placed a hold on your card and your order is now being prepared. We&apos;ll
-        charge your card once your prints enter production, and send a confirmation email with
-        tracking details as soon as they ship.
+        Your payment is authorized and your order is now being prepared. We&apos;ll take the payment
+        once your prints enter production, and send a confirmation email with tracking details as
+        soon as they ship.
       </Text>
+
+      {/* Limited lines only: an open-edition buyer has no number coming and
+          should not be told to wait for one. The number IS already assigned,
+          but naming it here would promise a copy a cancellation could take
+          back — see editionNumberNotice for the full reasoning. */}
+      {hasLimitedEdition && (
+        <div className={styles.editionNotice}>
+          <Text as="span" size="xs" className={styles.editionNoticeHeading}>
+            {EDITION_NUMBER_NOTICE_HEADING}
+          </Text>
+          <Text as="p" size="sm" className={styles.editionNoticeBody}>
+            {EDITION_NUMBER_NOTICE_BODY}
+          </Text>
+        </div>
+      )}
 
       {/* The buyer's ONE reference — identical to the string on every email and
           the invoice, so quoting it back to us always finds this order. The

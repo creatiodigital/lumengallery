@@ -418,6 +418,9 @@ export async function createPrintOrderFromCart(
       buyerName: pending.buyerName,
       orderId: result.orderId,
       lines,
+      // Any limited line means the buyer has a number coming and should be
+      // told when — see editionNumberNotice.
+      hasLimitedEdition: items.some((it) => it.editionType === 'limited'),
       subtotalCents,
       shippingCents: pending.shippingCents,
       vatCents: pending.customerVatCents,

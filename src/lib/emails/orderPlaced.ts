@@ -15,6 +15,10 @@ import { formatAmount } from './format'
 import { renderEmailLayout } from './layout'
 import { estimateDeliveryWindow, mayOweImportDuty } from './delivery'
 import { formatOrderRef } from '@/lib/orders/orderRef'
+import {
+  EDITION_NUMBER_NOTICE_BODY,
+  EDITION_NUMBER_NOTICE_HEADING,
+} from '@/lib/editions/editionNumberNotice'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -32,6 +36,9 @@ export type OrderPlacedArgs = {
   shippingCents?: number
   /** VAT charged to the buyer, in cents. */
   vatCents?: number
+  /** True when the order holds at least one limited edition — drives the
+   *  "your edition number" notice. Open-edition orders never show it. */
+  hasLimitedEdition?: boolean
   /** Label for the VAT line, e.g. 'VAT (ES 21%)'. Defaults to 'VAT'. */
   vatLabel?: string
   totalCents: number
@@ -80,6 +87,15 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
       )
     : ''
 
+  // Limited lines only: an open-edition buyer has no number coming. Placed
+  // after the items, so it reads as a note about what was just bought.
+  const editionNote = args.hasLimitedEdition
+    ? emailNotice(
+        'info',
+        `<strong>${EDITION_NUMBER_NOTICE_HEADING}:</strong> ${EDITION_NUMBER_NOTICE_BODY}`,
+      )
+    : ''
+
   const body =
     emailHeading(`Thank you, ${firstName}`) +
     emailParagraph(
@@ -89,7 +105,7 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
       `<strong>Expected delivery:</strong> ${deliveryWindow.minDays}&ndash;${deliveryWindow.maxDays} business days from today. Framed prints can occasionally take a few days longer to make.`,
     ) +
     emailParagraph(
-      `A temporary hold has been placed on your card &mdash; we&rsquo;ll only charge it once your print enters production. We&rsquo;ll email your invoice with that charge, and send tracking details as soon as it ships.`,
+      `Your payment is authorized, not yet taken &mdash; we&rsquo;ll only take it once your print enters production. We&rsquo;ll email your invoice with that charge, and send tracking details as soon as it ships.`,
     ) +
     emailDivider() +
     emailEyebrow(`Order ${safeOrderId.toUpperCase()}`) +
@@ -106,6 +122,7 @@ export function renderOrderPlacedEmail(args: OrderPlacedArgs): { subject: string
       ],
       summary,
     ) +
+    editionNote +
     dutyNote +
     emailDivider() +
     emailParagraph(`If anything changes with your order, we&rsquo;ll be in touch right away.`)

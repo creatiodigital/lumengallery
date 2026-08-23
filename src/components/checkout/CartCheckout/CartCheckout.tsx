@@ -48,6 +48,23 @@ type CartCheckoutProps = {
   supportedCountries: string[]
 }
 
+/**
+ * Rewrite /checkout to carry ONLY the PaymentIntent id.
+ *
+ * The id is what lets a reload rebuild the confirmation. Stripe's redirect also
+ * appends `payment_intent_client_secret` and `redirect_status`; the client
+ * secret can confirm the PaymentIntent, so it has no business sitting in a URL
+ * the buyer may bookmark, copy to us or paste into a support chat. It is
+ * dropped here rather than merely ignored.
+ */
+function keepOnlyPaymentIntentInUrl(paymentIntentId: string): void {
+  window.history.replaceState(
+    null,
+    '',
+    `/checkout?payment_intent=${encodeURIComponent(paymentIntentId)}`,
+  )
+}
+
 export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
   const { items, clear, removeItem } = useCart()
 
@@ -70,39 +87,52 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
   const [lineErrors, setLineErrors] = useState<Record<string, string>>({})
   const [payError, setPayError] = useState<string | null>(null)
 
-  // 3DS return path. When a card needs authentication, Stripe redirects to
-  // return_url (/checkout) with ?payment_intent=... Verify it server-side
-  // (never trust redirect_status), then clear the cart and land on the
-  // confirmation step. Runs once on mount; the URL param presence gates it so
-  // a normal /checkout visit is unaffected.
+  // Redirect return path. Stripe sends the buyer back to return_url
+  // (/checkout) with ?payment_intent=... — after 3DS on a card, and ALWAYS for
+  // a redirect-based method like PayPal. Verify it server-side (never trust
+  // redirect_status), then clear the cart and land on the confirmation step.
+  //
+  // This is also the reload path: the id stays in the URL precisely so a
+  // refresh re-enters here and rebuilds the confirmation. Re-entry is
+  // idempotent — the PI is re-read from Stripe, the order is fetched (or
+  // created) by reference, and clear() no-ops on an emptied cart.
   const handledReturnRef = useRef(false)
+  // True from the first render after mount when the URL names a PaymentIntent,
+  // so the empty-cart view below yields while we verify. The cart IS empty on a
+  // reload — it was cleared when the order was placed — and showing "your cart
+  // is empty" over a completed order is exactly the bug this path fixes.
+  const [restoringOrder, setRestoringOrder] = useState(false)
   useEffect(() => {
     if (handledReturnRef.current) return
     handledReturnRef.current = true
     const params = new URLSearchParams(window.location.search)
     const returnedPi = params.get('payment_intent')
     if (!returnedPi) return
+    setRestoringOrder(true)
     void (async () => {
       const result = await verifyCartPaymentAction(returnedPi)
       if (!result.ok) {
         // Auth failed / unknown PI — drop the buyer back to the address step
         // with a retry message rather than a false success.
+        setRestoringOrder(false)
         setPayError('Payment could not be completed. Please try again.')
+        window.history.replaceState(null, '', '/checkout')
         return
       }
       paidRef.current = true
       setPaymentIntentId(result.paymentIntentId)
       setStep('confirmation')
+      setRestoringOrder(false)
       await clear()
-      // Strip the Stripe params so a refresh doesn't re-trigger this path.
-      window.history.replaceState(null, '', '/checkout')
+      keepOnlyPaymentIntentInUrl(result.paymentIntentId)
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // After a successful payment the cart is emptied — but we must keep showing
-  // the confirmation, not the "empty cart" view. paidRef gates that.
-  if (items.length === 0 && !paidRef.current) {
+  // the confirmation, not the "empty cart" view. paidRef gates that, and
+  // restoringOrder covers the reload, where paidRef starts false again.
+  if (items.length === 0 && !paidRef.current && !restoringOrder) {
     return (
       <PageLayout>
         <PageHeader pageTitle="Checkout" />
@@ -211,6 +241,10 @@ export const CartCheckout = ({ supportedCountries }: CartCheckoutProps) => {
     setPaymentIntentId(confirmedPaymentIntentId)
     setStep('confirmation')
     void clear()
+    // Same URL contract as the redirect path, so a reload rebuilds the
+    // confirmation here too. Without it this branch — a card needing no 3DS —
+    // held the order only in memory, and one refresh lost the reference.
+    keepOnlyPaymentIntentInUrl(confirmedPaymentIntentId)
   }
 
   return (

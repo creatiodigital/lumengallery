@@ -52,18 +52,20 @@ export const PrintConfirmation = ({ artwork, paymentIntentId, status }: PrintCon
 
   let body =
     status === 'succeeded'
-      ? `We\u2019ve placed a hold on your card and your order is now being prepared. We\u2019ll charge your card once your print enters production, and send a confirmation email with tracking details as soon as it ships.`
+      ? // "payment", never "card" — manual capture works on every method the
+        // Payment Element offers, and a PayPal buyer has no card to hold.
+        `Your payment is authorized and your order is now being prepared. We\u2019ll take the payment once your print enters production, and send a confirmation email with tracking details as soon as it ships.`
       : status === 'processing'
         ? `We\u2019ll email you as soon as the payment is fully cleared. You don\u2019t need to do anything else.`
         : status === 'unknown'
           ? `If you just completed a payment, please check your email for a receipt. Otherwise start a new order from the artwork page.`
-          : `Your card wasn\u2019t charged. You can try again from the checkout screen.`
+          : `You have not been charged. You can try again from the checkout screen.`
 
   // order_failed: the card is authorized but we couldn't record the order.
   // Honest + distinct from a declined card — the card was NOT charged.
   if (status === 'order_failed') {
     headline = 'Payment received — we’re finalizing your order'
-    body = `Your card has been authorized but not charged. We hit a snag recording your order and have already been notified — we’ll email you to confirm it shortly and put right anything that’s wrong. Please don’t pay again.`
+    body = `Your payment has been authorized but not taken. We hit a snag recording your order and have already been notified — we’ll email you to confirm it shortly and put right anything that’s wrong. Please don’t pay again.`
   }
 
   return (
