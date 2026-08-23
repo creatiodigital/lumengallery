@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { r2Reachable, R2_BLOCKED_REASON } from './r2-reachable'
 
 import prisma from '@/lib/prisma'
 import { deleteR2KeyDirect, getR2ObjectSize, uploadToR2 } from '@/lib/r2'
@@ -132,6 +133,7 @@ async function teardownFixture(f: Fixture | null): Promise<void> {
 
 test.describe('Deleting an artwork removes every trace of it', () => {
   test('row, exhibition placement, R2 blob and autofocus membership all go', async ({ page }) => {
+    test.skip(!(await r2Reachable()), R2_BLOCKED_REASON)
     test.setTimeout(120_000)
 
     let f: Fixture | null = null

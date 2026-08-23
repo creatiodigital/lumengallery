@@ -25,6 +25,7 @@
  * collisions with manual-test runs in the same month).
  */
 import { test, expect } from '@playwright/test'
+import { r2Reachable, R2_BLOCKED_REASON } from './r2-reachable'
 
 import prisma from '@/lib/prisma'
 
@@ -37,6 +38,7 @@ test.describe('Invoice — send button UI', () => {
   test('clicking Send invoice mints a number on the order and shows it in the register', async ({
     page,
   }) => {
+    test.skip(!(await r2Reachable()), R2_BLOCKED_REASON)
     test.setTimeout(180_000)
 
     let bought: BoughtLimitedOrder | null = null

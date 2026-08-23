@@ -7,6 +7,7 @@ import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
 
 import { RichText } from '@/components/ui/RichText'
 import { Text } from '@/components/ui/Typography'
+import { formatEuro } from '@/lib/print-providers'
 
 import styles from './ArtworkGrid.module.scss'
 
@@ -45,8 +46,22 @@ interface ArtworkGridProps {
 const FALLBACK_WIDTH = 800
 const FALLBACK_HEIGHT = 600
 
-/** Whole euros — no cents on a listing; the wizard shows the exact figure. */
-const formatEuros = (cents: number) => `€${Math.round(cents / 100).toLocaleString('es-ES')}`
+/**
+ * Whole euros on a listing — a gallery quotes 450, not 449.67.
+ *
+ * Production costs are ceilinged to the euro and the gallery cut is 40% of an
+ * artist price we set in fives, so this figure arrives already whole and the
+ * bare number is the exact one the buyer pays.
+ *
+ * When it doesn't — an artist price like €233 makes the 40% cut €93.20 — we
+ * print the cents rather than hide them. `Math.round` used to round DOWN here,
+ * so a €443.20 print advertised as €443 and charged €443.20: advertising below
+ * the checkout price, which is the one direction that draws complaints. Showing
+ * the true figure keeps the listing honest and makes the mispriced artwork
+ * visible instead of silently absorbing it.
+ */
+const formatEuros = (cents: number) =>
+  cents % 100 === 0 ? `€${(cents / 100).toLocaleString('es-ES')}` : formatEuro(cents)
 
 export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: ArtworkGridProps) => {
   return (
