@@ -3,6 +3,7 @@ import { renderEmailLayout } from '@/lib/emails/layout'
 import { emailButton, emailHeading, emailParagraph } from '@/lib/emails/components'
 import { renderAdminCriticalAlertEmail } from '@/lib/emails/adminCriticalAlert'
 import { renderArtistPayoutEmail } from '@/lib/emails/artistPayout'
+import { renderAuthorizationExpiryWarningEmail } from '@/lib/emails/authorizationExpiryWarning'
 import { renderOrderPlacedEmail } from '@/lib/emails/orderPlaced'
 import { renderCartOrderPlacedEmail } from '@/lib/emails/cartOrderPlaced'
 import { renderOrderInProductionEmail } from '@/lib/emails/orderInProduction'
@@ -43,6 +44,30 @@ const TEMPLATES: Record<string, () => string> = {
         'Check Stripe for the captured PaymentIntent',
         'Manually create the order row from admin',
         'Verify the buyer received confirmation',
+      ],
+    }).html,
+  'authorization-expiry': () =>
+    renderAuthorizationExpiryWarningEmail({
+      ordersUrl: 'https://theartroom.gallery/admin/orders',
+      orders: [
+        {
+          orderRef: 'AD81E642',
+          buyerName: 'Jane Smith',
+          totalCents: 22990,
+          currency: 'eur',
+          days: 5,
+          daysLeft: 2,
+          lapsed: false,
+        },
+        {
+          orderRef: 'B71C0F3A',
+          buyerName: 'John Doe',
+          totalCents: 31100,
+          currency: 'eur',
+          days: 8,
+          daysLeft: 0,
+          lapsed: true,
+        },
       ],
     }).html,
   'artist-payout': () =>

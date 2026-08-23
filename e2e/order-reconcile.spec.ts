@@ -15,12 +15,15 @@ import { cancelPaymentIntent } from './stripe-helpers'
  * Layer-3 reconcile cron — the safety net that makes order creation independent
  * of the Stripe webhook even after the buyer has left the confirmation page.
  *
- * Two behaviors, driven through the REAL `/api/cron/reconcile-orders` route:
+ * Three behaviors, driven through the REAL `/api/cron/reconcile-orders` route:
  *   A. RECOVER — an authorized PI with no PrintOrder gets one created (idempotent
  *      `ensureOrderForPaymentIntent`), with its reserved edition number bound.
  *   B. RELEASE — a reservation whose PI has died (canceled/abandoned) and was
  *      never bound to an order is freed back to `available`, closing the
  *      orphaned-reservation leak ([[project_guaranteed_order_capture]] Layer 3).
+ *   D. WARN — an order whose authorization is running out is REPORTED, and left
+ *      completely alone. The preventive half: A and B clean up after a sale is
+ *      already lost, this one runs while it can still be saved.
  *
  * Orders are created INSIDE the dev server (where SKIP_EMAILS is set), so no real
  * email is sent ([[feedback_no_emails_in_e2e]]). CRON_SECRET is pinned + injected
@@ -201,6 +204,60 @@ test.describe('reconcile-orders cron — recover + release', () => {
         select: { id: true },
       })
       expect(order, 'the default min-age must skip a fresh PI — no order created').toBeNull()
+    } finally {
+      if (paymentIntentId) {
+        await cancelPaymentIntent(paymentIntentId)
+        await releaseEditionNumberForPaymentIntent(paymentIntentId, { allowSold: true })
+        await deletePrintOrderByPaymentIntent(paymentIntentId)
+      }
+      await teardownLimitedFixture(fixture)
+    }
+  })
+
+  test('warns about an ageing authorization while it is still capturable', async ({ request }) => {
+    test.setTimeout(180_000)
+
+    const fixture = await setupLimitedFixture(30)
+    let paymentIntentId: string | null = null
+    try {
+      const authed = await authorizeLimitedCartPI(fixture, { tag: 'reconcile-ageing' })
+      paymentIntentId = authed.paymentIntentId
+
+      // Let phase A build the order, so this exercises a real row rather than a
+      // hand-made one.
+      const first = await hitReconcileCron(request, { minAgeMinutes: 0 })
+      expect(first.status).toBe(200)
+      await waitForPrintOrderByPaymentIntent(paymentIntentId)
+
+      // A hold taken moments ago is not anyone's problem yet.
+      const baseline = await hitReconcileCron(request, { minAgeMinutes: 0 })
+      const before = baseline.body.authorizationsExpiring as number
+
+      // Age it past the day-5 warning line. createdAt IS the moment the hold was
+      // taken — the order row is written at paymentStatus 'authorized'.
+      await prisma.printOrder.update({
+        where: { paymentIntentId },
+        data: { createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) },
+      })
+
+      const after = await hitReconcileCron(request, { minAgeMinutes: 0 })
+      expect(after.status).toBe(200)
+      expect(
+        after.body.authorizationsExpiring as number,
+        'a hold at day 6 must be reported as expiring',
+      ).toBe(before + 1)
+      expect(
+        after.body.authorizationsLapsed as number,
+        'day 6 is not yet past the ~7-day lifetime, so it is expiring, not lapsed',
+      ).toBe(baseline.body.authorizationsLapsed as number)
+
+      // Warning only — phase D must never touch the order or its copy. The sale
+      // is still live and the whole point is that it stays capturable.
+      const order = await prisma.printOrder.findUnique({
+        where: { paymentIntentId },
+        select: { paymentStatus: true },
+      })
+      expect(order?.paymentStatus, 'the warning must not settle the order').toBe('authorized')
     } finally {
       if (paymentIntentId) {
         await cancelPaymentIntent(paymentIntentId)

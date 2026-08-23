@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { authorizationHold } from '@/lib/orders/authorizationPolicy'
 import { type Bucket, BUCKET_ORDER, bucketOf } from '@/lib/orders/orderBuckets'
 import { daysSinceDelivered, PAYOUT_SAFE_WINDOW_DAYS } from '@/lib/orders/payoutPolicy'
 import { formatEuro } from '@/lib/print-providers/format'
@@ -49,6 +50,51 @@ const Dot = ({ color }: { color: keyof typeof DOT_COLORS }) => (
     }}
   />
 )
+
+/**
+ * How long this order's authorization has left, shown under its date.
+ *
+ * We authorize at checkout and capture at placement, so a "New" order is a
+ * sale resting on a hold Stripe will void on its own. Once it lapses the buyer
+ * is never charged and the copy goes back in the pool — silently, days after
+ * anyone last looked. This is the only place an admin can see that clock while
+ * the sale is still savable.
+ *
+ * Renders nothing for an order that holds no authorization, which is most of
+ * them, so the column stays quiet everywhere it has nothing to say.
+ */
+const HoldCountdown = ({ order }: { order: AdminOrderRow }) => {
+  const hold = authorizationHold(order)
+  if (!hold) return null
+
+  const urgent = hold.status !== 'fresh'
+  const label =
+    hold.status === 'expired'
+      ? 'Hold expired'
+      : // "~" is honest: 7 days is the CARD figure and we don't record the
+        // method, so a PayPal hold (up to 20 days) is quoted short on purpose.
+        `Hold ${hold.days}d · ~${hold.daysLeft}d left`
+
+  return (
+    <div
+      title={
+        hold.status === 'expired'
+          ? 'Stripe has very likely voided this authorization already — a capture will fail. Cancel the order and ask the buyer to re-order.'
+          : 'Authorizations lapse about 7 days after checkout. Capture the payment, or cancel and tell the buyer, before this runs out.'
+      }
+      style={{
+        fontSize: 'var(--text-xs)',
+        marginTop: 2,
+        color: urgent ? '#b91c1c' : 'inherit',
+        opacity: urgent ? 1 : 0.6,
+        fontWeight: urgent ? 600 : 400,
+      }}
+    >
+      {urgent && <Dot color="red" />}
+      {label}
+    </div>
+  )
+}
 
 const BUCKET_META: Record<
   Bucket,
@@ -327,7 +373,10 @@ export const AdminOrders = () => {
               <tbody>
                 {visibleOrders.map((o) => (
                   <tr key={o.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{formatDate(o.createdAt)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {formatDate(o.createdAt)}
+                      <HoldCountdown order={o} />
+                    </td>
                     <td>
                       <div
                         style={{

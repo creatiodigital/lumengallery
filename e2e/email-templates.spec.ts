@@ -190,6 +190,27 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
+  test('authorization-expiry email lists each order, its days left, and the money at risk', async ({
+    page,
+  }) => {
+    await page.goto('/dev/emails/authorization-expiry')
+    await expect(page.getByRole('heading', { name: /authorization/i })).toBeVisible()
+    // Each at-risk order is named by the SAME reference the admin sees
+    // everywhere else, so the email can be acted on without translation.
+    await expect(page.getByText('AD81E642')).toBeVisible()
+    // The countdown is the point of the email.
+    await expect(page.getByText(/2 days/i)).toBeVisible()
+    // The money at stake, so the admin can triage by size.
+    await expect(page.getByText('€229.90')).toBeVisible()
+    // An already-lapsed hold is called out as lapsed, not as almost-due —
+    // capturing it can only fail.
+    await expect(page.getByText('hold has lapsed')).toBeVisible()
+    // …and the summary notice says how many, so the count is scannable.
+    await expect(page.getByText(/1 of these has already lapsed/i)).toBeVisible()
+    await expect(page.locator('img[alt="The Art Room"]')).toHaveCount(2)
+    await expect(page.locator('body')).not.toContainText(/printspace/i)
+  })
+
   test('artist-payout email shows sale headline and formatted amount', async ({ page }) => {
     await page.goto('/dev/emails/artist-payout')
     // Heading
