@@ -1,3 +1,5 @@
+import { escapeHtml } from '@/utils/escapeHtml'
+
 import { EMAIL_BRAND, EMAIL_CONTACT } from './brand'
 
 const B = EMAIL_BRAND
@@ -47,7 +49,7 @@ export function renderEmailLayout(input: { preheader: string; bodyHtml: string }
 <meta name="x-apple-disable-message-reformatting">
 </head>
 <body style="margin:0;padding:0;background:${B.pageBg}">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${input.preheader}</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(input.preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${B.pageBg}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="${B.contentWidth}" cellpadding="0" cellspacing="0" style="width:${B.contentWidth}px;max-width:100%;background:#ffffff;border:1px solid ${B.hairline}">
   ${emailHeader()}
