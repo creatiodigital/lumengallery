@@ -16,6 +16,7 @@ import {
 } from '@/components/shared/ArtworkEditForm'
 import type { Artwork, ArtworkFormData } from '@/components/shared/ArtworkEditForm'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
+import { describeUploadFailure } from '@/lib/upload/describeUploadFailure'
 
 import styles from './ArtworkEditModal.module.scss'
 
@@ -171,8 +172,7 @@ export const ArtworkEditModal = ({ artworkId }: ArtworkEditModalProps) => {
           }),
         })
         if (!requestRes.ok) {
-          const data = await requestRes.json()
-          setError(data.error || 'Failed to prepare upload')
+          setError(await describeUploadFailure(requestRes, 'prepare'))
           setSaving(false)
           return
         }
@@ -184,7 +184,7 @@ export const ArtworkEditModal = ({ artworkId }: ArtworkEditModalProps) => {
           headers: { 'Content-Type': pendingFile.type },
         })
         if (!uploadRes.ok) {
-          setError('Failed to upload image to storage')
+          setError(await describeUploadFailure(uploadRes, 'storage'))
           setSaving(false)
           return
         }
@@ -194,12 +194,15 @@ export const ArtworkEditModal = ({ artworkId }: ArtworkEditModalProps) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'complete', artworkId, originalKey }),
         })
-        const result = await completeRes.json()
+        // `ok` first: a platform 504 body is text/plain, so parsing before
+        // checking threw and buried the real cause in a generic catch.
         if (!completeRes.ok) {
-          setError(result.error || 'Failed to process image')
+          setError(await describeUploadFailure(completeRes, 'process'))
           setSaving(false)
           return
         }
+
+        const result = await completeRes.json()
 
         nextImageUrl = result.imageUrl
         setImageUrl(result.imageUrl)

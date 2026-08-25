@@ -10,6 +10,7 @@ import { parseIncomingVariants } from '@/lib/editions/parseIncomingVariants'
 import { TPS_FRAME_TYPES, TPS_PAPERS, TPS_WINDOW_MOUNTS } from '@/lib/print-providers/printspace'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 import { Prisma } from '@/generated/prisma'
+import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { generateUniqueSlug } from '@/lib/slugify'
 import { sanitizeLine } from '@/utils/sanitizeLine'
@@ -114,6 +115,38 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     if (!artwork) {
       return NextResponse.json({ error: 'Artwork not found' }, { status: 404 })
     }
+
+    // This route has no session gate — the editors reach it constantly and it
+    // predates the edition ledger. What it acquired since is private: the
+    // artist's cut, unannounced draft variants, and live sales counts. So fork
+    // on privilege rather than bolting on `requireOwnership`, which would break
+    // the dashboard and wall-view loaders that legitimately depend on it.
+    const session = await auth()
+    const privileged =
+      isAdminOrAbove(session?.user?.userType) || session?.user?.id === artwork.userId
+
+    if (!privileged) {
+      // `printPriceCents` is the artist's cut. Public callers get the artwork
+      // and its ON-SALE variants only, stripped of pricing and admin state.
+      const { printPriceCents: _artistCut, ...publicArtwork } = artwork
+      return NextResponse.json({
+        ...publicArtwork,
+        limitedVariants: artwork.limitedVariants
+          .filter((v) => v.published && v.blocked && v.priceCents !== null)
+          .map(
+            ({
+              published: _published,
+              blocked: _blocked,
+              order: _order,
+              priceCents: _priceCents,
+              ...variant
+            }) => variant,
+          ),
+      })
+    }
+
+    // Everything below is privileged-only, including the two aggregations —
+    // an anonymous caller must not be able to make us compute them at all.
 
     // How many copies of each variant are already committed (reserved or sold).
     // The dashboard needs this to tell the truth about what can be deleted: a

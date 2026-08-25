@@ -160,7 +160,29 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     if (body.published !== undefined) data.published = body.published
     if (userTypeEnum !== undefined) data.userType = { set: userTypeEnum }
 
-    const updated = await prisma.user.update({ where: { id }, data })
+    // Explicit select, mirroring the GET above. Without it this returned the
+    // whole row — bcrypt hash, plaintext magicLinkToken, plaintext loginCode,
+    // stripeAccountId — to the caller on EVERY save, including the admin list's
+    // "Set as Featured" toggle. `api/artists/route.ts` states the rule outright:
+    // never return the full row, it carries the password hash and the
+    // login/reset secret columns.
+    const updated = await prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        lastName: true,
+        email: true,
+        handler: true,
+        biography: true,
+        userType: true,
+        isFeatured: true,
+        published: true,
+        profileImageUrl: true,
+        signatureUrl: true,
+      },
+    })
 
     // Cascade: unpublishing an artist also unpublishes all their exhibitions
     if (body.published === false) {
