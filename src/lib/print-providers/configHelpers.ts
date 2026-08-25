@@ -330,7 +330,17 @@ export function configShipsTo(
       return false
     }
     const value = config.values[dim.id]
-    if (value === undefined) return false
+    // A visible dimension must carry a REAL choice, and `undefined` used to be
+    // the only shape rejected here. An empty string sailed through, and every
+    // guard downstream treats it as falsy: the quote read
+    // `isFramed && frameTypeId ? supplement : 0` and so charged nothing for a
+    // frame the order still says it has. A non-empty but invented id was worse
+    // in the other direction — it reached `pickTier` and threw.
+    //
+    // Requiring membership of the catalog's own option list closes both, and
+    // both money paths call this function, so they inherit it together.
+    if (typeof value !== 'string' || value === '') return false
+    if (dim.options?.length && !dim.options.some((option) => option.id === value)) return false
     if (!availability(dim.id, value, config, country)) return false
   }
   return true
