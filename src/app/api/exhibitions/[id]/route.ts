@@ -299,6 +299,14 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       data.publishedSnapshot = snapshot
       data.publishedAt = new Date()
       data.hasPendingChanges = false
+      // Retire the preview credential: once the show is open to everyone the
+      // token has no job left, and leaving it live means one scraped during the
+      // draft still opens the show if it is later unpublished. The UI hides the
+      // rotate control while a show is published, so the owner could not close
+      // that door themselves. Assigned after the previewEnabled block above so
+      // publishing wins when a request carries both.
+      data.previewEnabled = false
+      data.previewToken = null
     } else if (body.published === false) {
       // Unpublishing: clear snapshot
       data.published = false

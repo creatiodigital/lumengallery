@@ -10,6 +10,13 @@ import prisma from '@/lib/prisma'
 const getExhibition = (url: string) =>
   prisma.exhibition.findUnique({
     where: { url },
+    // `previewToken` is the credential that unlocks an unpublished show, and
+    // both response paths below spread this row verbatim. Without the omit,
+    // every anonymous read of any published exhibition handed out a working
+    // token — and publishing never clears it, so a scraped token still opens
+    // the show if it is later unpublished. The preview gate re-reads the token
+    // in its own scoped query, so removing it here costs that check nothing.
+    omit: { previewToken: true },
     include: {
       user: {
         select: {
