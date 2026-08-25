@@ -32,14 +32,30 @@ export async function processImage(buffer: Buffer): Promise<Buffer> {
     }
   }
 
-  // Start with initial quality and reduce if file too large
+  // WebP `effort` tunes how hard the encoder searches for a smaller file. It
+  // trades encode TIME for compression ratio and does not affect visual quality
+  // at a fixed `quality` — the same q=70 image, a few percent larger on disk.
+  //
+  // sharp defaults to 4. Measured on the 6000×6000 JPEG that 504'd production
+  // on 2026-08-25, across the full adaptive loop below:
+  //   effort 4 (default) → 1505 ms → 1013 KB
+  //   effort 2           → 1027 ms → 1041 KB   (−32% time, +28 KB)
+  //   effort 0           →  853 ms → 1126 KB   (−43% time, +113 KB)
+  // Two is the knee: a third of the time back for 3% more bytes on an image
+  // Vercel re-optimizes per request anyway.
+  const EFFORT = 2
+
+  // Each `toBuffer()` re-runs this pipeline from the source, so every retry
+  // below costs a full encode. Decode is cheap (JPEG shrink-on-load makes it
+  // ~110 ms even at 36 MP) — the encodes are what the loop multiplies, which is
+  // why `effort` is the lever that matters here and caching the decode is not.
   let quality = WEBP_QUALITY_INITIAL
-  let processed = await resized.webp({ quality }).toBuffer()
+  let processed = await resized.webp({ quality, effort: EFFORT }).toBuffer()
 
   // Iteratively reduce quality if file is too large
   while (processed.length > MAX_FILE_SIZE && quality > MIN_QUALITY) {
     quality -= 5
-    processed = await resized.webp({ quality }).toBuffer()
+    processed = await resized.webp({ quality, effort: EFFORT }).toBuffer()
   }
 
   return processed

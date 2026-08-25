@@ -15,6 +15,7 @@ import {
 import type { Artwork, ArtworkFormData } from '@/components/shared/ArtworkEditForm'
 import type { LimitedVariantDraft } from '@/lib/editions/types'
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
+import { describeUploadFailure } from '@/lib/upload/describeUploadFailure'
 
 type ArtworkEditPageProps = {
   artworkId: string
@@ -320,8 +321,7 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
         })
 
         if (!requestRes.ok) {
-          const data = await requestRes.json()
-          setError(data.error || 'Failed to prepare upload')
+          setError(await describeUploadFailure(requestRes, 'prepare'))
           return false
         }
 
@@ -335,7 +335,7 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
         })
 
         if (!uploadRes.ok) {
-          setError('Failed to upload image to storage')
+          setError(await describeUploadFailure(uploadRes, 'storage'))
           return false
         }
 
@@ -353,11 +353,15 @@ export const ArtworkEditPage = ({ artworkId }: ArtworkEditPageProps) => {
           }),
         })
 
-        const result = await completeRes.json()
+        // Check `ok` BEFORE parsing. A 504 from the platform is text/plain, so
+        // parsing first threw a SyntaxError that reached the bare catch below
+        // and replaced every useful detail with "Something went wrong".
         if (!completeRes.ok) {
-          setError(result.error || 'Failed to process image')
+          setError(await describeUploadFailure(completeRes, 'process'))
           return false
         }
+
+        const result = await completeRes.json()
 
         // Update local state with server-processed original metadata
         setOriginalImageUrl(result.imageUrl)

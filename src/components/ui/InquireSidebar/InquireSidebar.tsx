@@ -110,6 +110,10 @@ export const InquireSidebar = ({ isOpen, onClose, artwork }: InquireSidebarProps
           artworkSlug: artwork.slug,
           artworkTitle: artwork.title,
           artworkArtist: artwork.artistName,
+          // Sent so the SERVER can enforce the decoy. The early return above
+          // only stops a bot driving this component; a script posting straight
+          // to the API never runs it.
+          website: honeypot,
         }),
       })
 

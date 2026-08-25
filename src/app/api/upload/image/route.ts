@@ -16,6 +16,24 @@ import {
   buildOriginalImageKey,
 } from '@/lib/r2'
 
+/**
+ * Without this, Vercel applies its low platform default and the `complete`
+ * phase 504s — which is exactly what happened in production on 2026-08-25 with
+ * an 8.9 MB / 6000×6000 JPEG that processed in ~1.9 s locally against the same
+ * R2 bucket.
+ *
+ * The work here is genuinely expensive and, crucially, its cost barely tracks
+ * the uploaded file's size: JPEG decode uses shrink-on-load, so what dominates
+ * is a cold-start load of sharp's native bindings plus the fixed WebP encodes at
+ * 2048² in `processImage`. That is why a 160 MB upload succeeded two days before
+ * an 8.9 MB one failed — the route had always sat at the edge of the default
+ * budget, and only the warm/cold difference decided which side it landed on.
+ *
+ * 60 s is generous for a route a signed-in artist triggers by hand, and still
+ * well under Vercel's ceiling.
+ */
+export const maxDuration = 60
+
 // Restricted to formats both print providers accept. The Print Space
 // only takes JPEG, PNG and TIFF, matching theprintspace's
 // is the safe intersection for the artwork-image pipeline.
@@ -159,7 +177,26 @@ export async function POST(request: NextRequest) {
       // HeadObject BEFORE downloading — otherwise a multi-GB body would be
       // pulled fully into memory before we could reject it. Over-limit →
       // delete the object and reject.
+      // Step timing, emitted as it goes. A function killed by
+      // FUNCTION_INVOCATION_TIMEOUT never reaches its catch block, so Sentry
+      // sees nothing and the only evidence of WHERE it died is whatever was
+      // already written to the log. On 2026-08-25 that evidence did not exist
+      // and the incident had to be narrowed by reasoning instead of reading.
+      const t0 = Date.now()
+      let last = t0
+      const mark = (step: string) => {
+        const now = Date.now()
+        console.log(`[upload/image] ${step}: ${now - last}ms (total ${now - t0}ms)`)
+        last = now
+      }
+
+      // Held for the cleanup that now runs at the very END, after the row has
+      // been repointed at the new files.
+      const previousImageUrl = artwork.imageUrl
+      const previousOriginalUrl = artwork.originalImageUrl
+
       const uploadedSize = await getR2ObjectSize(originalKey)
+      mark('headObject')
       if (uploadedSize !== null && uploadedSize > MAX_ARTWORK_UPLOAD_SIZE) {
         await deleteFromR2(originalUrl).catch(() => {})
         return NextResponse.json(
@@ -175,6 +212,7 @@ export async function POST(request: NextRequest) {
       }
 
       const originalBuffer = Buffer.from(await originalResponse.arrayBuffer())
+      mark(`downloadOriginal(${(originalBuffer.length / 1024 / 1024).toFixed(1)}MB)`)
 
       // Fallback for the rare case HeadObject returned null (size unknown):
       // the body is in memory now, so reject before handing it to sharp.
@@ -210,29 +248,29 @@ export async function POST(request: NextRequest) {
       const originalFormat =
         formatMap[metadata.format ?? ''] ?? metadata.format?.toUpperCase() ?? null
       const originalSizeBytes = originalBuffer.length
+      mark(`metadata(${originalWidth}x${originalHeight}, ${((originalWidth * originalHeight) / 1e6).toFixed(1)}MP)`)
 
       // Generate web-optimized version
       const processedBuffer = await processImage(originalBuffer)
+      mark(`processImage(-> ${(processedBuffer.length / 1024).toFixed(0)}KB)`)
 
-      // Delete old images if they exist
-      if (artwork.imageUrl) {
-        try {
-          await deleteFromR2(artwork.imageUrl)
-        } catch (error) {
-          console.warn('Failed to delete old web image:', error)
-        }
-      }
-      if (artwork.originalImageUrl) {
-        try {
-          await deleteFromR2(artwork.originalImageUrl)
-        } catch (error) {
-          console.warn('Failed to delete old original image:', error)
-        }
-      }
-
-      // Upload web-optimized version to CDN path
+      // Upload the replacement FIRST, and only delete the old files once the
+      // database points at the new ones.
+      //
+      // This used to run the other way round: delete, then upload, then update.
+      // Every moment between the delete and the update was a window in which the
+      // artwork's only image had been destroyed while the row still referenced
+      // it — a blank frame on the wall and no way back. That window is not
+      // theoretical: on 2026-08-25 this handler was killed mid-flight by a
+      // function timeout on exactly this path. It happened to die BEFORE the
+      // deletes; a second later and the artist's only copy would have been gone.
+      //
+      // Ordered this way the worst case is a harmless orphan — the new object
+      // exists, nothing references it, and `scripts/reconcile-r2.ts` sweeps it.
+      // Losing bytes is unacceptable; leaking a few is not.
       const webKey = await buildArtworkImageKey(artwork.userId, artworkId)
       const webUrl = await uploadToR2(webKey, processedBuffer, 'image/webp')
+      mark('uploadWebp')
 
       // Update artwork with both URLs + dimensions
       await prisma.artwork.update({
@@ -247,6 +285,25 @@ export async function POST(request: NextRequest) {
           originalSizeBytes,
         },
       })
+
+      // Now that the row points at the new files, retire the old ones. Failures
+      // here are logged and swallowed: the replacement has already succeeded,
+      // and an undeleted orphan must never turn a completed upload into an error.
+      if (previousImageUrl && previousImageUrl !== webUrl) {
+        try {
+          await deleteFromR2(previousImageUrl)
+        } catch (error) {
+          console.warn('Failed to delete old web image:', error)
+        }
+      }
+      if (previousOriginalUrl && previousOriginalUrl !== originalUrl) {
+        try {
+          await deleteFromR2(previousOriginalUrl)
+        } catch (error) {
+          console.warn('Failed to delete old original image:', error)
+        }
+      }
+      mark('deleteOldImages')
 
       revalidateTag(`artwork-${artworkId}`, 'default')
 

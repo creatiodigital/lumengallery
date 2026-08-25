@@ -13,6 +13,14 @@ import {
   buildArtworkVideoKey,
 } from '@/lib/r2'
 
+/**
+ * Same reasoning as the artwork image route: this handler does R2 round trips
+ * on a multi-megabyte object, and without an explicit budget it runs at
+ * Vercel's low platform default. Declared here rather than waiting for it to
+ * 504 in production the way the image route did on 2026-08-25.
+ */
+export const maxDuration = 60
+
 // 20MB max for video files
 const MAX_VIDEO_SIZE = 20 * 1024 * 1024
 
