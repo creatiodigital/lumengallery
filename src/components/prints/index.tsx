@@ -1,38 +1,38 @@
-import { EmptyState } from '@/components/ui/EmptyState'
+import Link from 'next/link'
+
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PageLayout } from '@/components/ui/PageLayout'
 import { RichText } from '@/components/ui/RichText'
 import { Text } from '@/components/ui/Typography'
+import type { GallerySelectionCard } from '@/lib/queries/getGallerySelection'
 
 import { PrintsBanner } from './PrintsBanner'
-import { PrintsBrowser } from './PrintsBrowser'
+import { PrintsSelection } from './PrintsSelection'
 import styles from './prints.module.scss'
-import type { PrintArtistOption, PrintArtwork, PrintsPageContent } from './types'
+import type { PrintsPageContent } from './types'
 
 interface PrintsPageProps {
-  /** SSR'd first page of the catalog. */
-  initialItems: PrintArtwork[]
-  /** Total print-enabled, published works (unfiltered) — drives the empty + page count. */
-  initialTotal: number
-  /** Distinct artists with prints, for the filter dropdown. */
-  artistOptions: PrintArtistOption[]
+  /** The gallery's selection, already ordered and already filtered to what a
+   *  buyer can complete. Empty is a legitimate state, not an error. */
+  selection: GallerySelectionCard[]
   pageContent: PrintsPageContent | null
 }
 
-export const PrintsPage = ({
-  initialItems,
-  initialTotal,
-  artistOptions,
-  pageContent,
-}: PrintsPageProps) => {
+export const PrintsPage = ({ selection, pageContent }: PrintsPageProps) => {
   const hasDescription =
     !!pageContent?.content && pageContent.content.trim() !== '' && pageContent.content !== '<p></p>'
 
   return (
     <PageLayout>
+      {/* Says the quiet part: this page is a choice, not the catalogue. Without
+          it a buyer reads the grid as everything for sale and never looks for
+          the print on an exhibition or artist page — where most of them live.
+          "can also be ordered" rather than "every work is available": print
+          enablement is per-artwork, and a blanket promise here would be one the
+          exhibition pages can't keep. */}
       <PageHeader
         pageTitle="Prints"
-        pageSubtitle="Museum-grade prints of selected works, in open and limited editions."
+        pageSubtitle="A curated selection. Prints can also be ordered directly from any exhibition or artist page."
       />
 
       <div className={styles.intro}>
@@ -48,14 +48,18 @@ export const PrintsPage = ({
         </div>
       </div>
 
-      {initialTotal === 0 ? (
-        <EmptyState message="Very soon we will showcase a selection of works as signed, limited-edition prints — produced on archival, gallery-grade paper and shipped worldwide." />
+      {selection.length === 0 ? (
+        /* A legitimate state — nothing selected yet, or everything selected has
+           gone quiet. The page keeps its banner and copy and says so, rather
+           than showing a blank grid that reads as broken. The toolbar goes with
+           it: filters over nothing, and a cart that can hold nothing bought
+           from this page. */
+        <Text as="p" className={styles.selectionEmpty}>
+          New prints are being selected. In the meantime, every artist&rsquo;s available work is on{' '}
+          <Link href="/artists">their own page</Link>.
+        </Text>
       ) : (
-        <PrintsBrowser
-          initialItems={initialItems}
-          initialTotal={initialTotal}
-          artistOptions={artistOptions}
-        />
+        <PrintsSelection selection={selection} />
       )}
     </PageLayout>
   )

@@ -9,6 +9,10 @@ import { Text } from '@/components/ui/Typography'
 import { RichText } from '@/components/ui/RichText'
 import { NiceTitle } from '@/components/landing/NiceTitle/NiceTitle'
 import { ExhibitionGrid } from '@/components/exhibitions/ExhibitionGrid'
+import type {
+  PublicArtistArtwork,
+  PublicArtistExhibition,
+} from '@/lib/queries/getPublicArtistByHandler'
 
 import styles from './ArtistProfile.module.scss'
 
@@ -21,28 +25,10 @@ type Artist = {
   profileImageUrl: string | null
 }
 
-type Exhibition = {
-  id: string
-  mainTitle: string
-  url: string
-  handler: string | null
-  featuredImageUrl: string | null
-  shortDescription: string | null
-}
-
-type Artwork = {
-  id: string
-  slug: string
-  name: string
-  title?: string | null
-  author?: string | null
-  year?: string | null
-  technique?: string | null
-  dimensions?: string | null
-  imageUrl?: string | null
-  originalWidth?: number | null
-  originalHeight?: number | null
-}
+// Both shapes come from the page's query, so the card's `sale` — whether the
+// work is for sale and at what price — cannot be dropped on the way in.
+type Exhibition = PublicArtistExhibition
+type Artwork = PublicArtistArtwork
 
 interface ArtistProfilePageProps {
   artist: Artist

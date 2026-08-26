@@ -213,6 +213,9 @@ model Artwork {
   // a paper they've also hard-restricted (validated at write time).
   printRecommendations Json?
 
+  // The gallery's curated /prints entry, if this work is in the selection.
+  selectedPrint SelectedPrint?
+
   exhibitionArtworks ExhibitionArtwork[]
   printOrders        PrintOrder[]
   printOrderItems    PrintOrderItem[]
@@ -888,6 +891,18 @@ model Slide {
   textColor     String   @default("#ffffff")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+// One curated entry on /prints — the gallery's own selection, ordered by hand.
+// Mirrors `Slide` (the homepage hero) deliberately: same shape, same reorder
+// endpoint pattern. `artworkId @unique` makes double-adding impossible, and
+// onDelete: Cascade means a deleted artwork cannot leave a ghost in the list.
+model SelectedPrint {
+  id        String   @id @default(uuid())
+  artworkId String   @unique
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model PageContent {

@@ -7,8 +7,8 @@ import {
   type PrintArtistOption,
   type PrintArtwork,
 } from '@/components/prints/types'
-import { minimumPriceForArtwork } from '@/lib/editions/minimumPrice'
-import { purchasableArtworkWhere, SELLABLE_VARIANT_WHERE } from '@/lib/editions/printable'
+import { SALE_SELECT, saleFromRow } from '@/lib/editions/artworkSale'
+import { purchasableArtworkWhere } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 import { getPurchasesPaused } from '@/lib/settings'
 
@@ -38,35 +38,14 @@ const PRINT_SELECT = {
   year: true,
   technique: true,
   dimensions: true,
-  editionType: true,
   imageUrl: true,
-  originalWidth: true,
-  originalHeight: true,
   createdAt: true,
-  // Needed to price the card — an OPEN edition uses the artwork price, a
-  // LIMITED one the cheapest variant a buyer can actually complete. Loaded
-  // through SELLABLE_VARIANT_WHERE rather than LIVE_VARIANT_WHERE, so a variant
-  // with no copies left never sets the price: it drops out, the figure rises to
-  // the next variant that still has stock, and an edition with nothing left
-  // prices at null — which the grid renders as "Sold out". The work itself
-  // stays listed; `buildPrintsWhere` decides that, and it is deliberately still
-  // LIVE_VARIANT_WHERE.
-  printEnabled: true,
-  printPriceCents: true,
-  limitedVariants: {
-    where: SELLABLE_VARIANT_WHERE,
-    select: {
-      name: true,
-      priceCents: true,
-      paperId: true,
-      printTypeId: true,
-      widthCm: true,
-      heightCm: true,
-      borderCm: true,
-      sheetWidthCm: true,
-      sheetHeightCm: true,
-    },
-  },
+  // Everything needed to price the card, shared with the artist and exhibition
+  // grids so all three answer "is this for sale, and at what?" with the same
+  // rule. Live (not merely in-stock) variants, each carrying a probe for a
+  // remaining copy — that is what lets `resolveArtworkSale` tell a sold-out
+  // edition from one that was never on sale.
+  ...SALE_SELECT,
   user: {
     select: {
       id: true,
@@ -78,25 +57,54 @@ const PRINT_SELECT = {
 } satisfies Prisma.ArtworkSelect
 
 // The hot catalog predicate: a published artist's print-enabled work with a
-// price set, narrowed by the optional artist + edition filters. Edition is
-// re-validated here ('open' | 'limited' only) so a bad client value can't widen
-// or break the query.
+// price set, narrowed by the optional artist + edition filters, plus a title
+// search and an exclude list for the admin picker. Edition is re-validated
+// here ('open' | 'limited' only) so a bad client value can't widen or break
+// the query.
 /**
  * Who appears in the prints catalog: exactly what a buyer can purchase. The
  * open/limited fork lives in `purchasableArtworkWhere` so the catalog, the
  * wizard, checkout, payment and the public API can't drift apart again.
+ *
+ * `purchasableArtworkWhere()` already returns an `OR` (the open/limited fork).
+ * The search predicate below is also an `OR` (title or name) — spreading a
+ * second `OR` into the same object would silently overwrite the first,
+ * widening the query to unsellable work. Wrapping both in `AND` is what keeps
+ * both in force at once.
  */
-const buildPrintsWhere = (artistId: string, edition: EditionFilter): Prisma.ArtworkWhereInput => ({
-  ...purchasableArtworkWhere(),
+const buildPrintsWhere = (
+  artistId: string,
+  edition: EditionFilter,
+  search = '',
+  excludeIds: string[] = [],
+): Prisma.ArtworkWhereInput => ({
+  AND: [
+    purchasableArtworkWhere(),
+    ...(search
+      ? [
+          {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' as const } },
+              { name: { contains: search, mode: 'insensitive' as const } },
+            ],
+          },
+        ]
+      : []),
+  ],
   user: { published: true },
   ...(artistId ? { userId: artistId } : {}),
   ...(edition === 'open' || edition === 'limited' ? { editionType: edition } : {}),
+  ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
 })
 
 type GetPrintsCatalogPageArgs = {
   page?: number
   artistId?: string
   edition?: EditionFilter
+  /** Case-insensitive match on artwork title or internal name. */
+  search?: string
+  /** Already-selected artworks, excluded so the picker never offers a duplicate. */
+  excludeIds?: string[]
 }
 
 /**
@@ -113,9 +121,11 @@ export async function getPrintsCatalogPage({
   page = 1,
   artistId = '',
   edition = '',
+  search = '',
+  excludeIds = [],
 }: GetPrintsCatalogPageArgs): Promise<{ items: PrintArtwork[]; totalCount: number }> {
   const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1
-  const where = buildPrintsWhere(artistId, edition)
+  const where = buildPrintsWhere(artistId, edition, search, excludeIds)
 
   const [rows, totalCount] = await Promise.all([
     prisma.artwork.findMany({
@@ -132,55 +142,55 @@ export async function getPrintsCatalogPage({
 
   // The client expects createdAt as a serializable ISO string. The pricing
   // inputs (printPriceCents, the live variants) are stripped here — the card
-  // only needs the resolved figure, and the artist's cut is not public.
+  // only needs the resolved sale, and the artist's cut is not public.
   const items = rows.map((row) => {
     const { printEnabled, printPriceCents, limitedVariants, ...rest } = row
-    const min = minimumPriceForArtwork(
-      {
-        editionType: rest.editionType,
-        originalWidth: rest.originalWidth,
-        originalHeight: rest.originalHeight,
-        printEnabled,
-        printPriceCents,
-      },
+    const sale = saleFromRow({
+      editionType: rest.editionType,
+      originalWidth: rest.originalWidth,
+      originalHeight: rest.originalHeight,
+      printEnabled,
+      printPriceCents,
       limitedVariants,
-    )
+    })
     return {
       ...rest,
       createdAt: row.createdAt.toISOString(),
-      minPriceCents: min?.cents ?? null,
+      sale,
+      // Derived from `sale`, never computed separately — the two cannot drift.
+      // Retained because it is the figure, and the catalog specs assert on it.
+      minPriceCents: sale?.minPriceCents ?? null,
     }
   })
   return { items, totalCount }
 }
 
 /**
- * Distinct artists who have ≥1 print-enabled, published artwork — the source for
- * the artist filter dropdown. Fetched once on the server because the client only
- * holds one page and can no longer derive the list from the loaded array. Scales
- * with the number of artists, not artworks, so it stays small. Label mirrors the
- * grid's artist display: the per-work `author` override if set, else the user's
- * name. ('All artists' is prepended client-side as a UI concern.)
+ * Distinct artists who have ≥1 print-enabled, published artwork, with how many —
+ * the source for the admin picker's artist list ('All artists' is prepended
+ * client-side as a UI concern). Fetched once on the server because the client
+ * only holds one page and can no longer derive the list from the loaded array.
+ * Scales with the number of artists, not artworks, so it stays small.
+ *
+ * Grouped by the account that owns the work (`userId`), not by the per-work
+ * `author` override the grid otherwise displays: the picker groups by artist,
+ * and an overridden work would otherwise split one artist into two rows.
  */
 export async function getPrintArtistOptions(): Promise<PrintArtistOption[]> {
-  const rows = await prisma.artwork.findMany({
+  const grouped = await prisma.artwork.groupBy({
+    by: ['userId'],
     where: buildPrintsWhere('', ''),
-    distinct: ['userId'],
-    select: {
-      userId: true,
-      author: true,
-      user: { select: { name: true, lastName: true } },
-    },
-    // Lead with userId so `distinct` is deterministic; newest work per artist
-    // chosen as the representative for the (rarely-set) author override.
-    orderBy: [{ userId: 'asc' }, { createdAt: 'desc' }],
+    _count: { _all: true },
   })
-
-  return rows
-    .map((row) => {
-      const label =
-        row.author?.trim() || [row.user.name, row.user.lastName].filter(Boolean).join(' ').trim()
-      return { value: row.userId, label }
+  const users = await prisma.user.findMany({
+    where: { id: { in: grouped.map((g) => g.userId) } },
+    select: { id: true, name: true, lastName: true },
+  })
+  return grouped
+    .map((g) => {
+      const u = users.find((x) => x.id === g.userId)
+      const label = [u?.name, u?.lastName].filter(Boolean).join(' ').trim()
+      return { value: g.userId, label, count: g._count._all }
     })
     .sort((a, b) => a.label.localeCompare(b.label))
 }
