@@ -1,5 +1,34 @@
+import type { Prisma } from '@/generated/prisma'
+import { SALE_SELECT, saleFromRow, type ArtworkSale } from '@/lib/editions/artworkSale'
 import prisma from '@/lib/prisma'
 import { captureError } from '@/lib/observability/captureError'
+
+/**
+ * Every artwork field the public exhibition grid renders, in ONE place.
+ *
+ * This page loads its artworks through two different paths — the published
+ * snapshot and the live relation — and they each used to spell their select
+ * out. A field added to one and forgotten in the other is invisible until a
+ * priced work quietly shows no price on a published exhibition, which is the
+ * only kind there is. Sharing the constant makes that impossible.
+ */
+const PUBLIC_ARTWORK_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  title: true,
+  author: true,
+  year: true,
+  technique: true,
+  dimensions: true,
+  imageUrl: true,
+  artworkType: true,
+  hiddenFromExhibition: true,
+  order: true,
+  ...SALE_SELECT,
+} satisfies Prisma.ArtworkSelect
+
+type PublicArtworkRow = Prisma.ArtworkGetPayload<{ select: typeof PUBLIC_ARTWORK_SELECT }>
 
 // No data cache: read straight from the DB so library reordering and artwork
 // metadata edits propagate to the public exhibition page immediately. The
@@ -20,24 +49,7 @@ const getExhibition = (url: string) =>
       },
       exhibitionArtworks: {
         include: {
-          artwork: {
-            select: {
-              id: true,
-              slug: true,
-              name: true,
-              title: true,
-              author: true,
-              year: true,
-              technique: true,
-              dimensions: true,
-              imageUrl: true,
-              originalWidth: true,
-              originalHeight: true,
-              artworkType: true,
-              hiddenFromExhibition: true,
-              order: true,
-            },
-          },
+          artwork: { select: PUBLIC_ARTWORK_SELECT },
         },
       },
     },
@@ -55,6 +67,9 @@ export type PublicExhibitionArtwork = {
   imageUrl: string | null
   originalWidth: number | null
   originalHeight: number | null
+  /** What the card says about buying a print. Null = not for sale, so the card
+   *  shows no commerce at all. See `resolveArtworkSale`. */
+  sale: ArtworkSale | null
 }
 
 export type PublicExhibition = {
@@ -75,6 +90,28 @@ export type PublicExhibition = {
     biography: string | null
   }
   artworks: PublicExhibitionArtwork[]
+}
+
+/**
+ * A live row → the card's shape. The pricing inputs are resolved into `sale`
+ * and dropped: `printPriceCents` is the ARTIST's cut, not a buyer-facing
+ * figure, and must not cross to the client.
+ */
+function toPublicArtwork(row: PublicArtworkRow): PublicExhibitionArtwork {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    title: row.title,
+    author: row.author,
+    year: row.year,
+    technique: row.technique,
+    dimensions: row.dimensions,
+    imageUrl: row.imageUrl,
+    originalWidth: row.originalWidth,
+    originalHeight: row.originalHeight,
+    sale: saleFromRow(row),
+  }
 }
 
 /**
@@ -124,27 +161,16 @@ async function loadPublicExhibition(url: string): Promise<PublicExhibition | nul
     const ids = snapshotArtworkObjects.map((a) => a.id as string).filter(Boolean)
     const live = await prisma.artwork.findMany({
       where: { id: { in: ids } },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        title: true,
-        author: true,
-        year: true,
-        technique: true,
-        dimensions: true,
-        imageUrl: true,
-        originalWidth: true,
-        originalHeight: true,
-        hiddenFromExhibition: true,
-        order: true,
-      },
+      select: PUBLIC_ARTWORK_SELECT,
     })
     const liveById = Object.fromEntries(live.map((a) => [a.id, a]))
 
     artworks = snapshotArtworkObjects
       .map((artwork) => {
         const liveArtwork = liveById[artwork.id as string]
+        // The artwork is gone from the library — the snapshot is all that is
+        // left of it. Frozen metadata can be shown; a price cannot, because
+        // there is no live row to price and nothing to sell.
         if (!liveArtwork) {
           return {
             id: artwork.id as string,
@@ -158,21 +184,10 @@ async function loadPublicExhibition(url: string): Promise<PublicExhibition | nul
             imageUrl: (artwork.imageUrl as string) ?? null,
             originalWidth: (artwork.originalWidth as number) ?? null,
             originalHeight: (artwork.originalHeight as number) ?? null,
+            sale: null,
           }
         }
-        return {
-          id: liveArtwork.id,
-          slug: liveArtwork.slug,
-          name: liveArtwork.name,
-          title: liveArtwork.title,
-          author: liveArtwork.author,
-          year: liveArtwork.year,
-          technique: liveArtwork.technique,
-          dimensions: liveArtwork.dimensions,
-          imageUrl: liveArtwork.imageUrl,
-          originalWidth: liveArtwork.originalWidth,
-          originalHeight: liveArtwork.originalHeight,
-        }
+        return toPublicArtwork(liveArtwork)
       })
       .filter((artwork) => {
         const liveArtwork = liveById[artwork.id]
@@ -191,19 +206,7 @@ async function loadPublicExhibition(url: string): Promise<PublicExhibition | nul
       .map((ea) => ea.artwork)
       .filter((a) => !a.hiddenFromExhibition && a.artworkType === 'image')
       .sort((a, b) => a.order - b.order)
-      .map((a) => ({
-        id: a.id,
-        slug: a.slug,
-        name: a.name,
-        title: a.title,
-        author: a.author,
-        year: a.year,
-        technique: a.technique,
-        dimensions: a.dimensions,
-        imageUrl: a.imageUrl,
-        originalWidth: a.originalWidth,
-        originalHeight: a.originalHeight,
-      }))
+      .map(toPublicArtwork)
   }
 
   return {

@@ -2,53 +2,12 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { ArtistProfilePage } from '@/components/artists/profile'
+import { getPublicArtistByHandler } from '@/lib/queries/getPublicArtistByHandler'
 import prisma from '@/lib/prisma'
 
 // Render per request and read straight from the DB so artist edits, new
 // exhibitions and featured-artwork changes appear immediately. No data cache.
 export const dynamic = 'force-dynamic'
-
-const getArtistFull = (slug: string) =>
-  prisma.user.findFirst({
-    where: { handler: slug, published: true },
-    select: {
-      id: true,
-      name: true,
-      lastName: true,
-      handler: true,
-      biography: true,
-      profileImageUrl: true,
-      exhibitions: {
-        where: { published: true },
-        select: {
-          id: true,
-          mainTitle: true,
-          url: true,
-          handler: true,
-          featuredImageUrl: true,
-          shortDescription: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      },
-      artworks: {
-        where: { artworkType: 'image', featured: true },
-        select: {
-          id: true,
-          slug: true,
-          name: true,
-          title: true,
-          author: true,
-          year: true,
-          technique: true,
-          dimensions: true,
-          imageUrl: true,
-          originalWidth: true,
-          originalHeight: true,
-        },
-        orderBy: { order: 'asc' },
-      },
-    },
-  })
 
 interface ArtistProfileProps {
   params: Promise<{ slug: string }>
@@ -89,9 +48,10 @@ const ArtistProfile = async ({ params }: ArtistProfileProps) => {
   const { slug } = await params
 
   // One round-trip instead of three: artist + their published exhibitions
-  // + their featured image-type artworks. The previous /api/artists,
-  // /api/exhibitions, /api/artworks waterfall is collapsed here.
-  const artist = await getArtistFull(slug)
+  // + their featured image-type artworks, each already carrying whether it is
+  // for sale and at what price. The previous /api/artists, /api/exhibitions,
+  // /api/artworks waterfall is collapsed here.
+  const artist = await getPublicArtistByHandler(slug)
 
   if (!artist) notFound()
 

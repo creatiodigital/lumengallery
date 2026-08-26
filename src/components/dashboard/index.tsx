@@ -16,7 +16,7 @@ import { Modal } from '@/components/ui/Modal'
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 
 import { useEffectiveUser } from '@/hooks/useEffectiveUser'
-import { selectExhibitions } from '@/redux/selectors/userSelectors'
+import { selectExhibitionsForUser } from '@/redux/selectors/userSelectors'
 import { selectSpace } from '@/redux/slices/dashboardSlice'
 import {
   useGetExhibitionsByUserQuery,
@@ -40,8 +40,14 @@ export const DashboardPage = () => {
   const { data: session } = useSession()
   const { effectiveUser, isImpersonating } = useEffectiveUser()
 
+  // The effective user — the impersonated artist when an admin is impersonating.
+  const userId = effectiveUser?.id
+  const userHandler = effectiveUser?.handler
+
   const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
-  const exhibitions = useSelector(selectExhibitions)
+  // Owner-guarded read: the store is global and outlives a user switch, so this
+  // returns nothing rather than the previous user's exhibitions.
+  const exhibitions = useSelector((state: RootState) => selectExhibitionsForUser(state, userId))
   const [deleteExhibition] = useDeleteExhibitionMutation()
 
   const [isModalShown, setIsModalShown] = useState(false)
@@ -62,27 +68,28 @@ export const DashboardPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [openMenuId])
 
-  // Use effective user ID (handles impersonation)
-  const userId = effectiveUser?.id
-  const userHandler = effectiveUser?.handler
-
   const { data: userData } = useGetUserQuery(userId ?? '', {
     skip: !userId,
   })
-  const { data: exhibitionsData, refetch: refetchExhibitions } = useGetExhibitionsByUserQuery(
-    userId ?? '',
-    {
-      skip: !userId,
-    },
-  )
+  const {
+    data: exhibitionsData,
+    // Which user this data was actually fetched FOR. Tagging the store with
+    // this rather than with the current `userId` means a response that lands
+    // after a user switch can never be filed under the wrong owner.
+    originalArgs: exhibitionsOwnerId,
+    isError: exhibitionsFailed,
+    refetch: refetchExhibitions,
+  } = useGetExhibitionsByUserQuery(userId ?? '', {
+    skip: !userId,
+  })
 
   const [createExhibition, { isLoading: creating, error }] = useCreateExhibitionMutation()
 
   useEffect(() => {
-    if (exhibitionsData) {
-      dispatch(hydrateExhibitions(exhibitionsData))
+    if (exhibitionsData && exhibitionsOwnerId) {
+      dispatch(hydrateExhibitions({ ownerId: exhibitionsOwnerId, exhibitions: exhibitionsData }))
     }
-  }, [exhibitionsData, dispatch])
+  }, [exhibitionsData, exhibitionsOwnerId, dispatch])
 
   // Refetch exhibitions when switching users (e.g. after admin deletes then impersonates)
   useEffect(() => {
@@ -241,7 +248,12 @@ export const DashboardPage = () => {
           />
         </div>
 
-        {exhibitions.length === 0 ? (
+        {/* A failed load used to be completely silent: the list simply stayed as
+            it was, which is what let a stale one pass for the real thing. Say so
+            instead — an empty list and a broken list are different facts. */}
+        {exhibitionsFailed ? (
+          <EmptyState message="Could not load exhibitions. Refresh the page to try again." />
+        ) : exhibitions.length === 0 ? (
           <EmptyState message="You do not have any exhibitions yet." />
         ) : (
           <table className={dashboardStyles.table}>
