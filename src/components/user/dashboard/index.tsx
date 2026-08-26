@@ -10,7 +10,7 @@ import { ErrorText } from '@/components/ui/ErrorText'
 import { ExhibitionModal } from '@/components/ui/ExhibitionModal'
 import { Modal } from '@/components/ui/Modal'
 import { Text } from '@/components/ui/Typography'
-import { selectExhibitions } from '@/redux/selectors/userSelectors'
+import { selectExhibitionsForUser } from '@/redux/selectors/userSelectors'
 import { selectSpace } from '@/redux/slices/dashboardSlice'
 import {
   useGetExhibitionsByUserQuery,
@@ -31,14 +31,16 @@ export const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
 
+  const hardcodedId = '915a1541-f132-4fd1-a714-e34527485054'
+
   const isEditMode = useSelector((state: RootState) => state.dashboard.isEditMode)
   const selectedSpace = useSelector((state: RootState) => state.dashboard.selectedSpace)
-  const exhibitions = useSelector(selectExhibitions)
+  const exhibitions = useSelector((state: RootState) =>
+    selectExhibitionsForUser(state, hardcodedId),
+  )
   const [deleteExhibition] = useDeleteExhibitionMutation()
 
   const [isModalShown, setIsModalShown] = useState(false)
-
-  const hardcodedId = '915a1541-f132-4fd1-a714-e34527485054'
 
   const { data: userData } = useGetUserQuery(hardcodedId)
   const { data: exhibitionsData, refetch: refetchExhibitions } =
@@ -48,7 +50,7 @@ export const Dashboard = () => {
 
   useEffect(() => {
     if (exhibitionsData) {
-      dispatch(hydrateExhibitions(exhibitionsData))
+      dispatch(hydrateExhibitions({ ownerId: hardcodedId, exhibitions: exhibitionsData }))
     }
   }, [exhibitionsData, dispatch])
 

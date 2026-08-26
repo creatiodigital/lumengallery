@@ -1,0 +1,375 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+// Tally on the left, the one action on the right. The action used to be a
+// flex child of `.screen`, which stretched it into a full-width black slab
+// across the bottom of the page.
+.toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.tally {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.tallyDetail {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-page);
+}
+
+// An entry that is no longer on the page. Dimmed, not removed — the curator
+// decides what replaces it.
+.rowHidden {
+  opacity: 0.55;
+}
+
+.dragHandle {
+  cursor: grab;
+  color: var(--color-text-secondary);
+}
+
+.dragIcon {
+  font-size: var(--text-lg);
+}
+
+.thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.rowInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowMeta {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.rowReason {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The picker
+//
+// A light table, not a form: the curator chooses by eye, so the artwork is the
+// row. Three fixed bands — head, scrolling body, foot — at ONE height for every
+// mode and every search, because a panel that resizes as you type is unusable.
+// ─────────────────────────────────────────────────────────────────────────────
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  height: min(720px, 82vh);
+  // Fills whatever width Modal's inline max-width allows.
+  width: 100%;
+}
+
+.pickerHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.pickerHeadRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.pickerHeading {
+  margin: 0 0 var(--space-1) 0;
+  font-size: var(--text-lg);
+}
+
+.pickerSub {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.pickerControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.pickerModes {
+  display: flex;
+  gap: var(--space-2);
+}
+
+// Drill-in context, in the slot the mode pills occupy at the top level: where
+// you are and the way back, never both trails at once.
+.pickerCrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.pickerCrumbName {
+  font-weight: var(--font-medium);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickerSearch {
+  flex: 1;
+  min-width: 240px;
+  max-width: 340px;
+}
+
+.pickerBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-1) var(--space-4) 0;
+}
+
+// Centred in the whole body rather than pinned to the top, so an empty result
+// reads as a state of the panel and not as a missing first row.
+.pickerNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.pickerList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+// Rendered on Button variant="bare", which resets padding, border and
+// background to nothing — so every visual here is declared, and none of it is
+// fighting a size class for specificity across two stylesheets.
+.pickerArtist {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  font-size: var(--text-sm);
+  text-align: left;
+  transition: border-color 0.12s ease;
+
+  &:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-text-primary);
+    outline-offset: 2px;
+  }
+}
+
+.pickerArtistMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.pickerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.pickerCell {
+  display: flex;
+}
+
+.pickerCard {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  text-align: left;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+
+  &:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-text-primary);
+    outline-offset: 2px;
+  }
+}
+
+// Selected reads the way every other selected control in the dashboard reads:
+// black. The inset ring thickens the border without moving the card a pixel.
+.pickerCardOn {
+  border-color: var(--color-text-primary);
+  box-shadow: inset 0 0 0 1px var(--color-text-primary);
+}
+
+// `contain`, not `cover`: the curator is judging the work, and a crop through
+// the middle of a painting is exactly the wrong thing to decide on.
+.pickerThumb {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.pickerThumbImg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.pickerThumbEmpty {
+  color: var(--color-text-secondary);
+}
+
+.pickerCheck {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--color-text-primary);
+  color: var(--color-white);
+}
+
+.pickerCardText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0 var(--space-1) var(--space-1);
+}
+
+// Two lines, always — clamped and floored to the same height so the meta line
+// stays on one baseline across a whole row of cards.
+.pickerCardTitle {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(var(--text-sm) * 2 * 1.3);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  color: var(--color-text-primary);
+}
+
+.pickerCardMeta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+// Placeholders while an artist's prints load. Without them the grid renders
+// empty for a beat and says "No prints match" — which is a lie, not a state.
+.pickerSkeleton {
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  animation: pickerPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pickerPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pickerSkeleton {
+    animation: none;
+  }
+}
+
+.pickerFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.pickerCount {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.pickerCountOn {
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+}

@@ -69,10 +69,18 @@
   margin-bottom: 0;
   flex-grow: 1;
 
-  // Inside the shared image row, sit on the row's baseline so a landscape work
-  // rests level with a portrait one beside it instead of floating mid-row.
+  // Centre the wrapper in the shared image row, so every work in a row sits on
+  // one horizontal axis whatever its height — a landscape work beside the
+  // MIDDLE of a portrait one, not level with its foot (`align-self: end`, which
+  // this replaces).
+  //
+  // It has to be `align-self` HERE and not `align-items: center` on .card:
+  // the card's two subgrid rows are image and caption, so centring at the card
+  // level also centres a short caption in its own row and drops its divider
+  // below its neighbour's — the 12px regression recorded on .card above. This
+  // touches the image row only, which is why the rules stay on one line.
   @include breakpoint(md) {
-    align-self: end;
+    align-self: center;
   }
 }
 
@@ -148,19 +156,25 @@
   text-decoration: none;
 }
 
-// Edition tag shown with the Order Print CTA (prints page only).
+// Edition tag shown with the Order Print CTA — on every grid, wherever the
+// card's `sale` says the work is purchasable.
 .editionTag {
   display: block;
-  // Sits right on top of the price: what it is and what it costs are a pair,
-  // and the gap above (.orderAction) is what separates them from the details.
-  margin-bottom: 2px;
+  // With `SHOW_PRICE_ON_LISTINGS` off, this tag's neighbour below is the CTA,
+  // not the price — so it needs a real gap. At 2px (the old pairing distance
+  // to the price) the label sat on the button's top edge and read as part of
+  // it. If the price ever comes back, tighten this and let `.price` carry the
+  // separation instead.
+  margin-bottom: var(--space-3);
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-secondary);
 }
 
-// Order Print CTA (prints page only — gated by the withOrderPrint prop).
+// The commerce block. Present per-card, driven by `artwork.sale` — not by a
+// grid-wide flag, because the artist and exhibition grids mix sellable work
+// with work that was never for sale.
 .orderAction {
   // The one real break in the caption — identity above, commerce below.
   margin-top: var(--space-3);
@@ -173,9 +187,9 @@
   align-items: center;
 }
 
-// The figure on a prints card. A bare number, stated plainly — no "from",
-// no "starting at". What it means differs by edition type and the page
-// footnote carries that, so nothing here hedges.
+// The figure. A bare number, stated plainly — no "from", no "starting at":
+// a gallery states a price. What it means differs by edition type — a limited
+// variant's is exact, an open edition's moves with size and framing.
 .price {
   display: block;
   margin-bottom: var(--space-2);

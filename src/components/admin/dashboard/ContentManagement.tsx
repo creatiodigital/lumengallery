@@ -10,6 +10,7 @@ import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 
 const contentPages = [
   { label: 'Landing Page', route: '/admin/content/landing' },
+  { label: 'Gallery Selection', route: '/admin/content/gallery-selection' },
   { label: 'About Us', route: '/admin/content/about' },
   { label: 'Prints', route: '/admin/content/prints' },
   { label: 'Terms and Conditions', route: '/admin/content/terms' },

@@ -7,6 +7,8 @@ import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
 
 import { RichText } from '@/components/ui/RichText'
 import { Text } from '@/components/ui/Typography'
+import { usePurchasesPaused } from '@/hooks/usePurchasesPaused'
+import type { ArtworkSale } from '@/lib/editions/artworkSale'
 import { formatEuro } from '@/lib/print-providers'
 
 import styles from './ArtworkGrid.module.scss'
@@ -20,25 +22,49 @@ type Artwork = {
   year?: string | null
   technique?: string | null
   dimensions?: string | null
-  /** 'open' | 'limited' — drives the edition tag shown with the Order Print CTA. */
-  editionType?: string | null
   imageUrl?: string | null
   // Real pixel dimensions when known. Used per-tile so next/image
   // reserves the correct slot — fixes CLS without forcing a square crop.
   originalWidth?: number | null
   originalHeight?: number | null
-  /** Cheapest completable purchase, in cents, excluding shipping and tax.
-   *  Null = nothing purchasable, shown as "Sold". Only supplied by the prints
-   *  catalog; other grids leave it undefined and render no price. */
-  minPriceCents?: number | null
+  /**
+   * What this card says about buying a print, resolved server-side by
+   * `resolveArtworkSale`. Three states, and they are not interchangeable:
+   *
+   *   undefined / null        not for sale — no commerce on the card at all
+   *   { minPriceCents: n }    on sale at n
+   *   { minPriceCents: null } live, but nothing left → "Sold out"
+   *
+   * This is per-artwork rather than per-grid because the artist and exhibition
+   * grids hold everything an artist made, sellable or not. /prints could use a
+   * grid-wide flag only because its query had already filtered the list down to
+   * purchasable work.
+   */
+  sale?: ArtworkSale | null
 }
 
 interface ArtworkGridProps {
   artworks: Artwork[]
   artistName?: string
-  /** Show an "Order Print" CTA per card (the prints page). Off elsewhere. */
-  withOrderPrint?: boolean
 }
+
+/**
+ * Whether a listing card shows its price. OFF as of 2026-08-26, on every grid —
+ * /prints, the artist page and the exhibition page.
+ *
+ * The reasoning is about what a price does BEFORE a buyer has fallen for the
+ * work. On a grid it invites two comparisons that have nothing to do with the
+ * art: this work against the one beside it, and the number against the buyer's
+ * budget — both made before they have really looked. The figure appears in the
+ * wizard instead, where it is exact rather than a floor, and where the buyer has
+ * already chosen the work.
+ *
+ * HIDDEN, not removed. Everything behind it still works: `resolveArtworkSale`
+ * still resolves, the price still reaches the client, and the "Sold out" badge
+ * still depends on the same three-state answer. Flip this to `true` and the
+ * figure is back, nothing else to change.
+ */
+const SHOW_PRICE_ON_LISTINGS = false
 
 // Fallback ratio for legacy artworks uploaded before EXIF capture.
 // 4:3 is closer to the average gallery image than 1:1 and avoids the
@@ -63,12 +89,18 @@ const FALLBACK_HEIGHT = 600
 const formatEuros = (cents: number) =>
   cents % 100 === 0 ? `€${(cents / 100).toLocaleString('es-ES')}` : formatEuro(cents)
 
-export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: ArtworkGridProps) => {
+export const ArtworkGrid = ({ artworks, artistName }: ArtworkGridProps) => {
+  // Admin kill switch. Hides the whole commerce block — price, CTA and the
+  // sold-out badge alike — across every grid that uses this component. The
+  // wizard and the payment actions still enforce the pause server-side.
+  const purchasesPaused = usePurchasesPaused()
+
   return (
     <div className={styles.grid}>
       {artworks.map((artwork) => {
         const w = artwork.originalWidth ?? FALLBACK_WIDTH
         const h = artwork.originalHeight ?? FALLBACK_HEIGHT
+        const sale = purchasesPaused ? null : artwork.sale
         return (
           <div key={artwork.id} className={styles.card}>
             <div className={styles.imageWrapper}>
@@ -102,34 +134,33 @@ export const ArtworkGrid = ({ artworks, artistName, withOrderPrint = false }: Ar
               {artwork.technique && (
                 <RichText content={artwork.technique} variant="compact" className={styles.detail} />
               )}
-              {/* The work's own dimensions. Deliberately absent from a prints
-                  card: the sheet the buyer receives comes in several sizes, so
-                  the painting's 40x50 there reads as a print size and isn't
-                  one. It stays on the artist and exhibition grids, where it
-                  describes the actual object. */}
-              {!withOrderPrint && artwork.dimensions && (
+              {/* The work's own dimensions — shown on every grid, /prints
+                  included. They describe the ORIGINAL, not the sheet the buyer
+                  receives; the sheet is chosen in the wizard. */}
+              {artwork.dimensions && (
                 <Text as="p" size="sm" className={styles.detail}>
                   {artwork.dimensions}
                 </Text>
               )}
-              {withOrderPrint && (
+              {sale && (
                 <div className={styles.orderAction}>
                   <Text as="span" className={styles.editionTag}>
-                    {artwork.editionType === 'limited' ? 'Limited Edition' : 'Open Edition'}
+                    {sale.editionType === 'limited' ? 'Limited Edition' : 'Open Edition'}
                   </Text>
-                  {/* A bare figure, no "from" or "starting at" — a gallery states
-                      a price. What it means differs by edition type and the page
-                      footnote carries that: a limited variant's price is exact,
-                      an open edition's moves with size and framing.
-                      `null` = nothing left to buy. The work STAYS in the
-                      catalogue and says so: a sold-out edition is the best
-                      thing on the page, and an "Order Print" button that leads
-                      to a wizard refusing the sale is the worst. */}
-                  {artwork.minPriceCents != null ? (
+                  {/* `null` = nothing left to buy, and that is the one number
+                      the card still speaks. The work STAYS on the page and says
+                      so: a sold-out edition is the best thing there, while an
+                      "Order Print" button leading to a wizard that refuses the
+                      sale is the worst.
+                      The price itself is gated above — see
+                      SHOW_PRICE_ON_LISTINGS. */}
+                  {sale.minPriceCents != null ? (
                     <>
-                      <Text as="span" className={styles.price}>
-                        {formatEuros(artwork.minPriceCents)}
-                      </Text>
+                      {SHOW_PRICE_ON_LISTINGS && (
+                        <Text as="span" className={styles.price}>
+                          {formatEuros(sale.minPriceCents)}
+                        </Text>
+                      )}
                       <Button
                         href={`/artworks/${artwork.slug}/print`}
                         label="Order Print"

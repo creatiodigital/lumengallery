@@ -102,54 +102,24 @@
   padding-right: var(--space-3);
 }
 
-// Wraps the grid + pagination so the loading spinner can overlay the dimmed
-// grid while a page/filter fetch is in flight.
+// Wraps the grid so the last card row never sits on the footer's double rule.
+// Generous on purpose: the "Order Print" button is the last thing in the grid
+// and needs clear air beneath it, or the rule reads as the button's own
+// underline. Pulled back on small screens, where 160px of nothing is just
+// scrolling.
+// No loading treatment any more: the selection is a curated list held in
+// memory, so filtering it is synchronous — there is no fetch to cover.
 .results {
   position: relative;
-  // Breathing room between the last card row and the footer's double rule.
-  margin-bottom: var(--space-16);
-}
+  margin-bottom: var(--space-40);
 
-// Dim + lock the current grid during a fetch; the fresh page swaps in when the
-// server action resolves.
-.gridLoading {
-  opacity: 0.45;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.loadingOverlay {
-  position: absolute;
-  top: var(--space-10);
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 2px solid var(--color-border-default);
-  border-top-color: var(--color-text-primary);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  @include media-down(sm) {
+    margin-bottom: var(--space-16);
   }
 }
 
-// Fine print under the catalog. Deliberately quiet — it exists so a buyer
-// isn't surprised at checkout, not to be read first.
-.priceNote {
-  margin-bottom: var(--space-6);
+.selectionEmpty {
+  margin: var(--space-10) 0;
   text-align: center;
-  // --text-sm (14px), not --text-xs: quiet, but this has to be readable —
-  // it is the only place a buyer is told tax and shipping come later.
-  font-size: var(--text-sm);
   color: var(--color-text-secondary);
 }
