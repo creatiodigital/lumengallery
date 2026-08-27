@@ -9,6 +9,12 @@ import {
   emailParagraph,
 } from './components'
 import { renderEmailLayout } from './layout'
+import {
+  editionDetailRows,
+  editionsListBlock,
+  formatEditionCopy,
+  type EditionAssignment,
+} from './editionCopies'
 import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -19,6 +25,9 @@ type OrderDeliveredArgs = {
   orderId: string
   artworkTitle: string
   artistName: string
+  /** Limited-edition copies on this order. Empty/undefined for open editions —
+   *  the edition block is then omitted entirely. */
+  editions?: EditionAssignment[]
 }
 
 /**
@@ -33,6 +42,22 @@ export function renderOrderDeliveredEmail(args: OrderDeliveredArgs): {
   const safeArtwork = escapeHtml(args.artworkTitle)
   const safeArtist = escapeHtml(args.artistName)
   const safeOrderId = formatOrderRef(args.orderId)
+  const editions = args.editions ?? []
+
+  // The buyer now holds the object, so this is the moment to point at the two
+  // places the number lives on it — the margin and the certificate — and to ask
+  // that they stay together. A print separated from its certificate loses the
+  // provenance the edition number exists to carry.
+  const certificateParagraph =
+    editions.length === 0
+      ? ''
+      : editions.length === 1
+        ? emailParagraph(
+            `Your copy is <strong>${formatEditionCopy(editions[0])}</strong>. The number is printed into the margin, and the Certificate of Authenticity in the parcel &mdash; signed by ${safeArtist} &mdash; records it too. Keep the two together; that pairing is what proves the work is yours.`,
+          )
+        : emailParagraph(
+            `Each copy is individually numbered &mdash; printed into the margin &mdash; and arrives with a Certificate of Authenticity recording that same number. Keep each print with its certificate; that pairing is what proves the work is yours.`,
+          )
 
   const body =
     emailHeading(`Your artwork has arrived, ${firstName}`) +
@@ -44,8 +69,11 @@ export function renderOrderDeliveredEmail(args: OrderDeliveredArgs): {
     emailDetailRows([
       { label: 'Artwork', value: safeArtwork },
       { label: 'Artist', value: safeArtist },
+      ...editionDetailRows(editions),
     ]) +
+    editionsListBlock(editions) +
     emailDivider() +
+    certificateParagraph +
     emailParagraph(
       `If anything looks wrong &mdash; damaged in transit, mis-printed, or simply not what you expected &mdash; just reply to this email with your unboxing photos or video, or a photo of the problem, and we&rsquo;ll make it right.`,
     ) +

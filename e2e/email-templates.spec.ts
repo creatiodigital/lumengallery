@@ -94,6 +94,45 @@ test.describe('branded email layout (dev preview)', () => {
     await expect(page.locator('body')).not.toContainText(/printspace/i)
   })
 
+  // A limited-edition buyer is told WHICH copy is theirs only once production
+  // has started — before that the number can still be returned to the pool.
+  // From shipping onward it is committed, and until the parcel arrives these
+  // emails are the buyer's only copy of the fact (it is printed in the margin).
+  test('order-shipped email names which copy of the edition is on its way', async ({ page }) => {
+    await page.goto('/dev/emails/order-shipped')
+    await expect(page.getByText('No. 3 of 45')).toBeVisible()
+  })
+
+  test('order-delivered email names the copy and ties it to the certificate', async ({ page }) => {
+    await page.goto('/dev/emails/order-delivered')
+    // Twice on purpose: once as a detail row, once inside the note asking the
+    // buyer to keep print and certificate together.
+    await expect(page.getByText('No. 3 of 45')).toHaveCount(2)
+    await expect(page.getByText(/certificate of authenticity/i)).toBeVisible()
+    await expect(page.getByText(/keep the two together/i)).toBeVisible()
+  })
+
+  // Open editions have no copy number at all. The row must vanish rather than
+  // render an empty or undefined one — the failure a naive implementation makes.
+  test('order-shipped email shows no edition row for an open edition', async ({ page }) => {
+    await page.goto('/dev/emails/order-shipped-open')
+    await expect(page.getByText(/on its way, jane/i)).toBeVisible()
+    await expect(page.locator('body')).not.toContainText(/No\.\s*\d+ of/)
+    await expect(page.locator('body')).not.toContainText(/undefined/i)
+    await expect(page.getByText('Edition', { exact: true })).toHaveCount(0)
+  })
+
+  test('order-delivered email shows no edition row or certificate note for an open edition', async ({
+    page,
+  }) => {
+    await page.goto('/dev/emails/order-delivered-open')
+    await expect(page.getByText(/your artwork has arrived, jane/i)).toBeVisible()
+    await expect(page.locator('body')).not.toContainText(/No\.\s*\d+ of/)
+    await expect(page.locator('body')).not.toContainText(/undefined/i)
+    await expect(page.getByText('Edition', { exact: true })).toHaveCount(0)
+    await expect(page.getByText(/certificate of authenticity/i)).toHaveCount(0)
+  })
+
   test('refund-issued email shows refund amount and timeline', async ({ page }) => {
     await page.goto('/dev/emails/refund-issued')
     await expect(page.getByText(/your refund is on its way, jane/i)).toBeVisible()
