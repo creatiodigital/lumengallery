@@ -1,0 +1,226 @@
+@use '@/styles/mixins' as *;
+
+// The one section that escapes the page's max width. `50% - 50vw` is half the
+// distance from the container's centre to the viewport's edge, applied as a
+// negative margin on both sides — so it stretches edge to edge whatever
+// container it happens to sit in, without that container needing to know.
+//
+// Everything else on this page stays within PageLayout's 1660px; the imagery is
+// the deliberate exception.
+.gallery {
+  position: relative;
+  margin-top: var(--space-10);
+  // The gallery is the last thing on the page, so it needs clearance from the
+  // footer's rule — otherwise a full-bleed image runs straight into it.
+  margin-bottom: var(--space-18);
+
+  @include media-down(lg) {
+    margin-top: var(--space-4);
+    margin-bottom: var(--space-10);
+  }
+  padding: 0;
+  width: 100vw;
+  max-width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
+
+.viewport {
+  overflow: hidden;
+  // Horizontal gestures are ours; vertical ones stay with the browser, so
+  // scrolling the page past the carousel is never swallowed by it.
+  touch-action: pan-y;
+  // A half-finished drag would otherwise select the caption text underneath.
+  user-select: none;
+}
+
+// Single and pair stack on a phone — two 3:2 crops side by side there are
+// smaller than thumbnails. The CAROUSEL does not: it keeps its peek layout at
+// every size, because a column of stacked images loses the sense that they
+// belong to one sequence.
+.track {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.slide {
+  margin: 0;
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+// `cover` at 3:2, so an asset keeps the same crop whichever layout it lands in
+// as more are added — but capped in height. At full page width 3:2 works out
+// over 1000px tall, which turns a supporting image into a second hero and
+// pushes everything below it off the screen. Past the cap the box goes wider
+// than 3:2 and `cover` crops the difference.
+// On a phone the slide is nearly the full width, so 3:2 makes a tall block that
+// pushes everything after it off the screen. A wider band keeps the carousel
+// readable in one glance; the fuller ratio returns from lg, where the slide is
+// only two thirds of the width and height is not at a premium.
+.media {
+  display: block;
+  width: 100%;
+  // 3:2 at EVERY width, matching the ratio the assets are shot at — `cover` then
+  // has almost nothing to crop, so the image is shown rather than trimmed to fit
+  // a box that disagrees with it.
+  //
+  // Note the ratio, not the cap, decides the height: at ~78% of a phone viewport
+  // this is only a couple of hundred pixels tall, so any sane max-height sits
+  // far above it and does nothing. Smaller second number = taller image.
+  aspect-ratio: 3 / 2;
+  height: auto;
+  // A backstop for very wide phones and small tablets, where the ratio alone
+  // could produce something tall enough to fill the screen.
+  max-height: 50vh;
+  object-fit: cover;
+  background: var(--color-surface-subtle);
+}
+
+.caption {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.videoWrap {
+  position: relative;
+}
+
+// Sits over imagery, so it carries its own contrast rather than relying on
+// whatever happens to be behind it.
+.videoControl,
+.control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  box-shadow: 0 1px 6px rgb(0 0 0 / 25%);
+}
+
+.videoControl {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+}
+
+// ── The carousel, at every width ──────────────────────────────────────────
+// Five slides centred as a row: the middle one active, its neighbours peeking,
+// and an outer pair beyond the frame so a step always has something to bring
+// in. The overflow either side IS the peek.
+//
+// The slide is wider on a phone, so the peeks stay slivers rather than eating
+// the screen.
+.viewport[data-layout='carousel'] {
+  --slide-w: 78%;
+
+  .track {
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--space-3);
+    // One step is a slide plus the gap between them. Percentages resolve
+    // against the track, which is the viewport's width, so this stays in step
+    // at any size.
+    transform: translateX(calc(var(--shift, 0) * -1 * (var(--slide-w) + var(--space-3))));
+    transition: none;
+  }
+
+  // Only while travelling. The frame that re-centres has the attribute removed,
+  // so the transform snaps back as the window shifts and the two cancel out.
+  .track[data-sliding='true'] {
+    transition: transform 400ms ease;
+  }
+
+  .slide {
+    flex: 0 0 var(--slide-w);
+    opacity: 0.35;
+    // Matches the track, so the brightening and the movement finish together
+    // rather than one trailing the other.
+    transition: opacity 400ms ease;
+  }
+
+  // Only the middle one is fully lit; the neighbours read as context.
+  .slide[data-active='true'] {
+    opacity: 1;
+  }
+}
+
+// No arrows on a phone: the gesture is the control there, and buttons laid over
+// a nearly full-width slide cover the very image they are pointing at. From lg
+// up a pointer has nothing to swipe with, so they come back.
+.controls {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  // Percentage, not pixels: it keeps its position within the peek at any width.
+  padding: 0 2%;
+  // The strip spans the section, so it would otherwise swallow clicks meant for
+  // the slides underneath. Only the buttons themselves take pointers.
+  pointer-events: none;
+}
+
+.control {
+  pointer-events: auto;
+}
+
+@include media-up(lg) {
+  .media {
+    // Same ratio as mobile; only the ceiling changes. Full-bleed at 3:2 works
+    // out over 1000px tall, which would make a supporting image a second hero.
+    max-height: 600px;
+  }
+
+  .track {
+    flex-direction: row;
+    gap: var(--space-4);
+  }
+
+  // One image: centred, and not full bleed — a lone close-up spanning the whole
+  // window stops reading as a detail.
+  .viewport[data-layout='single'] .slide {
+    flex-basis: 60%;
+    margin: 0 auto;
+  }
+
+  .viewport[data-layout='pair'] .slide {
+    flex-basis: calc(40% - var(--space-2));
+  }
+
+  .viewport[data-layout='pair'] .track {
+    justify-content: center;
+  }
+
+  // Room for real peeks once there is width to spare.
+  .viewport[data-layout='carousel'] {
+    --slide-w: 66%;
+
+    .track {
+      gap: var(--space-4);
+      transform: translateX(calc(var(--shift, 0) * -1 * (var(--slide-w) + var(--space-4))));
+    }
+  }
+
+  .controls {
+    display: flex;
+    padding: 0 5%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .track[data-sliding='true'] {
+    transition: none;
+  }
+
+  .slide {
+    transition: none;
+  }
+}

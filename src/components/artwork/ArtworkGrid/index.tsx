@@ -17,6 +17,11 @@ type Artwork = {
   name: string
   title?: string | null
   author?: string | null
+  /** Artist name already resolved for THIS artwork (author winning over the
+   *  account name). /prints spans several artists, so it cannot pass one
+   *  fallback down the way a single-artist page can — it carries the name per
+   *  card instead. */
+  artistName?: string | null
   year?: string | null
   technique?: string | null
   dimensions?: string | null
@@ -88,7 +93,10 @@ export const ArtworkGrid = ({ artworks, artistName }: ArtworkGridProps) => {
             </div>
             <div className={styles.info}>
               <Text as="h2" font="sans" size="md" className={styles.artist}>
-                {artwork.author || artistName || ''}
+                {/* Per-card first: it is the only value that is right on a
+                    multi-artist listing. Then the free-text override, then the
+                    page-level fallback a single-artist page supplies. */}
+                {artwork.artistName || artwork.author || artistName || ''}
               </Text>
               <Text as="h1" font="sans" size="lg" className={styles.title}>
                 <em>{artwork.title || artwork.name}</em>

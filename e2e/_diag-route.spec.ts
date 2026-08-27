@@ -14,7 +14,10 @@ test('diagnostic: what does a server-action POST body actually look like', async
         const body = req.postData() || ''
         console.log('DIAG POST body length:', body.length)
         console.log('DIAG contains "artistId":', body.includes('artistId'))
-        console.log('DIAG contains fx.artworkId owner-ish uuid pattern present?', /[0-9a-f-]{36}/.test(body))
+        console.log(
+          'DIAG contains fx.artworkId owner-ish uuid pattern present?',
+          /[0-9a-f-]{36}/.test(body),
+        )
         console.log('DIAG first 800 chars:', body.slice(0, 800))
       }
       await route.continue()

@@ -1,55 +1,83 @@
 import { test, expect } from '@playwright/test'
 
 import prisma from '@/lib/prisma'
-import {
-  formatVariantEditionLine,
-  getVariantEditionLines,
-} from '@/lib/editions/variantEditionLines'
+import { getVariantEditionLines, variantEditionLineParts } from '@/lib/editions/variantEditionLines'
 import { setupLimitedFixture, teardownLimitedFixture } from './edition-helpers'
 
 /**
  * The edition line on the artwork page.
  *
- * Shape: `Edition` + the variant's own name + the copy the buyer is ABOUT TO
- * GET + `of` + that variant's edition size. It reads forward — "this one becomes
- * yours" — rather than reporting how many have already gone.
+ * A row is the variant's own name and its edition SIZE. No running count: every
+ * count tried here misled, and "X of Y" is the edition-number convention, so a
+ * count in that shape reads as "this is copy X" whatever it actually means.
  *
- * The number is the lowest still-AVAILABLE copy, never `max(sold) + 1`: a
- * cancelled order returns its number to the pool, so the two diverge and only
- * the minimum available is what the buyer actually receives.
+ * The consequence worth testing is that NOTHING a checkout does — reserving,
+ * abandoning, even selling — changes this row until the edition is exhausted.
  *
  * Pure function, no DB, no page.
  */
-test.describe('formatVariantEditionLine', () => {
-  test('an untouched edition offers its first copy', () => {
-    expect(
-      formatVariantEditionLine({ variantName: '50x40 Baryta', editionSize: 30, nextNumber: 1 }),
-    ).toBe('Edition 50x40 Baryta 1 of 30')
+test.describe('variantEditionLineParts', () => {
+  const line = (soldOut: boolean, priceCents: number | null = 31200) => ({
+    variantName: '50x40 Baryta',
+    editionSize: 30,
+    soldOut,
+    priceCents,
   })
 
-  test('a part-sold edition names the copy this buyer would get', () => {
-    expect(
-      formatVariantEditionLine({ variantName: '50x40 Baryta', editionSize: 30, nextNumber: 4 }),
-    ).toBe('Edition 50x40 Baryta 4 of 30')
+  test('states the edition size, and nothing it cannot stand behind', () => {
+    expect(variantEditionLineParts(line(false))).toEqual({
+      name: '50x40 Baryta',
+      count: 'Edition of 30',
+      price: '\u20ac312',
+    })
   })
 
-  test('an exhausted edition says so instead of a number', () => {
-    expect(
-      formatVariantEditionLine({ variantName: '70x60 Baryta', editionSize: 10, nextNumber: null }),
-    ).toBe('Edition 70x60 Baryta Sold out')
+  test('an exhausted edition says so instead', () => {
+    expect(variantEditionLineParts(line(true)).count).toBe('Sold out')
   })
 
-  test('a returned number is offered again, below the highest sold', () => {
-    // Copy 2 was cancelled and went back to the pool while 3 and 4 stayed sold.
-    // `max(sold) + 1` would say 5; the buyer actually receives 2.
-    expect(
-      formatVariantEditionLine({ variantName: '50x40 Baryta', editionSize: 30, nextNumber: 2 }),
-    ).toBe('Edition 50x40 Baryta 2 of 30')
+  test('an unpriceable variant yields no figure rather than a zero', () => {
+    expect(variantEditionLineParts(line(false, null)).price).toBeNull()
   })
 })
 
 test.describe('getVariantEditionLines', () => {
-  test('offers the lowest AVAILABLE copy, even when it sits below the highest sold', async () => {
+  test('an abandoned checkout leaves the row untouched', async () => {
+    const fx = await setupLimitedFixture(50)
+    try {
+      const [before] = await getVariantEditionLines(fx.artworkId)
+      expect(variantEditionLineParts(before).count).toBe('Edition of 50')
+
+      // Two visitors reach payment and abandon. A number is reserved the moment
+      // a PaymentIntent is created, but NOTHING WAS PAID — only the Stripe
+      // webhook marks a copy `sold`.
+      //
+      // This once moved a live edition from "2 of 50" to "4 of 50" with nothing
+      // sold, because the row read the lowest AVAILABLE number and reservations
+      // are not available. The row no longer states a copy at all, so there is
+      // nothing for an abandoned checkout to move — this proves that, rather
+      // than trusting it.
+      await prisma.editionNumber.updateMany({
+        where: { variantId: fx.variantId, number: { in: [1, 2] } },
+        data: { state: 'reserved' },
+      })
+      const [after] = await getVariantEditionLines(fx.artworkId)
+      expect(after.soldOut, 'a held copy is not a sold one').toBe(false)
+      expect(variantEditionLineParts(after).count).toBe('Edition of 50')
+
+      // Even a real sale leaves it alone — only exhausting the edition changes it.
+      await prisma.editionNumber.updateMany({
+        where: { variantId: fx.variantId, number: 1 },
+        data: { state: 'sold' },
+      })
+      const [sold] = await getVariantEditionLines(fx.artworkId)
+      expect(variantEditionLineParts(sold).count).toBe('Edition of 50')
+    } finally {
+      await teardownLimitedFixture(fx)
+    }
+  })
+
+  test('is unmoved by sales until the edition is exhausted', async () => {
     const fx = await setupLimitedFixture(5)
     const sell = (numbers: number[]) =>
       prisma.editionNumber.updateMany({
@@ -57,15 +85,14 @@ test.describe('getVariantEditionLines', () => {
         data: { state: 'sold' },
       })
     try {
-      // Untouched: the buyer gets the first copy.
       let [line] = await getVariantEditionLines(fx.artworkId)
       expect(line.editionSize).toBe(5)
-      expect(line.nextNumber).toBe(1)
+      expect(line.soldOut).toBe(false)
 
-      // Copies 1-3 sell in order.
+      // Copies sell; the row is unchanged, because it makes no claim about them.
       await sell([1, 2, 3])
       ;[line] = await getVariantEditionLines(fx.artworkId)
-      expect(line.nextNumber).toBe(4)
+      expect(line.soldOut).toBe(false)
 
       // Copy 2's order is cancelled and its number goes back to the pool. This
       // is the case `max(sold) + 1` gets wrong — it would answer 5, while
@@ -75,13 +102,13 @@ test.describe('getVariantEditionLines', () => {
         data: { state: 'available' },
       })
       ;[line] = await getVariantEditionLines(fx.artworkId)
-      expect(line.nextNumber, 'a returned copy is offered again').toBe(2)
+      expect(line.soldOut, 'a returned copy is not sold out').toBe(false)
 
-      // Nothing left at all.
+      // Every copy gone — counted, so a gap in the numbering cannot fake it.
       await sell([2, 4, 5])
       ;[line] = await getVariantEditionLines(fx.artworkId)
-      expect(line.nextNumber).toBeNull()
-      expect(formatVariantEditionLine(line)).toContain('Sold out')
+      expect(line.soldOut).toBe(true)
+      expect(variantEditionLineParts(line).count).toBe('Sold out')
     } finally {
       await teardownLimitedFixture(fx)
     }

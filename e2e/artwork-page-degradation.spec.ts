@@ -45,7 +45,13 @@ test.describe('an artwork with no optional data', () => {
       await expect(body, 'no undefined leaking into copy').not.toContainText(/undefined|null/i)
 
       // No carousel chrome without slides to move between.
-      await expect(page.getByRole('button', { name: /next|previous/i })).toHaveCount(0)
+      // Anchored to the carousel's own labels. A loose /next|previous/ also
+      // matches Next.js's "Open Next.js Dev Tools" button, which mounts in dev
+      // and has nothing to do with this page — do not widen it back.
+      await expect(
+        page.getByRole('button', { name: /^(next|previous) image$/i }),
+        'no carousel chrome without slides',
+      ).toHaveCount(0)
     } finally {
       await teardownOpenFixture(fx)
     }

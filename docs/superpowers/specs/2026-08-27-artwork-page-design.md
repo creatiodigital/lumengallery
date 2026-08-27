@@ -175,11 +175,11 @@ Supplementary media gets its own preset: **3200px, ~2.5MB, higher minimum qualit
 
 ### Minimum sizes
 
-| Asset | Reject below | Recommended |
-|---|---|---|
-| Supplementary image | 2000px long edge | 3000–4000px |
-| Print detail close-up | 2400px | 4000px |
-| Video | 1280×720 | 1920×1080 |
+| Asset                 | Reject below     | Recommended |
+| --------------------- | ---------------- | ----------- |
+| Supplementary image   | 2000px long edge | 3000–4000px |
+| Print detail close-up | 2400px           | 4000px      |
+| Video                 | 1280×720         | 1920×1080   |
 
 Above ~4500px is wasted. The floor doubles as a quality gate for the owner, who
 uploads everything himself.

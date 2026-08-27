@@ -10,11 +10,7 @@ import {
   emailParagraph,
 } from './components'
 import { renderEmailLayout } from './layout'
-import {
-  editionDetailRows,
-  editionsListBlock,
-  type EditionAssignment,
-} from './editionCopies'
+import { editionDetailRows, editionsListBlock, type EditionAssignment } from './editionCopies'
 import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)

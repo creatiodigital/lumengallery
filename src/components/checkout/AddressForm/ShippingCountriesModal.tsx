@@ -37,7 +37,7 @@ export const ShippingCountriesModal = ({
   )
 
   return (
-    <Modal onClose={onClose} titleId="shipping-countries-title" maxWidth="640px">
+    <Modal onClose={onClose} titleId="shipping-countries-title" maxWidth="640px" showClose>
       <Text as="h2" font="serif" size="xl" id="shipping-countries-title">
         Where we ship
       </Text>

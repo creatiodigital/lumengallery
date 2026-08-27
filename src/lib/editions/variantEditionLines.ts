@@ -1,5 +1,7 @@
 import prisma from '@/lib/prisma'
 
+import { formatDisplayPrice } from './formatDisplayPrice'
+import { minimumPriceForLimited } from './minimumPrice'
 import { LIVE_VARIANT_WHERE } from './printable'
 
 /**
@@ -23,24 +25,55 @@ export type VariantEditionLine = {
   variantName: string
   /** This variant's edition size — never the artwork's. */
   editionSize: number
-  /** The copy the buyer would receive. `null` when none are left. */
-  nextNumber: number | null
-}
-
-/** `Edition 50x40 Baryta 1 of 30`, or `Edition 70x60 Baryta Sold out`. */
-export function formatVariantEditionLine(line: VariantEditionLine): string {
-  const suffix =
-    line.nextNumber === null ? 'Sold out' : `${line.nextNumber} of ${line.editionSize}`
-  return `Edition ${line.variantName} ${suffix}`
+  /** True once every copy has sold. The only per-variant state the row shows —
+   *  a count is deliberately absent, see below. */
+  soldOut: boolean
+  /** What this edition costs, excluding shipping and tax. Price is NOT common
+   *  across a work's editions — each variant is its own size, paper and figure —
+   *  so it belongs on the row, never as one number above them all. */
+  priceCents: number | null
 }
 
 /**
- * One line per live variant, in the order the variants are shown.
+ * A line split into its parts, so a surface can lay them out as columns and set
+ * the variant's name apart — it is the part a reader scans for, and the only
+ * part that differs between rows.
+ */
+export type VariantEditionLineParts = {
+  /** The variant's own name, e.g. "50x40 Baryta". */
+  name: string
+  /** "Edition of 50", or "Sold out" once every copy has gone. */
+  count: string
+  /** "€312", or null when the variant carries no usable price. */
+  price: string | null
+}
+
+export function variantEditionLineParts(line: VariantEditionLine): VariantEditionLineParts {
+  return {
+    name: line.variantName,
+    count: line.soldOut ? 'Sold out' : `Edition of ${line.editionSize}`,
+    price: line.priceCents === null ? null : formatDisplayPrice(line.priceCents),
+  }
+}
+
+/**
+ * One line per live variant: its name and its edition SIZE. No running count.
  *
- * `nextNumber` is the LOWEST still-available copy, not `max(sold) + 1`. A
- * cancelled order returns its number to the pool, so the two diverge — and only
- * the minimum available is the number `reserveEditionNumber` will actually hand
- * out. Taking the first row of an ascending ordered fetch gets it in one query.
+ * Three counts were tried on this row and every one misled:
+ *
+ *   lowest AVAILABLE — a number is reserved the moment a PaymentIntent exists,
+ *     so an abandoned checkout consumed one and a live edition advanced from
+ *     "2 of 50" to "4 of 50" with nothing sold.
+ *   max(sold) + 1 — reads as a promise of a particular copy, which nobody can
+ *     make: the copy is decided when payment confirms, and someone else may pay
+ *     first.
+ *   max(sold) — accurate, but "6 of 50" is the EDITION-NUMBER convention. Every
+ *     collector reads it as "this is copy 6", so the truest number was also the
+ *     most misleading thing on the page.
+ *
+ * `X of Y` wants to mean an edition number. Since this row cannot honestly show
+ * one, it shows the edition size instead and says nothing it cannot stand
+ * behind. The buyer learns their own number when production starts.
  */
 export async function getVariantEditionLines(artworkId: string): Promise<VariantEditionLine[]> {
   const variants = await prisma.limitedVariant.findMany({
@@ -49,18 +82,30 @@ export async function getVariantEditionLines(artworkId: string): Promise<Variant
     select: {
       name: true,
       editionSize: true,
-      editionNumbers: {
-        where: { state: 'available' },
-        orderBy: { number: 'asc' },
-        take: 1,
-        select: { number: true },
-      },
+      priceCents: true,
+      paperId: true,
+      printTypeId: true,
+      widthCm: true,
+      heightCm: true,
+      borderCm: true,
+      sheetWidthCm: true,
+      sheetHeightCm: true,
+      // Sold copies only. A reserved one belongs to an unfinished checkout and
+      // counts for nothing — only the Stripe webhook sets `sold`, so it is the
+      // single state that means money arrived.
+      _count: { select: { editionNumbers: { where: { state: 'sold' } } } },
     },
   })
 
   return variants.map((v) => ({
     variantName: v.name,
     editionSize: v.editionSize,
-    nextNumber: v.editionNumbers[0]?.number ?? null,
+    // Every copy gone. Counted rather than compared against the highest number
+    // sold, which a gap in the ledger would make wrong.
+    soldOut: v._count.editionNumbers >= v.editionSize,
+    // Priced by handing this variant ALONE to the same function that picks the
+    // cheapest across all of them. Same arithmetic, so a row's figure and the
+    // card's minimum cannot drift apart.
+    priceCents: minimumPriceForLimited([v])?.cents ?? null,
   }))
 }

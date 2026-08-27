@@ -4,6 +4,9 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-6);
+  // The grid is the last thing on /prints, artist and exhibition pages, so its
+  // bottom row otherwise sits hard against the footer's rule.
+  margin-bottom: var(--space-14);
 
   @include breakpoint(md) {
     grid-template-columns: repeat(2, 1fr);
@@ -13,6 +16,7 @@
   @include breakpoint(lg) {
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-10);
+    margin-bottom: var(--space-18);
   }
 }
 

@@ -248,7 +248,9 @@ export async function POST(request: NextRequest) {
       const originalFormat =
         formatMap[metadata.format ?? ''] ?? metadata.format?.toUpperCase() ?? null
       const originalSizeBytes = originalBuffer.length
-      mark(`metadata(${originalWidth}x${originalHeight}, ${((originalWidth * originalHeight) / 1e6).toFixed(1)}MP)`)
+      mark(
+        `metadata(${originalWidth}x${originalHeight}, ${((originalWidth * originalHeight) / 1e6).toFixed(1)}MP)`,
+      )
 
       // Generate web-optimized version
       const processedBuffer = await processImage(originalBuffer)
