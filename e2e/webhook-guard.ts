@@ -41,7 +41,10 @@ function writeState(ids: string[]): void {
     if (ids.length === 0) fs.rmSync(STATE_FILE, { force: true })
     else fs.writeFileSync(STATE_FILE, JSON.stringify(ids, null, 2))
   } catch (err) {
-    console.warn('[e2e webhooks] could not persist state:', err instanceof Error ? err.message : err)
+    console.warn(
+      '[e2e webhooks] could not persist state:',
+      err instanceof Error ? err.message : err,
+    )
   }
 }
 

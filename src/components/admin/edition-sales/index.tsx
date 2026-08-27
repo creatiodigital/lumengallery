@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -48,6 +48,45 @@ const OFF_PLATFORM_ICONS: Record<OffPlatformKind, LucideIcon> = {
   test: PrinterCheck,
 }
 
+/** A column header that cycles descending → ascending → unsorted. */
+const SortHeader = ({
+  label,
+  active,
+  onClick,
+}: {
+  label: string
+  active: 'asc' | 'desc' | null
+  onClick: () => void
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={`Sort by ${label.toLowerCase()} (${active ?? 'unsorted'})`}
+    style={{
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      font: 'inherit',
+      color: 'inherit',
+      cursor: 'pointer',
+    }}
+  >
+    {label}
+    {active === 'desc' ? ' ↓' : active === 'asc' ? ' ↑' : ''}
+  </button>
+)
+
+type SortState = { key: 'date' | 'number'; dir: 'asc' | 'desc' } | null
+
+/** Clicking a column steps it descending → ascending → off. Clicking a
+ *  different column starts that one descending, since the newest or highest is
+ *  what the page is usually asked for. */
+const cycleSort = (current: SortState, key: 'date' | 'number'): SortState => {
+  if (current?.key !== key) return { key, dir: 'desc' }
+  if (current.dir === 'desc') return { key, dir: 'asc' }
+  return null
+}
+
 const KindMark = ({ kind }: { kind: OffPlatformKind }) => {
   const Icon = OFF_PLATFORM_ICONS[kind]
   return Icon ? (
@@ -59,6 +98,17 @@ const KindMark = ({ kind }: { kind: OffPlatformKind }) => {
     />
   ) : null
 }
+
+/** Its own control style: the gift form's `fieldStyle` carries a bottom margin
+ *  that would push these apart in a toolbar row. */
+const filterStyle = {
+  padding: 8,
+  border: '1px solid rgba(0,0,0,0.2)',
+  borderRadius: 4,
+  fontFamily: 'inherit',
+  fontSize: 13,
+  minWidth: 200,
+} as const
 
 const fieldStyle = {
   width: '100%',
@@ -85,6 +135,58 @@ export const AdminEditionSales = () => {
   const giftParamHandled = useRef(false)
 
   const [sales, setSales] = useState<EditionSaleRow[]>([])
+
+  // Narrow to one edition, then read it in numeric order — the question this
+  // page exists to answer is "which copy went last", and across every artwork
+  // at once that is unreadable.
+  const [artworkFilter, setArtworkFilter] = useState('')
+  const [variantFilter, setVariantFilter] = useState('')
+  const [sort, setSort] = useState<{ key: 'date' | 'number'; dir: 'asc' | 'desc' } | null>(null)
+
+  // Keyed by slug, not title: two artists can name a work the same thing.
+  const artworkOptions = useMemo(() => {
+    const byKey = new Map<string, string>()
+    for (const s of sales) {
+      const key = s.artworkSlug ?? s.artworkTitle
+      if (!byKey.has(key)) byKey.set(key, `${s.artworkTitle} — ${s.artistName}`)
+    }
+    return [...byKey].sort((a, b) => a[1].localeCompare(b[1]))
+  }, [sales])
+
+  // Only ever the chosen artwork's variants. Variant names are NOT unique
+  // across artworks — "Small 20" can exist on several — so offering them in one
+  // flat list would silently mix editions that have nothing to do with each
+  // other, which is exactly the confusion this page is meant to end.
+  const variantOptions = useMemo(() => {
+    if (!artworkFilter) return []
+    const names = new Set(
+      sales
+        .filter((s) => (s.artworkSlug ?? s.artworkTitle) === artworkFilter)
+        .map((s) => s.variantName),
+    )
+    return [...names].sort((a, b) => a.localeCompare(b))
+  }, [sales, artworkFilter])
+
+  const visibleSales = useMemo(() => {
+    let rows = sales
+    if (artworkFilter) {
+      rows = rows.filter((s) => (s.artworkSlug ?? s.artworkTitle) === artworkFilter)
+    }
+    if (variantFilter) rows = rows.filter((s) => s.variantName === variantFilter)
+    if (sort) {
+      const dir = sort.dir === 'asc' ? 1 : -1
+      // Copied before sorting: `sales` is state and must not be mutated.
+      rows = [...rows].sort((a, b) => {
+        if (sort.key === 'number') return (a.number - b.number) * dir
+        // Undated rows sink to the bottom whichever way the column is pointing,
+        // rather than pretending to be the oldest.
+        if (!a.date) return 1
+        if (!b.date) return -1
+        return (Date.parse(a.date) - Date.parse(b.date)) * dir
+      })
+    }
+    return rows
+  }, [sales, artworkFilter, variantFilter, sort])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -281,13 +383,91 @@ export const AdminEditionSales = () => {
             <p className={dashboardStyles.sectionDescription}>
               <strong>{sales.length}</strong> numbered copies reserved or sold
             </p>
+            <div
+              style={{
+                display: 'flex',
+                gap: 12,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                marginBottom: 16,
+              }}
+            >
+              <select
+                style={filterStyle}
+                value={artworkFilter}
+                aria-label="Filter by artwork"
+                onChange={(e) => {
+                  setArtworkFilter(e.target.value)
+                  // The variants below belong to the previous artwork, and a
+                  // name like "Small 20" may exist on both — carrying the old
+                  //选 selection over would silently show the wrong edition.
+                  setVariantFilter('')
+                }}
+              >
+                <option value="">All artworks</option>
+                {artworkOptions.map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                style={{ ...filterStyle, opacity: artworkFilter ? 1 : 0.5 }}
+                value={variantFilter}
+                disabled={!artworkFilter}
+                aria-label="Filter by variant"
+                title={artworkFilter ? undefined : 'Choose an artwork first'}
+                onChange={(e) => setVariantFilter(e.target.value)}
+              >
+                <option value="">
+                  {artworkFilter ? 'All variants' : 'Choose an artwork first'}
+                </option>
+                {variantOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+
+              {(artworkFilter || variantFilter || sort) && (
+                <Button
+                  font="dashboard"
+                  variant="secondary"
+                  size="small"
+                  label="Clear"
+                  onClick={() => {
+                    setArtworkFilter('')
+                    setVariantFilter('')
+                    setSort(null)
+                  }}
+                />
+              )}
+
+              <span style={{ fontSize: 13, opacity: 0.7 }}>
+                {visibleSales.length} of {sales.length}
+              </span>
+            </div>
+
             <table className={dashboardStyles.table}>
               <thead>
                 <tr>
-                  <th>Date</th>
+                  <th>
+                    <SortHeader
+                      label="Date"
+                      active={sort?.key === 'date' ? sort.dir : null}
+                      onClick={() => setSort(cycleSort(sort, 'date'))}
+                    />
+                  </th>
                   <th>Artwork</th>
                   <th>Variant</th>
-                  <th>Number</th>
+                  <th>
+                    <SortHeader
+                      label="Number"
+                      active={sort?.key === 'number' ? sort.dir : null}
+                      onClick={() => setSort(cycleSort(sort, 'number'))}
+                    />
+                  </th>
                   <th>Buyer</th>
                   <th>Status</th>
                   <th>TPS</th>
@@ -296,7 +476,7 @@ export const AdminEditionSales = () => {
                 </tr>
               </thead>
               <tbody>
-                {sales.map((s) => (
+                {visibleSales.map((s) => (
                   <tr key={s.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatDate(s.date)}</td>
                     <td>

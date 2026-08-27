@@ -1,17 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 
 import { RichText } from '@/components/ui/RichText'
 import { Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
 import { InquireSidebar } from '@/components/ui/InquireSidebar'
-import { isArtworkPurchasable, isEditionSoldOut } from '@/lib/editions/printable'
 import { Share } from '@/components/ui/Share'
-import { setPrintReturnUrl } from '@/components/checkout/printReturnUrl'
 import { usePurchasesPaused } from '@/hooks/usePurchasesPaused'
+import type { VariantEditionLineParts } from '@/lib/editions/variantEditionLines'
 import { isRichTextEmpty } from '@/lib/textUtils'
+import { ArtworkAvailabilityCard } from './ArtworkAvailabilityCard'
 import { reportImageError } from '@/lib/observability/reportImageError'
 
 import styles from './ArtworkDetail.module.scss'
@@ -37,7 +36,6 @@ export type Artwork = {
   originalWidth?: number | null
   originalHeight?: number | null
   printEnabled?: boolean | null
-  printPriceCents?: number | null
   /** 'open' | 'limited'. Absent = treated as open, which is the pre-limited
    *  behaviour: purchasability falls back to the artwork-level price. */
   editionType?: string | null
@@ -52,9 +50,28 @@ export type Artwork = {
 const FALLBACK_WIDTH = 800
 const FALLBACK_HEIGHT = 800
 
+/**
+ * Resolved commerce facts for the availability card.
+ *
+ * Present ONLY on the standalone artwork page. The in-exhibition modal omits it
+ * and keeps its existing inline CTA: a priced card, a caveat and a variant list
+ * belong on a page, not in a small overlay floating over a 3D room.
+ */
+export type ArtworkCommerce = {
+  editionType: 'open' | 'limited'
+  minPriceCents: number | null
+  /** Every live edition of this work, priced per row. */
+  editionLines: VariantEditionLineParts[]
+}
+
 interface ArtworkDetailBodyProps {
   artwork: Artwork
   artist: Artist
+  commerce?: ArtworkCommerce | null
+  /** `page` moves the story and the commerce band out to full-width sections
+   *  below the image. `modal` keeps everything in the metadata column, which is
+   *  all an overlay over a 3D room can hold. */
+  layout?: 'page' | 'modal'
 }
 
 /**
@@ -62,15 +79,13 @@ interface ArtworkDetailBodyProps {
  * in-exhibition ArtworkModal. Renders only the metadata + image + InquireSidebar;
  * the surrounding chrome (page header/footer, or modal overlay/X) is the caller's job.
  */
-export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) => {
-  const router = useRouter()
+export const ArtworkDetailBody = ({
+  artwork,
+  artist,
+  commerce,
+  layout = 'modal',
+}: ArtworkDetailBodyProps) => {
   const [isInquireOpen, setIsInquireOpen] = useState(false)
-
-  const soldOut = isEditionSoldOut({
-    editionType: artwork.editionType ?? 'open',
-    liveVariantCount: artwork.liveVariantCount ?? 0,
-    availableNumberCount: artwork.availableNumberCount ?? 0,
-  })
 
   // Purchases kill switch (admin dashboard). The hook's cache is shared with
   // the artwork grids, so moving between a listing and a work doesn't re-read.
@@ -89,22 +104,24 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
   return (
     <>
       <div className={styles.metadata}>
-        {displayAuthor && (
-          <Text as="h1" size="2xl" className={styles.artistName}>
-            {displayAuthor}
-          </Text>
-        )}
+        {/* The work leads, and it is the <h1>: this page is about the artwork,
+            not about the artist, who has a page of their own. */}
         {displayTitle && (
-          <div className={styles.title}>
-            <Text as="span" size="xl" font="serif" className={styles.titleText}>
+          <h1 className={styles.title}>
+            <Text as="span" size="3xl" font="serif" className={styles.titleText}>
               {displayTitle}
             </Text>
             {artwork.year && (
-              <Text as="span" size="xl" font="serif" className={styles.year}>
+              <Text as="span" size="3xl" font="serif" className={styles.year}>
                 , {artwork.year}
               </Text>
             )}
-          </div>
+          </h1>
+        )}
+        {displayAuthor && (
+          <Text as="p" size="xl" font="serif" className={styles.artistName}>
+            {displayAuthor}
+          </Text>
         )}
         {artwork.technique && (
           <RichText content={artwork.technique} variant="compact" className={styles.technique} />
@@ -114,55 +131,32 @@ export const ArtworkDetailBody = ({ artwork, artist }: ArtworkDetailBodyProps) =
             {artwork.dimensions}
           </Text>
         )}
-        {!isRichTextEmpty(artwork.description) && (
+        {layout === 'modal' && !isRichTextEmpty(artwork.description) && (
           <RichText
             content={artwork.description!}
             variant="compact"
             className={styles.description}
           />
         )}
+        {commerce && !purchasesPaused && (
+          <ArtworkAvailabilityCard
+            editionType={commerce.editionType}
+            minPriceCents={commerce.minPriceCents}
+            editionLines={commerce.editionLines}
+            artworkSlug={artwork.slug}
+          />
+        )}
+        {/* Below the purchase block: once a work is buyable, enquiring is the
+            secondary path. On a piece that is NOT for sale there is no card
+            above it and this is the only route forward. */}
         <Button
           variant="secondary"
           label="Inquire"
           icon="arrowRight"
           size="bigSquared"
           onClick={() => setIsInquireOpen(true)}
-          className={styles.inquireButton}
+          className={`${styles.inquireButton} ${styles.inquireButtonFull}`}
         />
-        {/* `isArtworkPurchasable` and not a `printPriceCents` check: a LIMITED
-            edition has no artwork-level price, so gating on it hid the button
-            on every limited work — buyable, listed on /prints, and with no way
-            to buy it from its own page or from inside an exhibition. That is
-            the exact failure printable.ts was written to end; this surface was
-            missed when the others were fixed. */}
-        {/* Sold out is stated, not hidden. The edition is still real and still
-            worth seeing — and an "Order Print" button on a sold-out edition
-            walks the buyer into a wizard that refuses them. */}
-        {!purchasesPaused && soldOut ? (
-          <Text as="p" className={styles.soldOut}>
-            Sold out
-          </Text>
-        ) : !purchasesPaused &&
-          isArtworkPurchasable({
-            printEnabled: !!artwork.printEnabled,
-            editionType: artwork.editionType ?? 'open',
-            printPriceCents: artwork.printPriceCents ?? null,
-            liveVariantCount: artwork.liveVariantCount ?? 0,
-          }) ? (
-          <Button
-            variant="primary"
-            label="Order Print"
-            icon="arrowRight"
-            size="bigSquared"
-            onClick={() => {
-              // Remember where we came from (exhibition visit URL when opened from the
-              // modal, or this artwork page) so the print flow's Close returns here.
-              setPrintReturnUrl(artwork.slug, window.location.pathname)
-              router.push(`/artworks/${artwork.slug}/print`)
-            }}
-            className={styles.inquireButton}
-          />
-        ) : null}
         <Share title={displayTitle || 'Artwork'} url={shareUrl} className={styles.share} />
       </div>
 

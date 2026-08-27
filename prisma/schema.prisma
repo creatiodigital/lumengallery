@@ -148,9 +148,9 @@ model Artwork {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   name                 String
-  slug                 String  @unique
-  artworkType          String  @default("image")
-  title                String  @default("Untitled")
+  slug                 String         @unique
+  artworkType          String         @default("image")
+  title                String         @default("Untitled")
   author               String?
   year                 String?
   technique            String?
@@ -166,9 +166,10 @@ model Artwork {
   textContent          String? // Fixed text content for stencil/text artworks
   soundUrl             String? // Audio file URL for sound artworks
   videoUrl             String? // Video file URL for video artworks
-  featured             Boolean @default(false)
-  hiddenFromExhibition Boolean @default(false)
-  order                Int     @default(0)
+  media                ArtworkMedia[]
+  featured             Boolean        @default(false)
+  hiddenFromExhibition Boolean        @default(false)
+  order                Int            @default(0)
 
   // Print sales (theprintspace fulfillment). `printEnabled` gates the
   // "Order Print" CTA + the /print wizard; when false the artwork page
@@ -245,26 +246,26 @@ model LimitedVariant {
   artworkId String
   artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
 
-  name        String // free title, e.g. "Small"
-  paperId     String // TPS paper id (validated against TPS_PAPERS)
-  printTypeId String // 'giclee' | 'ctype', derived from the paper
+  name          String // free title, e.g. "Small"
+  paperId       String // TPS paper id (validated against TPS_PAPERS)
+  printTypeId   String // 'giclee' | 'ctype', derived from the paper
   // IMAGE size, in both modes. Locked to the artwork's aspect ratio.
   // In fixed-sheet mode this is DERIVED from the sheet + minimum border
   // and stored, so the @@unique key, pricing and every existing consumer
   // keep working unchanged.
-  widthCm     Float
-  heightCm    Float
+  widthCm       Float
+  heightCm      Float
   // The border value handed to TPS. In adaptive mode it is exact and
   // uniform on all four sides. In fixed-sheet mode it is a MINIMUM: the
   // real borders differ per axis and are derived via computeSheetLayout.
-  borderCm    Float  @default(0)
+  borderCm      Float  @default(0)
   // Fixed-sheet mode: the artist pins the total sheet and the image is
   // fitted inside it. NULL on both = adaptive mode (sheet = image +
   // 2*border). Never set only one. See src/lib/editions/sheetLayout.ts.
   sheetWidthCm  Float?
   sheetHeightCm Float?
-  editionSize Int // this variant's own edition size, e.g. 50
-  priceCents  Int? // artist's cut for THIS variant, in cents (size-based pricing)
+  editionSize   Int // this variant's own edition size, e.g. 50
+  priceCents    Int? // artist's cut for THIS variant, in cents (size-based pricing)
 
   // A variant is published once its edition numbers are materialised.
   // Publishing locks the parent artwork (`editionLocked`) and freezes
@@ -314,8 +315,8 @@ model EditionNumber {
   // NOT @unique: a PrintOrderItem with quantity > 1 (e.g. buying #29 and #30
   // of a limited edition) owns MULTIPLE EditionNumbers — this is the "many"
   // side of PrintOrderItem.editionNumbers (one-to-many).
-  orderItemId String?
-  orderItem   PrintOrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  orderItemId     String?
+  orderItem       PrintOrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
 
   // DEPRECATED (AR-129) — single-print one-to-one link to PrintOrder. Cart
   // flow uses orderItemId. Kept additively until the AR-129 cleanup task.
@@ -903,6 +904,38 @@ model SelectedPrint {
   artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
   order     Int      @default(0)
   createdAt DateTime @default(now())
+}
+
+/// Supplementary media for an artwork page — close-ups, print mockups, studio
+/// shots, an optional short video. NOT the artwork itself: `Artwork.imageUrl`
+/// is the work, this is the evidence that a physical object exists.
+///
+/// One table rather than separate image and video tables, because they share a
+/// single ordered sequence: a video may sit between two stills, and one `order`
+/// column keeps that trivial.
+///
+/// Additive and uncapped by design — the count limit is enforced in the upload
+/// route as a safety ceiling, not modelled here.
+model ArtworkMedia {
+  id        String  @id @default(uuid())
+  artworkId String
+  artwork   Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+
+  kind String // "image" | "video"
+  url  String // R2 public URL
+
+  // Real pixel dimensions when known, so the slot reserves its space and the
+  // page does not shift as media loads.
+  width  Int?
+  height Int?
+
+  /// Plain text only, escaped on render — never HTML.
+  caption String?
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([artworkId, order])
 }
 
 model PageContent {

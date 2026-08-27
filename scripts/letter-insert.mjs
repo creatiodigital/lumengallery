@@ -22,7 +22,16 @@
 import path from 'path'
 import os from 'os'
 import { createElement as h } from 'react'
-import { Document, Font, Image, Page, StyleSheet, Text, View, renderToFile } from '@react-pdf/renderer'
+import {
+  Document,
+  Font,
+  Image,
+  Page,
+  StyleSheet,
+  Text,
+  View,
+  renderToFile,
+} from '@react-pdf/renderer'
 
 const fontDir = path.join(process.cwd(), 'public', 'fonts')
 
@@ -37,7 +46,9 @@ Font.register({
 
 Font.register({
   family: 'Manrope',
-  fonts: [{ src: path.join(fontDir, 'manrope-regular.ttf'), fontWeight: 'normal', fontStyle: 'normal' }],
+  fonts: [
+    { src: path.join(fontDir, 'manrope-regular.ttf'), fontWeight: 'normal', fontStyle: 'normal' },
+  ],
 })
 
 // Hyphenation off — react-pdf otherwise breaks words mid-line, which reads as

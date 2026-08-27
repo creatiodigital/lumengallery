@@ -131,9 +131,9 @@ have no level 1, so the field came back **empty**.
 
 The rule now:
 
-| destination | source |
-| --- | --- |
-| US, CA, AU | `administrative_area_level_1` **short** code |
+| destination     | source                                                                                                     |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| US, CA, AU      | `administrative_area_level_1` **short** code                                                               |
 | everywhere else | `administrative_area_level_2` name (province / county), falling back to `administrative_area_level_1` name |
 
 So Spain gives `Madrid` (the province, which is what a Spanish label carries —

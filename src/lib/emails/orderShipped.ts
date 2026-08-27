@@ -10,6 +10,7 @@ import {
   emailParagraph,
 } from './components'
 import { renderEmailLayout } from './layout'
+import { editionDetailRows, editionsListBlock, type EditionAssignment } from './editionCopies'
 import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -21,6 +22,10 @@ type OrderShippedArgs = {
   artworkTitle: string
   artistName: string
   trackingUrl: string | null
+  /** Limited-edition copies on this order. Empty/undefined for open editions —
+   *  the edition row is then omitted entirely. Safe to name by now: the number
+   *  is committed once production starts, which is before anything ships. */
+  editions?: EditionAssignment[]
 }
 
 /**
@@ -33,6 +38,7 @@ export function renderOrderShippedEmail(args: OrderShippedArgs): { subject: stri
   const safeArtist = escapeHtml(args.artistName)
   const safeOrderId = formatOrderRef(args.orderId)
   const safeTrackingUrl = args.trackingUrl ? escapeHtml(args.trackingUrl) : null
+  const editions = args.editions ?? []
 
   const body =
     emailHeading(`It&rsquo;s on its way, ${firstName}`) +
@@ -45,7 +51,9 @@ export function renderOrderShippedEmail(args: OrderShippedArgs): { subject: stri
     emailDetailRows([
       { label: 'Artwork', value: safeArtwork },
       { label: 'Artist', value: safeArtist },
+      ...editionDetailRows(editions),
     ]) +
+    editionsListBlock(editions) +
     emailDivider() +
     emailParagraph(
       `When it arrives, we kindly suggest taking a few photos, or a short video, as you unwrap it &mdash; the sealed parcel first, then the moment you open it.`,

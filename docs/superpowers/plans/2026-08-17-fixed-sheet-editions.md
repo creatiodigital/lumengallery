@@ -32,13 +32,15 @@
 
 ### Task 1: Geometry helper
 
-The pure function everything else consumes. Reproduces theprintspace's algorithm: the border is a *minimum*, the image is fitted inside `sheet − 2×minBorder` preserving the artwork ratio, centred, never cropped; leftover space on the non-binding axis becomes extra border.
+The pure function everything else consumes. Reproduces theprintspace's algorithm: the border is a _minimum_, the image is fitted inside `sheet − 2×minBorder` preserving the artwork ratio, centred, never cropped; leftover space on the non-binding axis becomes extra border.
 
 **Files:**
+
 - Create: `src/lib/editions/sheetLayout.ts`
 - Test: `e2e/sheet-layout.spec.ts`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces:
   - `type SheetLayout = { sheetWidthCm: number; sheetHeightCm: number; imageWidthCm: number; imageHeightCm: number; borderXCm: number; borderYCm: number }`
@@ -297,10 +299,12 @@ git commit -m "AR-135: add fixed-sheet geometry helper mirroring the TPS border 
 Adds the two nullable columns and threads them through the client-facing shapes. No behaviour change yet — this task only widens the data.
 
 **Files:**
+
 - Modify: `prisma/schema.prisma:246-252` (the `LimitedVariant` size block)
 - Modify: `src/lib/editions/types.ts` (`LimitedVariantDraft`, `LimitedVariantView`)
 
 **Interfaces:**
+
 - Consumes: `isFixedSheet` from Task 1.
 - Produces: `LimitedVariantDraft` and `LimitedVariantView` each gain `sheetWidthCm?: number | null` and `sheetHeightCm?: number | null`.
 
@@ -374,10 +378,12 @@ git commit -m "AR-135: add nullable sheet dimensions to LimitedVariant"
 Extends `validateVariantInput` so fixed-sheet variants are checked against the derived image, and so configurations TPS would silently alter are rejected rather than promised.
 
 **Files:**
+
 - Modify: `src/lib/editions/validateVariant.ts`
 - Test: `e2e/limited-variant-validation.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `computeSheetLayout`, `isFixedSheet`, `TPS_BORDER_REFERENCE_WIDTH_CM`, `TPS_BORDER_CAP_FRACTION` from Task 1.
 - Produces: `VariantInput` gains `sheetWidthCm?: number | null` and `sheetHeightCm?: number | null`. Behaviour of `validateVariantInput` for adaptive variants is unchanged.
 
@@ -506,67 +512,67 @@ Add to `VariantInput`, after `borderCm: number`:
 Insert this block immediately **before** the existing distinctness check (`// Distinct print size within the artwork`), so it runs after the border range check:
 
 ```ts
-  // ── Fixed-sheet mode ──────────────────────────────────────────
-  // The artist pinned the total sheet; the image and per-axis borders are
-  // derived. Everything here guards against promising a layout TPS would
-  // silently alter.
-  const hasAnySheet = variant.sheetWidthCm != null || variant.sheetHeightCm != null
-  if (hasAnySheet) {
-    if (!isFixedSheet(variant)) {
-      return { ok: false, error: 'Set both sheet dimensions, or neither.' }
-    }
-    const sheetWidthCm = variant.sheetWidthCm as number
-    const sheetHeightCm = variant.sheetHeightCm as number
+// ── Fixed-sheet mode ──────────────────────────────────────────
+// The artist pinned the total sheet; the image and per-axis borders are
+// derived. Everything here guards against promising a layout TPS would
+// silently alter.
+const hasAnySheet = variant.sheetWidthCm != null || variant.sheetHeightCm != null
+if (hasAnySheet) {
+  if (!isFixedSheet(variant)) {
+    return { ok: false, error: 'Set both sheet dimensions, or neither.' }
+  }
+  const sheetWidthCm = variant.sheetWidthCm as number
+  const sheetHeightCm = variant.sheetHeightCm as number
 
-    // TPS measures a targeted border at a 40 cm reference width and scales
-    // it DOWN below that, so a narrower sheet would not get the border the
-    // artist entered and our derived layout would stop matching the print.
-    if (sheetWidthCm < TPS_BORDER_REFERENCE_WIDTH_CM) {
-      return {
-        ok: false,
-        error: `The sheet must be at least ${TPS_BORDER_REFERENCE_WIDTH_CM} cm wide — below that the print lab scales the border down and the layout would not match.`,
-      }
-    }
-
-    // TPS clips a border above a quarter of the shortest side without
-    // telling you.
-    const capCm = Math.min(sheetWidthCm, sheetHeightCm) * TPS_BORDER_CAP_FRACTION
-    if (variant.borderCm > capCm + 0.001) {
-      return {
-        ok: false,
-        error: `On a ${sheetHeightCm} × ${sheetWidthCm} cm sheet the border can be at most ${capCm.toFixed(1)} cm.`,
-      }
-    }
-
-    const layout = computeSheetLayout({
-      sheetWidthCm,
-      sheetHeightCm,
-      minBorderCm: variant.borderCm,
-      aspectRatio: artwork.widthPx / artwork.heightPx,
-    })
-    if (!layout) {
-      return { ok: false, error: 'That border leaves no printable area on the sheet.' }
-    }
-
-    // The stored image size must be exactly what the sheet derives, or the
-    // previews, buyer copy and TPS instruction would disagree with the DB.
-    if (
-      Math.abs(layout.imageWidthCm - variant.widthCm) >= 0.05 ||
-      Math.abs(layout.imageHeightCm - variant.heightCm) >= 0.05
-    ) {
-      return {
-        ok: false,
-        error: `The print size must be the size derived from the sheet (${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm).`,
-      }
-    }
-
-    if (Math.min(layout.imageWidthCm, layout.imageHeightCm) < MIN_SHORT_EDGE_CM) {
-      return {
-        ok: false,
-        error: `The derived print would be ${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm — its shortest side must be at least ${MIN_SHORT_EDGE_CM} cm. Use a bigger sheet or a smaller border.`,
-      }
+  // TPS measures a targeted border at a 40 cm reference width and scales
+  // it DOWN below that, so a narrower sheet would not get the border the
+  // artist entered and our derived layout would stop matching the print.
+  if (sheetWidthCm < TPS_BORDER_REFERENCE_WIDTH_CM) {
+    return {
+      ok: false,
+      error: `The sheet must be at least ${TPS_BORDER_REFERENCE_WIDTH_CM} cm wide — below that the print lab scales the border down and the layout would not match.`,
     }
   }
+
+  // TPS clips a border above a quarter of the shortest side without
+  // telling you.
+  const capCm = Math.min(sheetWidthCm, sheetHeightCm) * TPS_BORDER_CAP_FRACTION
+  if (variant.borderCm > capCm + 0.001) {
+    return {
+      ok: false,
+      error: `On a ${sheetHeightCm} × ${sheetWidthCm} cm sheet the border can be at most ${capCm.toFixed(1)} cm.`,
+    }
+  }
+
+  const layout = computeSheetLayout({
+    sheetWidthCm,
+    sheetHeightCm,
+    minBorderCm: variant.borderCm,
+    aspectRatio: artwork.widthPx / artwork.heightPx,
+  })
+  if (!layout) {
+    return { ok: false, error: 'That border leaves no printable area on the sheet.' }
+  }
+
+  // The stored image size must be exactly what the sheet derives, or the
+  // previews, buyer copy and TPS instruction would disagree with the DB.
+  if (
+    Math.abs(layout.imageWidthCm - variant.widthCm) >= 0.05 ||
+    Math.abs(layout.imageHeightCm - variant.heightCm) >= 0.05
+  ) {
+    return {
+      ok: false,
+      error: `The print size must be the size derived from the sheet (${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm).`,
+    }
+  }
+
+  if (Math.min(layout.imageWidthCm, layout.imageHeightCm) < MIN_SHORT_EDGE_CM) {
+    return {
+      ok: false,
+      error: `The derived print would be ${layout.imageHeightCm.toFixed(1)} × ${layout.imageWidthCm.toFixed(1)} cm — its shortest side must be at least ${MIN_SHORT_EDGE_CM} cm. Use a bigger sheet or a smaller border.`,
+    }
+  }
+}
 ```
 
 Note the two existing checks that already cover fixed-sheet variants and need no change: the aspect lock (the derived image keeps the artwork ratio by construction) and the DPI/printable-range check (both run against `widthCm`/`heightCm`, which remain the image size).
@@ -597,9 +603,11 @@ git commit -m "AR-135: validate fixed-sheet variants against the derived layout 
 The sheet is part of a variant's frozen identity once it is on sale, and must be written on save.
 
 **Files:**
+
 - Modify: `src/lib/editions/saveLimitedVariants.ts:110-121` (lock detection), `:182-192` (write payload)
 
 **Interfaces:**
+
 - Consumes: the `VariantInput` shape from Task 3.
 - Produces: no new exports. `saveLimitedVariants` now persists `sheetWidthCm` / `sheetHeightCm` and rejects changing them on a live variant.
 
@@ -608,29 +616,29 @@ The sheet is part of a variant's frozen identity once it is on sale, and must be
 In `src/lib/editions/saveLimitedVariants.ts`, in the `prev.blocked` branch, replace:
 
 ```ts
-          const nonPriceChanged =
-            sizeChanged ||
-            prev.editionSize !== v.editionSize ||
-            prev.name !== v.name.trim() ||
-            prev.paperId !== v.paperId ||
-            Math.abs(prev.borderCm - v.borderCm) >= 0.005
+const nonPriceChanged =
+  sizeChanged ||
+  prev.editionSize !== v.editionSize ||
+  prev.name !== v.name.trim() ||
+  prev.paperId !== v.paperId ||
+  Math.abs(prev.borderCm - v.borderCm) >= 0.005
 ```
 
 with:
 
 ```ts
-          // The sheet is part of the variant's physical identity — a live
-          // edition's paper size can never change under a buyer.
-          const sheetChanged =
-            Math.abs((prev.sheetWidthCm ?? 0) - (v.sheetWidthCm ?? 0)) >= 0.005 ||
-            Math.abs((prev.sheetHeightCm ?? 0) - (v.sheetHeightCm ?? 0)) >= 0.005
-          const nonPriceChanged =
-            sizeChanged ||
-            sheetChanged ||
-            prev.editionSize !== v.editionSize ||
-            prev.name !== v.name.trim() ||
-            prev.paperId !== v.paperId ||
-            Math.abs(prev.borderCm - v.borderCm) >= 0.005
+// The sheet is part of the variant's physical identity — a live
+// edition's paper size can never change under a buyer.
+const sheetChanged =
+  Math.abs((prev.sheetWidthCm ?? 0) - (v.sheetWidthCm ?? 0)) >= 0.005 ||
+  Math.abs((prev.sheetHeightCm ?? 0) - (v.sheetHeightCm ?? 0)) >= 0.005
+const nonPriceChanged =
+  sizeChanged ||
+  sheetChanged ||
+  prev.editionSize !== v.editionSize ||
+  prev.name !== v.name.trim() ||
+  prev.paperId !== v.paperId ||
+  Math.abs(prev.borderCm - v.borderCm) >= 0.005
 ```
 
 - [ ] **Step 2: Persist the fields**
@@ -693,10 +701,12 @@ git commit -m "AR-135: persist sheet dimensions and freeze them on live variants
 One generator producing the exact creativehub wizard inputs. Backs both the artist-facing card (Task 6) and the admin order instruction (Task 9), so the two can never drift.
 
 **Files:**
+
 - Create: `src/lib/editions/tpsRecipe.ts`
 - Test: `e2e/tps-recipe.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `computeSheetLayout`, `isFixedSheet` from Task 1.
 - Produces:
   - `type TpsRecipe = { sheetWidthCm: number; sheetHeightCm: number; sheetWidthIn: number; sheetHeightIn: number; borderMm: number; distribution: 'Even'; fitMethod: string; paperLabel: string; expectedImageWidthCm: number; expectedImageHeightCm: number; expectedBorderXCm: number; expectedBorderYCm: number }`
@@ -945,11 +955,13 @@ git commit -m "AR-135: add TPS recipe generator for reproducing a variant by han
 ### Task 6: Artist editor — mode toggle, sheet inputs, readout, recipe card
 
 **Files:**
+
 - Modify: `src/components/shared/ArtworkEditForm/LimitedVariantsEditor/index.tsx`
 - Modify: `src/components/shared/ArtworkEditForm/LimitedVariantsEditor/LimitedVariantsEditor.module.scss`
 - Test: `e2e/limited-variant-sheet-editor.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `computeSheetLayout`, `isFixedSheet` (Task 1); `buildTpsRecipe`, `formatTpsRecipe` (Task 5); `LimitedVariantDraft` with sheet fields (Task 2).
 - Produces: no new exports. The editor writes `sheetWidthCm` / `sheetHeightCm` onto drafts and keeps `widthCm` / `heightCm` in sync with the derived image.
 
@@ -966,40 +978,40 @@ import { TPS_PAPERS as PAPERS_FOR_LABEL } from '@/lib/print-providers/printspace
 Add this helper above the `return`, inside the component so it closes over `aspectRatio`:
 
 ```ts
-  // In fixed-sheet mode the image size is DERIVED, never typed. Recompute
-  // it whenever the sheet or the minimum border changes so widthCm /
-  // heightCm — which the server, pricing and the uniqueness key all read —
-  // stay in lockstep with what will actually print.
-  const withDerivedImage = (v: LimitedVariantDraft): Partial<LimitedVariantDraft> => {
-    if (!isFixedSheet(v)) return {}
-    const layout = computeSheetLayout({
-      sheetWidthCm: v.sheetWidthCm as number,
-      sheetHeightCm: v.sheetHeightCm as number,
-      minBorderCm: v.borderCm,
-      aspectRatio,
-    })
-    if (!layout) return {}
-    return { widthCm: layout.imageWidthCm, heightCm: layout.imageHeightCm }
-  }
+// In fixed-sheet mode the image size is DERIVED, never typed. Recompute
+// it whenever the sheet or the minimum border changes so widthCm /
+// heightCm — which the server, pricing and the uniqueness key all read —
+// stay in lockstep with what will actually print.
+const withDerivedImage = (v: LimitedVariantDraft): Partial<LimitedVariantDraft> => {
+  if (!isFixedSheet(v)) return {}
+  const layout = computeSheetLayout({
+    sheetWidthCm: v.sheetWidthCm as number,
+    sheetHeightCm: v.sheetHeightCm as number,
+    minBorderCm: v.borderCm,
+    aspectRatio,
+  })
+  if (!layout) return {}
+  return { widthCm: layout.imageWidthCm, heightCm: layout.imageHeightCm }
+}
 
-  const setSheetMode = (index: number, fixed: boolean) => {
-    const v = variants[index]
-    if (!fixed) {
-      update(index, { sheetWidthCm: null, sheetHeightCm: null })
-      return
-    }
-    // Seed the sheet from the current image + border so the toggle never
-    // lands the artist on an invalid card.
-    const seedW = v.widthCm > 0 ? v.widthCm + v.borderCm * 2 : 0
-    const seedH = v.heightCm > 0 ? v.heightCm + v.borderCm * 2 : 0
-    const next = { ...v, sheetWidthCm: seedW, sheetHeightCm: seedH }
-    update(index, { sheetWidthCm: seedW, sheetHeightCm: seedH, ...withDerivedImage(next) })
+const setSheetMode = (index: number, fixed: boolean) => {
+  const v = variants[index]
+  if (!fixed) {
+    update(index, { sheetWidthCm: null, sheetHeightCm: null })
+    return
   }
+  // Seed the sheet from the current image + border so the toggle never
+  // lands the artist on an invalid card.
+  const seedW = v.widthCm > 0 ? v.widthCm + v.borderCm * 2 : 0
+  const seedH = v.heightCm > 0 ? v.heightCm + v.borderCm * 2 : 0
+  const next = { ...v, sheetWidthCm: seedW, sheetHeightCm: seedH }
+  update(index, { sheetWidthCm: seedW, sheetHeightCm: seedH, ...withDerivedImage(next) })
+}
 
-  const updateSheet = (index: number, patch: { sheetWidthCm?: number; sheetHeightCm?: number }) => {
-    const next = { ...variants[index], ...patch }
-    update(index, { ...patch, ...withDerivedImage(next) })
-  }
+const updateSheet = (index: number, patch: { sheetWidthCm?: number; sheetHeightCm?: number }) => {
+  const next = { ...variants[index], ...patch }
+  update(index, { ...patch, ...withDerivedImage(next) })
+}
 ```
 
 Change the border `onChange` (currently at lines ~334-338) so it also re-derives:
@@ -1130,46 +1142,47 @@ Replace the `Print size (cm)` field block (currently lines ~302-321) with:
 Insert immediately after the border / number-of-copies `twoCol` block:
 
 ```tsx
-                {(() => {
-                  const paperLabel =
-                    PAPERS_FOR_LABEL.find((p) => p.id === variant.paperId)?.label ?? variant.paperId
-                  const recipe = buildTpsRecipe({
-                    widthCm: variant.widthCm,
-                    heightCm: variant.heightCm,
-                    borderCm: variant.borderCm,
-                    sheetWidthCm: variant.sheetWidthCm,
-                    sheetHeightCm: variant.sheetHeightCm,
-                    paperLabel,
-                  })
-                  if (!recipe) return null
-                  const text = formatTpsRecipe(recipe, {
-                    title: variant.name || `Variant ${index + 1}`,
-                  })
-                  return (
-                    <div className={styles.layoutSummary}>
-                      {/* Our own convention: height x width. */}
-                      <p className={styles.layoutLine}>
-                        <strong>Sheet</strong> {recipe.sheetHeightCm.toFixed(1)} ×{' '}
-                        {recipe.sheetWidthCm.toFixed(1)} cm · <strong>Print</strong>{' '}
-                        {recipe.expectedImageHeightCm.toFixed(1)} ×{' '}
-                        {recipe.expectedImageWidthCm.toFixed(1)} cm · <strong>Borders</strong>{' '}
-                        {recipe.expectedBorderYCm.toFixed(1)} top/bottom,{' '}
-                        {recipe.expectedBorderXCm.toFixed(1)} left/right cm
-                      </p>
-                      <details className={styles.recipeDetails}>
-                        <summary>Print lab setup</summary>
-                        <pre className={styles.recipe}>{text}</pre>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => navigator.clipboard?.writeText(text)}
-                        >
-                          Copy setup
-                        </Button>
-                      </details>
-                    </div>
-                  )
-                })()}
+{
+  ;(() => {
+    const paperLabel =
+      PAPERS_FOR_LABEL.find((p) => p.id === variant.paperId)?.label ?? variant.paperId
+    const recipe = buildTpsRecipe({
+      widthCm: variant.widthCm,
+      heightCm: variant.heightCm,
+      borderCm: variant.borderCm,
+      sheetWidthCm: variant.sheetWidthCm,
+      sheetHeightCm: variant.sheetHeightCm,
+      paperLabel,
+    })
+    if (!recipe) return null
+    const text = formatTpsRecipe(recipe, {
+      title: variant.name || `Variant ${index + 1}`,
+    })
+    return (
+      <div className={styles.layoutSummary}>
+        {/* Our own convention: height x width. */}
+        <p className={styles.layoutLine}>
+          <strong>Sheet</strong> {recipe.sheetHeightCm.toFixed(1)} ×{' '}
+          {recipe.sheetWidthCm.toFixed(1)} cm · <strong>Print</strong>{' '}
+          {recipe.expectedImageHeightCm.toFixed(1)} × {recipe.expectedImageWidthCm.toFixed(1)} cm ·{' '}
+          <strong>Borders</strong> {recipe.expectedBorderYCm.toFixed(1)} top/bottom,{' '}
+          {recipe.expectedBorderXCm.toFixed(1)} left/right cm
+        </p>
+        <details className={styles.recipeDetails}>
+          <summary>Print lab setup</summary>
+          <pre className={styles.recipe}>{text}</pre>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => navigator.clipboard?.writeText(text)}
+          >
+            Copy setup
+          </Button>
+        </details>
+      </div>
+    )
+  })()
+}
 ```
 
 - [ ] **Step 5: Add the styles**
@@ -1286,12 +1299,14 @@ git commit -m "AR-135: add fixed-sheet mode, layout readout and TPS setup card t
 Free-entry sheet sizes plus the decision that the gallery absorbs the sheet-vs-image cost make it possible to configure a loss-making variant. This surfaces the number and blocks the loss.
 
 **Files:**
+
 - Create: `src/lib/editions/variantMargin.ts`
 - Modify: `src/components/shared/ArtworkEditForm/LimitedVariantsEditor/index.tsx`
 - Modify: `src/lib/editions/validateVariant.ts`
 - Test: `e2e/variant-margin.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `buildTpsRecipe` (Task 5); `getPrintBaseCents` and `TPS_GALLERY_MARKUP_RATE` from `src/lib/print-providers/printspace/pricing.ts`.
 - Produces: `estimateVariantMarginCents(args: { widthCm: number; heightCm: number; borderCm: number; sheetWidthCm?: number | null; sheetHeightCm?: number | null; artistPriceCents: number }): { galleryCutCents: number; absorbedCents: number; marginCents: number } | null`
 
@@ -1366,7 +1381,10 @@ Create `src/lib/editions/variantMargin.ts`:
  * case) and the per-order COA + letter cost. It exists to catch a
  * configuration mistake, not to be an accounting figure.
  */
-import { getPrintBaseCents, TPS_GALLERY_MARKUP_RATE } from '@/lib/print-providers/printspace/pricing'
+import {
+  getPrintBaseCents,
+  TPS_GALLERY_MARKUP_RATE,
+} from '@/lib/print-providers/printspace/pricing'
 import { buildTpsRecipe } from '@/lib/editions/tpsRecipe'
 
 export type VariantMargin = {
@@ -1422,25 +1440,25 @@ and insert immediately after the fixed-sheet block added in Task 3, still before
 **This gate applies in fixed-sheet mode ONLY** — note the `isFixedSheet(variant) &&` guard. Adaptive variants absorb a smaller gap that the spec explicitly accepts, and firing this for them could reject existing valid low-priced editions on re-save.
 
 ```ts
-  // Guardrail: the gallery absorbs the sheet-vs-image cost, so an oversized
-  // sheet can silently make every sale lose money. Fixed-sheet mode only —
-  // the sheet is free-entry there, so the gap is unbounded.
-  const margin = isFixedSheet(variant)
-    ? estimateVariantMarginCents({
-        widthCm: variant.widthCm,
-        heightCm: variant.heightCm,
-        borderCm: variant.borderCm,
-        sheetWidthCm: variant.sheetWidthCm,
-        sheetHeightCm: variant.sheetHeightCm,
-        artistPriceCents: variant.priceCents,
-      })
-    : null
-  if (margin && margin.marginCents <= 0) {
-    return {
-      ok: false,
-      error: `This sheet costs more to produce than the variant earns. Raise the price, shrink the sheet, or reduce the border.`,
-    }
+// Guardrail: the gallery absorbs the sheet-vs-image cost, so an oversized
+// sheet can silently make every sale lose money. Fixed-sheet mode only —
+// the sheet is free-entry there, so the gap is unbounded.
+const margin = isFixedSheet(variant)
+  ? estimateVariantMarginCents({
+      widthCm: variant.widthCm,
+      heightCm: variant.heightCm,
+      borderCm: variant.borderCm,
+      sheetWidthCm: variant.sheetWidthCm,
+      sheetHeightCm: variant.sheetHeightCm,
+      artistPriceCents: variant.priceCents,
+    })
+  : null
+if (margin && margin.marginCents <= 0) {
+  return {
+    ok: false,
+    error: `This sheet costs more to produce than the variant earns. Raise the price, shrink the sheet, or reduce the border.`,
   }
+}
 ```
 
 - [ ] **Step 6: Show it in the editor**
@@ -1454,30 +1472,31 @@ import { estimateVariantMarginCents } from '@/lib/editions/variantMargin'
 and inside the `layoutSummary` block added in Task 6 Step 4, after the `layoutLine` paragraph:
 
 ```tsx
-                      {(() => {
-                        const margin = estimateVariantMarginCents({
-                          widthCm: variant.widthCm,
-                          heightCm: variant.heightCm,
-                          borderCm: variant.borderCm,
-                          sheetWidthCm: variant.sheetWidthCm,
-                          sheetHeightCm: variant.sheetHeightCm,
-                          artistPriceCents: Math.round(Number(variant.priceEuros ?? 0) * 100),
-                        })
-                        if (!margin) return null
-                        const euros = (c: number) => (c / 100).toFixed(2)
-                        return margin.marginCents <= 0 ? (
-                          <ErrorText>
-                            The wider sheet costs €{euros(margin.absorbedCents)} more to produce than
-                            a print of the image alone, which is more than this variant earns. Raise
-                            the price or reduce the sheet.
-                          </ErrorText>
-                        ) : (
-                          <p className={styles.layoutLine}>
-                            Gallery keeps €{euros(margin.marginCents)} per print (€
-                            {euros(margin.absorbedCents)} of the wider sheet absorbed).
-                          </p>
-                        )
-                      })()}
+{
+  ;(() => {
+    const margin = estimateVariantMarginCents({
+      widthCm: variant.widthCm,
+      heightCm: variant.heightCm,
+      borderCm: variant.borderCm,
+      sheetWidthCm: variant.sheetWidthCm,
+      sheetHeightCm: variant.sheetHeightCm,
+      artistPriceCents: Math.round(Number(variant.priceEuros ?? 0) * 100),
+    })
+    if (!margin) return null
+    const euros = (c: number) => (c / 100).toFixed(2)
+    return margin.marginCents <= 0 ? (
+      <ErrorText>
+        The wider sheet costs €{euros(margin.absorbedCents)} more to produce than a print of the
+        image alone, which is more than this variant earns. Raise the price or reduce the sheet.
+      </ErrorText>
+    ) : (
+      <p className={styles.layoutLine}>
+        Gallery keeps €{euros(margin.marginCents)} per print (€
+        {euros(margin.absorbedCents)} of the wider sheet absorbed).
+      </p>
+    )
+  })()
+}
 ```
 
 - [ ] **Step 7: Run tests and typecheck**
@@ -1502,6 +1521,7 @@ git commit -m "AR-135: surface and block loss-making sheet configurations"
 Both previewers currently apply one border scalar to both axes, so a fixed-sheet variant would show a sheet of the wrong shape. Each component gains an optional second axis defaulting to the first, so every existing call site keeps rendering identically.
 
 **Files:**
+
 - Modify: `src/components/PrintWizard/SizeSchema.tsx:69-70` and `:119-120`
 - Modify: `src/components/PrintWizard/scene/PreviewArtwork.tsx:128-129`
 - Modify: `src/components/PrintWizard/scene/preview/StandardPreview.tsx:16-17, 51-52`
@@ -1510,6 +1530,7 @@ Both previewers currently apply one border scalar to both axes, so a fixed-sheet
 - Modify: `src/components/PrintWizard/scene/preview/TrayPreview.tsx:66-67`
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: each of the five 3D components accepts `paperBorderYM?: number` (defaulting to `paperBorderM`); `SizeSchema` accepts `paperBorderYCm?: number` (defaulting to `paperBorderCm`).
 
@@ -1537,15 +1558,15 @@ Add it to the destructured parameter list with a default of the horizontal value
 Then replace the height line only. In `StandardPreview.tsx`, `FloatingPreview.tsx`, `BoxPreview.tsx`, `TrayPreview.tsx`:
 
 ```ts
-  const paperWidthM = printWidthM + paperBorderM * 2
-  const paperHeightM = printHeightM + paperBorderYM * 2
+const paperWidthM = printWidthM + paperBorderM * 2
+const paperHeightM = printHeightM + paperBorderYM * 2
 ```
 
 In `PreviewArtwork.tsx:128-129` the locals are named differently:
 
 ```ts
-    const paperWidthM = widthM + paperBorderM * 2
-    const paperHeightM = heightM + paperBorderYM * 2
+const paperWidthM = widthM + paperBorderM * 2
+const paperHeightM = heightM + paperBorderYM * 2
 ```
 
 Leave every downstream layer untouched — `backboardWidthM`, `matWidthM`, `cavityWidthM` and the moulding all stack outward from `paperWidthM`/`paperHeightM` with uniform borders of their own, so they inherit the asymmetry correctly.
@@ -1555,15 +1576,15 @@ Leave every downstream layer untouched — `backboardWidthM`, `matWidthM`, `cavi
 In `SizeSchema.tsx`, add `paperBorderYCm?: number` to `SizeSchemaProps` after `paperBorderCm`, default it in the destructuring (`paperBorderYCm = paperBorderCm,` — it must come after `paperBorderCm`), then change:
 
 ```ts
-  const effectivePaperBorder = Math.max(paperBorderCm, 0)
-  const effectivePaperBorderY = Math.max(paperBorderYCm, 0)
+const effectivePaperBorder = Math.max(paperBorderCm, 0)
+const effectivePaperBorderY = Math.max(paperBorderYCm, 0)
 ```
 
 and:
 
 ```ts
-  const paperWidthCm = printWidthCm + effectivePaperBorder * 2
-  const paperHeightCm = printHeightCm + effectivePaperBorderY * 2
+const paperWidthCm = printWidthCm + effectivePaperBorder * 2
+const paperHeightCm = printHeightCm + effectivePaperBorderY * 2
 ```
 
 - [ ] **Step 3: Fix the px path**
@@ -1571,15 +1592,15 @@ and:
 `SizeSchema.tsx:107-120` scales the print to fit the viewBox, computing one `paperBorderW` in px and applying it to both axes. Immediately after the existing `paperBorderW` assignment (line 108-109), add its vertical companion using the **same** `rawScale` and the same 3 px floor:
 
 ```ts
-  const paperBorderH =
-    effectivePaperBorderY > 0 ? Math.max(effectivePaperBorderY * rawScale, MIN_PAPER_PX) : 0
+const paperBorderH =
+  effectivePaperBorderY > 0 ? Math.max(effectivePaperBorderY * rawScale, MIN_PAPER_PX) : 0
 ```
 
 Then at line 120 change the height only:
 
 ```ts
-  const paperW = printW + paperBorderW * 2
-  const paperH = printH + paperBorderH * 2
+const paperW = printW + paperBorderW * 2
+const paperH = printH + paperBorderH * 2
 ```
 
 Both axes must share `rawScale` — never scale them independently, or the sheet skews.
@@ -1587,7 +1608,7 @@ Both axes must share `rawScale` — never scale them independently, or the sheet
 `borderPx` (line 114) is the chrome reserved before re-fitting the print. Use the **larger** of the two paper borders so the layout still fits the viewBox:
 
 ```ts
-  const borderPx = (frameW + matBorderW + backboardW + Math.max(paperBorderW, paperBorderH)) * 2
+const borderPx = (frameW + matBorderW + backboardW + Math.max(paperBorderW, paperBorderH)) * 2
 ```
 
 Also check the sheet-boundary stroke referenced in the comment at line 197 (`when paperBorderCm > 0`) — it must now also render when only `paperBorderYCm > 0`.
@@ -1618,12 +1639,14 @@ git commit -m "AR-135: let both previewers render per-axis paper borders"
 Feeds the derived vertical border into the previews and makes the buyer-facing numbers name the sheet.
 
 **Files:**
+
 - Modify: `src/lib/editions/variantToWizardConfig.ts`
 - Modify: `src/lib/print-providers/specs.ts:85-92` (the `border` row)
 - Modify: `src/components/PrintWizard/VariantPicker.tsx:44`
 - Test: `e2e/limited-variant-buyer-copy.spec.ts` (create)
 
 **Interfaces:**
+
 - Consumes: `computeSheetLayout`, `isFixedSheet` (Task 1); the `paperBorderYM` / `paperBorderYCm` props (Task 8).
 - Produces: `variantToWizardConfig` carries the per-axis borders through to the preview components.
 
@@ -1640,24 +1663,24 @@ import { computeSheetLayout, isFixedSheet } from '@/lib/editions/sheetLayout'
 
 // ...inside the mapper, after the existing size/border mapping:
 
-  // Fixed-sheet variants have different horizontal and vertical borders.
-  // `allCm` stays the horizontal value (what every existing consumer and
-  // the TPS field expect); the vertical one rides alongside so the
-  // previewers can draw the real sheet shape.
-  if (isFixedSheet(variant)) {
-    const layout = computeSheetLayout({
-      sheetWidthCm: variant.sheetWidthCm as number,
-      sheetHeightCm: variant.sheetHeightCm as number,
-      minBorderCm: variant.borderCm,
-      aspectRatio: variant.widthCm / variant.heightCm,
-    })
-    if (layout) {
-      config.borders = {
-        ...config.borders,
-        border: { allCm: layout.borderXCm, verticalCm: layout.borderYCm },
-      }
+// Fixed-sheet variants have different horizontal and vertical borders.
+// `allCm` stays the horizontal value (what every existing consumer and
+// the TPS field expect); the vertical one rides alongside so the
+// previewers can draw the real sheet shape.
+if (isFixedSheet(variant)) {
+  const layout = computeSheetLayout({
+    sheetWidthCm: variant.sheetWidthCm as number,
+    sheetHeightCm: variant.sheetHeightCm as number,
+    minBorderCm: variant.borderCm,
+    aspectRatio: variant.widthCm / variant.heightCm,
+  })
+  if (layout) {
+    config.borders = {
+      ...config.borders,
+      border: { allCm: layout.borderXCm, verticalCm: layout.borderYCm },
     }
   }
+}
 ```
 
 Widen the border-config type at `src/lib/print-providers/types.ts:171`:
@@ -1673,23 +1696,23 @@ Widen the border-config type at `src/lib/print-providers/types.ts:171`:
 In `src/lib/print-providers/specs.ts`, in the `dim.kind === 'border'` branch, when a vertical border is present and differs from the horizontal one, render both and name the sheet. Replace:
 
 ```ts
-    const cm = getEffectiveBorderCm(config, dim.id)
-    if (cm <= 0) return '—'
-    return `${roundCm(cm)} cm`
+const cm = getEffectiveBorderCm(config, dim.id)
+if (cm <= 0) return '—'
+return `${roundCm(cm)} cm`
 ```
 
 with:
 
 ```ts
-    const cm = getEffectiveBorderCm(config, dim.id)
-    const verticalCm = config.borders?.[dim.id]?.verticalCm
-    if (cm <= 0 && !verticalCm) return '—'
-    // Fixed-sheet editions have unequal borders by design — showing one
-    // number would misdescribe the object the buyer receives.
-    if (typeof verticalCm === 'number' && Math.abs(verticalCm - cm) >= 0.05) {
-      return `${roundCm(verticalCm)} cm top and bottom, ${roundCm(cm)} cm left and right`
-    }
-    return `${roundCm(cm)} cm`
+const cm = getEffectiveBorderCm(config, dim.id)
+const verticalCm = config.borders?.[dim.id]?.verticalCm
+if (cm <= 0 && !verticalCm) return '—'
+// Fixed-sheet editions have unequal borders by design — showing one
+// number would misdescribe the object the buyer receives.
+if (typeof verticalCm === 'number' && Math.abs(verticalCm - cm) >= 0.05) {
+  return `${roundCm(verticalCm)} cm top and bottom, ${roundCm(cm)} cm left and right`
+}
+return `${roundCm(cm)} cm`
 ```
 
 - [ ] **Step 4: Show the sheet in the variant picker**
@@ -1697,9 +1720,9 @@ with:
 In `src/components/PrintWizard/VariantPicker.tsx:44`, the label currently reads `{formatDualDimensions(v.widthCm, v.heightCm)} · Unframed`. For a fixed-sheet variant the sheet is what arrives and what a frame is bought for, so lead with it:
 
 ```tsx
-  isFixedSheet(v)
-    ? `${formatDualDimensions(v.sheetWidthCm as number, v.sheetHeightCm as number)} sheet · ${formatDualDimensions(v.widthCm, v.heightCm)} image · Unframed`
-    : `${formatDualDimensions(v.widthCm, v.heightCm)} · Unframed`
+isFixedSheet(v)
+  ? `${formatDualDimensions(v.sheetWidthCm as number, v.sheetHeightCm as number)} sheet · ${formatDualDimensions(v.widthCm, v.heightCm)} image · Unframed`
+  : `${formatDualDimensions(v.widthCm, v.heightCm)} · Unframed`
 ```
 
 Import `isFixedSheet` from `@/lib/editions/sheetLayout`. `formatDualDimensions(wCm, hCm)` is **width-first** (`src/lib/print-providers/format.ts:17`), which is why both calls above pass width then height — it handles the H×W display order internally.
@@ -1760,10 +1783,12 @@ git commit -m "AR-135: show the real sheet and per-axis borders to buyers"
 Replaces the hand-built TPS string with the shared recipe generator, so the order instruction and the product configuration come from one place.
 
 **Files:**
+
 - Modify: `src/app/admin/orders/actions.ts:1046-1048` and `:1086-1089`
 - Test: `e2e/tps-recipe.spec.ts` (extend)
 
 **Interfaces:**
+
 - Consumes: `buildTpsRecipe`, `formatTpsRecipe` (Task 5).
 - Produces: no new exports.
 
@@ -1834,31 +1859,31 @@ import { buildTpsRecipe, formatTpsRecipeLine } from '@/lib/editions/tpsRecipe'
 At `:1046-1048`, replace:
 
 ```ts
-    const tpsSku =
-      `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm` +
-      ` + ${v.borderCm}cm border · Print Only · ${en.number}/${v.editionSize}`
+const tpsSku =
+  `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm` +
+  ` + ${v.borderCm}cm border · Print Only · ${en.number}/${v.editionSize}`
 ```
 
 with:
 
 ```ts
-    // One generator backs this line and the artist-facing setup card, so
-    // the order instruction and the product configuration cannot drift.
-    const recipe = buildTpsRecipe({
-      widthCm: v.widthCm,
-      heightCm: v.heightCm,
-      borderCm: v.borderCm,
-      sheetWidthCm: v.sheetWidthCm,
-      sheetHeightCm: v.sheetHeightCm,
-      paperLabel,
+// One generator backs this line and the artist-facing setup card, so
+// the order instruction and the product configuration cannot drift.
+const recipe = buildTpsRecipe({
+  widthCm: v.widthCm,
+  heightCm: v.heightCm,
+  borderCm: v.borderCm,
+  sheetWidthCm: v.sheetWidthCm,
+  sheetHeightCm: v.sheetHeightCm,
+  paperLabel,
+})
+const tpsSku = recipe
+  ? formatTpsRecipeLine(recipe, {
+      printTypeLabel,
+      number: en.number,
+      editionSize: v.editionSize,
     })
-    const tpsSku = recipe
-      ? formatTpsRecipeLine(recipe, {
-          printTypeLabel,
-          number: en.number,
-          editionSize: v.editionSize,
-        })
-      : `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm · Print Only · ${en.number}/${v.editionSize}`
+  : `${printTypeLabel} · ${paperLabel} · ${v.heightCm}×${v.widthCm}cm · Print Only · ${en.number}/${v.editionSize}`
 ```
 
 Apply the identical replacement at `:1086-1089`, which returns the string directly rather than assigning it.
@@ -1908,6 +1933,7 @@ Expected: PASS. Confirm no stray fixtures remain in the dashboard afterwards.
 - [ ] **Step 4: Report, do not push**
 
 Report to the user:
+
 - `schema.prisma` has two new nullable columns; they must run the push themselves. Additive and nullable, so existing rows need no backfill.
 - Implementation is complete but **merging is gated on the physical sample** from the creativehub product configured on 2026-08-17, per the spec's Open Risks.
 - Wait for their explicit OK before any commit beyond the per-task commits above, and never push without being told.

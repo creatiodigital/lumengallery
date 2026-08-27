@@ -217,6 +217,38 @@ test('reorder writes the given order', async ({ request }) => {
   }
 })
 
+test('a work with no author still names its artist on /prints', async ({ page }) => {
+  const fx = await setupLimitedFixture(3)
+  const title = `E2E Prints Author ${fx.slug}`
+  try {
+    // `author` is a free-text override; most works leave it empty and fall back
+    // to the artist's account name. /prints spans several artists, so it cannot
+    // pass one fallback name down to the grid the way an artist page does —
+    // which is exactly how an empty artist line reached the page.
+    await prisma.artwork.update({
+      where: { id: fx.artworkId },
+      data: { author: null, title },
+    })
+    const artist = await prisma.artwork.findUnique({
+      where: { id: fx.artworkId },
+      select: { user: { select: { name: true, lastName: true } } },
+    })
+    const expected = [artist!.user.name, artist!.user.lastName].filter(Boolean).join(' ').trim()
+    await prisma.selectedPrint.create({ data: { artworkId: fx.artworkId, order: 0 } })
+
+    await page.goto('/prints')
+
+    const card = page
+      .locator(`a[href="/artworks/${fx.slug}"]`, { hasText: 'Order Print' })
+      .locator('xpath=../../..')
+    await expect(card).toContainText(title)
+    await expect(card, 'the artist is named even with no author override').toContainText(expected)
+  } finally {
+    await prisma.selectedPrint.deleteMany({ where: { artworkId: fx.artworkId } })
+    await teardownLimitedFixture(fx)
+  }
+})
+
 test('/prints renders the selection in order, and nothing else', async ({ page }) => {
   const fx = await setupLimitedFixture(3)
   const title = `E2E Prints Selected ${fx.slug}`
@@ -229,7 +261,11 @@ test('/prints renders the selection in order, and nothing else', async ({ page }
 
     await page.goto('/prints')
     await expect(page.getByText(title)).toBeVisible()
-    await expect(page.locator(`a[href="/artworks/${fx.slug}/print"]`)).toBeVisible()
+    // One door: the card's CTA leads to the artwork page, never straight into
+    // the wizard.
+    await expect(
+      page.locator(`a[href="/artworks/${fx.slug}"]`, { hasText: 'Order Print' }),
+    ).toBeVisible()
     // The page says what it is: a choice, not the catalogue. Without this line
     // a buyer reads the grid as everything for sale and never looks for the
     // print on an exhibition or artist page.

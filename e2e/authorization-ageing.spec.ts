@@ -69,7 +69,10 @@ test('days left never counts below zero', () => {
 test('an ISO string is read the same as a Date', () => {
   // The admin list receives createdAt serialized; the cron holds a real Date.
   const iso = authorizationHold(authorized(daysAgo(5)))
-  const str = authorizationHold({ paymentStatus: 'authorized', createdAt: daysAgo(5).toISOString() })
+  const str = authorizationHold({
+    paymentStatus: 'authorized',
+    createdAt: daysAgo(5).toISOString(),
+  })
   expect(str?.days).toBe(iso?.days)
   expect(str?.status).toBe(iso?.status)
 })

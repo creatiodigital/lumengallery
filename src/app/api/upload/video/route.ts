@@ -4,6 +4,7 @@ import { revalidateTag } from 'next/cache'
 
 import { auth } from '@/auth'
 import { captureError } from '@/lib/observability/captureError'
+import { isValidVideoType } from '@/lib/videoType'
 import prisma from '@/lib/prisma'
 import {
   getPresignedUploadUrl,
@@ -165,11 +166,29 @@ export async function POST(request: NextRequest) {
         console.error('[POST /api/upload/video] R2_PUBLIC_URL is not configured')
         return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
       }
-      // Rebuild the public URL from the validated key — we never store a
-      // client-supplied value, so `videoUrl` is always this artwork's own key
-      // and the delete-old-video call below can only target our own object.
+      // Rebuilt from the validated key — we never store a client-supplied
+      // value, so `videoUrl` is always this artwork's own object and the
+      // delete-old-video call below can only target one of ours.
       const url = `${r2PublicUrl}/${key}`
 
+      // The allowlist above checks the content-type the CLIENT declared, which
+      // is just a string it chose. These objects sit in a public bucket on our
+      // own domain, so an HTML or SVG file uploaded as `video/mp4` would be
+      // fetchable and executable from a host we control. Read only the header —
+      // enough for a container signature, and it never pulls the whole file
+      // into memory. The image route has always done this; the video route did
+      // not.
+      const headResponse = await fetch(url, { headers: { Range: 'bytes=0-63' } })
+      const header = headResponse.ok
+        ? Buffer.from(await headResponse.arrayBuffer())
+        : Buffer.alloc(0)
+      if (!isValidVideoType(header)) {
+        await deleteR2KeyDirect(key).catch(() => {})
+        return NextResponse.json(
+          { error: 'Invalid file type. Please upload an MP4 or WebM video.' },
+          { status: 400 },
+        )
+      }
       // Delete old video if exists
       if (artwork.videoUrl) {
         try {

@@ -308,6 +308,27 @@ export async function buildArtworkMediaKey(
 export const buildArtworkVideoKey = buildArtworkMediaKey
 export const buildArtworkSoundKey = buildArtworkMediaKey
 
+/**
+ * Supplementary media for an artwork page — close-ups, print mockups, an
+ * optional short film.
+ *
+ * A FOLDER PER ARTWORK, unlike the older builders above which put the artwork
+ * id in the filename and share one flat folder per artist. With up to 24 assets
+ * per work that flat folder becomes unreadable, and three things get harder for
+ * no reason: browsing one artwork's assets by hand, reconciling orphans by
+ * prefix, and sweeping everything when an artwork is deleted. Its own
+ * `supplementary/` segment also keeps it distinct from the artwork's own video
+ * and sound: one is the work, the other is evidence about it.
+ */
+export async function buildArtworkSupplementaryKey(
+  userId: string,
+  artworkId: string,
+  ext: string,
+): Promise<string> {
+  const handler = await getArtistHandler(userId)
+  return `${getEnvPrefix()}/artists/${handler}/${artworkId}/supplementary/${randomSuffix()}.${ext}`
+}
+
 export async function buildProfileImageKey(userId: string): Promise<string> {
   const handler = await getArtistHandler(userId)
   return `${getEnvPrefix()}/profiles/${handler}/avatar-${randomSuffix()}.webp`

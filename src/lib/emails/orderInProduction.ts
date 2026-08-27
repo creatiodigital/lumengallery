@@ -9,17 +9,15 @@ import {
   emailParagraph,
 } from './components'
 import { renderEmailLayout } from './layout'
+import {
+  editionDetailRows,
+  editionsListBlock,
+  formatEditionCopy,
+  type EditionAssignment,
+} from './editionCopies'
 import { formatOrderRef } from '@/lib/orders/orderRef'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-
-/** One numbered limited-edition copy on the order. Open-edition lines have no
- *  number, so they never appear here. */
-type EditionAssignment = {
-  artworkTitle: string
-  number: number
-  editionSize: number
-}
 
 type OrderInProductionArgs = {
   to: string
@@ -57,7 +55,7 @@ export function renderOrderInProductionEmail(args: OrderInProductionArgs): {
     ? ''
     : isSingleEdition
       ? emailParagraph(
-          `This work is a limited edition, and your copy is <strong>No. ${editions[0].number} of ${editions[0].editionSize}</strong>. The number is printed into the margin of the print, and it arrives with a Certificate of Authenticity, signed by ${safeArtist}.`,
+          `This work is a limited edition, and your copy is <strong>${formatEditionCopy(editions[0])}</strong>. The number is printed into the margin of the print, and it arrives with a Certificate of Authenticity, signed by ${safeArtist}.`,
         )
       : emailParagraph(
           `These are limited editions. Each copy is individually numbered — printed into the margin — and arrives with a Certificate of Authenticity signed by the artist.`,
@@ -66,22 +64,11 @@ export function renderOrderInProductionEmail(args: OrderInProductionArgs): {
   const detailRows = [
     { label: 'Artwork', value: safeArtwork },
     { label: 'Artist', value: safeArtist },
-    ...(isSingleEdition
-      ? [{ label: 'Edition', value: `No. ${editions[0].number} of ${editions[0].editionSize}` }]
-      : []),
+    ...editionDetailRows(editions),
   ]
 
   // For a multi-copy cart, list each numbered copy under its own heading.
-  const editionsList =
-    hasEditions && !isSingleEdition
-      ? emailEyebrow('Your editions') +
-        emailDetailRows(
-          editions.map((e) => ({
-            label: escapeHtml(e.artworkTitle) || 'Print',
-            value: `No. ${e.number} of ${e.editionSize}`,
-          })),
-        )
-      : ''
+  const editionsList = editionsListBlock(editions)
 
   const body =
     emailHeading(`Good news, ${firstName}`) +

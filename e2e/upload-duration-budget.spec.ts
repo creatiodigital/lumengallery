@@ -28,10 +28,7 @@ import { test, expect } from '@playwright/test'
  * cannot be imported into Playwright's CJS context at all.)
  */
 
-const ROUTES = [
-  'src/app/api/upload/image/route.ts',
-  'src/app/api/upload/video/route.ts',
-] as const
+const ROUTES = ['src/app/api/upload/image/route.ts', 'src/app/api/upload/video/route.ts'] as const
 
 /** Matches the statically-analyzable form Next.js requires. */
 const MAX_DURATION_RE = /^export const maxDuration\s*=\s*(\d+)$/m

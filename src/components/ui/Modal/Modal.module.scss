@@ -9,15 +9,49 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  // The inset lives on the BACKDROP, so no panel can reach the screen edge
+  // whatever width it asks for. Putting it only on the panel left it at the
+  // mercy of callers passing an inline max-width, which overrides a stylesheet.
+  padding: var(--space-4);
 }
 
 .content {
-  min-width: 300px;
+  position: relative;
+  min-width: 0;
+  // Never edge to edge. `min-width: 300px` alone meant a panel on a 320px phone
+  // ran to both rims with nothing between it and the screen — it read as a page
+  // rather than as something laid over one.
+  width: 100%;
   max-width: 560px;
+  max-height: 100%;
+  overflow-y: auto;
   padding: var(--space-6);
   border: 1px solid var(--color-border-default);
   border-radius: 12px;
   background: var(--color-white);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   overflow: visible;
+}
+
+// Corner close. Opt-in via `showClose`, because ESC does not exist on a phone
+// and a backdrop tap is not an affordance anyone can see.
+.close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface-subtle);
+  }
 }

@@ -1,0 +1,113 @@
+// The commerce block, drawn as a bounded object so "this is an artwork" and
+// "this is for sale" read as two different things. Squared, like every
+// client-facing surface.
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-subtle);
+}
+
+.eyebrow,
+.eyebrowSoldOut {
+  margin: 0;
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  color: var(--color-brand);
+}
+
+.eyebrowSoldOut {
+  color: var(--color-text-secondary);
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.price {
+  font-size: var(--text-2xl);
+  line-height: 1;
+}
+
+.editionType {
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+.editionLine {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.caveat {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.cta {
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+// The variant's name is the part a reader scans for, and the only part that
+// differs between rows.
+.editionName {
+  font-weight: 600;
+}
+
+// One row per edition: the figure leads on the left, the edition it belongs to
+// is set hard right. Price is NOT common across a work's editions, so it can
+// never sit above them as a single number.
+// A real two-column grid rather than a row of space-between flexes: with
+// space-between, a €90 row and a €1,200 row put their edition text in different
+// places. The grid gives every row the same two columns, so the figures align
+// down the left and the editions align down the right.
+.editions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--space-4);
+  row-gap: var(--space-3);
+  align-items: baseline;
+}
+
+// The row itself lays out nothing — its two cells join the parent grid, which
+// is what keeps the columns shared across rows.
+.editionLine {
+  display: contents;
+}
+
+.rowPrice {
+  font-size: var(--text-xl);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rowEdition {
+  text-align: right;
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+}
+
+// Divides the variant's name from the copy on offer.
+.rowDivider {
+  margin: 0 var(--space-2);
+  color: var(--color-text-primary);
+}
