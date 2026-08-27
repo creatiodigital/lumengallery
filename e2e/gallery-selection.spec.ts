@@ -229,7 +229,11 @@ test('/prints renders the selection in order, and nothing else', async ({ page }
 
     await page.goto('/prints')
     await expect(page.getByText(title)).toBeVisible()
-    await expect(page.locator(`a[href="/artworks/${fx.slug}/print"]`)).toBeVisible()
+    // One door: the card's CTA leads to the artwork page, never straight into
+    // the wizard.
+    await expect(
+      page.locator(`a[href="/artworks/${fx.slug}"]`, { hasText: 'Order Print' }),
+    ).toBeVisible()
     // The page says what it is: a choice, not the catalogue. Without this line
     // a buyer reads the grid as everything for sale and never looks for the
     // print on an exhibition or artist page.
