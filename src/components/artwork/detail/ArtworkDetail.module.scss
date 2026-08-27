@@ -2,14 +2,26 @@
 
 .standaloneContent {
   display: grid;
-  grid-template-columns: minmax(180px, 0.3fr) 1fr;
+  // Sidebar left, image right — and the DOM order matches, so the <h1> is still
+  // read first and no explicit column assignment is needed.
+  //
+  // The sidebar holds the availability card, whose rows put a price and an
+  // edition name on one line; below 344px those rows wrap on every artwork.
+  //
+  // Left as `0.3fr` deliberately. Pinning it to the 344px minimum LOOKED like
+  // leaving it alone and was not: on a wide screen the fraction gives it more
+  // than the minimum, so fixing it there made it narrower.
+  grid-template-columns: minmax(344px, 0.3fr) 1fr;
   gap: var(--space-10);
-  padding: 0;
+  // PageLayout leaves only 16px between the header's rule and the content,
+  // which is tight for a page that opens on a full-height image. Added here
+  // rather than in PageLayout so no other page shifts.
+  padding: var(--space-10) 0 0;
 
-  @include media-down(md) {
+  @include media-down(lg) {
     grid-template-columns: 1fr;
     gap: var(--space-4);
-    padding: var(--space-4) 0 0;
+    padding: var(--space-6) 0 0;
   }
 }
 
@@ -18,25 +30,50 @@
   flex-direction: column;
   gap: var(--space-1);
   align-self: start;
-  padding-top: 200px;
+  grid-column: 1;
+  grid-row: 1;
 
-  @include media-down(md) {
-    order: 3;
-    padding-top: 0;
+  @include media-down(lg) {
+    grid-column: 1;
+    grid-row: auto;
+    // The work leads on a narrow screen; this follows it.
+    order: 2;
+    // The column would otherwise run the full page width and the card with it —
+    // a purchase block stretched across 1000px reads as a banner rather than an
+    // object.
+    width: 100%;
+    max-width: 520px;
+    // Centred, because the image above is centred too. A PORTRAIT image is
+    // narrower than the page, so a left-aligned block beneath it sits visibly
+    // off-axis; centring both keeps them on the same spine whatever the
+    // artwork's orientation. Text inside stays left-aligned — centred prose
+    // reads as a poster, not a record.
+    margin-inline: auto;
+    padding-top: var(--space-6);
   }
 }
 
 .artistName {
   font-weight: 400;
-  margin-bottom: 0;
+  margin: 0 0 var(--space-2);
 }
 
+// The <h1> now, so it carries no browser default margin of its own.
 .title {
-  margin-bottom: var(--space-2);
+  margin: 0;
+  font-weight: 400;
+}
+
+// Between two steps of the scale on purpose: --text-2xl (30px) is a third
+// smaller than --text-3xl (45px), which is more than "a little". Derived from
+// the token rather than hardcoded, so it still moves if the scale does.
+.titleText,
+.year {
+  font-size: calc(var(--text-3xl) * 0.85);
 }
 
 .titleText {
-  font-style: italic;
+  font-style: normal;
   display: inline;
 }
 
@@ -54,9 +91,26 @@
   display: flex;
   justify-content: center;
   align-items: start;
+  grid-column: 2;
+  grid-row: 1;
+  // Separation from the sidebar is taken from the IMAGE, not from the grid gap.
+  // A wider gap would shrink both columns, and the sidebar carries a purchase
+  // card whose width is load-bearing. This only narrows the image.
+  padding-left: var(--space-14);
 
-  @include media-down(md) {
+  @include media-down(lg) {
+    grid-column: 1;
+    grid-row: auto;
     order: 1;
+    padding-left: 0;
+    // Stacked, the work and the facts about it run together vertically with
+    // nothing between them. The rule lives on the IMAGE rather than on the
+    // block below, because that block is capped at 520px and centred — a
+    // border there could never span the page. Side by side no rule appears at
+    // all: they are separate columns already, and a horizontal divider between
+    // them would make no sense.
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--color-border-default);
   }
 }
 
@@ -77,8 +131,19 @@
   width: 200px;
 }
 
+// On the artwork page it spans the column, matching the card below it. The
+// modal keeps the fixed width — its column is narrower and a full-bleed button
+// there reads as a banner.
+.inquireButtonFull {
+  width: 100%;
+  align-self: stretch;
+}
+
+// Sits between the metadata and the Enquire button now, rather than closing the
+// column, so it needs separation from the text above but not the wide gap a
+// trailing element wanted.
 .share {
-  margin-top: var(--space-10);
+  margin-top: var(--space-6);
 }
 
 // A sold-out edition, marked where the Order Print button would have been.

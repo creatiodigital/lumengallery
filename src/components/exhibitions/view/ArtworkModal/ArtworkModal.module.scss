@@ -29,14 +29,38 @@
   color: var(--color-text-primary);
 }
 
-.body {
-  display: grid;
-  grid-template-columns: minmax(160px, 0.25fr) 1fr;
-  gap: var(--space-10);
-  // Top gap ≈ site header height (space-7 padding + ~32px logo), so the artwork
-  // isn't flush against the window top — mirrors the standalone page's header space.
-  padding: 88px var(--space-10) var(--space-10);
+// Holds the same three sections the artwork page does, at the same width, so
+// the story and the imagery below the grid are inset identically.
+.content {
   max-width: var(--content-max-width);
   margin: 0 auto;
   width: 100%;
+  // Top gap ≈ site header height (space-7 padding + ~32px logo), so the artwork
+  // isn't flush against the window top — mirrors the standalone page's header
+  // space.
+  padding: 88px var(--space-10) var(--space-10);
+
+  // On a phone the desktop inset eats a tenth of the width on each side, and the
+  // header stand-in is taller than the header it stands in for. PageLayout gives
+  // the standalone page 24px a side at this width; this matches it.
+  @include media-down(lg) {
+    padding: var(--space-14) var(--space-6) var(--space-6);
+  }
+}
+
+.body {
+  display: grid;
+  // Matches the standalone artwork page exactly. The sidebar holds the same
+  // availability card, whose rows put a price and an edition name on one line,
+  // and below 344px those rows wrap — the old 160px floor was set when this
+  // column carried nothing but a few lines of metadata.
+  grid-template-columns: minmax(344px, 0.3fr) 1fr;
+  gap: var(--space-10);
+
+  // Stacks at the same breakpoint as the page, and in the same order: the work
+  // first, the facts about it below.
+  @include media-down(lg) {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
 }

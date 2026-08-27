@@ -2,6 +2,9 @@
 
 import { useEffect, useRef } from 'react'
 import type { ReactNode, MouseEvent } from 'react'
+import { X } from 'lucide-react'
+
+import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
 
 type ModalProps = {
   children: ReactNode
@@ -18,11 +21,20 @@ type ModalProps = {
    * inline so it wins over the default 560px without affecting other modals.
    */
   maxWidth?: string
+  /**
+   * Render a close button in the corner.
+   *
+   * Opt-in rather than default because four callers already draw their own, and
+   * turning it on globally would give them two. Everything else closes only by
+   * ESC or a backdrop click — neither of which exists or is discoverable on a
+   * touch screen, so any modal a buyer meets on a phone should set this.
+   */
+  showClose?: boolean
 }
 
 import styles from './Modal.module.scss'
 
-const Modal = ({ children, onClose, titleId, maxWidth }: ModalProps) => {
+const Modal = ({ children, onClose, titleId, maxWidth, showClose }: ModalProps) => {
   const mouseDownOnBackdrop = useRef(false)
   const mouseDownAt = useRef<{ x: number; y: number } | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -96,10 +108,18 @@ const Modal = ({ children, onClose, titleId, maxWidth }: ModalProps) => {
         aria-labelledby={titleId}
         tabIndex={-1}
         className={styles.content}
-        style={maxWidth ? { maxWidth } : undefined}
+        // Bounded by the viewport even when a caller names a width. As a bare
+        // inline value this overrode the stylesheet's cap, so a modal asking for
+        // 640px ran to both edges of a 390px phone.
+        style={maxWidth ? { maxWidth: `min(${maxWidth}, 100%)` } : undefined}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
+        {showClose && (
+          <button type="button" className={styles.close} onClick={onClose} aria-label="Close">
+            <X size={20} strokeWidth={ICON_STROKE_WIDTH} aria-hidden />
+          </button>
+        )}
         {children}
       </div>
     </div>

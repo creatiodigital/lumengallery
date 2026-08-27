@@ -165,8 +165,28 @@ const TEMPLATES: Record<string, () => string> = {
       artworkTitle: 'Puerta Verde',
       orderId: 'cld4b8e1a905c7',
       trackingUrl: 'https://tracking.example.com/XYZ',
+      editions: [{ artworkTitle: 'Puerta Verde', number: 3, editionSize: 45 }],
+    }).html,
+  // Open-edition twin: no copy number exists, so no edition row may appear.
+  'order-shipped-open': () =>
+    renderOrderShippedEmail({
+      to: 'jane@example.com',
+      buyerName: 'Jane Smith',
+      artistName: 'John Doe',
+      artworkTitle: 'Puerta Verde',
+      orderId: 'cld4b8e1a905c7',
+      trackingUrl: 'https://tracking.example.com/XYZ',
     }).html,
   'order-delivered': () =>
+    renderOrderDeliveredEmail({
+      to: 'jane@example.com',
+      buyerName: 'Jane Smith',
+      artistName: 'John Doe',
+      artworkTitle: 'Puerta Verde',
+      orderId: 'cld4b8e1a905c7',
+      editions: [{ artworkTitle: 'Puerta Verde', number: 3, editionSize: 45 }],
+    }).html,
+  'order-delivered-open': () =>
     renderOrderDeliveredEmail({
       to: 'jane@example.com',
       buyerName: 'Jane Smith',

@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { ArtworkDetailPage } from '@/components/artwork/detail'
+import { getArtworkMedia } from '@/lib/artwork/artworkMedia'
+import { buildArtworkCommerce, COMMERCE_SELECT } from '@/lib/editions/artworkCommerce'
 import { LIVE_VARIANT_WHERE } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
 
@@ -31,7 +33,13 @@ const getArtwork = (slug: string) =>
       // Live variants only — a published-but-unblocked variant is paused from
       // sale and would refuse the reservation. Selected rather than counted so
       // the shape is the same one LIVE_VARIANT_WHERE guards everywhere else.
-      limitedVariants: { where: LIVE_VARIANT_WHERE, select: { id: true } },
+      // SALE_SELECT's own sub-select carries what `saleFromRow` needs to cost
+      // the cheapest purchasable configuration; `id` rides along for the
+      // remaining-numbers count below.
+      limitedVariants: {
+        where: LIVE_VARIANT_WHERE,
+        select: { id: true, ...COMMERCE_SELECT.limitedVariants.select },
+      },
       user: {
         select: {
           id: true,
@@ -87,7 +95,21 @@ const ArtworkPage = async ({ params }: ArtworkPageProps) => {
   const artwork = await getArtwork(slug)
   if (!artwork) notFound()
 
-  const { user, limitedVariants, ...artworkData } = artwork
+  // `printPriceCents` is pulled out rather than spread onward: it is the
+  // ARTIST's cut, the pricing INPUT, and the gallery's margin is one
+  // subtraction away from it. The server needs it to cost the sale; the browser
+  // must never see it.
+  const { user, limitedVariants, printPriceCents, ...artworkData } = artwork
+
+  // The same resolved payload the exhibition modal receives, so the two
+  // surfaces describe a sale identically.
+  const commerce = await buildArtworkCommerce(artwork.id, {
+    ...artworkData,
+    printPriceCents,
+    limitedVariants,
+  })
+
+  const media = await getArtworkMedia(artwork.id)
 
   // How many numbers are left across the live variants. Live variants can all
   // exist while every copy is gone — that is sold out, not unpurchasable, and
@@ -103,6 +125,8 @@ const ArtworkPage = async ({ params }: ArtworkPageProps) => {
     <ArtworkDetailPage
       artwork={{ ...artworkData, liveVariantCount: limitedVariants.length, availableNumberCount }}
       artist={user}
+      media={media}
+      commerce={commerce}
     />
   )
 }

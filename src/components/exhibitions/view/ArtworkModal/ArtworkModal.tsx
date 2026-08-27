@@ -8,7 +8,11 @@ import {
   ArtworkDetailBody,
   type Artwork,
   type Artist,
+  type ArtworkCommerce,
 } from '@/components/artwork/detail/ArtworkDetailBody'
+import { ArtworkMediaGallery } from '@/components/artwork/detail/ArtworkMediaGallery'
+import { ArtworkStorySection } from '@/components/artwork/detail/ArtworkStorySection'
+import type { ArtworkMediaItem } from '@/lib/artwork/artworkMediaTypes'
 import { Button } from '@/components/ui/Button'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { ICON_STROKE_WIDTH } from '@/lib/iconConfig'
@@ -18,7 +22,14 @@ import type { RootState } from '@/redux/store'
 import { mapReduxArtwork } from './mapReduxArtwork'
 import styles from './ArtworkModal.module.scss'
 
-type FetchedDetail = { artwork: Partial<Artwork>; artist: Artist }
+type FetchedDetail = {
+  artwork: Partial<Artwork>
+  artist: Artist
+  /** Resolved server-side, exactly as the artwork page builds it, so the modal
+   *  shows the same availability card rather than a reduced twin. */
+  commerce: ArtworkCommerce | null
+  media: ArtworkMediaItem[]
+}
 
 export const ArtworkModal = () => {
   const dispatch = useDispatch()
@@ -89,8 +100,23 @@ export const ArtworkModal = () => {
       >
         <X size={20} strokeWidth={ICON_STROKE_WIDTH} />
       </Button>
-      <div className={styles.body}>
-        <ArtworkDetailBody artwork={artwork} artist={artist} />
+      {/* Mirrors the standalone artwork page section for section: the
+          two-column zone, then the story, then the imagery. `layout="page"` is
+          what moves the description out of the metadata column and into its own
+          full-width section, exactly as it does there. */}
+      <div className={styles.content}>
+        <div className={styles.body}>
+          <ArtworkDetailBody
+            artwork={artwork}
+            artist={artist}
+            commerce={fetched?.commerce}
+            layout="page"
+          />
+        </div>
+
+        <ArtworkStorySection description={artwork.description} />
+
+        <ArtworkMediaGallery media={fetched?.media ?? []} />
       </div>
     </div>
   )

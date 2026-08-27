@@ -91,7 +91,7 @@ test.describe('anonymous', () => {
         for (const field of PRIVATE_VARIANT_FIELDS) {
           expect(variant[field], `${field} is admin-only telemetry`).toBeUndefined()
         }
-        expect(variant.priceCents, "per-variant artist cut must not be public").toBeUndefined()
+        expect(variant.priceCents, 'per-variant artist cut must not be public').toBeUndefined()
       }
     } finally {
       await teardownLimitedFixture(fx)

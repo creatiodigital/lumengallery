@@ -26,12 +26,12 @@ Confirmed live in the creativehub product wizard on 2026-08-17, for a 3:2 landsc
 - The custom-size row is **not ratio-locked**. The height field auto-fills to match the artwork ratio, but it can be overwritten. Off-ratio sheets are accepted (the preset list already contains 29.7 × 21 and 100 × 70 against a 3:2 artwork).
 - The size fields are **width × height** — the opposite of our H×W display convention.
 - The border value is a **minimum** ("mm minimum" in their UI). The artwork is fitted inside `sheet − 2×border`, centred, never cropped; leftover space on the non-binding axis becomes extra border per the Distribution setting.
-- "Targeted border size" is measured at a **40 cm-wide reference print**. Exact on sheets ≥ 40 cm wide, scaled *down* proportionally on narrower sheets, never scaled up.
+- "Targeted border size" is measured at a **40 cm-wide reference print**. Exact on sheets ≥ 40 cm wide, scaled _down_ proportionally on narrower sheets, never scaled up.
 - The border is **capped at a quarter of the sheet's shortest side**. Above that TPS silently clips.
 
 **Working recipe:** sheet `50 × 40` (W×H), Border → Custom → **Even** → **70 mm minimum** → image **36 × 24**, borders **7.0 / 8.0**. Confirmed against the wizard's full preview.
 
-`Aspect ratio — pad to a target shape` is *not* needed once the sheet size is entered directly; it exists for when you cannot set the sheet and want TPS to choose one matching a target ratio.
+`Aspect ratio — pad to a target shape` is _not_ needed once the sheet size is entered directly; it exists for when you cannot set the sheet and want TPS to choose one matching a target ratio.
 
 ## Design
 
@@ -39,11 +39,11 @@ Confirmed live in the creativehub product wizard on 2026-08-17, for a 3:2 landsc
 
 No mode enum. `sheetWidthCm`/`sheetHeightCm` null → **adaptive** (current behaviour). Set → **fixed sheet**.
 
-| | Adaptive (today, unchanged) | Fixed sheet (new) |
-|---|---|---|
-| Artist enters | print size + border | sheet size + minimum border |
-| Derived | sheet = print + 2×border | image fits inside sheet − 2×border |
-| Borders | uniform, exact | per-axis, ≥ the minimum |
+|               | Adaptive (today, unchanged) | Fixed sheet (new)                  |
+| ------------- | --------------------------- | ---------------------------------- |
+| Artist enters | print size + border         | sheet size + minimum border        |
+| Derived       | sheet = print + 2×border    | image fits inside sheet − 2×border |
+| Borders       | uniform, exact              | per-axis, ≥ the minimum            |
 
 A single `isFixedSheet(variant)` helper keeps call sites readable.
 
@@ -56,8 +56,8 @@ Add to `LimitedVariant`:
 
 Unchanged:
 
-- `widthCm` / `heightCm` — remain the **image** size. In fixed-sheet mode they are *derived and stored* (denormalised), so the `@@unique([artworkId, widthCm, heightCm])` key, pricing, buyer-facing specs and the admin TPS paste line keep working without modification.
-- `borderCm` — remains **the number typed into TPS**. Exact-and-uniform in adaptive mode; a *minimum* in fixed-sheet mode. Documented on the field.
+- `widthCm` / `heightCm` — remain the **image** size. In fixed-sheet mode they are _derived and stored_ (denormalised), so the `@@unique([artworkId, widthCm, heightCm])` key, pricing, buyer-facing specs and the admin TPS paste line keep working without modification.
+- `borderCm` — remains **the number typed into TPS**. Exact-and-uniform in adaptive mode; a _minimum_ in fixed-sheet mode. Documented on the field.
 
 Existing rows need no migration: null sheet fields mean adaptive.
 
@@ -95,10 +95,10 @@ Recorded for context, not to be fixed here:
 
 **Guardrail (required).** Free-entry sheet size plus gallery absorption makes it possible to configure a loss:
 
-| sheet | image | absorbed gap | vs €40 gallery cut |
-|---|---|---|---|
-| 50 × 40 | 36 × 24 | €7.97 | €32 remaining |
-| 100 × 70 | 36 × 24 | €58.21 | **−€18 loss** |
+| sheet    | image   | absorbed gap | vs €40 gallery cut |
+| -------- | ------- | ------------ | ------------------ |
+| 50 × 40  | 36 × 24 | €7.97        | €32 remaining      |
+| 100 × 70 | 36 × 24 | €58.21       | **−€18 loss**      |
 
 So the variant editor must show a **live production-cost and gallery-margin readout**, and **block saving when margin ≤ 0**. This keeps absorption a deliberate choice rather than a silent one.
 
@@ -122,17 +122,17 @@ Uniqueness: the existing key is on the derived image size. Two different sheets 
 
 Rounded controls (artist dashboard, not buyer-facing). Lucide icons, `<Button/>`, no emoji, errors on submit only.
 
-- A toggle for sheet mode: *derived from print + border* / *fixed sheet*
+- A toggle for sheet mode: _derived from print + border_ / _fixed sheet_
 - Fixed mode reveals free numeric `HEIGHT (CM)` / `WIDTH (CM)` sheet fields — **explicitly labelled**, since free entry reintroduces the transposition risk that made a 40 × 50 vs 50 × 40 mix-up the single most likely error in this feature
-- The existing border field relabels to *Minimum border (cm)* in fixed mode
+- The existing border field relabels to _Minimum border (cm)_ in fixed mode
 - A **live readout in both modes**: `Sheet 40 × 50 cm · Image 24 × 36 cm · Borders 7.0 / 8.0 cm`, H×W throughout, plus the cost/margin line from the Guardrail
 
 ### Distribution: Even only
 
 TPS offers Even / Bottom weighted / Aspect ratio. We model **Even only**.
 
-- *Bottom weighted* is deliberately excluded — decision 2026-08-17.
-- *Aspect ratio* is unnecessary: it exists for when you cannot set the sheet size and want TPS to choose one matching a target ratio. Since the artist enters the sheet directly, Even on an off-ratio sheet already produces the asymmetric borders that are the point of this feature.
+- _Bottom weighted_ is deliberately excluded — decision 2026-08-17.
+- _Aspect ratio_ is unnecessary: it exists for when you cannot set the sheet size and want TPS to choose one matching a target ratio. Since the artist enters the sheet directly, Even on an off-ratio sheet already produces the asymmetric borders that are the point of this feature.
 
 Distribution is therefore a constant, not a stored field. It appears in the TPS reproduction card as a fixed value so the operator selects the right option.
 
@@ -168,14 +168,14 @@ The same generator backs the admin TPS paste line, so the order-placement instru
 
 All six sites currently apply one scalar to both axes and would render a 3:2 sheet where a 5:4 sheet will arrive:
 
-| file | lines |
-|---|---|
-| `src/components/PrintWizard/SizeSchema.tsx` | 69-70 (cm), 119-120 (px) |
-| `src/components/PrintWizard/scene/PreviewArtwork.tsx` | 128-129 |
-| `src/components/PrintWizard/scene/preview/StandardPreview.tsx` | 51-52 |
-| `src/components/PrintWizard/scene/preview/FloatingPreview.tsx` | 61-62 |
-| `src/components/PrintWizard/scene/preview/BoxPreview.tsx` | 54-55 |
-| `src/components/PrintWizard/scene/preview/TrayPreview.tsx` | 66-67 |
+| file                                                           | lines                    |
+| -------------------------------------------------------------- | ------------------------ |
+| `src/components/PrintWizard/SizeSchema.tsx`                    | 69-70 (cm), 119-120 (px) |
+| `src/components/PrintWizard/scene/PreviewArtwork.tsx`          | 128-129                  |
+| `src/components/PrintWizard/scene/preview/StandardPreview.tsx` | 51-52                    |
+| `src/components/PrintWizard/scene/preview/FloatingPreview.tsx` | 61-62                    |
+| `src/components/PrintWizard/scene/preview/BoxPreview.tsx`      | 54-55                    |
+| `src/components/PrintWizard/scene/preview/TrayPreview.tsx`     | 66-67                    |
 
 The arithmetic change is one line split in two per site:
 

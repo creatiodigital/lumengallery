@@ -44,7 +44,12 @@ export async function POST(request: NextRequest) {
     const ip = getClientIp(request)
     const [perIp, daily] = await Promise.all([
       rateLimit({ name: 'inquire', key: ip, limit: 3, windowSeconds: 60 }),
-      rateLimit({ name: 'inquire-daily', key: 'global', limit: DAILY_CAP, windowSeconds: DAY_SECONDS }),
+      rateLimit({
+        name: 'inquire-daily',
+        key: 'global',
+        limit: DAILY_CAP,
+        windowSeconds: DAY_SECONDS,
+      }),
     ])
 
     if (!perIp.success || !daily.success) {

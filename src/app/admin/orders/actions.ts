@@ -2599,11 +2599,14 @@ async function maybeSendBuyerTransitionEmail(
     .join(' ')
     .trim()
 
-  // For the in-production email, surface the buyer's assigned limited-edition
-  // number(s). Bound to the order via either the legacy single-print path
-  // (orderId) or the cart path (orderItem.orderId). Empty for open editions.
+  // Surface the buyer's assigned limited-edition number(s) for every email sent
+  // from production onward — in-production, shipped and delivered all name the
+  // copy. Not before: until production starts the number can still be returned
+  // to the pool (see EDITION_NUMBER_NOTICE_BODY). Bound to the order via either
+  // the legacy single-print path (orderId) or the cart path
+  // (orderItem.orderId). Empty for open editions.
   const editions =
-    newStage === STAGE_STARTED
+    newStage === STAGE_STARTED || newStage === STAGE_SHIPPED || newStage === STAGE_COMPLETE
       ? (
           await prisma.editionNumber.findMany({
             where: {
@@ -2641,6 +2644,7 @@ async function maybeSendBuyerTransitionEmail(
             artworkTitle: order.artwork.title ?? '',
             artistName,
             trackingUrl: opts.trackingUrl,
+            editions,
           })
         : newStage === STAGE_COMPLETE
           ? await sendOrderDeliveredEmail({
@@ -2649,6 +2653,7 @@ async function maybeSendBuyerTransitionEmail(
               orderId: order.id,
               artworkTitle: order.artwork.title ?? '',
               artistName,
+              editions,
             })
           : await sendOrderCancelledEmail({
               to: order.buyerEmail,

@@ -1,0 +1,51 @@
+@use '@/styles/mixins' as *;
+
+.story {
+  display: block;
+  // The rule is the page's only division between the work and the writing about
+  // it, so it wants air on both sides rather than a hairline squeezed between
+  // two blocks.
+  margin-top: var(--space-14);
+  // No horizontal padding: PageLayout already insets the page, and adding more
+  // here put this section's edges 16px inside every other page's.
+  padding: var(--space-18) 0 var(--space-14);
+  border-top: 1px solid var(--color-border-default);
+
+  // Tighter on a phone. This section's bottom padding and the gallery's top
+  // margin stack, and at desktop values that is nearly a hundred pixels of
+  // nothing between the writing and the imagery — a third of a small screen.
+  @include media-down(lg) {
+    margin-top: var(--space-8);
+    padding: var(--space-10) 0 var(--space-6);
+  }
+}
+
+// Two columns from lg, matching the exhibition page — but capped and centred.
+// Splitting the full 1660px gives two columns of ~95 characters each, which is
+// well past the point where the eye loses its place returning to the next line.
+// 110ch total lands each column near 50, which is a normal measure.
+.body {
+  width: 100%;
+  max-width: 110ch;
+  margin-inline: auto;
+  column-count: 1;
+
+  @include media-up(lg) {
+    column-count: 2;
+    column-gap: var(--space-14);
+  }
+
+  // TipTap writes a blank line as an empty paragraph. Anywhere else it is
+  // invisible; at the top of the SECOND column it reads as a stray gap, because
+  // a column's first element keeps the height a first line would have had.
+  p:empty {
+    display: none;
+  }
+
+  // A heading is the one element here that carries a top margin. Browsers trim
+  // that margin at the top of the first column but not at the top of later
+  // ones, so a heading falling on a column break shows the margin as a gap.
+  :where(h1, h2, h3, h4, h5, h6):first-child {
+    margin-top: 0;
+  }
+}

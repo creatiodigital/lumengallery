@@ -243,28 +243,35 @@ test.describe('the exhibition page carries the sale block', () => {
  * /visit), so there is no WebGL here.
  */
 test.describe('the grid renders the sale block', () => {
-  test('a selling work shows its edition and Order Print, but no price', async ({ page }) => {
+  // A card's whole job is to make someone curious enough to click. It carries
+  // artist, title, year and — when the work is buyable — one button. Every
+  // technical fact (technique, dimensions, edition, paper, price) now lives on
+  // the artwork page, where it answers a question the visitor has actually
+  // asked by arriving.
+  test('a selling card shows artist, title and the CTA — and no technical detail', async ({
+    page,
+  }) => {
     const fx = await setupLimitedFixture(3)
+    const dims = 'E2E 33 × 44 cm'
+    const title = `E2E Grid Sale ${fx.slug}`
     try {
       await prisma.artwork.update({
         where: { id: fx.artworkId },
-        data: { featured: true, printPriceCents: null, title: `E2E Grid Sale ${fx.slug}` },
+        data: { featured: true, printPriceCents: null, title, dimensions: dims },
       })
 
       await page.goto(routes.artistProfile())
 
-      // The CTA's href is unique to this artwork, so this cannot pass on a
-      // neighbouring card.
-      const cta = page.locator(`a[href="/artworks/${fx.slug}/print"]`)
+      // The button now leads to the artwork page, not straight into the wizard:
+      // the page is the single door to checkout, so the grid cannot bypass it.
+      const cta = page.locator(`a[href="/artworks/${fx.slug}"]`, { hasText: 'Order Print' })
       await expect(cta).toBeVisible()
 
-      const action = cta.locator('xpath=..')
-      await expect(action).toContainText('Limited Edition')
-      // Prices are HIDDEN on every listing (SHOW_PRICE_ON_LISTINGS). The edition
-      // and the CTA carry the card; the figure first appears in the wizard, so a
-      // buyer meets the work before they meet its price and never reads one
-      // card's price against its neighbour's.
-      await expect(action, 'no price on a listing card').not.toContainText('€')
+      const card = cta.locator('xpath=../../..')
+      await expect(card).toContainText(title)
+      await expect(card, 'no edition tag on a listing card').not.toContainText('Limited Edition')
+      await expect(card, 'no dimensions on a listing card').not.toContainText(dims)
+      await expect(card, 'no price on a listing card').not.toContainText('€')
     } finally {
       await teardownLimitedFixture(fx)
     }
@@ -298,12 +305,14 @@ test.describe('the grid renders the sale block', () => {
 
     await page.goto(routes.exhibition())
 
-    const cta = page.locator(`a[href="/artworks/${selling!.slug}/print"]`)
+    // Same one-door rule as every other grid: the CTA leads to the artwork
+    // page, and the wizard is reachable only from there.
+    const cta = page.locator(`a[href="/artworks/${selling!.slug}"]`, { hasText: 'Order Print' })
     await expect(cta).toBeVisible()
     await expect(cta.locator('xpath=..'), 'no price on a listing card').not.toContainText('€')
   })
 
-  test('the prints page shows the artwork dimensions', async ({ page }) => {
+  test('the prints page does NOT show the artwork dimensions', async ({ page }) => {
     const fx = await setupLimitedFixture(3)
     // Distinctive enough that it cannot collide with a real work's dimensions.
     const dims = 'E2E 33 × 44 cm'
@@ -317,7 +326,10 @@ test.describe('the grid renders the sale block', () => {
       await prisma.selectedPrint.create({ data: { artworkId: fx.artworkId, order: 0 } })
 
       await page.goto('/prints')
-      await expect(page.getByText(dims)).toBeVisible()
+      // Dimensions describe the ORIGINAL, not the sheet the buyer receives.
+      // Next to an order button that is actively misleading, so they moved to
+      // the artwork page where they can be labelled.
+      await expect(page.getByText(dims)).toHaveCount(0)
     } finally {
       await prisma.selectedPrint.deleteMany({ where: { artworkId: fx.artworkId } })
       await teardownLimitedFixture(fx)

@@ -28,6 +28,7 @@ import {
 import type { PrintRecommendations, PrintRestrictions } from '@/lib/print-providers'
 import type { LimitedVariantDraft } from '@/lib/editions/types'
 import { LimitedVariantsEditor } from './LimitedVariantsEditor'
+import { ArtworkMediaManager } from './ArtworkMediaManager'
 import {
   MAX_ARTWORK_UPLOAD_SIZE,
   MIN_ARTWORK_IMAGE_WIDTH,
@@ -1400,6 +1401,19 @@ export const ArtworkEditForm = ({
             <span className={dashboardStyles.hint}>
               Featured artworks appear prominently in your profile&apos;s artwork grid.
             </span>
+          </div>
+        )}
+
+        {/* Gallery-curated sales imagery, admin only, and only once the
+            artwork exists — an upload needs an id to attach to. */}
+        {isAdmin && artworkId && (
+          <div className={dashboardStyles.section}>
+            <h3 className={dashboardStyles.sectionTitle}>Supplementary media</h3>
+            <p className={dashboardStyles.sectionDescription}>
+              Close-ups, print mockups, the certificate, a short film &mdash; the evidence that a
+              physical object exists.
+            </p>
+            <ArtworkMediaManager artworkId={artworkId} />
           </div>
         )}
 

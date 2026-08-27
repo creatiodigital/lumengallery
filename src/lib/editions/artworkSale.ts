@@ -34,6 +34,11 @@ export type ArtworkSale = {
    *  `null` means live but sold out — never "not for sale", which is the
    *  absence of the whole `ArtworkSale`. */
   minPriceCents: number | null
+  /** Which LIMITED variant produced `minPriceCents`. Surfaced so a caller can
+   *  describe the same configuration the figure was costed from — pairing the
+   *  cheapest price with some other variant's edition would let the two
+   *  describe different objects. `null` for open editions and when sold out. */
+  variantName?: string | null
 }
 
 /**
@@ -71,12 +76,19 @@ export function resolveArtworkSale(
     // Live variants, no copies left. The edition is real, it sold, and the card
     // says so — an "Order Print" button here walks the buyer into a wizard that
     // refuses them.
-    if (inStock.length === 0) return { editionType: 'limited', minPriceCents: null }
+    if (inStock.length === 0)
+      return { editionType: 'limited', minPriceCents: null, variantName: null }
 
     const cheapest = minimumPriceForLimited(inStock)
     // In-stock but unquotable (no variant carries a price). Not sold out —
     // saying so would invent a history — so show nothing.
-    return cheapest ? { editionType: 'limited', minPriceCents: cheapest.cents } : null
+    return cheapest
+      ? {
+          editionType: 'limited',
+          minPriceCents: cheapest.cents,
+          variantName: cheapest.basis === 'variant' ? cheapest.variantName : null,
+        }
+      : null
   }
 
   // Open editions are printed on demand and never sell out, so an unquotable
