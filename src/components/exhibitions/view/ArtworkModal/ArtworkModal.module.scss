@@ -55,7 +55,8 @@
   // and below 344px those rows wrap — the old 160px floor was set when this
   // column carried nothing but a few lines of metadata.
   grid-template-columns: minmax(344px, 0.3fr) 1fr;
-  gap: var(--space-10);
+  // Zero, matching the page: the separation is the image's padding-left alone.
+  gap: 0;
 
   // Stacks at the same breakpoint as the page, and in the same order: the work
   // first, the facts about it below.

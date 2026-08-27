@@ -12,7 +12,11 @@
   // leaving it alone and was not: on a wide screen the fraction gives it more
   // than the minimum, so fixing it there made it narrower.
   grid-template-columns: minmax(344px, 0.3fr) 1fr;
-  gap: var(--space-10);
+  // Zero on purpose: ALL of the separation between the sidebar and the image is
+  // the image's own padding-left, so widening or narrowing that gap only ever
+  // moves the image and never squeezes the sidebar's purchase card. The stacked
+  // rule below re-introduces a gap, where the two are above/below instead.
+  gap: 0;
   // PageLayout leaves only 16px between the header's rule and the content,
   // which is tight for a page that opens on a full-height image. Added here
   // rather than in PageLayout so no other page shifts.
@@ -43,12 +47,12 @@
     // object.
     width: 100%;
     max-width: 520px;
-    // Centred, because the image above is centred too. A PORTRAIT image is
-    // narrower than the page, so a left-aligned block beneath it sits visibly
-    // off-axis; centring both keeps them on the same spine whatever the
-    // artwork's orientation. Text inside stays left-aligned — centred prose
-    // reads as a poster, not a record.
-    margin-inline: auto;
+    // Pinned to the LEFT edge of the content column rather than centred.
+    // Stacked, the block is capped at 520px while the image above spans the full
+    // width, so a centred block splits the page on an axis the image doesn't
+    // share. Flush left it starts on the same line the image starts on, and
+    // reads as a caption to the work above it.
+    margin-inline: 0 auto;
     padding-top: var(--space-6);
   }
 }
@@ -67,17 +71,8 @@
 // Between two steps of the scale on purpose: --text-2xl (30px) is a third
 // smaller than --text-3xl (45px), which is more than "a little". Derived from
 // the token rather than hardcoded, so it still moves if the scale does.
-.titleText,
-.year {
-  font-size: calc(var(--text-3xl) * 0.85);
-}
-
 .titleText {
-  font-style: normal;
-  display: inline;
-}
-
-.year {
+  font-size: calc(var(--text-3xl) * 0.85);
   font-style: normal;
   display: inline;
 }
@@ -96,7 +91,7 @@
   // Separation from the sidebar is taken from the IMAGE, not from the grid gap.
   // A wider gap would shrink both columns, and the sidebar carries a purchase
   // card whose width is load-bearing. This only narrows the image.
-  padding-left: var(--space-14);
+  padding-left: var(--space-10);
 
   @include media-down(lg) {
     grid-column: 1;
@@ -105,7 +100,7 @@
     padding-left: 0;
     // Stacked, the work and the facts about it run together vertically with
     // nothing between them. The rule lives on the IMAGE rather than on the
-    // block below, because that block is capped at 520px and centred — a
+    // block below, because that block is capped at 520px and left-aligned — a
     // border there could never span the page. Side by side no rule appears at
     // all: they are separate columns already, and a horizontal divider between
     // them would make no sense.
