@@ -33,7 +33,7 @@ const ArtworkPanel = () => {
     }
   }, [selectedSceneArtworkId, selectedArtwork, dispatch])
 
-  const { name, artworkTitle, artworkYear, artworkDimensions, imageUrl } = selectedArtwork || {}
+  const { name, artworkTitle, artworkDimensions, imageUrl } = selectedArtwork || {}
 
   // Use original URLs - Next.js image optimization has issues with R2 URLs in production
   const thumbnailUrl = imageUrl || null
@@ -83,10 +83,7 @@ const ArtworkPanel = () => {
               {(artworkTitle || name) && (
                 <div className={styles.titleWrapper}>
                   <Text font="serif" as="span" size="xl" className={styles.title}>
-                    {artworkTitle || name},{' '}
-                  </Text>
-                  <Text font="serif" as="span" size="xl" className={styles.year}>
-                    {artworkYear && `${artworkYear}`}
+                    {artworkTitle || name}
                   </Text>
                 </div>
               )}

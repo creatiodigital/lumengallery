@@ -111,11 +111,6 @@ export const ArtworkDetailBody = ({
             <Text as="span" size="3xl" font="serif" className={styles.titleText}>
               {displayTitle}
             </Text>
-            {artwork.year && (
-              <Text as="span" size="3xl" font="serif" className={styles.year}>
-                , {artwork.year}
-              </Text>
-            )}
           </h1>
         )}
         {displayAuthor && (
