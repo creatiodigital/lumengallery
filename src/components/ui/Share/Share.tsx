@@ -19,6 +19,17 @@ const WhatsAppIcon = ({ size = 15 }: { size?: number }) => (
   </svg>
 )
 
+/**
+ * Share is switched off on every surface: the artwork page, the in-exhibition
+ * artwork modal and the exhibition profile page.
+ *
+ * HIDDEN, not deleted, and gated HERE rather than at each call site so there is
+ * exactly one switch — every current and future `<Share>` obeys it. The callers
+ * still build their canonical URLs and pass them in, so flipping this to `true`
+ * brings it back everywhere with nothing else to change.
+ */
+const SHOW_SHARE = false
+
 interface ShareProps {
   title: string
   url: string
@@ -27,6 +38,10 @@ interface ShareProps {
 
 export const Share = ({ title, url, className }: ShareProps) => {
   const [isOpen, setIsOpen] = useState(false)
+
+  // After the hook, never before it: an early return above `useState` would make
+  // the hook conditional.
+  if (!SHOW_SHARE) return null
 
   return (
     <div className={className}>
