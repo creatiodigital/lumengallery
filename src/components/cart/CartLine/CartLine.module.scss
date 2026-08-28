@@ -7,6 +7,9 @@
 .line {
   display: flex;
   align-items: stretch;
+  // Containing block for the stacked layout's top-right "Edit item" — see
+  // .actions.
+  position: relative;
   background: var(--color-surface-subtle);
   border-top: 1px solid var(--color-border-light);
   border-bottom: 1px solid var(--color-border-light);
@@ -54,8 +57,21 @@
     background: var(--color-border-light);
   }
 
+  // Stacked, the panel spans the whole card, so it stops being a column and
+  // becomes a bar: stepper on the left, price and Edit pushed to the right.
+  // Kept as a centred column it stacked three blocks with 24px gaps between
+  // them and spent ~170px of height stating a quantity of 1 — across a card
+  // that is a thousand pixels wide and empty.
   @include media-down(xl) {
+    position: static;
     width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-4) var(--space-5);
+    padding: var(--space-4) var(--space-5);
+    text-align: left;
     border-top: 1px solid var(--color-border-light);
 
     &::before {
@@ -69,6 +85,16 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-1);
+
+  // In the bar: label and value on one line, shunted to the right edge. The
+  // stacked label/value pair is a column-panel shape and costs a whole extra
+  // line here for nothing.
+  @include media-down(xl) {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--space-2);
+    margin-left: auto;
+  }
 }
 
 .panelLabel {
@@ -113,4 +139,42 @@
   flex-direction: column;
   gap: var(--space-3);
   width: 100%;
+
+  // Stacked, it leaves the bottom bar entirely and sits in the card's top-right
+  // corner, level with the artist's name — an action ON this item, next to what
+  // identifies it, rather than a third thing competing with the price. Anchored
+  // to .line (not .panel, which goes static here). The artist/title/edition
+  // block above the spec grid is ~75px tall and this button ends around 64px,
+  // so it clears the specs without a reserved gutter.
+  @include media-down(xl) {
+    position: absolute;
+    top: var(--space-5);
+    right: var(--space-5);
+    flex-direction: row;
+    width: auto;
+
+    button,
+    a {
+      width: auto;
+    }
+  }
+
+  // On phones the card stacks the photo above the text, so this corner is
+  // the top-right of the picture — the button landed on the artwork. The
+  // twin inside the details takes over there (see .inlineEdit).
+  @include media-down(sm) {
+    display: none;
+  }
+}
+
+// The phone-only twin of the Edit button, rendered on the edition line inside
+// the details. Exactly one of the two is ever displayed, so only one reaches
+// the accessibility tree.
+.inlineEdit {
+  display: none;
+
+  @include media-down(sm) {
+    display: block;
+    flex-shrink: 0;
+  }
 }

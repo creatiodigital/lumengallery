@@ -828,118 +828,32 @@
   background: var(--color-gray-10);
 }
 
-// ── Center scene canvas ──────────────────────────────────────
+// ── Center schema stage ─────────────────────────────────────
 
-.sceneWrapper {
-  position: relative;
-  background: var(--color-surface-paper);
+// The wizard's centrepiece: one large measurement diagram, near the top of a
+// white column. White rather than the paper tone the 3D room used — the
+// diagram draws a white sheet, and a tinted ground made the sheet read as a
+// layer floating on something instead of as the paper itself.
+.schemaStage {
+  display: flex;
+  justify-content: center;
+  // `stretch` (the default) is deliberate: it hands .schemaWrapper a definite
+  // height to size the diagram against. The TOP alignment happens inside the
+  // wrapper, not here — see the note there.
   min-height: 0;
+  // Roomy on every side. The diagram's side labels are painted OUTSIDE the
+  // svg's own box (see .schemaSvg), so the padding here is what keeps them
+  // clear of the two column rules rather than merely decorative.
+  padding: var(--space-12) var(--space-12) var(--space-10);
+  background: var(--color-white);
 
   @include media-down(tablet) {
-    // The 3D preview is desktop-only. The wizards never mount <Scene> below
-    // the tablet breakpoint (useIsMobile, post-hydration) — this CSS guard
-    // is belt-and-braces so a regression can't show a phone the canvas.
-    display: none;
-  }
-}
-
-.sceneCanvas {
-  position: absolute;
-  inset: 0;
-
-  canvas {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
-  }
-}
-
-.scenePrompt {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-6);
-  pointer-events: none;
-}
-
-.scenePromptText {
-  max-width: 460px;
-  margin: 0;
-  text-align: center;
-  font-family: var(--font-sans);
-  font-size: var(--text-md);
-  line-height: 1.5;
-  color: var(--color-text-secondary);
-}
-
-// Tilt slider overlay — positioned near the bottom of the canvas, sits
-// on top of the 3D scene without taking layout space. Width is bounded
-// so it doesn't stretch across the whole canvas on wide screens.
-.tiltControl {
-  position: absolute;
-  left: 50%;
-  bottom: var(--space-10);
-  transform: translateX(-50%);
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  width: min(320px, calc(100% - var(--space-8)));
-  padding: var(--space-2) var(--space-4);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(4px);
-  border-radius: 4px;
-  pointer-events: auto;
-}
-
-.tiltControlLabel {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  user-select: none;
-}
-
-// Wraps the slider so we can position the center-tick reset button
-// just above its midpoint. Slider keeps its full width inside the wrap.
-.tiltSliderWrap {
-  position: relative;
-  width: 100%;
-  padding-top: 4px;
-}
-
-// Small clickable tick mark at the center of the slider. Clicking
-// (or tapping) snaps the tilt back to 0° / head-on. Sits just above
-// the slider track so it reads as an anchor without overlapping the
-// drag handle.
-.tiltCenterTick {
-  position: absolute;
-  left: calc(50% + 2px);
-  top: 0;
-  transform: translateX(-50%);
-  width: 1px;
-  height: 8px;
-  padding: 0;
-  background: var(--color-text-secondary);
-  border: none;
-  border-radius: 1px;
-  cursor: pointer;
-  // Generous transparent hit area so it's tappable on touch.
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -10px -8px;
-  }
-  &:hover {
-    background: var(--color-text-primary);
+    // Stacked: sits between the picker/steps and the summary. Sized by its
+    // content rather than a grid track, with a floor so it keeps presence.
+    order: 3;
+    min-height: 60vw;
+    padding: var(--space-6);
+    border-bottom: 1px solid var(--color-border-light);
   }
 }
 
@@ -955,9 +869,9 @@
 
   @include media-down(tablet) {
     border-left: none;
-    // No border-top here — .stepsPanel's mobile border-bottom already
+    // No border-top here — .schemaStage's mobile border-bottom already
     // draws the boundary; having both produces a doubled line.
-    order: 3;
+    order: 4;
   }
 }
 
@@ -967,12 +881,13 @@
   gap: var(--space-1);
 }
 
-.summaryEyebrow {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
+// The artist, set the way the artwork page sets it: serif, sentence case, under
+// the work's title. It was an uppercase sans eyebrow ABOVE the title, which
+// made the artist read as a category label rather than as the person.
+.summaryArtist {
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  color: var(--color-text-primary);
 }
 
 .summaryTitle {
@@ -1112,101 +1027,42 @@
 
 // ── Size schema (measurements) ──────────────────────────────
 
-.schemaSection {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border-light);
-}
-
-.unitToggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  align-self: flex-start;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.unitToggleOption {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-
-  &:hover {
-    color: var(--color-text-primary);
-  }
-}
-
-.unitToggleOptionActive {
-  color: var(--color-text-primary);
-  font-weight: 600;
-}
-
-.unitToggleSeparator {
-  color: var(--color-gray-65);
-}
-
 .schemaWrapper {
   width: 100%;
+  // Fills the stage's content box so the percentage max-height below has a
+  // definite length to resolve against. Without this the wrapper is
+  // content-sized, the percentage resolves to `auto`, and the cap silently
+  // does nothing.
+  height: 100%;
+  min-height: 0;
   display: flex;
   justify-content: center;
+  // The diagram sits at the top of the column rather than floating in the
+  // middle of it, level with the edition cards and the spec list.
+  align-items: flex-start;
 }
 
 .schemaSvg {
-  width: 100%;
-  max-width: 260px;
+  // The viewBox is square, so the diagram is as TALL as it is wide whatever
+  // the print's orientation — a portrait print uses the full height a
+  // landscape one uses in width. Sizing on width alone would therefore clip
+  // portrait diagrams on short viewports (`.wizard` is `overflow: hidden` at
+  // desktop widths), so the height cap is what holds that case.
+  //
+  // When the height cap binds, the element's box stays 560px wide and the
+  // square viewBox letterboxes inside it (preserveAspectRatio defaults to
+  // `xMidYMid meet`). The drawing stays centered and undistorted — only the
+  // box is wider than what it paints.
+  width: min(460px, 100%);
+  max-height: 100%;
   height: auto;
   overflow: visible;
-
-  // Small-laptop viewports (e.g. 13"/14", ~768–900px tall): shrink the
-  // diagram so the summary panel's CTA stays above the fold.
-  @media (min-width: bp(tablet)) and (max-height: 900px) {
-    max-width: 210px;
-  }
-
-  @media (min-width: bp(tablet)) and (max-height: 780px) {
-    max-width: 170px;
-  }
 }
 
 .schemaLabel {
   font-family: var(--font-sans);
   font-size: 12px;
   fill: var(--color-text-secondary);
-}
-
-.measurementsList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-
-  > div {
-    display: flex;
-    gap: var(--space-2);
-  }
-
-  dt {
-    color: var(--color-text-secondary);
-    flex-shrink: 0;
-  }
-
-  dd {
-    margin: 0;
-    color: var(--color-text-primary);
-    font-variant-numeric: tabular-nums;
-  }
 }
 
 .specList {
@@ -1283,7 +1139,7 @@
 }
 
 // Already in the cart. Marked, NOT locked: selecting is how an edition gets
-// hung on the wall in the preview, and owning a copy is no reason to lose that.
+// drawn in the measurement diagram, and owning a copy is no reason to lose that.
 // So this is a quiet ground tint plus the tag — never a disabled treatment,
 // which would read as "you may not look at this".
 .variantCardInCart {

@@ -19,9 +19,13 @@ import styles from './SpecList.module.scss'
  * no edit to this file required.
  *
  * Collapsible: when enough rows sit past `visibleByDefault`, the rest hide
- * behind a "Show all selected options" toggle so the summary panel doesn't
- * push the CTA off-screen on shorter viewports. Framed configs commonly
- * produce 9–10 rows, which is what the toggle is for.
+ * behind a "Show all selected options" toggle so the list doesn't push the
+ * CTA off-screen on shorter viewports. Framed configs commonly produce 9–10
+ * rows, which is what the toggle is for.
+ *
+ * Surfaces that have the room opt out with `collapsible={false}` and always
+ * show every row. The cart and checkout do NOT — they render the same line
+ * as each other and must agree row for row (see CartItemDetails).
  */
 /** Fewest rows worth hiding behind the toggle. */
 const MIN_HIDDEN_ROWS = 2
@@ -30,9 +34,17 @@ interface SpecListProps {
   specs: SpecsSummary
   className?: string
   visibleByDefault?: number
+  /** False = always render every row, no toggle. For surfaces with the
+   *  vertical room to show the full configuration at once. */
+  collapsible?: boolean
 }
 
-export const SpecList = ({ specs, className, visibleByDefault = 5 }: SpecListProps) => {
+export const SpecList = ({
+  specs,
+  className,
+  visibleByDefault = 5,
+  collapsible = true,
+}: SpecListProps) => {
   const [expanded, setExpanded] = useState(false)
   if (specs.length === 0) return null
 
@@ -40,8 +52,8 @@ export const SpecList = ({ specs, className, visibleByDefault = 5 }: SpecListPro
   // hiding a single spec saves nothing and just adds a control. A limited
   // edition produces exactly five rows against the cart's four-row budget,
   // which put a "Show all selected options" button there to hide one line.
-  const collapsible = specs.length - visibleByDefault >= MIN_HIDDEN_ROWS
-  const visible = expanded || !collapsible ? specs : specs.slice(0, visibleByDefault)
+  const canCollapse = collapsible && specs.length - visibleByDefault >= MIN_HIDDEN_ROWS
+  const visible = expanded || !canCollapse ? specs : specs.slice(0, visibleByDefault)
 
   return (
     <div className={`${styles.wrapper}${className ? ` ${className}` : ''}`}>
@@ -53,7 +65,7 @@ export const SpecList = ({ specs, className, visibleByDefault = 5 }: SpecListPro
           </div>
         ))}
       </dl>
-      {collapsible && (
+      {canCollapse && (
         <Button
           variant="ghost"
           className={styles.toggle}

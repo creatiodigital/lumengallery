@@ -101,7 +101,13 @@ export const ExhibitionProfilePage = ({
 
         {exhibition.artworks.length > 0 && (
           <div className={styles.artworksSection}>
-            <ArtworkGrid artworks={exhibition.artworks} artistName={artistName} />
+            {/* The slug rides along on every card link, so the artwork page
+                can offer arrows through THIS exhibition's sequence. */}
+            <ArtworkGrid
+              artworks={exhibition.artworks}
+              artistName={artistName}
+              exhibitionSlug={exhibitionSlug}
+            />
           </div>
         )}
       </div>

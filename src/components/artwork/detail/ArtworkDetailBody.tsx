@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import c from 'classnames'
+
 import { RichText } from '@/components/ui/RichText'
 import { Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
@@ -57,6 +59,18 @@ const FALLBACK_HEIGHT = 800
  * and keeps its existing inline CTA: a priced card, a caveat and a variant list
  * belong on a page, not in a small overlay floating over a 3D room.
  */
+/** One side of the previous/next pair — a URL and the work it leads to. */
+export type ArtworkNeighbour = {
+  href: string
+  title: string
+}
+
+/** The neighbouring works in the set the visitor is walking, if any. */
+export type ArtworkNeighbours = {
+  prev: ArtworkNeighbour | null
+  next: ArtworkNeighbour | null
+}
+
 export type ArtworkCommerce = {
   editionType: 'open' | 'limited'
   minPriceCents: number | null
@@ -72,6 +86,12 @@ interface ArtworkDetailBodyProps {
    *  below the image. `modal` keeps everything in the metadata column, which is
    *  all an overlay over a 3D room can hold. */
   layout?: 'page' | 'modal'
+  /**
+   * Previous/next in the set the visitor came from. Plain links — following one
+   * is an ordinary navigation to that artwork's URL, not a carousel. Absent
+   * when there is no set, which is the common case.
+   */
+  neighbours?: ArtworkNeighbours | null
 }
 
 /**
@@ -84,6 +104,7 @@ export const ArtworkDetailBody = ({
   artist,
   commerce,
   layout = 'modal',
+  neighbours,
 }: ArtworkDetailBodyProps) => {
   const [isInquireOpen, setIsInquireOpen] = useState(false)
 
@@ -95,6 +116,11 @@ export const ArtworkDetailBody = ({
   const displayAuthor = artwork.author || `${artist.name} ${artist.lastName}`.trim()
   const imgWidth = artwork.originalWidth ?? FALLBACK_WIDTH
   const imgHeight = artwork.originalHeight ?? FALLBACK_HEIGHT
+  // Which dimension drives the image's size on the two-column layout. The
+  // threshold is 0.8 rather than 1.0 on purpose: a square work at the column's
+  // full width is just as tall as a portrait one, so it belongs on the
+  // height-driven rule too. Only clearly wide work stays width-driven.
+  const isTallFormat = imgHeight / imgWidth > 0.8
 
   // Canonical artwork URL — identical to the standalone page's URL, built from the slug
   // so it is correct even when opened as a modal over the exhibition route.
@@ -156,26 +182,64 @@ export const ArtworkDetailBody = ({
       </div>
 
       <div className={styles.imageContainer}>
-        {artwork.imageUrl && (
-          // Raw <img> (not next/image): reuses the image the 3D scene already cached, and
-          // sidesteps the known next/image + R2 prod issue. crossOrigin matches THREE's
-          // texture request so the same browser-cache entry is reused.
-          <img
-            src={artwork.imageUrl}
-            alt={displayTitle || 'Artwork'}
-            width={imgWidth}
-            height={imgHeight}
-            className={styles.image}
-            crossOrigin="anonymous"
-            decoding="async"
-            onError={() =>
-              reportImageError(artwork.imageUrl, {
-                surface: 'artwork-detail',
-                alt: displayTitle || undefined,
-              })
-            }
-          />
-        )}
+        {/* Arrows are laid out BESIDE the picture, not pinned to the column's
+            edges: a portrait work leaves most of the column empty, and an arrow
+            at the far edge floated in the middle of nowhere. As flex siblings
+            of the frame they sit against the picture whatever its shape.
+
+            When a side has no neighbour it keeps its width as an empty slot, so
+            the work stays on the same axis from the first piece in a show to
+            the last instead of jumping sideways at each end. */}
+        {neighbours &&
+          (neighbours.prev ? (
+            <Button
+              variant="bare"
+              icon="arrowLeft"
+              href={neighbours.prev.href}
+              className={styles.navArrow}
+              title={neighbours.prev.title}
+              aria-label={`Previous work: ${neighbours.prev.title}`}
+            />
+          ) : (
+            <span className={styles.navArrowSlot} aria-hidden="true" />
+          ))}
+
+        <div className={styles.imageFrame}>
+          {artwork.imageUrl && (
+            // Raw <img> (not next/image): reuses the image the 3D scene already cached, and
+            // sidesteps the known next/image + R2 prod issue. crossOrigin matches THREE's
+            // texture request so the same browser-cache entry is reused.
+            <img
+              src={artwork.imageUrl}
+              alt={displayTitle || 'Artwork'}
+              width={imgWidth}
+              height={imgHeight}
+              className={c(styles.image, isTallFormat && styles.imagePortrait)}
+              crossOrigin="anonymous"
+              decoding="async"
+              onError={() =>
+                reportImageError(artwork.imageUrl, {
+                  surface: 'artwork-detail',
+                  alt: displayTitle || undefined,
+                })
+              }
+            />
+          )}
+        </div>
+
+        {neighbours &&
+          (neighbours.next ? (
+            <Button
+              variant="bare"
+              icon="arrowRight"
+              href={neighbours.next.href}
+              className={styles.navArrow}
+              title={neighbours.next.title}
+              aria-label={`Next work: ${neighbours.next.title}`}
+            />
+          ) : (
+            <span className={styles.navArrowSlot} aria-hidden="true" />
+          ))}
       </div>
 
       <InquireSidebar

@@ -29,14 +29,13 @@ import {
 } from '@/lib/print-providers'
 import { getPrintLongEdgeBounds } from '@/lib/print-providers/printspace'
 import { getProviderQuote } from '@/lib/print-providers/quote'
-import { TABLET_BREAKPOINT_PX, useIsMobile } from '@/hooks/useIsMobile'
 
 import type { LimitedVariantView } from '@/lib/editions/types'
 
 import { LimitedWizard } from './LimitedWizard'
 import { CartAddedModal } from './CartAddedModal'
 import { EditionBadge } from './EditionBadge'
-import { Scene } from './Scene'
+import { SchemaStage } from './SchemaStage'
 import { StepsPanel } from './StepsPanel'
 import { SummaryPanel } from './SummaryPanel'
 
@@ -89,20 +88,6 @@ export const PrintWizard = (props: PrintWizardProps) => {
 const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWizardProps) => {
   const router = useRouter()
   const searchParams = useSearchParams()
-
-  // The 3D room preview is desktop-only: on phones it eats most of the
-  // viewport without aiding the size decision, and the WebGL canvas is
-  // heavy on mobile GPUs/battery — so we skip mounting it entirely
-  // rather than hiding it with CSS.
-  const isMobile = useIsMobile(TABLET_BREAKPOINT_PX + 1)
-  // The Scene renders only after mount: SSR and the first client render must
-  // agree (hydration), and the server can't know the viewport — so neither
-  // renders it, and the WebGL canvas never mounts at all on phones. Desktop
-  // gets it one tick later, which is invisible (the canvas paints async).
-  const [sceneReady, setSceneReady] = useState(false)
-  useEffect(() => {
-    setSceneReady(true)
-  }, [])
 
   // Synchronous availability check, rebuilt only when the catalog
   // identity changes (i.e. essentially never within one wizard session).
@@ -348,9 +333,7 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
           restrictions={restrictions}
           recommendations={recommendations}
         />
-        {sceneReady && !isMobile && (
-          <Scene imageUrl={artwork.imageUrl} catalog={catalog} config={config} configReady />
-        )}
+        <SchemaStage catalog={catalog} config={config} imageUrl={artwork.imageUrl} />
         <SummaryPanel
           artwork={artwork}
           catalog={catalog}
@@ -358,7 +341,6 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
           quote={quote}
           quoteLoading={quoteLoading}
           canContinue={canContinue}
-          configReady
           onAddToCart={handleAddToCart}
           onContinueShopping={close}
           isEditing={editLineId !== null}

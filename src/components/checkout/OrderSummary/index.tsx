@@ -82,8 +82,9 @@ export const OrderSummary = ({
           />
         )}
         <div className={styles.summaryMeta}>
-          <span className={styles.summaryEyebrow}>{artwork.artistName}</span>
+          {/* Work first, artist under it — same order as the wizard summary. */}
           <h2 className={styles.summaryTitle}>{artwork.title}</h2>
+          <span className={styles.summaryArtist}>{artwork.artistName}</span>
           {artwork.year && <span className={styles.summaryYear}>{artwork.year}</span>}
         </div>
       </div>

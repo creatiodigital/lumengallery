@@ -2,7 +2,9 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
 import { ArtworkDetailPage } from '@/components/artwork/detail'
+import type { ArtworkNeighbours } from '@/components/artwork/detail/ArtworkDetailBody'
 import { getArtworkMedia } from '@/lib/artwork/artworkMedia'
+import { getPublicExhibitionByUrl } from '@/lib/queries/getPublicExhibitionByUrl'
 import { buildArtworkCommerce, COMMERCE_SELECT } from '@/lib/editions/artworkCommerce'
 import { LIVE_VARIANT_WHERE } from '@/lib/editions/printable'
 import prisma from '@/lib/prisma'
@@ -53,6 +55,44 @@ const getArtwork = (slug: string) =>
 
 interface ArtworkPageProps {
   params: Promise<{ slug: string }>
+  /**
+   * `exhibition` is set by the exhibition grid's links. It is the only thing
+   * that tells this page the visitor is walking a set rather than looking at
+   * one work, and it is what the previous/next arrows step through.
+   */
+  searchParams: Promise<{ exhibition?: string }>
+}
+
+/**
+ * Previous/next within the exhibition the visitor came from — plain links to
+ * the neighbouring artwork URLs, nothing else. Returns null whenever there is
+ * no set to walk: no context param, an exhibition that no longer resolves, or
+ * a work that isn't in it (a stale link, or one hidden from the show since).
+ */
+async function getExhibitionNeighbours(
+  slug: string,
+  exhibitionSlug: string | undefined,
+): Promise<ArtworkNeighbours | null> {
+  if (!exhibitionSlug) return null
+
+  const exhibition = await getPublicExhibitionByUrl(exhibitionSlug)
+  const works = exhibition?.artworks ?? []
+  const index = works.findIndex((a) => a.slug === slug)
+  if (index === -1) return null
+
+  // The context has to survive the hop, or the arrows would work once and then
+  // vanish on the very next page.
+  const context = `?exhibition=${encodeURIComponent(exhibitionSlug)}`
+  const toNeighbour = (work: (typeof works)[number] | undefined) =>
+    work ? { href: `/artworks/${work.slug}${context}`, title: work.title || work.name } : null
+
+  const prev = toNeighbour(works[index - 1])
+  const next = toNeighbour(works[index + 1])
+  // Nothing on either side — a one-work show. No arrows rather than two dead
+  // ones.
+  if (!prev && !next) return null
+
+  return { prev, next }
 }
 
 export async function generateMetadata({ params }: ArtworkPageProps): Promise<Metadata> {
@@ -89,8 +129,9 @@ export async function generateMetadata({ params }: ArtworkPageProps): Promise<Me
   }
 }
 
-const ArtworkPage = async ({ params }: ArtworkPageProps) => {
+const ArtworkPage = async ({ params, searchParams }: ArtworkPageProps) => {
   const { slug } = await params
+  const { exhibition: exhibitionSlug } = await searchParams
 
   const artwork = await getArtwork(slug)
   if (!artwork) notFound()
@@ -111,6 +152,8 @@ const ArtworkPage = async ({ params }: ArtworkPageProps) => {
 
   const media = await getArtworkMedia(artwork.id)
 
+  const neighbours = await getExhibitionNeighbours(slug, exhibitionSlug)
+
   // How many numbers are left across the live variants. Live variants can all
   // exist while every copy is gone — that is sold out, not unpurchasable, and
   // the page says so rather than offering a button the wizard would refuse.
@@ -127,6 +170,7 @@ const ArtworkPage = async ({ params }: ArtworkPageProps) => {
       artist={user}
       media={media}
       commerce={commerce}
+      neighbours={neighbours}
     />
   )
 }

@@ -19,8 +19,8 @@ interface SizeSchemaProps {
   mattingBorderCm: number
   mattingColorHex: string
   showFrame: boolean
-  /** Artwork preview URL. When provided, fills the print rect (image
-   *  = the buyer's typed print size, matching the 3D scene). */
+  /** Artwork preview URL. When provided, fills the print rect — the image
+   *  IS the buyer's typed print size. */
   imageUrl?: string
   /** Uniform white paper border on every side of the printed image,
    *  in cm. Rendered as a WHITE sheet layer OUTSIDE the image — the
@@ -44,9 +44,9 @@ interface SizeSchemaProps {
 
 /**
  * Live SVG diagram that mirrors gallery-style "image + paper + mat +
- * frame" measurements panel. Matches the 3D preview's convention:
- * the buyer's typed print size IS the image; the paper sheet, any
- * passepartout, and the moulding stack outward from it.
+ * frame" measurements panel. The buyer's typed print size IS the image;
+ * the paper sheet, any passepartout, and the moulding stack outward
+ * from it.
  *
  * Layer stack (innermost → outermost):
  *   image (print rect) → paper border → matting → frame
@@ -99,8 +99,8 @@ export const SizeSchema = ({
   const availableW = VIEWBOX_W - PADDING * 2
   const availableH = VIEWBOX_H - PADDING * 2
 
-  // Each border layer is rendered at its real proportional scale so
-  // the diagram matches what the 3D shows. A small floor (3 px) keeps
+  // Each border layer is rendered at its real proportional scale, so the
+  // diagram reports true proportions. A small floor (3 px) keeps
   // very thin layers from disappearing on huge prints without
   // dominating the visual at small ones.
   const MIN_FRAME_PX = 3
@@ -162,7 +162,7 @@ export const SizeSchema = ({
 
   // Edition number — a fixed physical em size (see editionNumberMetrics),
   // converted to schema px via the print's own scale so it reflects the real
-  // number-to-print ratio, like the 3D. The number sits BELOW the image, so
+  // number-to-print ratio. The number sits BELOW the image, so
   // it's bounded by the vertical (paperBorderH) border, not the horizontal
   // one. A 7 px floor keeps it legible on a big print where the real ratio
   // would render it sub-pixel.

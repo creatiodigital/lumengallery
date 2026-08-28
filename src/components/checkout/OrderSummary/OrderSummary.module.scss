@@ -40,12 +40,12 @@
   min-width: 0;
 }
 
-.summaryEyebrow {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
+// Matches the wizard's summary panel exactly — the two are the same block one
+// step apart, and letting them drift would be worse than either choice.
+.summaryArtist {
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  color: var(--color-text-primary);
 }
 
 .summaryTitle {

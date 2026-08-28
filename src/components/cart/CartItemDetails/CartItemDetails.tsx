@@ -3,7 +3,7 @@
 import { ProtectedImage } from '@/components/ui/ProtectedImage/ProtectedImage'
 import { SpecList } from '@/components/print/SpecList/SpecList'
 import { Text } from '@/components/ui/Typography'
-import { editionLabel } from '@/lib/editions/editionLabel'
+import { editionTypeLabel } from '@/lib/editions/editionLabel'
 import type { CartItem } from '@/lib/cart/types'
 
 import styles from './CartItemDetails.module.scss'
@@ -13,9 +13,9 @@ type Props = {
   /**
    * Thumbnail box size in px. The frame is a SQUARE of this size and the art
    * is contained inside it (never cropped) — so portrait and landscape prints
-   * take the same footprint and every row's columns line up. Only on narrow
-   * phones (≤ 400px, the xs breakpoint) does the photo instead span the full
-   * card width at its natural aspect ratio.
+   * take the same footprint and every row's columns line up. On phones
+   * (below 640px, the sm breakpoint) the photo instead spans the full card
+   * width at its natural aspect ratio, with the text stacked beneath it.
    */
   thumbHeight?: number
   /** Per-line server-revalidation error (checkout). */
@@ -25,6 +25,12 @@ type Props = {
    * price panel shows the edition); checkout keeps it.
    */
   showEditionTag?: boolean
+  /**
+   * Optional control parked at the right end of the edition line (cart: "Edit
+   * item" on phones). Rendered only alongside the edition tag — it rides that
+   * row rather than owning one of its own.
+   */
+  editionAction?: React.ReactNode
 }
 
 /**
@@ -39,6 +45,7 @@ export const CartItemDetails = ({
   thumbHeight = 120,
   error,
   showEditionTag = true,
+  editionAction,
 }: Props) => {
   return (
     <div
@@ -59,17 +66,31 @@ export const CartItemDetails = ({
       />
 
       <div className={styles.details}>
-        <Text as="span" size="xs" className={styles.artist}>
-          {item.artistName}
-        </Text>
-        <Text as="p" font="serif" size="lg" className={styles.title}>
+        <Text as="p" font="serif" size="xl" className={styles.title}>
           {item.title}
+        </Text>
+        <Text as="span" font="serif" size="lg" className={styles.artist}>
+          {item.artistName}
         </Text>
 
         {showEditionTag && (
-          <Text as="span" size="md" className={styles.edition}>
-            {editionLabel(item.editionType, item.editionName)}
-          </Text>
+          <div className={styles.editionRow}>
+            <Text as="span" size="md" className={styles.edition}>
+              {editionTypeLabel(item.editionType)}
+              {/* The variant name is the one part of this line that identifies
+                  *which* edition was bought — it carries the weight, the type
+                  wording in front of it is context. */}
+              {item.editionName && (
+                <>
+                  {' · '}
+                  <Text as="span" size="md" weight="bold">
+                    {item.editionName}
+                  </Text>
+                </>
+              )}
+            </Text>
+            {editionAction}
+          </div>
         )}
 
         {/* No per-surface row budget: the cart and checkout render the same
