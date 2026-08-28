@@ -53,6 +53,10 @@
   }
 }
 
+// The fixed box lives on the ProtectedImage wrapper itself: the inner <img>
+// sizes at 100%, so the wrapper must carry real dimensions or the height
+// collapses to auto and every photo keeps its own aspect ratio — which is what
+// left these rendering 109, 137 and 174px tall inside a 110px box.
 .imageContainer {
   flex-shrink: 0;
   width: 160px;
@@ -61,12 +65,12 @@
 }
 
 .featuredImage {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-
-  @include media-down(md) {
-    width: 100%;
-    height: 100%;
-  }
+  // Artist photographs are portraits and this box is landscape, so `cover`
+  // discards a lot of height. Anchored to the top it comes off the bottom
+  // rather than off the top of the head — same rule as the profile page.
+  object-position: top;
 }

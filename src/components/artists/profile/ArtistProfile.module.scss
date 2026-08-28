@@ -39,6 +39,12 @@
 
 .avatar {
   object-fit: cover;
+  // Anchored to the TOP, not the middle. Artist photographs are portraits and
+  // this box is 3:2, so `cover` has to discard around 39% of their height —
+  // centred, it took half of that off the top and cut the head off. Held to the
+  // top edge, everything it drops comes off the bottom instead, where a
+  // photograph can spare it.
+  object-position: top;
 }
 
 .avatarPlaceholder {
