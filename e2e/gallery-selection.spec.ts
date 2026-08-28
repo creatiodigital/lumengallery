@@ -238,8 +238,13 @@ test('a work with no author still names its artist on /prints', async ({ page })
 
     await page.goto('/prints')
 
+    // Bare href or that href with a query — /prints stamps `?from=prints` onto
+    // its card links so the artwork page can walk the selection. Not a bare
+    // `^=`, which would also match `/artworks/<slug>/print`.
     const card = page
-      .locator(`a[href="/artworks/${fx.slug}"]`, { hasText: 'Order Print' })
+      .locator(`a[href="/artworks/${fx.slug}"], a[href^="/artworks/${fx.slug}?"]`, {
+        hasText: 'Order Print',
+      })
       .locator('xpath=../../..')
     await expect(card).toContainText(title)
     await expect(card, 'the artist is named even with no author override').toContainText(expected)
@@ -264,7 +269,9 @@ test('/prints renders the selection in order, and nothing else', async ({ page }
     // One door: the card's CTA leads to the artwork page, never straight into
     // the wizard.
     await expect(
-      page.locator(`a[href="/artworks/${fx.slug}"]`, { hasText: 'Order Print' }),
+      page.locator(`a[href="/artworks/${fx.slug}"], a[href^="/artworks/${fx.slug}?"]`, {
+        hasText: 'Order Print',
+      }),
     ).toBeVisible()
     // The page says what it is: a choice, not the catalogue. Without this line
     // a buyer reads the grid as everything for sale and never looks for the

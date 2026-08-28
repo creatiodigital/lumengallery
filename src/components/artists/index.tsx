@@ -43,16 +43,15 @@ export const ArtistsPage = ({ artists }: ArtistsPageProps) => {
                     </span>
                   </div>
                   {artist.profileImageUrl && (
-                    <div className={styles.imageContainer}>
-                      <ProtectedImage
-                        src={artist.profileImageUrl}
-                        alt={`${artist.name} ${artist.lastName}`}
-                        width={200}
-                        height={140}
-                        sizes="200px"
-                        className={styles.featuredImage}
-                      />
-                    </div>
+                    <ProtectedImage
+                      src={artist.profileImageUrl}
+                      alt={`${artist.name} ${artist.lastName}`}
+                      width={200}
+                      height={140}
+                      sizes="200px"
+                      wrapperClassName={styles.imageContainer}
+                      className={styles.featuredImage}
+                    />
                   )}
                 </Link>
               </li>

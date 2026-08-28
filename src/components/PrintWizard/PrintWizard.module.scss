@@ -425,19 +425,6 @@
   }
 }
 
-.introActions {
-  display: flex;
-  justify-content: center;
-  margin-top: var(--space-5);
-
-  // Buyer-facing surface: every form control is squared
-  // (per the client-facing UI rule). Override the Button's default
-  // rounded corners for this modal's Continue button.
-  button {
-    border-radius: 0;
-  }
-}
-
 // ── Edition-details modal: richer two-section copy ──────────────
 .detailSections {
   margin: var(--space-4) 0;
@@ -850,7 +837,10 @@
   // itself now (see LABEL_GUTTER in SizeSchema), so the diagram cannot reach
   // past its own element however narrow the column gets.
   padding: var(--space-12) var(--space-12) var(--space-10);
-  background: var(--color-white);
+  // A shade off white, so the diagram reads as a stage the work is measured on
+  // rather than as more of the page. The paper in the diagram is white, and the
+  // contrast is what gives it an edge.
+  background: var(--color-surface-subtle);
 
   @include media-down(laptop) {
     // Stacked: sits between the picker/steps and the summary. Sized by its

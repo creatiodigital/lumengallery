@@ -37,15 +37,14 @@ export const FeaturedArtists = ({ artists }: FeaturedArtistsProps) => {
               </Text>
             </div>
             {artist.profileImageUrl && (
-              <div className={styles.imageContainer}>
-                <ProtectedImage
-                  src={artist.profileImageUrl}
-                  alt={`${artist.name} ${artist.lastName}`}
-                  width={100}
-                  height={100}
-                  className={styles.profileImage}
-                />
-              </div>
+              <ProtectedImage
+                src={artist.profileImageUrl}
+                alt={`${artist.name} ${artist.lastName}`}
+                width={200}
+                height={140}
+                wrapperClassName={styles.imageContainer}
+                className={styles.profileImage}
+              />
             )}
           </Link>
         ))}

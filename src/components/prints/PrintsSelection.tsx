@@ -71,7 +71,11 @@ export const PrintsSelection = ({ selection }: Props) => {
         {visible.length === 0 ? (
           <EmptyState message={emptyMessage} className={styles.emptyResults} />
         ) : (
-          <ArtworkGrid artworks={visible} />
+          /* `fromPrints` and not the filtered list: the arrows on the artwork
+             page walk the whole curated selection, so a work opened from a
+             filtered grid still steps through every print rather than dead-
+             ending at the edge of a filter the next page knows nothing about. */
+          <ArtworkGrid artworks={visible} fromPrints />
         )}
       </div>
     </>

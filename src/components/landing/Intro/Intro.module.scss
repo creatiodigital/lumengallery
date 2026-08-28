@@ -1,13 +1,7 @@
-@use '@/styles/mixins' as *;
-
 .intro {
   display: flex;
   justify-content: center;
   text-align: center;
-  border-top: 3px double var(--color-border-default);
-  padding: var(--space-6) 0 var(--space-16) 0;
-
-  @include breakpoint(lg) {
-    padding: var(--space-16) 0;
-  }
+  padding-top: 20px;
+  margin-bottom: 60px;
 }
