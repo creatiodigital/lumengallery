@@ -295,7 +295,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
       </main>
 
       {introOpen && detailVariant && (
-        <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px">
+        <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px" showClose>
           <div className={styles.introModal}>
             <Monogram className={styles.introMonogram} aria-hidden="true" />
             {/* Not shown: the buyer is already on this artwork's page, so the
@@ -349,9 +349,6 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
               </Link>
               .
             </p>
-            <div className={styles.introActions}>
-              <Button variant="primary" label="Close" onClick={dismissIntro} />
-            </div>
           </div>
         </Modal>
       )}
