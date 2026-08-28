@@ -11,9 +11,12 @@
   // At desktop widths the three panels are a fixed-height grid: the
   // center scene stays anchored, and the left/right panels scroll
   // internally when their content grows (e.g. opening collapsibles).
-  // On mobile (<900px) the layout stacks vertically so we let the
-  // whole page scroll as normal.
-  @include media-up(tablet) {
+  // Below 1040px the layout stacks vertically so we let the whole page
+  // scroll as normal. It stacks there rather than at `tablet` because three
+  // columns need the room: in the 900–1040 band the paper name wrapped in the
+  // picker, the diagram shrank to a thumbnail and the spec values crowded the
+  // right edge — all three columns bad at once.
+  @include media-up(laptop) {
     height: 100dvh;
     min-height: 0;
     overflow: hidden;
@@ -36,8 +39,8 @@
   // space-5, and the ghost CLOSE button carries space-4 of its own side
   // padding. Trim the header's right padding so the button's visible edge
   // lands on the panels' right content edge (keeps the tap area intact).
-  // Declared after media-up(md) so it wins in the 768–900px overlap.
-  @include media-down(tablet) {
+  // Declared after media-up(md) so it wins in the 768–1040px overlap.
+  @include media-down(laptop) {
     padding-right: calc(var(--space-5) - var(--space-4));
   }
 }
@@ -102,7 +105,7 @@
     grid-template-columns: 300px 1fr 320px;
   }
 
-  @include media-down(tablet) {
+  @include media-down(laptop) {
     grid-template-columns: 1fr;
     // Stacked single column: let every row size to its content and scroll.
     grid-template-rows: none;
@@ -188,7 +191,7 @@
   overflow-y: auto;
   border-right: 1px solid var(--color-border-light);
 
-  @include media-down(tablet) {
+  @include media-down(laptop) {
     border-right: none;
     border-bottom: 1px solid var(--color-border-light);
     order: 2;
@@ -841,13 +844,15 @@
   // height to size the diagram against. The TOP alignment happens inside the
   // wrapper, not here — see the note there.
   min-height: 0;
-  // Roomy on every side. The diagram's side labels are painted OUTSIDE the
-  // svg's own box (see .schemaSvg), so the padding here is what keeps them
-  // clear of the two column rules rather than merely decorative.
+  // Roomy on every side — breathing room now, not structure. The measurement
+  // labels used to be painted outside the svg's box and this padding was the
+  // only thing keeping them off the column rules; the viewBox contains them
+  // itself now (see LABEL_GUTTER in SizeSchema), so the diagram cannot reach
+  // past its own element however narrow the column gets.
   padding: var(--space-12) var(--space-12) var(--space-10);
   background: var(--color-white);
 
-  @include media-down(tablet) {
+  @include media-down(laptop) {
     // Stacked: sits between the picker/steps and the summary. Sized by its
     // content rather than a grid track, with a floor so it keeps presence.
     order: 3;
@@ -867,7 +872,7 @@
   gap: var(--space-3);
   overflow-y: auto;
 
-  @include media-down(tablet) {
+  @include media-down(laptop) {
     border-left: none;
     // No border-top here — .schemaStage's mobile border-bottom already
     // draws the boundary; having both produces a doubled line.
@@ -1043,26 +1048,48 @@
 }
 
 .schemaSvg {
-  // The viewBox is square, so the diagram is as TALL as it is wide whatever
-  // the print's orientation — a portrait print uses the full height a
-  // landscape one uses in width. Sizing on width alone would therefore clip
-  // portrait diagrams on short viewports (`.wizard` is `overflow: hidden` at
-  // desktop widths), so the height cap is what holds that case.
+  // The viewBox is 392×328: a square 280-unit diagram with a 56-unit label
+  // gutter down each side and 24 above and below (see LABEL_GUTTER in
+  // SizeSchema). These widths are
+  // therefore the width of the BOX, not of the drawing — the drawing is
+  // 280/392 of it. 644 and 868 are 460 and 620 scaled by 392/280, so the
+  // diagram renders at exactly the size it did when the labels still hung
+  // outside the element.
   //
-  // When the height cap binds, the element's box stays 560px wide and the
-  // square viewBox letterboxes inside it (preserveAspectRatio defaults to
-  // `xMidYMid meet`). The drawing stays centered and undistorted — only the
-  // box is wider than what it paints.
-  width: min(460px, 100%);
+  // The diagram is as TALL as it is wide whatever the print's orientation —
+  // a portrait print uses the full height a landscape one uses in width.
+  // Sizing on width alone would therefore clip portrait diagrams on short
+  // viewports (`.wizard` is `overflow: hidden` at desktop widths), so the
+  // height cap is what holds that case. When it binds, the box keeps its
+  // width and the viewBox letterboxes inside it (preserveAspectRatio defaults
+  // to `xMidYMid meet`): centred, undistorted, only the box wider than what
+  // it paints.
+  width: min(644px, 100%);
   max-height: 100%;
   height: auto;
-  overflow: visible;
+
+  // Ultrawide (≥2000px): the centre column runs well over 1300px across and
+  // the diagram sat marooned in it. Only the width cap moves — the max-height
+  // rule above still governs, so a short ultrawide screen (2560×1080 and
+  // friends) letterboxes rather than clipping.
+  @include media-up(ultrawide) {
+    width: min(868px, 100%);
+  }
 }
 
 .schemaLabel {
   font-family: var(--font-sans);
   font-size: 12px;
   fill: var(--color-text-secondary);
+
+  // This size is in viewBox units (the viewBox is 280 wide), so it scales with
+  // the svg — the ultrawide diagram would otherwise render the measurements
+  // ~35% larger along with it, and the numbers started shouting. 12 × 460/620
+  // holds them at the size they read at every narrower width: the diagram
+  // grows, the labels don't.
+  @include media-up(ultrawide) {
+    font-size: 9px;
+  }
 }
 
 .specList {
@@ -1101,7 +1128,7 @@
   padding: var(--space-5) var(--space-5) var(--space-8);
   border-right: 1px solid var(--color-border-light);
 
-  @include media-down(tablet) {
+  @include media-down(laptop) {
     border-right: none;
     border-bottom: 1px solid var(--color-border-light);
   }

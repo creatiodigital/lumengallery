@@ -96,6 +96,26 @@ export const SizeSchema = ({
   const VIEWBOX_W = 280
   const VIEWBOX_H = 280
   const PADDING = 32
+  // The two side measurement labels are drawn OUTSIDE that 280-unit box — the
+  // left one anchored `end` at outerX - 18, the right one anchored `start` at
+  // outerX + outerW + 28. They used to hang out of the svg element itself
+  // (overflow: visible) and rely on the stage's padding to catch them, which
+  // is a promise the layout cannot keep: on a phone the column is narrower
+  // than the overhang and both labels lost their leading digits ("30.0 cm"
+  // rendered as "0.0 cm"), and on a wide screen the right one crossed the
+  // summary panel's rule. Widening the viewBox to include the gutters puts
+  // the labels inside the element that draws them, so they cannot escape it
+  // at any width. No drawing coordinate moves — only the window onto them
+  // gets wider, which is why every width in the stylesheet is scaled by
+  // 392/280 to keep the diagram itself the size it was.
+  const LABEL_GUTTER = 56
+  // The top and bottom labels need the same treatment for the same reason,
+  // and were the tighter pair of the two: the top one's baseline sits at
+  // outerY - 24, i.e. y = 8 at most, so its cap height (~9 units at the 12px
+  // label size) was already drawn ABOVE y = 0 — outside the box — and the
+  // bottom one cleared the far edge by five units. Both are inside the
+  // viewBox now with room to spare.
+  const LABEL_GUTTER_Y = 24
   const availableW = VIEWBOX_W - PADDING * 2
   const availableH = VIEWBOX_H - PADDING * 2
 
@@ -187,7 +207,9 @@ export const SizeSchema = ({
   return (
     <div className={styles.schemaWrapper}>
       <svg
-        viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
+        viewBox={`${-LABEL_GUTTER} ${-LABEL_GUTTER_Y} ${VIEWBOX_W + LABEL_GUTTER * 2} ${
+          VIEWBOX_H + LABEL_GUTTER_Y * 2
+        }`}
         className={styles.schemaSvg}
         xmlns="http://www.w3.org/2000/svg"
       >
