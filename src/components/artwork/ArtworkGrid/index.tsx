@@ -56,6 +56,18 @@ interface ArtworkGridProps {
    * page, where a card is just a card.
    */
   exhibitionSlug?: string
+  /**
+   * Set by /prints. Same job as `exhibitionSlug` — it marks the cards as part
+   * of a set the visitor is walking — but the set is the gallery's selection,
+   * which has no slug of its own to carry. A flag rather than an identifier
+   * because there is exactly one such collection.
+   */
+  fromPrints?: boolean
+  /**
+   * The artist whose profile this grid sits on, if any. Same job again, keyed
+   * by the handler that already addresses the profile page.
+   */
+  artistHandler?: string
 }
 
 // Fallback ratio for legacy artworks uploaded before EXIF capture.
@@ -64,13 +76,28 @@ interface ArtworkGridProps {
 const FALLBACK_WIDTH = 800
 const FALLBACK_HEIGHT = 600
 
-export const ArtworkGrid = ({ artworks, artistName, exhibitionSlug }: ArtworkGridProps) => {
+export const ArtworkGrid = ({
+  artworks,
+  artistName,
+  exhibitionSlug,
+  fromPrints,
+  artistHandler,
+}: ArtworkGridProps) => {
   // Admin kill switch. Hides the whole commerce block — price, CTA and the
   // sold-out badge alike — across every grid that uses this component. The
   // wizard and the payment actions still enforce the pause server-side.
   const purchasesPaused = usePurchasesPaused()
 
-  const context = exhibitionSlug ? `?exhibition=${encodeURIComponent(exhibitionSlug)}` : ''
+  // At most one set is being walked, and each grid passes exactly one. Ordered
+  // most specific first, so a caller passing two gets the narrower set rather
+  // than whichever happened to be checked first.
+  const context = exhibitionSlug
+    ? `?exhibition=${encodeURIComponent(exhibitionSlug)}`
+    : artistHandler
+      ? `?artist=${encodeURIComponent(artistHandler)}`
+      : fromPrints
+        ? '?from=prints'
+        : ''
 
   return (
     <div className={styles.grid}>
