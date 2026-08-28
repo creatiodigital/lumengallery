@@ -306,8 +306,16 @@ test.describe('the grid renders the sale block', () => {
     await page.goto(routes.exhibition())
 
     // Same one-door rule as every other grid: the CTA leads to the artwork
-    // page, and the wizard is reachable only from there.
-    const cta = page.locator(`a[href="/artworks/${selling!.slug}"]`, { hasText: 'Order Print' })
+    // page, and the wizard is reachable only from there. Here the link also
+    // carries `?exhibition=<slug>` — the exhibition grid stamps it on every
+    // card so the artwork page can offer previous/next through the show — so
+    // accept the bare href OR that href with a query, and nothing else. A
+    // plain `^=` prefix would also swallow `/artworks/<slug>/print`, which is
+    // the one destination this assertion exists to rule out.
+    const cta = page.locator(
+      `a[href="/artworks/${selling!.slug}"], a[href^="/artworks/${selling!.slug}?"]`,
+      { hasText: 'Order Print' },
+    )
     await expect(cta).toBeVisible()
     await expect(cta.locator('xpath=..'), 'no price on a listing card').not.toContainText('€')
   })
