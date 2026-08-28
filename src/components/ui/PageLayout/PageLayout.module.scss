@@ -4,7 +4,9 @@
   flex: 1 0 auto;
   max-width: var(--content-max-width);
   margin: 0 auto;
-  padding: var(--space-4) 0;
+  // Asymmetric on purpose: the footer opens with a 3px double rule, and at the
+  // shared space-4 the last line of a page sat almost on top of it.
+  padding: var(--space-4) 0 var(--space-12);
   width: calc(100% - var(--site-padding) * 2);
 
   @include media-down(lg) {

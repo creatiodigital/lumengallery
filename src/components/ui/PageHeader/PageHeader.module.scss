@@ -1,21 +1,25 @@
 @use '@/styles/mixins' as *;
 
 .pageHeader {
-  margin: 0 0 var(--space-10);
-  padding-bottom: var(--space-6);
+  margin: 0 0 var(--space-8);
+  padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--color-border-default);
 
   @include media-down(lg) {
-    padding: var(--space-4) 0;
+    padding: var(--space-3) 0;
   }
 }
 
 .title {
   font-weight: var(--font-regular);
-  margin-bottom: var(--space-3);
+  // No bottom margin: most pages pass no subtitle, so this was 12px of empty
+  // space under every page title. The gap belongs to the subtitle, which only
+  // exists when there is one — see below.
+  margin-bottom: 0;
 }
 
 .subtitle {
+  margin-top: var(--space-3);
   color: var(--color-text-secondary);
   font-size: 16px;
 }

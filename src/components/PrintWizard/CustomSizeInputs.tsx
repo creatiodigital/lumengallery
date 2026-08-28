@@ -23,7 +23,7 @@ interface CustomSizeInputsProps {
   disabled: boolean
   onChange: (size: { widthCm: number; heightCm: number }) => void
   /** Show the long-edge slider. Default true (buyer wizard / interactive
-   *  3D). The dashboard variant editor passes false — inputs only. */
+   *  diagram). The dashboard variant editor passes false — inputs only. */
   showSlider?: boolean
 }
 

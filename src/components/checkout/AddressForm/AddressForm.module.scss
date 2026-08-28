@@ -4,10 +4,21 @@
   width: 100%;
 }
 
+// Heading and the "Where we ship" link share one baseline-aligned row, so the
+// link reads as an answer about the whole address section rather than about
+// the Country field alone.
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-6) 0;
+}
+
 .formSectionTitle {
   font-family: var(--font-serif);
   font-size: var(--text-xl);
-  margin: 0 0 var(--space-6) 0;
+  margin: 0;
   color: var(--color-text-primary);
 }
 
@@ -68,14 +79,7 @@
   margin-top: var(--space-8);
 }
 
-// ── Country label row + "Where we ship" ──────────────────────────────────
-.labelRow {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
+// ── "Where we ship" (sits on the section heading line) ───────────────────
 .whereWeShip {
   font-family: var(--font-sans);
   font-size: var(--text-xs);
@@ -150,6 +154,11 @@
 }
 
 .manualEntryLink {
+  // The field column stretches its children, so without this the link sits
+  // under the left edge of the input; pinned right it tucks under the field's
+  // trailing edge and stops competing with the label for the same starting
+  // line.
+  align-self: flex-end;
   margin-top: var(--space-2);
   padding: 0;
   font-family: var(--font-sans);

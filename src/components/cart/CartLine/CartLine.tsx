@@ -54,10 +54,38 @@ export const CartLine = ({ item }: CartLineProps) => {
   if (item.variantId) editParams.set('variant', item.variantId)
   const editHref = `/artworks/${item.artworkSlug}/print?${editParams.toString()}`
 
+  // Open editions only. A limited line has nothing to edit — the variant IS
+  // the object, not a configuration of it, and the wizard it led to could only
+  // ever offer "Go to cart" or add a second line. A button labelled Edit that
+  // cannot edit is worse than no button.
+  //
+  // Two placements, one of them always display:none (so only ever one is in
+  // the accessibility tree): on phones it rides the edition line inside the
+  // details, level with "Open Edition"; from sm up it stays in the price
+  // panel / card corner where it has always been. They sit in different DOM
+  // parents, so CSS alone can't move one between them.
+  const editButton = (inline: boolean) =>
+    isLimited ? null : (
+      <Button
+        variant="secondary"
+        size={inline ? 'smallSquared' : 'regularSquared'}
+        fullWidth={!inline}
+        icon="square-pen"
+        label="Edit Item"
+        href={editHref}
+      />
+    )
+
   return (
     <div className={styles.line}>
       <div className={styles.body}>
-        <CartItemDetails item={item} thumbHeight={140} />
+        <CartItemDetails
+          item={item}
+          thumbHeight={140}
+          editionAction={
+            isLimited ? undefined : <span className={styles.inlineEdit}>{editButton(true)}</span>
+          }
+        />
       </div>
 
       <div className={styles.panel}>
@@ -92,23 +120,7 @@ export const CartLine = ({ item }: CartLineProps) => {
           </Text>
         </div>
 
-        <div className={styles.actions}>
-          {/* Open editions only. A limited line has nothing to edit — the
-              variant IS the object, not a configuration of it, and the wizard
-              it led to could only ever offer "Go to cart" or add a second
-              line. A button labelled Edit that cannot edit is worse than no
-              button. */}
-          {!isLimited && (
-            <Button
-              variant="secondary"
-              size="regularSquared"
-              fullWidth
-              icon="square-pen"
-              label="Edit Item"
-              href={editHref}
-            />
-          )}
-        </div>
+        <div className={styles.actions}>{editButton(false)}</div>
       </div>
 
       {confirmingRemove && (
