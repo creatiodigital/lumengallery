@@ -30,12 +30,26 @@ const ORDER_BASE = 900_000
 /** A live, currently-selling limited edition, placed in the selection. */
 async function selectFixture(index: number): Promise<LimitedFixture> {
   const fx = await setupLimitedFixture(3)
+
+  // `setupLimitedFixture` copies the seed artwork's SIZE but not its image, and
+  // the detail page renders no <img> at all without one — so the geometry
+  // assertion at the foot of this file has nothing to measure. Borrow the seed's
+  // picture rather than weakening that assertion.
+  const seed = await prisma.artwork.findUnique({
+    where: { slug: fixtures.artworkSlug },
+    select: { imageUrl: true },
+  })
+
   await prisma.artwork.update({
     where: { id: fx.artworkId },
     // `printPriceCents: null` keeps this a limited edition only — an open-edition
     // price would put a second sale channel on the card and change what the grid
     // renders. The title is distinctive so a failure names the work.
-    data: { printPriceCents: null, title: `E2E Prints Nav ${index} ${fx.slug}` },
+    data: {
+      printPriceCents: null,
+      title: `E2E Prints Nav ${index} ${fx.slug}`,
+      imageUrl: seed?.imageUrl ?? null,
+    },
   })
   await prisma.selectedPrint.create({
     data: { artworkId: fx.artworkId, order: ORDER_BASE + index },
