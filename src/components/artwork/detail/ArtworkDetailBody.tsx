@@ -189,20 +189,26 @@ export const ArtworkDetailBody = ({
 
             When a side has no neighbour it keeps its width as an empty slot, so
             the work stays on the same axis from the first piece in a show to
-            the last instead of jumping sideways at each end. */}
-        {neighbours &&
-          (neighbours.prev ? (
-            <Button
-              variant="bare"
-              icon="arrowLeft"
-              href={neighbours.prev.href}
-              className={styles.navArrow}
-              title={neighbours.prev.title}
-              aria-label={`Previous work: ${neighbours.prev.title}`}
-            />
-          ) : (
-            <span className={styles.navArrowSlot} aria-hidden="true" />
-          ))}
+            the last instead of jumping sideways at each end.
+
+            The slots are reserved even with NO set to walk — a work reached by
+            a direct link or from search. Otherwise the same picture renders
+            112px wider there than it does when opened from a show or from
+            /prints, and the two views of one artwork disagree about its size.
+            The gutters cost nothing but air; a work changing size depending on
+            how you arrived at it is the more expensive answer. */}
+        {neighbours?.prev ? (
+          <Button
+            variant="bare"
+            icon="arrowLeft"
+            href={neighbours.prev.href}
+            className={styles.navArrow}
+            title={neighbours.prev.title}
+            aria-label={`Previous work: ${neighbours.prev.title}`}
+          />
+        ) : (
+          <span className={styles.navArrowSlot} aria-hidden="true" />
+        )}
 
         <div className={styles.imageFrame}>
           {artwork.imageUrl && (
@@ -227,19 +233,18 @@ export const ArtworkDetailBody = ({
           )}
         </div>
 
-        {neighbours &&
-          (neighbours.next ? (
-            <Button
-              variant="bare"
-              icon="arrowRight"
-              href={neighbours.next.href}
-              className={styles.navArrow}
-              title={neighbours.next.title}
-              aria-label={`Next work: ${neighbours.next.title}`}
-            />
-          ) : (
-            <span className={styles.navArrowSlot} aria-hidden="true" />
-          ))}
+        {neighbours?.next ? (
+          <Button
+            variant="bare"
+            icon="arrowRight"
+            href={neighbours.next.href}
+            className={styles.navArrow}
+            title={neighbours.next.title}
+            aria-label={`Next work: ${neighbours.next.title}`}
+          />
+        ) : (
+          <span className={styles.navArrowSlot} aria-hidden="true" />
+        )}
       </div>
 
       <InquireSidebar

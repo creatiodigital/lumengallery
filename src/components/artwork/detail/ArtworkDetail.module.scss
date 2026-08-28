@@ -32,7 +32,9 @@
   @include media-down(lg) {
     grid-template-columns: 1fr;
     gap: var(--space-4);
-    padding: var(--space-6) 0 0;
+    // Stacked, the work is the first thing on the page and wants to sit close
+    // under the header's rule; a desktop-sized opening left it stranded.
+    padding: var(--space-4) 0 0;
   }
 }
 
@@ -65,7 +67,9 @@
     // share. Flush left it starts on the same line the image starts on, and
     // reads as a caption to the work above it.
     margin-inline: 0 auto;
-    padding-top: var(--space-6);
+    // None: the grid's own gap is the whole separation between the image block
+    // and the title, and it is enough now that no rule sits between them.
+    padding-top: 0;
   }
 }
 
@@ -143,15 +147,84 @@
     // above it — side padding here would just make it smaller than the text
     // block beneath.
     padding-inline: 0;
-    padding-top: var(--space-2);
+    // None: the grid above already sets the distance from the header's rule.
+    padding-top: 0;
     // Stacked, the work and the facts about it run together vertically with
     // nothing between them. The rule lives on the IMAGE rather than on the
     // block below, because that block is capped at 520px and left-aligned — a
     // border there could never span the page. Side by side no rule appears at
     // all: they are separate columns already, and a horizontal divider between
     // them would make no sense.
-    padding-bottom: var(--space-6);
-    border-bottom: 1px solid var(--color-border-default);
+    // No rule and nothing under the arrows: stacked, the picture and the facts
+    // about it are already read as one sequence, and a divider between them
+    // only cut the page in half.
+    padding-bottom: 0;
+
+    // The arrows drop BELOW the picture. Beside it they cost 88px of arrow plus
+    // 24px of gap — a sixth of a phone's width, taken from the one thing the
+    // screen is there for. Wrapped onto their own line they land in the
+    // picture's two bottom corners, which the image now shares since it spans
+    // the full width.
+    flex-wrap: wrap;
+    // Small, because the 44px arrow box carries its own visual margin: the mark
+    // is centred in it, so the gap the eye reads is this plus ~12px.
+    row-gap: var(--space-2);
+
+    .imageFrame {
+      // Its own line, and ahead of the arrows despite sitting between them in
+      // the DOM — the reading order stays prev / work / next for a screen
+      // reader.
+      order: -1;
+      flex: 0 0 100%;
+    }
+
+    // Full width of the container. `max-width: 100%` alone only caps a picture;
+    // it never grows one, so a master narrower than the phone rendered at its
+    // natural size with white either side.
+    .image,
+    .imagePortrait {
+      width: 100%;
+      height: auto;
+      // The portrait cap answers a desktop problem — a band one screen tall.
+      // Stacked there is no band, and a height cap against a now-definite width
+      // would squash the picture instead of scaling it.
+      max-height: none;
+    }
+
+    // Stacked, the slots have no work to do: they reserve the gutters BESIDE
+    // the picture, and there are no gutters here. Left in, an artwork with no
+    // set to walk would wrap two empty spans onto their own line and pay the
+    // row-gap for them. Hiding rather than removing keeps `:last-child` below
+    // pointing at the same element it does on a desktop.
+    .navArrowSlot {
+      display: none;
+    }
+
+    // Absorbs every spare pixel on the arrows' line, so the two sit in the
+    // corners regardless of the container's justify-content.
+    .navArrow:last-child,
+    .navArrowSlot:last-child {
+      margin-left: auto;
+    }
+
+    // The 44px box stays — it is the thumb target — but the MARK inside it moves
+    // to the box's outer edge, which is the image's edge. Centred, the glyph sat
+    // 12px in from the picture on both sides and read as misaligned. Expressed
+    // as alignment rather than a negative margin so it holds whatever size the
+    // icon is.
+    // The Button's own `.button.iconOnly` sets 8px of padding and outranks the
+    // single class on `.navArrow`, so alignment alone still left the mark 8px
+    // short of the picture. Only the OUTER side is zeroed — the inner one keeps
+    // the box a 44px thumb target.
+    .navArrow:first-child {
+      justify-content: flex-start;
+      padding-left: 0;
+    }
+
+    .navArrow:last-child {
+      justify-content: flex-end;
+      padding-right: 0;
+    }
   }
 }
 

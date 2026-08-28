@@ -264,7 +264,15 @@ test.describe('the grid renders the sale block', () => {
 
       // The button now leads to the artwork page, not straight into the wizard:
       // the page is the single door to checkout, so the grid cannot bypass it.
-      const cta = page.locator(`a[href="/artworks/${fx.slug}"]`, { hasText: 'Order Print' })
+      // Accept the bare href OR that href with a query: the grid stamps a
+      // context onto its card links so the artwork page can offer
+      // previous/next through the set. A plain `^=` prefix would also swallow
+      // `/artworks/<slug>/print`, which is the one destination this assertion
+      // exists to rule out.
+      const cta = page.locator(
+        `a[href="/artworks/${fx.slug}"], a[href^="/artworks/${fx.slug}?"]`,
+        { hasText: 'Order Print' },
+      )
       await expect(cta).toBeVisible()
 
       const card = cta.locator('xpath=../../..')

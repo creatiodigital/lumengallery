@@ -353,7 +353,7 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
       )}
 
       {introOpen && (
-        <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px">
+        <Modal onClose={dismissIntro} titleId="print-intro-title" maxWidth="640px" showClose>
           <div className={styles.introModal}>
             <Monogram className={styles.introMonogram} aria-hidden="true" />
             <p id="print-intro-title" className={styles.detailLead}>
@@ -401,9 +401,6 @@ const OpenWizard = ({ artwork, catalog, restrictions, recommendations }: PrintWi
               </Link>
               .
             </p>
-            <div className={styles.introActions}>
-              <Button variant="primary" label="Close" onClick={dismissIntro} />
-            </div>
           </div>
         </Modal>
       )}

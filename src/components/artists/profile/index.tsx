@@ -78,7 +78,15 @@ export const ArtistProfilePage = ({ artist, exhibitions, artworks }: ArtistProfi
 
       {artworks.length > 0 && (
         <div className={styles.section}>
-          <ArtworkGrid artworks={artworks} artistName={artistFullName} />
+          {/* `artistHandler` marks the cards as a set the visitor is walking, so
+              the artwork page can offer previous/next through this artist's
+              works. `artistName` is the display name for the cards — different
+              job, different value. */}
+          <ArtworkGrid
+            artworks={artworks}
+            artistName={artistFullName}
+            artistHandler={artist.handler}
+          />
         </div>
       )}
 
