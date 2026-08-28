@@ -355,12 +355,6 @@
 }
 
 // Availability caveat for limited lines — quiet, factual, above the errors.
-.limitedNotice {
-  margin: 0 0 var(--space-3);
-  color: var(--color-text-secondary);
-  line-height: 1.45;
-}
-
 // "Your edition number" — shown on a limited order only. A quiet bordered
 // aside, not a warning: it promises something good, it doesn't caution.
 .editionNotice {

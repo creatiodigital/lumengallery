@@ -10,8 +10,6 @@ import { PageLayout } from '@/components/ui/PageLayout'
 import { Text } from '@/components/ui/Typography'
 import { lineTotal } from '@/lib/cart/cartMath'
 import type { CartItem } from '@/lib/cart/types'
-import { hasLimitedItems } from '@/lib/cart/cartMath'
-import { LIMITED_NOT_RESERVED_NOTICE } from '@/lib/cart/notices'
 import { useCart } from '@/lib/cart/useCart'
 import type { CartLikeItem, CartTotals } from '@/lib/cart/validateCart'
 import { vatLabel } from '@/lib/checkout/vatLabel'
@@ -264,7 +262,7 @@ export const CartCheckout = ({
               <Text as="h2" font="serif" size="xl" className={styles.recapTitle}>
                 Your order
               </Text>
-              <Button variant="secondary" size="smallSquared" href="/cart" label="Edit cart" />
+              <Button variant="secondary" size="regularSquared" href="/cart" label="Edit Cart" />
             </div>
             <div className={styles.lines}>
               {items.map((item) => (
@@ -274,13 +272,6 @@ export const CartCheckout = ({
             {orderError && (
               <Text as="p" size="sm" className={styles.orderError}>
                 {orderError}
-              </Text>
-            )}
-            {/* Said again here, at the last screen before money moves: a cart
-                can sit for days, and availability moves while it does. */}
-            {hasLimitedItems(items) && (
-              <Text as="p" size="sm" className={styles.limitedNotice}>
-                {LIMITED_NOT_RESERVED_NOTICE}
               </Text>
             )}
             {Object.keys(lineErrors).length > 0 && (
@@ -319,7 +310,7 @@ export const CartCheckout = ({
               <Text as="h2" font="serif" size="xl" className={styles.recapTitle}>
                 Your order
               </Text>
-              <Button variant="secondary" size="smallSquared" href="/cart" label="Edit cart" />
+              <Button variant="secondary" size="regularSquared" href="/cart" label="Edit Cart" />
             </div>
             <div className={styles.lines}>
               {items.map((item) => (
@@ -348,7 +339,7 @@ export const CartCheckout = ({
                 </Text>
                 <Button
                   variant="secondary"
-                  size="smallSquared"
+                  size="regularSquared"
                   label="Change address"
                   onClick={handleChangeAddress}
                   className={styles.changeAddress}

@@ -69,7 +69,7 @@ export const PrintsSelection = ({ selection }: Props) => {
 
       <div className={styles.results}>
         {visible.length === 0 ? (
-          <EmptyState message={emptyMessage} />
+          <EmptyState message={emptyMessage} className={styles.emptyResults} />
         ) : (
           <ArtworkGrid artworks={visible} />
         )}

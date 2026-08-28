@@ -111,11 +111,17 @@
 // memory, so filtering it is synchronous — there is no fetch to cover.
 .results {
   position: relative;
-  margin-bottom: var(--space-40);
+  // No bottom margin of its own: ArtworkGrid already carries the gap that
+  // keeps its last row off the footer's rule (56px, 72px from lg), and
+  // PageLayout adds its own bottom padding under that. Stacking a third
+  // margin here left ~280px of empty page below a short selection.
+  //
+  // The empty state has no grid under it, so it brings its own — see
+  // .emptyResults.
+}
 
-  @include media-down(sm) {
-    margin-bottom: var(--space-16);
-  }
+.emptyResults {
+  margin-bottom: var(--space-16);
 }
 
 .selectionEmpty {

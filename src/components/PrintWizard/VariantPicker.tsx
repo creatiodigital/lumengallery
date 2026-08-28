@@ -28,14 +28,14 @@ type Props = {
  * has: that a size sold out. Scarcity is the point of a limited edition, so an
  * empty row earns its place.
  *
- * One edition at a time, and none on arrival: the preview, the size schema and
- * the spec list all describe exactly one print, and choosing for the buyer on
+ * One edition at a time, and none on arrival: the measurement diagram and the
+ * spec list both describe exactly one print, and choosing for the buyer on
  * entry would both pre-empt the decision and aim the CTA at an edition nobody
  * asked for. Picking another switches; clicking the selected one does nothing,
  * since deselecting back to an empty panel is not a move anyone wants.
  *
  * EVERY card stays clickable, including one whose edition is already in the
- * cart. Selecting is how an edition gets hung on the wall in the 3D preview,
+ * cart. Selecting is how an edition gets drawn in the measurement diagram,
  * and owning a copy is no reason to lose the ability to look at it. A carted
  * card is marked with an "In your cart" tag and loses only the add — the panel
  * prices it at nothing and the CTA skips it.

@@ -1,9 +1,10 @@
 /**
- * Placement metrics for the limited-edition number ("1/50") that both
- * previewers pencil into the bottom paper margin — the 3D print face
- * (scene/PreviewArtwork.tsx) and the 2D measurements diagram
- * (SizeSchema.tsx). Shared so the number sits in the same spot in both
- * and the two can't drift apart.
+ * Placement metrics for the limited-edition number ("1/50") pencilled into
+ * the bottom paper margin of the measurements diagram (SizeSchema.tsx).
+ *
+ * These lived apart from their one caller because a 3D print preview drew the
+ * same number and the two had to agree. That preview is gone; the constants
+ * stay here because they are measured font facts, not layout choices.
  *
  * The em ratios below are measured from public/fonts/caveat-regular.ttf
  * (unitsPerEm 1000) — the same Caveat design next/font serves as the

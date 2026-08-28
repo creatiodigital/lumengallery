@@ -23,10 +23,9 @@ import {
   resolveSelectedVariant,
   selectableVariants,
 } from '@/lib/editions/variantSelection'
-import { TABLET_BREAKPOINT_PX, useIsMobile } from '@/hooks/useIsMobile'
 
 import { EditionBadge } from './EditionBadge'
-import { Scene } from './Scene'
+import { SchemaStage } from './SchemaStage'
 import { SummaryPanel } from './SummaryPanel'
 import { VariantPicker, type VariantPickerItem } from './VariantPicker'
 import type { WizardArtwork } from './index'
@@ -60,14 +59,6 @@ function readCountryFromStash(slug: string): string {
  */
 export const LimitedWizard = ({ artwork, catalog }: Props) => {
   const router = useRouter()
-  // Desktop-only 3D preview — same rationale and breakpoint as the open
-  // wizard: never mount the WebGL canvas on mobile, and only mount it after
-  // hydration so SSR and the first client render agree.
-  const isMobile = useIsMobile(TABLET_BREAKPOINT_PX + 1)
-  const [sceneReady, setSceneReady] = useState(false)
-  useEffect(() => {
-    setSceneReady(true)
-  }, [])
   // NOTE: the cart shows no "Edit item" for a limited line and this wizard
   // reads no `editLineId` / `variant` param. Nothing here edits a line — see
   // the "marked, not locked" comment below.
@@ -84,15 +75,15 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
 
   // A variant already in the cart is MARKED, not locked.
   //
-  // Selecting is how an edition gets hung on the wall in the 3D preview, and a
+  // Selecting is how an edition gets drawn in the measurement diagram, and a
   // buyer coming back for a last look at what they bought must not lose that as
   // a side effect of buying it. What a carted variant loses is only the add —
   // the cart offers no edit for a limited line and no second copy of one, the
   // variant being the object rather than a configuration of it.
   const cartedIds = useMemo(() => cartedVariantIds(items, artwork.id), [items, artwork.id])
 
-  // One edition at a time, and always one: the preview, the schema and the spec
-  // list all describe exactly one print, and the panel has nothing to say
+  // One edition at a time, and always one: the schema and the spec list both
+  // describe exactly one print, and the panel has nothing to say
   // without it. `resolveSelectedVariant` supplies the opening default, so this
   // starts empty and is filled by the buyer's first click. Picking another
   // switches; there is no unselecting.
@@ -121,7 +112,7 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
 
   const config = useMemo(() => (selected ? variantToWizardConfig(selected) : null), [selected])
 
-  // The mark stays in the preview — it is part of what the buyer is buying, and
+  // The mark stays in the diagram — it is part of what the buyer is buying, and
   // showing where it sits on the sheet matters. It is ILLUSTRATIVE: nothing is
   // reserved before payment, so the real number is unknown here. The terms say
   // so ("the number shown in the preview is for reference only"), which is what
@@ -268,14 +259,13 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
               onSelect={setSelectedId}
               cartedVariantIds={cartedIds}
             />
-            {/* The wall is the reason to select at all. Nothing chosen yet,
-                nothing to hang. */}
-            {sceneReady && !isMobile && selected && config && (
-              <Scene
-                imageUrl={artwork.imageUrl}
+            {/* The diagram is the reason to select at all. Nothing chosen
+                yet, nothing to measure. */}
+            {selected && config && (
+              <SchemaStage
                 catalog={catalog}
                 config={config}
-                configReady
+                imageUrl={artwork.imageUrl}
                 editionLabel={editionLabel}
               />
             )}
@@ -287,7 +277,6 @@ export const LimitedWizard = ({ artwork, catalog }: Props) => {
                 quote={quote}
                 quoteLoading={false}
                 canContinue
-                configReady
                 onAddToCart={handleAddToCart}
                 onContinueShopping={close}
                 editionLabel={editionLabel}

@@ -81,16 +81,22 @@
 //
 // xs/sm/md/lg/xl/xxl are the standard scale. `tablet` (900) and `wide` (1100)
 // are real, in-use breakpoints kept as named tokens so existing layouts that
-// switch at those widths don't shift.
+// switch at those widths don't shift — `laptop` (1040) is the width below
+// which three-column layouts (the print wizard) run out of room and stack.
+// `ultrawide` (2000) is not part of the
+// scale — it's the width above which fixed-size centrepieces start looking
+// marooned in empty space, and is only ever used with media-up.
 $breakpoints: (
   xs: 400px,
   sm: 640px,
   md: 768px,
   tablet: 900px,
   lg: 1024px,
+  laptop: 1040px,
   wide: 1100px,
   xl: 1280px,
   xxl: 1440px,
+  ultrawide: 2000px,
 );
 
 // Back-compat single vars (derived from the map — do not add new hardcoded px).

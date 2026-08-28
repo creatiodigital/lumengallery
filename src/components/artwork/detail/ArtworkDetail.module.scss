@@ -2,8 +2,15 @@
 
 .standaloneContent {
   display: grid;
-  // Sidebar left, image right — and the DOM order matches, so the <h1> is still
-  // read first and no explicit column assignment is needed.
+  // Work LEFT, sidebar right — the arrangement every gallery and auction house
+  // uses, and the one general e-commerce uses for its buy box. It also fixes
+  // the order of attention: with the sidebar on the left, the black "Order a
+  // print" button was the heaviest thing on the page and the eye reached the
+  // sale before the work.
+  //
+  // The <h1> still comes FIRST in the DOM — the metadata block is placed into
+  // column 2 explicitly (see .metadata / .imageContainer) rather than by source
+  // order, so the reading order is unchanged by the flip.
   //
   // The sidebar holds the availability card, whose rows put a price and an
   // edition name on one line; below 344px those rows wrap on every artwork.
@@ -11,9 +18,9 @@
   // Left as `0.3fr` deliberately. Pinning it to the 344px minimum LOOKED like
   // leaving it alone and was not: on a wide screen the fraction gives it more
   // than the minimum, so fixing it there made it narrower.
-  grid-template-columns: minmax(344px, 0.3fr) 1fr;
-  // Zero on purpose: ALL of the separation between the sidebar and the image is
-  // the image's own padding-left, so widening or narrowing that gap only ever
+  grid-template-columns: 1fr minmax(344px, 0.3fr);
+  // Zero on purpose: ALL of the separation between the image and the sidebar is
+  // the image's own padding-right, so widening or narrowing that gap only ever
   // moves the image and never squeezes the sidebar's purchase card. The stacked
   // rule below re-introduces a gap, where the two are above/below instead.
   gap: 0;
@@ -33,8 +40,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  align-self: start;
-  grid-column: 1;
+  // Centred on the work, not hung from the top of it — so a short sidebar
+  // beside a tall photograph reads as one object next to another rather than
+  // dangling from the top edge. Only this column centres: the image stays
+  // top-aligned (see .imageContainer), so when the sidebar is the TALLER of
+  // the two it simply fills the row and nothing moves.
+  align-self: center;
+  grid-column: 2;
   grid-row: 1;
 
   @include media-down(lg) {
@@ -85,19 +97,53 @@
 .imageContainer {
   display: flex;
   justify-content: center;
-  align-items: start;
-  grid-column: 2;
+  // Previous arrow, the work, next arrow — one row. The gap is what keeps the
+  // arrows off the picture's edge.
+  gap: var(--space-3);
+  // Centred inside the band — NOT inside the grid row. Those are different
+  // things whenever the sidebar is the taller column: centring in the row put
+  // the work wherever the sidebar's height happened to leave it, which opened
+  // a band of white under the header on any work with a long technique note.
+  // The container is pinned to the top of the row at a fixed height instead,
+  // so the work always sits in the middle of the first screen and the sidebar
+  // can run past it without moving it.
+  align-items: center;
+  align-self: start;
+  // The band the work hangs in: one screen, less everything above it (the
+  // header and its rule, the grid's top padding) and a margin at the foot so
+  // the picture never runs to the fold. Declared HERE and not on
+  // .standaloneContent because that class exists only on the standalone page —
+  // the exhibition modal renders this same container inside its own wrapper,
+  // and a variable inherited from a page-only ancestor would resolve to
+  // nothing there and drop the height entirely.
+  height: calc(100vh - 200px);
+  grid-column: 1;
   grid-row: 1;
   // Separation from the sidebar is taken from the IMAGE, not from the grid gap.
   // A wider gap would shrink both columns, and the sidebar carries a purchase
-  // card whose width is load-bearing. This only narrows the image.
-  padding-left: var(--space-10);
+  // card whose width is load-bearing. This only narrows the image. It is
+  // padding-RIGHT now that the work sits in the left column.
+  //
+  // Left, top and bottom are air, not separation: flush to the content edge the
+  // work butted the page margin and sat above the title's cap-height, so it
+  // read as bleeding off the layout rather than hanging in it. Inset, it has
+  // room on every side. All four values are padding on the container, so the
+  // image itself still scales to whatever is left.
+  padding: var(--space-4) var(--space-10) var(--space-6) var(--space-6);
 
   @include media-down(lg) {
     grid-column: 1;
     grid-row: auto;
     order: 1;
-    padding-left: 0;
+    // No band when stacked: the work leads the page at full width and the
+    // block is simply as tall as the picture. A screen-height container here
+    // would strand it in the middle of an empty first screen.
+    height: auto;
+    // Stacked, the work spans the full width and the only air it needs is
+    // above it — side padding here would just make it smaller than the text
+    // block beneath.
+    padding-inline: 0;
+    padding-top: var(--space-2);
     // Stacked, the work and the facts about it run together vertically with
     // nothing between them. The rule lives on the IMAGE rather than on the
     // block below, because that block is capped at 520px and left-aligned — a
@@ -109,11 +155,78 @@
   }
 }
 
+// Shrink-wraps the picture, so the arrows either side land against its actual
+// edges rather than the column's. Everything spare in the row goes to the two
+// margins instead of between the work and its arrows.
+.imageFrame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  // Definite, so the images' `max-height: 100%` has something to resolve
+  // against — that percentage is what caps a work to one screen.
+  height: 100%;
+}
+
+// Plain links to the neighbouring works. A 44px box around a 20px arrow: the
+// mark stays quiet next to the picture, the target is a comfortable thumb-sized
+// one on a phone.
+.navArrow {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--color-text-primary);
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.6;
+  }
+}
+
+// The first and last works in a show have one neighbour, not two. The empty
+// side keeps its width so the picture stays on the same axis across the whole
+// set rather than shifting when an arrow disappears.
+.navArrowSlot {
+  flex: 0 0 auto;
+  width: 44px;
+}
+
+// Sized by whichever dimension runs out first: it takes the full column width
+// unless its own height would push it past the band, in which case the height
+// wins. Constraints rather than `width: 100%` + `object-fit`, because that laid
+// a full-column box over a narrower picture — invisible slack the arrows beside
+// it would have had to sit outside of.
 .image {
-  width: 100%;
+  width: auto;
   height: auto;
-  max-height: calc(100vh - 160px);
-  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+// Portrait (and square) work: driven by HEIGHT instead. At `width: 100%` a tall
+// work in a column this wide renders taller than the screen — you cannot see
+// the whole picture at once, and the sidebar centred beside it floats in the
+// middle of a void several hundred pixels deep. Sized from its height, the
+// width follows the aspect ratio and the container centres what is left.
+//
+// The cap is the smaller of the band (so it always fits on one screen) and a
+// hang size (so the work is never blown up past the scale a gallery would hang
+// it at). The hang size grows with the screen — 720px is right on a laptop and
+// mean on a 27" monitor, where the band has 150px of headroom going unused —
+// but it grows on the VIEWPORT's terms, not the window's width, since height
+// is what actually constrains a tall picture.
+//
+// Below ~900px of viewport height the vh term overshoots the band and the
+// `min` simply picks the band, so this can never overflow the screen.
+.imagePortrait {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(100%, max(720px, 78vh));
 }
 
 .description {

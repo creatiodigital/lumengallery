@@ -227,24 +227,27 @@ export const AddressForm = ({
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
-      <h2 className={styles.formSectionTitle}>Where should we send it?</h2>
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.formSectionTitle}>Where should we send it?</h2>
+        {/* A buyer who can't find their country has one question — "do you
+            ship to me?" — and the worst answer is making them abandon a
+            half-filled checkout to go and look. This opens over the flow.
+            It sits on the heading line rather than on the Country label so
+            it reads as an answer about the section, not about that one
+            field. */}
+        <Button
+          type="button"
+          variant="bare"
+          className={styles.whereWeShip}
+          onClick={() => setCountriesOpen(true)}
+          label="Where we ship"
+        />
+      </div>
 
       <FormField className={styles.fieldFull} error={fieldError('country')}>
-        <div className={styles.labelRow}>
-          <label className={styles.fieldLabel} htmlFor="country">
-            Country
-          </label>
-          {/* A buyer who can't find their country has one question — "do you
-              ship to me?" — and the worst answer is making them abandon a
-              half-filled checkout to go and look. This opens over the flow. */}
-          <Button
-            type="button"
-            variant="bare"
-            className={styles.whereWeShip}
-            onClick={() => setCountriesOpen(true)}
-            label="Where we ship"
-          />
-        </div>
+        <label className={styles.fieldLabel} htmlFor="country">
+          Country
+        </label>
         <SelectDropdown<string>
           options={countryOptions}
           value={country}

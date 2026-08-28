@@ -49,6 +49,13 @@ type Artwork = {
 interface ArtworkGridProps {
   artworks: Artwork[]
   artistName?: string
+  /**
+   * The exhibition this grid belongs to, if any. Rides along on every card's
+   * link so the artwork page knows which set the visitor is walking and can
+   * offer previous/next arrows through it. Absent on /prints and the artist
+   * page, where a card is just a card.
+   */
+  exhibitionSlug?: string
 }
 
 // Fallback ratio for legacy artworks uploaded before EXIF capture.
@@ -57,11 +64,13 @@ interface ArtworkGridProps {
 const FALLBACK_WIDTH = 800
 const FALLBACK_HEIGHT = 600
 
-export const ArtworkGrid = ({ artworks, artistName }: ArtworkGridProps) => {
+export const ArtworkGrid = ({ artworks, artistName, exhibitionSlug }: ArtworkGridProps) => {
   // Admin kill switch. Hides the whole commerce block — price, CTA and the
   // sold-out badge alike — across every grid that uses this component. The
   // wizard and the payment actions still enforce the pause server-side.
   const purchasesPaused = usePurchasesPaused()
+
+  const context = exhibitionSlug ? `?exhibition=${encodeURIComponent(exhibitionSlug)}` : ''
 
   return (
     <div className={styles.grid}>
@@ -73,7 +82,10 @@ export const ArtworkGrid = ({ artworks, artistName }: ArtworkGridProps) => {
           <div key={artwork.id} className={styles.card}>
             <div className={styles.imageWrapper}>
               {artwork.imageUrl ? (
-                <Link href={`/artworks/${artwork.slug}`} className={styles.viewDetailsLink}>
+                <Link
+                  href={`/artworks/${artwork.slug}${context}`}
+                  className={styles.viewDetailsLink}
+                >
                   <ProtectedImage
                     src={artwork.imageUrl}
                     alt={artwork.title || artwork.name || 'Artwork'}
@@ -116,7 +128,7 @@ export const ArtworkGrid = ({ artworks, artistName }: ArtworkGridProps) => {
                           job is to earn a click, not to close a sale off a
                           thumbnail. */}
                       <Button
-                        href={`/artworks/${artwork.slug}`}
+                        href={`/artworks/${artwork.slug}${context}`}
                         label="Order Print"
                         variant="primary"
                         size="regularSquared"
