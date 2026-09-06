@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 import { sceneFactory } from '@/factories/sceneFactory'
-import type { TScene, TFocusTarget } from '@/types/scene'
+import type { TScene, TLampGroup, TFocusTarget } from '@/types/scene'
 
 const sceneSlice = createSlice({
   name: 'scene',
@@ -47,6 +47,11 @@ const sceneSlice = createSlice({
       return sceneFactory()
     },
 
+    /** Set from the GLB at load. Replaces any previous space's lamps outright,
+     *  so switching exhibitions can never leave a stale lamp count behind. */
+    setTrackLampGroups: (state: TScene, action: PayloadAction<TLampGroup[]>) => {
+      state.trackLampGroups = action.payload
+    },
     setInitialCameraFromNode: (
       state: TScene,
       action: PayloadAction<{ position: [number, number]; direction: [number, number] }>,
@@ -83,6 +88,7 @@ export const {
   clearFocusTarget,
   resetScene,
   setInitialCameraFromNode,
+  setTrackLampGroups,
   openExitPrompt,
   declineExit,
 } = sceneSlice.actions

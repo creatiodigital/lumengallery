@@ -73,10 +73,8 @@ export type SpaceConfig = {
   displayName: string
   /** Path to GLTF model */
   gltfPath: string
-  /** Ref counts for this space */
-  refs: SpaceRefsCount
-  /** Number of placeholder positions */
-  placeholders: number
+  /** Ref counts, when a space needs to override what is counted from the model */
+  refs?: SpaceRefsCount
   /** Default camera start position [x, z] — camera will be placed at (x, cameraElevation, z) */
   defaultCameraPosition?: [number, number]
 }

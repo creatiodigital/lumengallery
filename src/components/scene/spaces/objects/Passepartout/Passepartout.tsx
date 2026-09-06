@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Shape, ExtrudeGeometry, Material } from 'three'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 interface PassepartoutProps {
   width: number
@@ -83,6 +84,8 @@ const Passepartout: React.FC<PassepartoutProps> = ({
     const vGeo = createMiteredPieceGeo(height, thickness, depth)
     return { topGeo: hGeo, leftGeo: vGeo }
   }, [width, height, thickness, depth])
+  useDisposable(topGeo)
+  useDisposable(leftGeo)
 
   return (
     <group position={[0, 0, zOffset]}>

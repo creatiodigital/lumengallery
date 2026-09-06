@@ -4,6 +4,9 @@ import { Mesh, BufferGeometry, DoubleSide, Vector3, SpotLight, MeshStandardMater
 
 import { useAmbientLightColor } from '@/hooks/useAmbientLight'
 import type { RootState } from '@/redux/store'
+import { countNodes } from '@/components/scene/spaces/objects/nodeIndices'
+import { useActiveRoom } from '@/components/scene/spaces/objects/useActiveRoom'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 interface RoundLampProps {
   nodes: Record<string, Mesh & { geometry: BufferGeometry }>
@@ -19,7 +22,12 @@ const DEFAULT_LAMP_INTENSITY = 4.0
  * Materials are applied imperatively.
  * Reuses the recessed lamp color/intensity controls.
  */
-const RoundLamp: React.FC<RoundLampProps> = ({ nodes, count = 17 }) => {
+const RoundLamp: React.FC<RoundLampProps> = ({ nodes, count }) => {
+  // Count comes from the GLB unless a space deliberately overrides it.
+  const resolvedCount = count ?? countNodes(nodes, 'roundLampBody')
+  // Lights in the room the visitor is not in are switched off — three never
+  // culls lights itself, so an unseen lamp costs a full frame's shading.
+  const isRoomActive = useActiveRoom(nodes, 'roundLampBody')
   const tintedPlastic = useAmbientLightColor('#ffffff')
 
   const lampColor = useSelector(
@@ -44,6 +52,7 @@ const RoundLamp: React.FC<RoundLampProps> = ({ nodes, count = 17 }) => {
       }),
     [tintedPlastic],
   )
+  useDisposable(bodyMaterial)
 
   const bulbMaterial = useMemo(
     () =>
@@ -56,21 +65,22 @@ const RoundLamp: React.FC<RoundLampProps> = ({ nodes, count = 17 }) => {
       }),
     [lampColor, bulbEmissiveIntensity],
   )
+  useDisposable(bulbMaterial)
 
   // Apply shared materials imperatively (required when using <primitive>)
   useEffect(() => {
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < resolvedCount; i++) {
       const bodyNode = nodes[`roundLampBody${i}`]
       const bulbNode = nodes[`roundLampBulb${i}`]
       if (bodyNode) bodyNode.material = bodyMaterial
       if (bulbNode) bulbNode.material = bulbMaterial
     }
-  }, [nodes, count, bodyMaterial, bulbMaterial])
+  }, [nodes, resolvedCount, bodyMaterial, bulbMaterial])
 
   // Compute world-space bulb positions for spotlight placement
   const bulbPositions = useMemo(() => {
     const positions: Vector3[] = []
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < resolvedCount; i++) {
       const bodyNode = nodes[`roundLampBody${i}`]
       const bulbNode = nodes[`roundLampBulb${i}`]
 
@@ -86,9 +96,9 @@ const RoundLamp: React.FC<RoundLampProps> = ({ nodes, count = 17 }) => {
       }
     }
     return positions
-  }, [nodes, count])
+  }, [nodes, resolvedCount])
 
-  const lampsArray = useMemo(() => Array.from({ length: count }), [count])
+  const lampsArray = useMemo(() => Array.from({ length: resolvedCount }), [resolvedCount])
 
   return (
     <>
@@ -103,28 +113,33 @@ const RoundLamp: React.FC<RoundLampProps> = ({ nodes, count = 17 }) => {
             {/* Primitive preserves: body (with position) → bulb (with local offset) */}
             <primitive object={bodyNode} />
 
-            {/* Per-lamp downward spotlight — no track lamps in plafond-only mode */}
-            <object3D
-              position={[bulbPos.x, bulbPos.y - 10, bulbPos.z]}
-              ref={(obj) => {
-                if (obj) {
-                  const light = obj.parent?.children.find((c) => c.type === 'SpotLight') as
-                    | SpotLight
-                    | undefined
-                  if (light) light.target = obj
-                }
-              }}
-            />
-            <spotLight
-              position={[bulbPos.x, bulbPos.y, bulbPos.z]}
-              color={lampColor}
-              intensity={lampIntensity * 2}
-              angle={lampAngle}
-              penumbra={1}
-              distance={lampDistance}
-              decay={2}
-              castShadow={false}
-            />
+            {/* Per-lamp downward spotlight — no track lamps in plafond-only mode.
+                Skipped entirely when the visitor is in another room. */}
+            {isRoomActive(i) && (
+              <>
+                <object3D
+                  position={[bulbPos.x, bulbPos.y - 10, bulbPos.z]}
+                  ref={(obj) => {
+                    if (obj) {
+                      const light = obj.parent?.children.find((c) => c.type === 'SpotLight') as
+                        | SpotLight
+                        | undefined
+                      if (light) light.target = obj
+                    }
+                  }}
+                />
+                <spotLight
+                  position={[bulbPos.x, bulbPos.y, bulbPos.z]}
+                  color={lampColor}
+                  intensity={lampIntensity * 2}
+                  angle={lampAngle}
+                  penumbra={1}
+                  distance={lampDistance}
+                  decay={2}
+                  castShadow={false}
+                />
+              </>
+            )}
           </group>
         )
       })}

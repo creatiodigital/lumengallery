@@ -556,7 +556,29 @@ const Stencil = ({ artwork }: StencilProps) => {
             whiteSpace="normal"
             overflowWrap="break-word"
             onSync={calculateTextDimensions}
-            sdfGlyphSize={512}
+            // Troika's SDF glyph atlas is sized by this value, and there is ONE
+            // atlas per sdfGlyphSize shared by every font and every <Text> in
+            // the scene. It is not a per-label quality knob.
+            //
+            // At 512 the atlas allocated 2048×8192 from the first glyph (~67 MB,
+            // more than Vienna's whole wall+ceiling bake) — and 8192 is the max
+            // texture dimension on many GPUs, so past 256 glyphs the allocation
+            // simply fails and every label goes blank. It also grew every 16
+            // glyphs, disposing and reallocating the GPU texture each time, and
+            // any label drawing during that window has no atlas to sample.
+            // Glyphs are counted PER FONT, so an exhibition mixing typefaces hit
+            // the ceiling quickly — which is why text vanished intermittently.
+            //
+            // 256: four times the default glyph detail, with a 2048×2048 atlas
+            // (32 glyphs per row, ~1024 capacity before the canvas would need to
+            // exceed the 8192 texture limit). That is still 4× the headroom 512
+            // had when it was overflowing and blanking text. Chosen over 128
+            // because wall labels read slightly soft once the canvas dpr was
+            // capped at 1.5 — text is far more sensitive to this than photos.
+            // Do not raise without redoing the arithmetic:
+            //   glyphsPerRow = (2048 / sdfGlyphSize) * 4
+            //   startingHeight = sdfGlyphSize * 256 / glyphsPerRow
+            sdfGlyphSize={256}
             outlineWidth="0.2%"
             outlineColor={textColor ?? 'black'}
           >

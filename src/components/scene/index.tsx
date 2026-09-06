@@ -66,14 +66,20 @@ export const Scene = ({ hideLoader }: SceneProps = {}) => {
 
   const artworks: TArtwork[] = []
 
-  const [dpr, setDpr] = useState<[number, number]>([1, 2])
+  // EXPERIMENT — TEMPORARY. Fill-rate test: cost is pixels × lights, and at dpr 2
+  // a 27" 5K panel renders 5120×2880 — four times the pixels of 1×, with all 22
+  // spotlights evaluated on every one of them. Texture memory measured at a
+  // harmless 344 MB, draw calls and triangles are modest, and removing the
+  // frames changed nothing — so this is the last untested multiplier.
+  // Restore to [1, 2] to revert.
+  const [dpr, setDpr] = useState<[number, number]>([1, 1.5])
 
   const handlePerformanceDecline = useCallback(() => {
     setDpr([1, 1.5])
   }, [])
 
   const handlePerformanceIncline = useCallback(() => {
-    setDpr([1, 2])
+    setDpr([1, 1.5])
   }, [])
 
   return (
