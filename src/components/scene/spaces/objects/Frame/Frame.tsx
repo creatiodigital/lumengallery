@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Shape, ExtrudeGeometry, Material } from 'three'
 import { RoundedBox } from '@react-three/drei'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 interface FrameProps {
   width: number
@@ -87,6 +88,8 @@ const MiteredFrame = ({
     const vGeo = createMiteredPieceGeo(height, thickness, d)
     return { topGeo: hGeo, leftGeo: vGeo }
   }, [width, height, thickness, d])
+  useDisposable(topGeo)
+  useDisposable(leftGeo)
 
   return (
     <group position={[0, 0, d / 2]}>

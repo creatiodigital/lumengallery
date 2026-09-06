@@ -42,6 +42,18 @@ export const spaceConfig: Record<string, SpaceFeatures> = {
       13: 'z',
     },
   },
+  // Vienna runs Paris's rig at a larger scale: track + recessed lamps, windows,
+  // reflective floor. Track-lamp offset axes are omitted deliberately — with 28
+  // lamps across two rooms the per-lamp map would be pure maintenance burden,
+  // and lamps not listed default to 'x'.
+  vienna: {
+    hasSkylight: false,
+    hasLamps: false,
+    hasTrackLamps: true,
+    hasRecessedLamps: true,
+    hasWindows: true,
+    hasReflectiveFloor: true,
+  },
   madrid: {
     hasSkylight: false,
     hasLamps: false,

@@ -4,6 +4,7 @@ import { Mesh, BufferGeometry } from 'three'
 import type { RootState } from '@/redux/store'
 
 import { useAmbientLightColor } from '@/hooks/useAmbientLight'
+import { countNodes } from '@/components/scene/spaces/objects/nodeIndices'
 
 const DEFAULT_WINDOW_LIGHT_INTENSITY = 4.0
 const DEFAULT_WINDOW_LIGHT_COLOR = '#ffffff'
@@ -19,9 +20,9 @@ interface ParisWindowProps {
 
 const ParisWindow: React.FC<ParisWindowProps> = ({
   nodes,
-  frameCount = 2,
-  glassCount = 1,
-  handleCount = 2,
+  frameCount,
+  glassCount,
+  handleCount,
   windowRefs,
   glassRefs,
 }) => {
@@ -39,9 +40,14 @@ const ParisWindow: React.FC<ParisWindowProps> = ({
   const tintedFrame = useAmbientLightColor('#e8e8e8')
   const tintedHandle = useAmbientLightColor('#8d8d8a')
 
-  const framesArray = useMemo(() => Array.from({ length: frameCount }), [frameCount])
-  const glassArray = useMemo(() => Array.from({ length: glassCount }), [glassCount])
-  const handlesArray = useMemo(() => Array.from({ length: handleCount }), [handleCount])
+  // Counts come from the GLB unless a space deliberately overrides them.
+  const frames = frameCount ?? countNodes(nodes, 'windowFrame')
+  const glass = glassCount ?? countNodes(nodes, 'windowGlass')
+  const handles = handleCount ?? countNodes(nodes, 'windowHandle')
+
+  const framesArray = useMemo(() => Array.from({ length: frames }), [frames])
+  const glassArray = useMemo(() => Array.from({ length: glass }), [glass])
+  const handlesArray = useMemo(() => Array.from({ length: handles }), [handles])
 
   return (
     <>

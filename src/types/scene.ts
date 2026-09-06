@@ -8,6 +8,11 @@ export type TFocusTarget = {
   height: number
 }
 
+/** Lamps of one kind, grouped by the room Empty they are parented under in the
+ *  GLB. A space with no `room*` parents yields a single group with `room: null`,
+ *  which is how Paris and Madrid behave — they keep a flat, ungrouped list. */
+export type TLampGroup = { room: string | null; indices: number[] }
+
 export type TScene = {
   isArtworkPanelOpen: boolean
   isPlaceholdersShown: boolean
@@ -32,5 +37,9 @@ export type TScene = {
    * arm/disarm bookkeeping is needed. A counter rather than a boolean so
    * repeated declines each register.
    */
+  /** Track lamps present in the loaded space, in GLB order. Derived from the
+   *  model at load, never persisted — the GLB is the source of truth for how
+   *  many lamps a space has. */
+  trackLampGroups: TLampGroup[]
   exitRespawnNonce: number
 }

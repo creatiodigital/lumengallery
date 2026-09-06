@@ -4,6 +4,9 @@ import { Mesh, BufferGeometry, DoubleSide, Vector3, SpotLight, MeshStandardMater
 
 import { useAmbientLightColor } from '@/hooks/useAmbientLight'
 import type { RootState } from '@/redux/store'
+import { getNodeIndices } from '@/components/scene/spaces/objects/nodeIndices'
+import { useActiveRoom } from '@/components/scene/spaces/objects/useActiveRoom'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 interface RecessedLampProps {
   nodes: Record<string, Mesh & { geometry: BufferGeometry }>
@@ -24,7 +27,7 @@ const DEFAULT_LAMP_INTENSITY = 4.0
  */
 const RecessedLamp: React.FC<RecessedLampProps> = ({
   nodes,
-  count = 6,
+  count,
   indices,
   disableSpotlights = false,
 }) => {
@@ -44,8 +47,12 @@ const RecessedLamp: React.FC<RecessedLampProps> = ({
 
   // Resolve which indices to render — explicit list or sequential fallback
   const lampIndices = useMemo(
-    () => indices ?? Array.from({ length: count }, (_, i) => i),
-    [indices, count],
+    () =>
+      indices ??
+      (count !== undefined
+        ? Array.from({ length: count }, (_, i) => i)
+        : getNodeIndices(nodes, 'recessedLampBody')),
+    [indices, count, nodes],
   )
 
   // Shared materials — all recessed lamps use the same body and bulb instance
@@ -58,6 +65,7 @@ const RecessedLamp: React.FC<RecessedLampProps> = ({
       }),
     [tintedPlastic],
   )
+  useDisposable(bodyMaterial)
 
   const bulbMaterial = useMemo(
     () =>
@@ -70,6 +78,7 @@ const RecessedLamp: React.FC<RecessedLampProps> = ({
       }),
     [lampColor, bulbEmissiveIntensity],
   )
+  useDisposable(bulbMaterial)
 
   // Apply shared materials imperatively (required when using <primitive>)
   useEffect(() => {
@@ -82,6 +91,10 @@ const RecessedLamp: React.FC<RecessedLampProps> = ({
   }, [nodes, lampIndices, bodyMaterial, bulbMaterial])
 
   // Compute world-space bulb positions for spotlight placement
+
+  // Lights in the room the visitor is not in are switched off — three never
+  // culls lights itself, so an unseen lamp costs a full frame's shading.
+  const isRoomActive = useActiveRoom(nodes, 'recessedLampBody')
   const bulbPositions = useMemo(() => {
     const posMap = new Map<number, Vector3>()
     for (const i of lampIndices) {
@@ -141,7 +154,7 @@ const RecessedLamp: React.FC<RecessedLampProps> = ({
             <primitive object={bodyNode} />
 
             {/* Spotlight pointing downward — inline to avoid component overhead */}
-            {!disableSpotlights && (
+            {!disableSpotlights && isRoomActive(i) && (
               <>
                 <object3D
                   position={[bulbPos.x, bulbPos.y - 5, bulbPos.z]}

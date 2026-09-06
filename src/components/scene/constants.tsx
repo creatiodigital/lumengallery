@@ -10,7 +10,7 @@ import { assetUrl } from '@/lib/assetUrl'
 /**
  * Available space keys. Add new spaces here.
  */
-export type SpaceKey = 'paris' | 'madrid'
+export type SpaceKey = 'paris' | 'madrid' | 'vienna'
 
 /**
  * Configuration for each space including refs, metadata, and assets.
@@ -22,26 +22,15 @@ export type SpaceKey = 'paris' | 'madrid'
 export const spaceConfigs: Record<SpaceKey, SpaceConfig> = {
   paris: {
     displayName: 'Paris',
-    gltfPath: assetUrl('/assets/spaces/paris/paris21.glb'),
-    refs: {
-      // wall0 + radiator0 + invisibleDoor0. The door no longer seals the
-      // corridor entrance — it sits at the far end, stopping the camera before
-      // the dead end is visible, and doubles as the exit trigger.
-      walls: 3,
-      windows: 2,
-      glass: 1,
-    },
-    placeholders: 4,
+    gltfPath: assetUrl('/assets/spaces/paris/paris21_noq.glb'),
+  },
+  vienna: {
+    displayName: 'Vienna',
+    gltfPath: assetUrl('/assets/spaces/vienna/vienna7.glb?v=2'),
   },
   madrid: {
     displayName: 'Madrid',
-    gltfPath: assetUrl('/assets/spaces/madrid/madrid12.glb'),
-    refs: {
-      walls: 2, // wall0 + invisibleWall0
-      windows: 2,
-      glass: 2,
-    },
-    placeholders: 4,
+    gltfPath: assetUrl('/assets/spaces/madrid/madrid12_noq.glb'),
   },
 }
 
@@ -52,6 +41,7 @@ export const spaceConfigs: Record<SpaceKey, SpaceConfig> = {
 export const spaceComponents = {
   paris: dynamic(() => import('./spaces/ParisSpace'), { ssr: false }),
   madrid: dynamic(() => import('./spaces/MadridSpace'), { ssr: false }),
+  vienna: dynamic(() => import('./spaces/ViennaSpace'), { ssr: false }),
 }
 
 // =============================================================================

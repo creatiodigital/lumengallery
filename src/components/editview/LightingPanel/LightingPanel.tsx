@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 
 import { Button } from '@/components/ui/Button'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection/CollapsibleSection'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import { Section } from '@/components/ui/Section/Section'
 import { Slider } from '@/components/ui/Slider'
@@ -38,7 +39,6 @@ const DEFAULT_RECESSED_LAMP_DISTANCE = 15.0
 const DEFAULT_TRACK_LAMP_MATERIAL_COLOR = '#ffffff'
 const DEFAULT_TRACK_LAMP_ANGLE = 0.45
 const DEFAULT_TRACK_LAMP_DISTANCE = 5.0
-const TRACK_LAMP_COUNT = 14
 const DEFAULT_WINDOW_COLOR = '#ffffff'
 const DEFAULT_WINDOW_INTENSITY = 4.0
 const DEFAULT_HDRI_ROTATION = 128
@@ -115,6 +115,16 @@ const LightingPanel = () => {
     (state: RootState) => state.exhibition.trackLampDistance ?? DEFAULT_TRACK_LAMP_DISTANCE,
   )
   const trackLampSettings = useSelector((state: RootState) => state.exhibition.trackLampSettings)
+
+  // How many track lamps exist comes from the loaded GLB, not a constant here.
+  // A space with more lamps than the old hard-coded 14 used to show controls for
+  // only the first 14, with the rest silently unreachable.
+  // Kept GROUPED rather than flattened. Vienna authors 28 track lamps across two
+  // rooms, and a flat list of 28 lamp blocks is unusable to scroll; each room
+  // collapses instead. A space with no room grouping (Paris, Madrid) comes back
+  // as a single anonymous group and still renders inline, so nothing that is
+  // visible there today ends up behind a click.
+  const trackLampGroups = useSelector((state: RootState) => state.scene.trackLampGroups)
   const ceilingLightMode = useSelector(
     (state: RootState) => state.exhibition.ceilingLightMode ?? 'track-plafond',
   )
@@ -479,55 +489,80 @@ const LightingPanel = () => {
               />
             </div>
 
-            {/* Individual lamp controls */}
-            {Array.from({ length: TRACK_LAMP_COUNT }).map((_, i) => {
-              const settings = trackLampSettings?.[String(i)]
-              const isEnabled = settings?.enabled ?? true
-              const rotation = settings?.rotation ?? 0
-              const offset = settings?.offset ?? 0
+            {/* Individual lamp controls, one collapsible section per room.
+                `groupNodesByRoom` normalises the Blender naming, so `room0`
+                becomes "Room 1" here and the authoring convention never reaches
+                the artist. An ungrouped space yields a single anonymous group
+                and renders inline, exactly as before. */}
+            {trackLampGroups.map((group) => {
+              const lamps = group.indices.map((i: number, position: number) => {
+                const settings = trackLampSettings?.[String(i)]
+                const isEnabled = settings?.enabled ?? true
+                const rotation = settings?.rotation ?? 0
+                const offset = settings?.offset ?? 0
+                // Numbering restarts inside each room, because the section
+                // header already says which room these belong to. Every label
+                // below uses this same number: the sliders used to announce the
+                // raw GLB node index, so a screen reader named a different lamp
+                // than the one on screen.
+                const label = `Lamp ${position + 1}`
 
+                return (
+                  <div key={`lamp-${i}`} className={styles.lampRow}>
+                    <div className={styles.lampHeader}>
+                      <span className={styles.lampLabel}>{label}</span>
+                      <Toggle
+                        checked={isEnabled}
+                        onChange={() => {
+                          dispatch(setTrackLampEnabled({ index: i, enabled: !isEnabled }))
+                          setSaved(false)
+                        }}
+                        aria-label={`${label} enabled`}
+                      />
+                    </div>
+                    <div className={styles.lampSlider}>
+                      <Slider
+                        min={-180}
+                        max={180}
+                        step={1}
+                        value={rotation}
+                        onChange={(v) => {
+                          dispatch(setTrackLampRotation({ index: i, rotation: v }))
+                          setSaved(false)
+                        }}
+                        aria-label={`${label} rotation`}
+                      />
+                      <span className={styles.sliderValue}>{rotation}°</span>
+                    </div>
+                    <div className={styles.lampSlider}>
+                      <Slider
+                        min={-2}
+                        max={2}
+                        step={0.01}
+                        value={offset}
+                        onChange={(v) => {
+                          dispatch(setTrackLampOffset({ index: i, offset: v }))
+                          setSaved(false)
+                        }}
+                        aria-label={`${label} offset`}
+                      />
+                      <span className={styles.sliderValue}>{offset.toFixed(2)}m</span>
+                    </div>
+                  </div>
+                )
+              })
+
+              if (!group.room) return <Fragment key="track-lamps">{lamps}</Fragment>
+
+              const roomNumber = Number(group.room.replace('room', '')) + 1
               return (
-                <div key={`lamp-${i}`} className={styles.lampRow}>
-                  <div className={styles.lampHeader}>
-                    <span className={styles.lampLabel}>Lamp {i + 1}</span>
-                    <Toggle
-                      checked={isEnabled}
-                      onChange={() => {
-                        dispatch(setTrackLampEnabled({ index: i, enabled: !isEnabled }))
-                        setSaved(false)
-                      }}
-                      aria-label={`Lamp ${i + 1} enabled`}
-                    />
-                  </div>
-                  <div className={styles.lampSlider}>
-                    <Slider
-                      min={-180}
-                      max={180}
-                      step={1}
-                      value={rotation}
-                      onChange={(v) => {
-                        dispatch(setTrackLampRotation({ index: i, rotation: v }))
-                        setSaved(false)
-                      }}
-                      aria-label={`Lamp ${i + 1} rotation`}
-                    />
-                    <span className={styles.sliderValue}>{rotation}°</span>
-                  </div>
-                  <div className={styles.lampSlider}>
-                    <Slider
-                      min={-2}
-                      max={2}
-                      step={0.01}
-                      value={offset}
-                      onChange={(v) => {
-                        dispatch(setTrackLampOffset({ index: i, offset: v }))
-                        setSaved(false)
-                      }}
-                      aria-label={`Lamp ${i + 1} offset`}
-                    />
-                    <span className={styles.sliderValue}>{offset.toFixed(2)}m</span>
-                  </div>
-                </div>
+                <CollapsibleSection
+                  key={group.room}
+                  title={`Room ${roomNumber} · ${group.indices.length} lamps`}
+                  persistKey={`track-lamps-${group.room}`}
+                >
+                  {lamps}
+                </CollapsibleSection>
               )
             })}
           </Section>

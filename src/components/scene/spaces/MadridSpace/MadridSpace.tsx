@@ -1,4 +1,6 @@
-import { useGLTF, useTexture, SoftShadows, BakeShadows, Preload } from '@react-three/drei'
+import { useGLTF, useKTX2, SoftShadows, BakeShadows, Preload } from '@react-three/drei'
+import { ScenePerfHud } from '@/components/scene/ScenePerfHud'
+import { TextureMemoryReadout } from '@/components/scene/TextureMemoryReadout'
 import { useEffect, useLayoutEffect, useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
 import { useSelector, useDispatch } from 'react-redux'
@@ -21,16 +23,22 @@ import { ExitSign } from '@/components/scene/spaces/objects/ExitSign'
 import { ExitTrigger } from '@/components/scene/spaces/objects/ExitTrigger'
 
 import { useAmbientLight } from '@/hooks/useAmbientLight'
-import { addWall, setInitialCameraFromNode } from '@/redux/slices/sceneSlice'
+import { addWall, setInitialCameraFromNode, setTrackLampGroups } from '@/redux/slices/sceneSlice'
 import type { RootState } from '@/redux/store'
 import type { TArtwork } from '@/types/artwork'
 import { assetUrl } from '@/lib/assetUrl'
+// The registry owns each space's model path, so the scene and the wall-view
+// editor can never end up loading two different files.
+import { spaceConfigs } from '@/components/scene/constants'
 
 import { Lights } from './lights'
+import { groupNodesByRoom } from '@/components/scene/spaces/objects/nodeIndices'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
-// Preload baked textures at module scope to avoid Loader setState-during-render warnings
-useTexture.preload(assetUrl('/assets/spaces/madrid/textures/mwall2.jpg?v=2'))
-useTexture.preload(assetUrl('/assets/spaces/madrid/textures/mceiling2.jpg?v=2'))
+// No module-scope preload for these: drei's useKTX2.preload only sets the
+// transcoder path, never calling detectSupport(renderer). Since useLoader caches
+// by loader instance, preloading would poison the cache with an uninitialised
+// KTX2Loader and the component then throws. The in-component useKTX2 does it right.
 
 type GLTFResult = GLTF & {
   nodes: {
@@ -50,7 +58,7 @@ type MadridSpaceProps = React.ComponentProps<'group'> & {
 }
 
 const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRefs, ...props }) => {
-  const { nodes } = useGLTF(assetUrl('/assets/spaces/madrid/madrid12.glb')) as unknown as GLTFResult
+  const { nodes } = useGLTF(spaceConfigs.madrid.gltfPath) as unknown as GLTFResult
 
   const dispatch = useDispatch()
   const isPlaceholdersShown = useSelector((state: RootState) => state.scene.isPlaceholdersShown)
@@ -63,8 +71,11 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
   const ceilingColor = useSelector((state: RootState) => state.exhibition.ceilingColor ?? '#ffffff')
 
   // Load external baked textures
-  const wallTexture = useTexture(assetUrl('/assets/spaces/madrid/textures/mwall2.jpg?v=2'))
-  const ceilingTexture = useTexture(assetUrl('/assets/spaces/madrid/textures/mceiling2.jpg?v=2'))
+  const wallTexture = useKTX2(assetUrl('/assets/spaces/madrid/textures/mwall2.ktx2'), '/basis/')
+  const ceilingTexture = useKTX2(
+    assetUrl('/assets/spaces/madrid/textures/mceiling2.ktx2'),
+    '/basis/',
+  )
 
   // Configure textures
   useMemo(() => {
@@ -81,6 +92,7 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
       side: 2,
     })
   }, [wallTexture])
+  useDisposable(wallMaterial)
 
   const ceilingMaterial = useMemo(() => {
     return new MeshLambertMaterial({
@@ -88,6 +100,7 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
       side: 2,
     })
   }, [ceilingTexture])
+  useDisposable(ceilingMaterial)
 
   // Apply ambient light tinting + independent wall/ceiling color
   // Lambert compensation: Lambert lacks PBR specular, so walls appear dimmer.
@@ -122,6 +135,17 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
       }
     })
   }, [nodes, dispatch, placeholdersArray])
+
+  // Which track lamps exist, and which room each belongs to. Derived during
+  // render because R3F's <primitive> re-parents these nodes once they mount,
+  // which would destroy the parent link this reads.
+  const trackLampGroups = useMemo(() => groupNodesByRoom(nodes, 'trackLampArm'), [nodes])
+
+  // Published to Redux so the lighting panel can show one control per lamp the
+  // model actually has, instead of a count hard-coded in the UI.
+  useEffect(() => {
+    dispatch(setTrackLampGroups(trackLampGroups))
+  }, [dispatch, trackLampGroups])
 
   // Extract initial camera position and direction from initialPoint0 node
   // useLayoutEffect ensures dispatch fires before paint, preventing camera jump
@@ -209,25 +233,19 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
       )}
 
       {/* Windows */}
-      <ParisWindow
-        nodes={nodes}
-        frameCount={2}
-        glassCount={2}
-        windowRefs={windowRefs}
-        glassRefs={glassRefs}
-      />
+      <ParisWindow nodes={nodes} windowRefs={windowRefs} glassRefs={glassRefs} />
 
       {/* Radiators */}
-      <Radiator nodes={nodes} count={2} />
+      <Radiator nodes={nodes} />
 
       {/* Round Lamps */}
-      <RoundLamp nodes={nodes} count={17} />
+      <RoundLamp nodes={nodes} />
 
       {/* Switches */}
-      <Switch nodes={nodes} count={1} />
+      <Switch nodes={nodes} />
 
       {/* Single Sockets */}
-      <SingleSocket nodes={nodes} count={2} />
+      <SingleSocket nodes={nodes} />
 
       {/* Placeholders */}
       {isPlaceholdersShown &&
@@ -263,6 +281,8 @@ const MadridSpace: React.FC<MadridSpaceProps> = ({ wallRefs, windowRefs, glassRe
       {nodes.initialPoint0 && <primitive object={nodes.initialPoint0} visible={false} />}
 
       <ArtObjects />
+      <TextureMemoryReadout />
+      {process.env.NEXT_PUBLIC_APP_ENV !== 'production' && <ScenePerfHud />}
 
       <Preload all />
     </group>
