@@ -5,6 +5,7 @@ import {
   BufferGeometry,
   DoubleSide,
   Vector3,
+  Matrix3,
   Object3D,
   SpotLight,
   MeshStandardMaterial,
@@ -13,10 +14,39 @@ import {
 import { useAmbientLightColor } from '@/hooks/useAmbientLight'
 import { getSpaceFeatures } from '@/config/spaceConfig'
 import type { RootState } from '@/redux/store'
+import { countNodes } from '@/components/scene/spaces/objects/nodeIndices'
+import { useActiveRoom } from '@/components/scene/spaces/objects/useActiveRoom'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 interface TrackLampProps {
   nodes: Record<string, Mesh & { geometry: BufferGeometry }>
   count?: number
+}
+
+/**
+ * Aim recovered from the bulb mesh itself: the average of its vertex normals in
+ * world space. The bulb is the emissive face at the end of the head, so its
+ * normals all point where the lamp points.
+ *
+ * Used only when the body's tilt quaternion has been flattened to identity by
+ * applying transforms in Blender. Measured identical across Paris and Vienna
+ * (bulb0 -> (-0.02, -0.76, 0.65) in both), so it is a property of the fixture
+ * rather than of any one space.
+ */
+const bulbNormalAim = (bulbNode: Mesh & { geometry: BufferGeometry }): Vector3 | null => {
+  const attr = bulbNode.geometry?.attributes?.normal
+  if (!attr || attr.count === 0) return null
+
+  const sum = new Vector3()
+  for (let k = 0; k < attr.count; k++) {
+    sum.x += attr.getX(k)
+    sum.y += attr.getY(k)
+    sum.z += attr.getZ(k)
+  }
+  if (sum.lengthSq() < 1e-8) return null
+
+  bulbNode.updateWorldMatrix(true, false)
+  return sum.applyMatrix3(new Matrix3().getNormalMatrix(bulbNode.matrixWorld)).normalize()
 }
 
 const DEFAULT_LAMP_COLOR = '#ffffff'
@@ -77,7 +107,13 @@ const TrackSpotlight: React.FC<{
  *
  * Supports per-lamp Y-rotation, position offset, and on/off toggle.
  */
-const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count = 14 }) => {
+const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count }) => {
+  // Count comes from the GLB unless a space deliberately overrides it, so a
+  // bigger space needs no code change to show all of its props.
+  const resolvedCount = count ?? countNodes(nodes, 'trackLampArm')
+  // Lights in the room the visitor is not in are switched off — three never
+  // culls lights itself, so an unseen lamp costs a full frame's shading.
+  const isRoomActive = useActiveRoom(nodes, 'trackLampArm')
   const spaceId = useSelector((state: RootState) => state.exhibition.spaceId) || 'paris'
   const spaceFeatures = getSpaceFeatures(spaceId)
 
@@ -110,6 +146,7 @@ const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count = 14 }) => {
       }),
     [tintedMaterial],
   )
+  useDisposable(armBodyMaterial)
 
   const bulbOnMaterial = useMemo(
     () =>
@@ -122,6 +159,7 @@ const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count = 14 }) => {
       }),
     [lampColor, bulbEmissiveIntensity],
   )
+  useDisposable(bulbOnMaterial)
 
   const bulbOffMaterial = useMemo(
     () =>
@@ -134,10 +172,11 @@ const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count = 14 }) => {
       }),
     [],
   )
+  useDisposable(bulbOffMaterial)
 
   // Apply shared materials imperatively (required when using <primitive>)
   useEffect(() => {
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < resolvedCount; i++) {
       const armNode = nodes[`trackLampArm${i}`]
       const bodyNode = nodes[`trackLampBody${i}`]
       const bulbNode = nodes[`trackLampBulb${i}`]
@@ -149,7 +188,7 @@ const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count = 14 }) => {
       if (bodyNode) bodyNode.material = armBodyMaterial
       if (bulbNode) bulbNode.material = isEnabled ? bulbOnMaterial : bulbOffMaterial
     }
-  }, [nodes, count, armBodyMaterial, bulbOnMaterial, bulbOffMaterial, trackLampSettings])
+  }, [nodes, resolvedCount, armBodyMaterial, bulbOnMaterial, bulbOffMaterial, trackLampSettings])
 
   // Compute world-space bulb positions and aim directions using node transforms directly.
   // We can't use getWorldPosition() because <primitive> re-parents nodes.
@@ -159,7 +198,7 @@ const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count = 14 }) => {
       aimDir: Vector3
     }> = []
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < resolvedCount; i++) {
       const armNode = nodes[`trackLampArm${i}`]
       const bulbNode = nodes[`trackLampBulb${i}`]
       const bodyNode = nodes[`trackLampBody${i}`]
@@ -176,28 +215,43 @@ const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count = 14 }) => {
         // 3. World position = arm position + arm-local bulb position
         bulbWorldPos = armNode.position.clone().add(bulbInArm)
 
-        // Aim direction: use the bulb's dominant horizontal axis (the wall-facing direction)
-        // in body-local space, then rotate by the body quaternion.
-        // This ignores the small off-center mounting offset that would skew the aim.
-        const bulbLocal = bulbNode.position
-        const absX = Math.abs(bulbLocal.x)
-        const absZ = Math.abs(bulbLocal.z)
-        let aimAxis: Vector3
-        if (absX > absZ) {
-          aimAxis = new Vector3(Math.sign(bulbLocal.x), 0, 0)
+        // Where a lamp points is normally carried by the body's tilt quaternion.
+        // But if the model was exported after Ctrl+A > Rotation & Scale, that
+        // tilt is baked into the mesh and the quaternion is left at identity —
+        // the fixture still LOOKS aimed while the number the light reads is gone,
+        // so every lamp fires horizontally. Detect that and recover the aim from
+        // the bulb's geometry instead, which survives having transforms applied.
+        const q = bodyNode.quaternion
+        const tiltWasApplied =
+          Math.abs(q.x) < 1e-4 &&
+          Math.abs(q.y) < 1e-4 &&
+          Math.abs(q.z) < 1e-4 &&
+          Math.abs(Math.abs(q.w) - 1) < 1e-4
+
+        const geometricAim = tiltWasApplied ? bulbNormalAim(bulbNode) : null
+
+        if (geometricAim) {
+          aimDir = geometricAim
         } else {
-          aimAxis = new Vector3(0, 0, Math.sign(bulbLocal.z))
+          // Authored tilt present: dominant horizontal axis of the bulb's offset,
+          // rotated by the body. Ignores the small off-centre mounting offset
+          // that would otherwise skew the aim.
+          const bulbLocal = bulbNode.position
+          const aimAxis =
+            Math.abs(bulbLocal.x) > Math.abs(bulbLocal.z)
+              ? new Vector3(Math.sign(bulbLocal.x), 0, 0)
+              : new Vector3(0, 0, Math.sign(bulbLocal.z))
+          aimDir = aimAxis.applyQuaternion(bodyNode.quaternion)
         }
-        aimDir = aimAxis.applyQuaternion(bodyNode.quaternion)
       }
 
       data.push({ bulbWorldPos, aimDir })
     }
 
     return data
-  }, [nodes, count])
+  }, [nodes, resolvedCount])
 
-  const lampsArray = useMemo(() => Array.from({ length: count }), [count])
+  const lampsArray = useMemo(() => Array.from({ length: resolvedCount }), [resolvedCount])
 
   return (
     <>
@@ -232,7 +286,7 @@ const TrackLamp: React.FC<TrackLampProps> = ({ nodes, count = 14 }) => {
               <primitive object={armNode} />
 
               {/* Spotlight — inside inner group so -armPos cancels with offsetPos */}
-              {isEnabled && (
+              {isEnabled && isRoomActive(i) && (
                 <TrackSpotlight
                   position={bulbWorldPos}
                   aimDirection={aimDir}

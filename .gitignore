@@ -68,6 +68,15 @@ package-lock.json
 # public/assets (e.g. signage PNGs served from the app origin) must stay tracked.
 /public/assets/**/*.glb
 
+# Space bakes — the KTX2 the scene loads and the PNG sources they are encoded
+# from. Same reasoning as the GLB rule above: R2 is the canonical copy for every
+# environment and production ALWAYS resolves there, so committing these adds tens
+# of MB to git history for files that are never served. Scoped to spaces/ on
+# purpose — signage under public/assets/signs IS served from the app origin and
+# must stay tracked, as must /public/basis (the KTX2 transcoder).
+/public/assets/spaces/**/*.ktx2
+/public/assets/spaces/**/*.png
+
 # theprintspace branding pulled down for portal/packaging setup — reference
 # material for configuring the print provider's account, not app assets.
 /tps-logo-wordmark.png
@@ -85,3 +94,6 @@ docs/superpowers/email-template-locked.html
 docs/superpowers/specs/2026-06-21-prints-pagination-design.md
 docs/superpowers/plans/2026-06-21-admin-fulfillment-audit.md
 docs/superpowers/plans/2026-06-19-email-migration-all.md
+
+# Local MCP server wiring — absolute paths to this machine's Blender extension venv.
+.mcp.json

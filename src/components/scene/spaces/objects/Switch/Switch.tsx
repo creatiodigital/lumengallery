@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Mesh, BufferGeometry } from 'three'
 
 import { useAmbientLightColor } from '@/hooks/useAmbientLight'
+import { countNodes } from '@/components/scene/spaces/objects/nodeIndices'
 
 interface SwitchProps {
   nodes: Record<string, Mesh & { geometry: BufferGeometry }>
@@ -12,10 +13,13 @@ interface SwitchProps {
  * Wall switch (double switch).
  * Iterates over indexed meshes: doubleSwitch0, doubleSwitch1, etc.
  */
-const Switch: React.FC<SwitchProps> = ({ nodes, count = 2 }) => {
+const Switch: React.FC<SwitchProps> = ({ nodes, count }) => {
+  // Count comes from the GLB unless a space deliberately overrides it, so a
+  // bigger space needs no code change to show all of its props.
+  const resolvedCount = count ?? countNodes(nodes, 'doubleSwitch')
   const tintedPlastic = useAmbientLightColor('#d8d8d8')
 
-  const switchesArray = useMemo(() => Array.from({ length: count }), [count])
+  const switchesArray = useMemo(() => Array.from({ length: resolvedCount }), [resolvedCount])
 
   return (
     <>

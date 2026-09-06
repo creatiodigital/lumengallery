@@ -269,10 +269,9 @@ test.describe('the grid renders the sale block', () => {
       // previous/next through the set. A plain `^=` prefix would also swallow
       // `/artworks/<slug>/print`, which is the one destination this assertion
       // exists to rule out.
-      const cta = page.locator(
-        `a[href="/artworks/${fx.slug}"], a[href^="/artworks/${fx.slug}?"]`,
-        { hasText: 'Order Print' },
-      )
+      const cta = page.locator(`a[href="/artworks/${fx.slug}"], a[href^="/artworks/${fx.slug}?"]`, {
+        hasText: 'Order Print',
+      })
       await expect(cta).toBeVisible()
 
       const card = cta.locator('xpath=../../..')

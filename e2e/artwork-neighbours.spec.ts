@@ -79,9 +79,10 @@ test.describe('prints previous/next arrows', () => {
       .locator('a[href*="/artworks/"]')
       .evaluateAll((links) => [...new Set(links.map((a) => a.getAttribute('href') ?? ''))])
 
-    expect(hrefs.length, 'the selection must not be empty for this to mean anything').toBeGreaterThan(
-      0,
-    )
+    expect(
+      hrefs.length,
+      'the selection must not be empty for this to mean anything',
+    ).toBeGreaterThan(0)
     for (const href of hrefs) {
       expect(href, `${href} must mark the set it belongs to`).toContain('from=prints')
     }
@@ -188,7 +189,7 @@ test.describe('artist profile previous/next arrows', () => {
     }
   })
 
-  test('the arrows walk the artist\'s works, carrying the context each hop', async ({ page }) => {
+  test("the arrows walk the artist's works, carrying the context each hop", async ({ page }) => {
     const artist = await getPublicArtistByHandler(fixtures.artistSlug)
     const works = artist?.artworks ?? []
     test.skip(works.length < 3, 'needs at least three featured works to walk a middle')

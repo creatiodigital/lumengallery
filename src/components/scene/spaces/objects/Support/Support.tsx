@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Shape, ExtrudeGeometry, MeshStandardMaterial } from 'three'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 interface SupportProps {
   width: number
@@ -35,6 +36,7 @@ const Support: React.FC<SupportProps> = ({ width, height, depth, material }) => 
 
     return new ExtrudeGeometry(shape, extrudeSettings)
   }, [width, height, depth])
+  useDisposable(geometry)
 
   // Position so back face is at Z=0 (wall) and support extends forward toward viewer
   // ExtrudeGeometry creates shape at Z=0 and extrudes to Z=depth

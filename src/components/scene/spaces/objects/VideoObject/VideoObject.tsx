@@ -24,6 +24,7 @@ import { showArtworkPanel } from '@/redux/slices/dashboardSlice'
 import { setCurrentArtwork, setFocusTarget } from '@/redux/slices/sceneSlice'
 import type { RootState } from '@/redux/store'
 import type { RuntimeArtwork } from '@/utils/artworkTransform'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 type VideoObjectProps = {
   artwork: RuntimeArtwork
@@ -584,6 +585,7 @@ const VideoObject = ({ artwork }: VideoObjectProps) => {
       metalness: 0.05,
     })
   }, [frameAmbientColor])
+  useDisposable(frameMatObj)
 
   const passepartoutMaterial = useMemo(() => {
     return new MeshStandardMaterial({
@@ -591,6 +593,7 @@ const VideoObject = ({ artwork }: VideoObjectProps) => {
       roughness: 1,
     })
   }, [passepartoutAmbientColor])
+  useDisposable(passepartoutMaterial)
 
   const supportMaterial = useMemo(() => {
     return new MeshStandardMaterial({
@@ -602,6 +605,7 @@ const VideoObject = ({ artwork }: VideoObjectProps) => {
       polygonOffsetUnits: 2,
     })
   }, [supportAmbientColor])
+  useDisposable(supportMaterial)
 
   return (
     <group

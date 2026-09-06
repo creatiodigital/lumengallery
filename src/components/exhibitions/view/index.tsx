@@ -43,32 +43,28 @@ import { Text } from '@/components/ui/Typography'
 import { Button } from '@/components/ui/Button'
 import Tooltip from '@/components/ui/Tooltip/Tooltip'
 import styles from './ExhibitionView.module.scss'
+import { getConsent, CONSENT_CHANGE_EVENT } from '@/lib/consent'
 
-interface NavigationButtonProps {
-  artistSlug: string
-  exhibitionSlug: string
-}
-
-const NavigationButton = ({ artistSlug, exhibitionSlug }: NavigationButtonProps) => {
+const NavigationButton = () => {
   const router = useRouter()
   const dispatch = useDispatch()
   // Shared with the in-scene exit threshold: walking out of the corridor and
   // clicking this button raise the same single dialog.
   const promptOpen = useSelector((state: RootState) => state.scene.isExitPromptOpen)
 
+  // Every in-scene exit lands here — the prompt's Leave button, the corner X
+  // (which only opens that prompt), and walking into the exit corridor.
+  //
+  // It goes to the exhibitions index, NOT back to the exhibition just left.
+  // Someone who has decided to leave a show has finished with it; returning them
+  // to its own page offers the one thing they already declined. The index is
+  // where the other exhibitions are.
+  //
+  // This also replaces a `sessionStorage` round trip that read back a
+  // `returnUrl` written on entry — which was always this exhibition's own page,
+  // so both branches landed in the same place anyway.
   const leave = () => {
-    try {
-      const nav = sessionStorage.getItem('the-art-room:internal-nav')
-      if (nav) {
-        const { returnUrl } = JSON.parse(nav)
-        sessionStorage.removeItem('the-art-room:internal-nav')
-        if (returnUrl) {
-          router.push(returnUrl)
-          return
-        }
-      }
-    } catch {}
-    router.push(`/exhibitions/${artistSlug}/${exhibitionSlug}`)
+    router.push('/exhibitions')
   }
 
   return (
@@ -185,11 +181,31 @@ const NavigationHelpModal = ({ hidden, exhibitionId, artworksReady }: Navigation
     return Object.values(artworksById).some((artwork) => artwork.soundUrl || artwork.videoUrl)
   }, [artworksById])
 
+  // The cookie banner and this guide are both "first visit" surfaces, and they
+  // used to open on top of each other — an empty localStorage means no consent
+  // decision AND no dismissal flag, which is exactly what a genuinely new
+  // visitor has. Consent wins the race: it is a legal gate, it is site-wide and
+  // it is answered once ever, whereas this guide is per-visitor and can wait the
+  // moment it takes to click Accept or Decline.
+  const [consentSettled, setConsentSettled] = useState(false)
+
+  useEffect(() => {
+    // Read in an effect rather than in the initial state, so the server and the
+    // first client render agree (localStorage does not exist during SSR).
+    if (getConsent() !== null) {
+      setConsentSettled(true)
+      return
+    }
+    const onDecision = () => setConsentSettled(true)
+    window.addEventListener(CONSENT_CHANGE_EVENT, onDecision)
+    return () => window.removeEventListener(CONSENT_CHANGE_EVENT, onDecision)
+  }, [])
+
   // Auto-show on mount: help first, then media. Gated on `artworksReady`
   // so navigating exhibition A → B doesn't trigger the media modal for B
   // based on A's still-cached artworks in Redux.
   useEffect(() => {
-    if (!exhibitionId || !artworksReady) return
+    if (!exhibitionId || !artworksReady || !consentSettled) return
     if (hasCheckedStorage.current) return
     hasCheckedStorage.current = true
 
@@ -214,7 +230,7 @@ const NavigationHelpModal = ({ hidden, exhibitionId, artworksReady }: Navigation
     } catch {
       setCurrentStep('help')
     }
-  }, [exhibitionId, artworksReady, hasMediaArtworks])
+  }, [exhibitionId, artworksReady, hasMediaArtworks, consentSettled])
 
   // Track if the current flow was manually triggered (info button)
   const manualTriggerRef = useRef(false)
@@ -484,7 +500,7 @@ const NavigationHelpModal = ({ hidden, exhibitionId, artworksReady }: Navigation
 
 export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionViewPageProps) => {
   const dispatch = useDispatch<AppDispatch>()
-  const hasResetRef = useRef(false)
+  const hasResetRef = useRef<string | null>(null)
   const searchParams = useSearchParams()
   const previewToken = searchParams.get('preview') || undefined
   const isArtworkPanelOpen = useSelector((state: RootState) => state.dashboard.isArtworkPanelOpen)
@@ -502,8 +518,14 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
     },
   )
 
+  // Keyed on the SLUG, not a boolean. As a boolean this ran once per mount ever,
+  // and moving between two exhibitions reuses this component — so switching
+  // exhibitions reset nothing and the second one loaded on top of the first.
+  // Keyed this way it still does not fire for same-exhibition navigation (the
+  // artwork-detail round trip the note below protects), because the slug has not
+  // changed.
   useEffect(() => {
-    if (!hasResetRef.current) {
+    if (hasResetRef.current !== exhibitionSlug) {
       dispatch(resetWallView())
       dispatch(resetScene())
       // Close any stale artwork modal: isArtworkModalOpen lives in dashboardSlice and is
@@ -515,9 +537,9 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
       // same-exhibition navigation (e.g., when viewing artwork details and returning).
       // The useLoadExhibitionArtworks hook handles loading artworks when needed.
       dispatch(hidePlaceholders())
-      hasResetRef.current = true
+      hasResetRef.current = exhibitionSlug
     }
-  }, [dispatch])
+  }, [dispatch, exhibitionSlug])
 
   useEffect(() => {
     if (exhibition) {
@@ -617,9 +639,7 @@ export const ExhibitionViewPage = ({ artistSlug, exhibitionSlug }: ExhibitionVie
 
   return (
     <>
-      {!isArtworkPanelOpen && (
-        <NavigationButton artistSlug={artistSlug} exhibitionSlug={exhibitionSlug} />
-      )}
+      {!isArtworkPanelOpen && <NavigationButton />}
       <NavigationHelpModal
         hidden={isArtworkPanelOpen}
         exhibitionId={exhibition?.id}

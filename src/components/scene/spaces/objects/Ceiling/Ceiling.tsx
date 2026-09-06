@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { SRGBColorSpace, MeshLambertMaterial, BufferGeometry, Color } from 'three'
 
 import { useAmbientLight } from '@/hooks/useAmbientLight'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 interface CeilingProps {
   geometry: BufferGeometry
@@ -32,6 +33,7 @@ const Ceiling: React.FC<CeilingProps> = ({ geometry, material, position, rotatio
       side: 2, // DoubleSide
     })
   }, [material])
+  useDisposable(ceilingMaterial)
 
   // Apply ambient light as color multiplier
   useEffect(() => {

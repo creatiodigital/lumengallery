@@ -18,6 +18,7 @@ import {
 } from '@/redux/slices/dashboardSlice'
 import { snapshotExhibition } from '@/redux/slices/exhibitionSlice'
 import { showWallView } from '@/redux/slices/wallViewSlice'
+import { useDisposable } from '@/components/scene/spaces/objects/useDisposable'
 
 interface PlaceholderProps {
   i: number
@@ -48,6 +49,7 @@ const Placeholder: React.FC<PlaceholderProps> = ({ i, nodes }) => {
       depthWrite: false,
     })
   }, [])
+  useDisposable(placeholderMaterial)
 
   // Memoize EdgesGeometry — previously recreated every render frame
   const edgesGeometry = useMemo(() => {
